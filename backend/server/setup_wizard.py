@@ -16,10 +16,13 @@ from prompt_toolkit.validation import Validator
 
 CONTAINERS = {
     "gabriel": "Gabriel Server",
+    "aruco": "ArUco Marker Engine",
     "telemetry": "Telemetry Engine",
     "obstacle": "Avoidance Engine",
     "object": "Object Detection Engine",
     "slam": "SLAM Engine",
+    "swiftmap": "SwiftMap Engine",
+    "swiftmap_server": "SwiftMap Server",
     "sc": "Swarm Controller",
 }
 TEMPLATES = {
@@ -46,8 +49,26 @@ DEFAULTS = [
     ("object_diff_radius", 5, "Object Diff Radius (m)"),
     ("exclusions", "", "Class Exclusions (comma-separated class ids)"),
     ("terraslam_host", "localhost", "TerraSLAM Host"),
+    ("swiftmap_host", "swiftmap-server", "SwiftMap Engine Host"),
+    ("swiftmap_port", 43322, "SwiftMap Port"),
+    ("swiftmap_send_distance", 5.0, "SwiftMap Send Distance (m)"),
+    ("swiftmap_backbone", "vggt", "SwiftMap Reconstruction Backbone"),
+    ("swiftmap_segmenter", "sam3", "SwiftMap Segmenter"),
+    ("swiftmap_site", "area", "SwiftMap Site Tag"),
+    ("swiftmap_max_keyframes", 70, "SwiftMap Max Keyframes"),
+    ("swiftmap_conf_threshold", 60, "SwiftMap Confidence Threshold"),
+    ("swiftmap_mask_sky", True, "SwiftMap Mask Sky"),
+    ("swiftmap_keep_all", False, "SwiftMap Keep All Keyframes"),
+    ("swiftmap_viewer_port", 7866, "SwiftMap Viewer Port"),
+    (
+        "vggt_omega_checkpoint",
+        "/app/checkpoints/vggt_omega_1b_512-002.pt",
+        "VGGT-Omega Checkpoint Path",
+    ),
+    ("sam3_checkpoint", "/app/checkpoints/sam3.pt", "SAM3 Checkpoint Path"),
     ("webserver_url", "localhost", "HTTP Webserver Host"),
     ("webserver_port", 8080, "HTTP Webserver Port"),
+    ("cot_url", "tcp://takserver:8088/", "TAK CoT URL"),
 ]
 
 CONTEXT = {}
@@ -67,6 +88,15 @@ FORMATTED_TEXT_STYLE = Style.from_dict(
         "note": "#03e8fc italic",
     }
 )
+
+
+def is_valid_port(text):
+    try:
+        a = int(text)
+    except ValueError:
+        return False
+
+    return a > 1024 and a < 65535
 
 
 def write_files(CONTEXT):
@@ -317,7 +347,7 @@ def main():
                 ("", "\n\n"),
                 (
                     "#111111 bold",
-                    "NOTE: If not, the default YOLOv5m model based on the COCO dataset will be downloaded and used.",
+                    "NOTE: If not, the default YOLOv26m model based on the COCO dataset will be downloaded and used.",
                 ),
             ]
         )
@@ -463,6 +493,151 @@ def main():
             style=GLOBAL_STYLE,
         ).run()
 
+        # SwiftMap
+        txt = FormattedText(
+            [
+                (
+                    "#111111",
+                    "Do you wish to use the following set of default values for the SwiftMap mapping engine?\n\n",
+                ),
+                (
+                    "#333333 italic",
+                    "Host: swiftmap-server\nPort: 43322\nSend Distance: 5.0m\n"
+                    "Backbone: vggt\nSegmenter: sam3\nSite Tag: area\n"
+                    "Max Keyframes: 70\nConfidence Threshold: 60\n"
+                    "Mask Sky: True\nKeep All Keyframes: False\nViewer Port: 7866\n",
+                ),
+                (
+                    "#111111 bold",
+                    "\nNOTE: If not, you will be asked to enter the above values that configure the SwiftMap mapping engine.",
+                ),
+            ]
+        )
+        CONTEXT["use_defaults_swiftmap"] = yes_no_dialog(
+            title="SwiftMap - Use Defaults", text=txt, style=GLOBAL_STYLE
+        ).run()
+
+        if not CONTEXT["use_defaults_swiftmap"]:
+            CONTEXT["swiftmap_host"] = input_dialog(
+                title="SwiftMap - Host",
+                text="Enter the in-network hostname of the swiftmap-server service:",
+                default="swiftmap-server",
+                style=GLOBAL_STYLE,
+            ).run()
+
+            CONTEXT["swiftmap_port"] = int(
+                input_dialog(
+                    title="SwiftMap - Port",
+                    text="Enter the port for the swiftmap-server service:",
+                    default="43322",
+                    validator=Validator.from_callable(
+                        is_valid_port,
+                        error_message="The port must be an integer between 1024 and 65535.",
+                    ),
+                    style=GLOBAL_STYLE,
+                ).run()
+            )
+
+            CONTEXT["swiftmap_send_distance"] = float(
+                input_dialog(
+                    title="SwiftMap - Send Distance",
+                    text="Enter the distance (m) of drone travel per forwarded frame+GPS pair (0 = every frame):",
+                    default="5.0",
+                    style=GLOBAL_STYLE,
+                ).run()
+            )
+
+            CONTEXT["swiftmap_backbone"] = radiolist_dialog(
+                title="SwiftMap - Backbone",
+                text="Which reconstruction model backbone should be used?",
+                values=[
+                    ("vggt", "VGGT"),
+                    ("vggt_omega", "VGGT-Omega"),
+                ],
+                default="vggt",
+                style=GLOBAL_STYLE,
+            ).run()
+
+            CONTEXT["swiftmap_segmenter"] = input_dialog(
+                title="SwiftMap - Segmenter",
+                text="Enter the segmenter model to use:",
+                default="sam3",
+                style=GLOBAL_STYLE,
+            ).run()
+
+            CONTEXT["swiftmap_site"] = input_dialog(
+                title="SwiftMap - Site Tag",
+                text="Enter the area-tag prefix (drone/site name):",
+                default="area",
+                style=GLOBAL_STYLE,
+            ).run()
+
+            CONTEXT["swiftmap_max_keyframes"] = int(
+                input_dialog(
+                    title="SwiftMap - Max Keyframes",
+                    text="Enter the number of retained keyframes that triggers the mapping pipeline:",
+                    default="70",
+                    style=GLOBAL_STYLE,
+                ).run()
+            )
+
+            CONTEXT["swiftmap_conf_threshold"] = int(
+                input_dialog(
+                    title="SwiftMap - Confidence Threshold",
+                    text="Enter the confidence threshold for reconstruction:",
+                    default="60",
+                    style=GLOBAL_STYLE,
+                ).run()
+            )
+
+            CONTEXT["swiftmap_mask_sky"] = yes_no_dialog(
+                title="SwiftMap - Mask Sky",
+                text="Mask sky regions during reconstruction?",
+                style=GLOBAL_STYLE,
+            ).run()
+
+            CONTEXT["swiftmap_keep_all"] = yes_no_dialog(
+                title="SwiftMap - Keep All Keyframes",
+                text="Keep every received frame+GPS pair as a keyframe (skip server-side selection)?",
+                style=GLOBAL_STYLE,
+            ).run()
+
+            CONTEXT["swiftmap_viewer_port"] = int(
+                input_dialog(
+                    title="SwiftMap - Viewer Port",
+                    text="Enter the host port for the results viewer + segment-request UI:",
+                    default="7866",
+                    validator=Validator.from_callable(
+                        is_valid_port,
+                        error_message="The port must be an integer between 1024 and 65535.",
+                    ),
+                    style=GLOBAL_STYLE,
+                ).run()
+            )
+
+            if CONTEXT["swiftmap_backbone"] == "vggt_omega":
+                CONTEXT["vggt_omega_checkpoint"] = input_dialog(
+                    title="SwiftMap - VGGT-Omega Checkpoint",
+                    text="Enter the path to the VGGT-Omega checkpoint:",
+                    default="/app/checkpoints/vggt_omega_1b_512-002.pt",
+                    style=GLOBAL_STYLE,
+                ).run()
+
+            CONTEXT["sam3_checkpoint"] = input_dialog(
+                title="SwiftMap - SAM3 Checkpoint",
+                text="Enter the path to the SAM3 checkpoint:",
+                default="/app/checkpoints/sam3.pt",
+                style=GLOBAL_STYLE,
+            ).run()
+
+        # Team Awareness Kit (CoT)
+        CONTEXT["cot_url"] = input_dialog(
+            title="TAK - CoT URL",
+            text="Enter the Cursor-on-Target (CoT) URL for the TAK server:",
+            default="tcp://takserver:8088/",
+            style=GLOBAL_STYLE,
+        ).run()
+
         # HTTP Server
         CONTEXT["webserver_url"] = input_dialog(
             title="HTTP - Webserver Host",
@@ -470,14 +645,6 @@ def main():
             default="localhost",
             style=GLOBAL_STYLE,
         ).run()
-
-        def is_valid_port(text):
-            try:
-                a = int(text)
-            except ValueError:
-                return False
-
-            return a > 1024 and a < 65535
 
         CONTEXT["webserver_port"] = float(
             input_dialog(
@@ -498,6 +665,14 @@ def main():
     CONTEXT["redis_pw"] = input_dialog(
         title="Redis - Password",
         text="Enter a secure password to use for Redis:",
+        default="",
+        password=True,
+        style=GLOBAL_STYLE,
+    ).run()
+
+    CONTEXT["grafana_pwd"] = input_dialog(
+        title="Grafana - Admin Password",
+        text="Enter a secure admin password to use for Grafana:",
         default="",
         password=True,
         style=GLOBAL_STYLE,
