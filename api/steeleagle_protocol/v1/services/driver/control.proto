@@ -152,7 +152,7 @@ service ControlService {
 
 message TakeOffRequest {
   // take off height in relative altitude [meters]
-  float take_off_altitude = 1;
+  float altitude = 1;
 }
 
 message TakeOffResponse {}

@@ -68,6 +68,10 @@ message GimbalStatus {
   Pose pose_body = 2;
   // current pose in the NEU (North, East, Up) reference frame
   Pose pose_neu = 3;
+  // angular velocity in the body (forward, right, up) reference frame
+  Pose angular_velocity_body = 4;
+  // angular velocity in the NEU (North, East, Up) reference frame
+  Pose angular_velocity_neu = 5;
 }
 
 // Info of all attached gimbals.

@@ -13,5 +13,5 @@ type Action interface {
 type Event interface {
 	// Monitor continues to check for an event state until it
 	// occurs or encounters an error.
-	Monitor(ctx context.Context, device Device) (error, bool)
+	Monitor(ctx context.Context, device Device) (bool, error)
 }
