@@ -49,7 +49,7 @@ class Vehicle:
 
     async def joystick(
         self, velocity: Velocity,
-    ) -> AsyncIterator[Response]:
+    ) -> Response:
         req = control_proto.JoystickRequest()
         ParseDict(velocity.model_dump(), req.velocity)
         return await run_unary(self.control.Joystick, req)
@@ -181,7 +181,7 @@ class Vehicle:
     ) -> Response:
         req = control_proto.ConfigureImagingSensorStreamRequest()
         for c in configurations:
-            ParseDict(c.model_dump()(exclude_none=True), req.configurations.add())
+            ParseDict(c.model_dump(exclude_none=True), req.configurations.add())
         return await run_unary(self.control.ConfigureImagingSensorStream, req)
 
     async def configure_telemetry_stream(self, frequency: int) -> Response:

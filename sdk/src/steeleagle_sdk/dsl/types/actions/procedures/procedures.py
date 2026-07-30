@@ -47,6 +47,8 @@ class ElevateToAltitude(Action):
         start = asyncio.get_event_loop().time()
         while True:
             tel = await fetch_telemetry()
+            if not tel:
+              logger.warning("Could not get telemetry, waiting...")
             rel_alt = tel.position_info.relative_position.z
 
             if rel_alt + self.tolerance >= self.target_altitude:
@@ -587,6 +589,8 @@ class Track(Action):
             if last_seen is not None and (now - last_seen) > self.target_lost_duration:
                 # Stop motion and exit
                 telemetry = await fetch_telemetry()
+                if not telemetry:
+                    logger.warning("Could not get telemetry, waiting...")
                 await self._actuate(0.0, 0.0, 0.0, 0.0, 0.0, telemetry)
                 logger.info(
                     "Track: target lost for %.1fs, exiting",
@@ -596,6 +600,8 @@ class Track(Action):
 
             # --- Telemetry ---
             telemetry = await fetch_telemetry()
+            if not telemetry:
+                    logger.warning("Could not get telemetry, waiting...")
             # logger.info("Track: telemetry fetched: %s", telemetry)
 
             # --- Detections ---
@@ -773,7 +779,7 @@ class AvoidTask(Action):
             await asyncio.sleep(self._poll_period)
 
 
-@register_acttion
+@register_action
 class Map(Action):
     # Fields
     gimbal_pitch: float = Field(45, ge=0.0, description="Gimbal pitch degree")
@@ -788,16 +794,12 @@ class Map(Action):
          first_wps = self.first_waypoints.calculate()
          first_flight = Patrol(waypoints=first_wps)
          await first_flight.execute()
-         it_trials = iter(num_trials) # TODO: standard could be any other requirements
-         standard = it_trials.next()
-         while (standard):
-            res: FrameResult = await fetch_results(self.compute_stream)
-            next_wps: Waypoints | None = None
-            if not res or not res.result:
-                logger.info(f"Map: No results from {self.compute_stream}")
-                continue
-            new_wps = res.result.navigation_result # TODO: make sure it is the new one
-            next_flight = Patrol(waypoints = new_wps)
-            # next flight
-            standard.next()
+         for trial in range(num_trials):
+             res = await types.COMPUTE.find_results(
+             compute_stream=self.compute_stream, data_key=self.data_key)
+             if res and res.result and hasattr(res.result,'navigation_result'):
+                 new_wps = res.result.navigation_result
+                 next_flight = Patrol(waypoints=new_wps)
+            await next_flight.execute()
+
 
