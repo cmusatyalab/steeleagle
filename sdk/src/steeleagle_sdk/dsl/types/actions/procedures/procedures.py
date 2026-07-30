@@ -771,3 +771,33 @@ class AvoidTask(Action):
                 logger.error("[AvoidTask] Threw an exception")
                 logger.error(e)
             await asyncio.sleep(self._poll_period)
+
+
+@register_acttion
+class Map(Action):
+    # Fields
+    gimbal_pitch: float = Field(45, ge=0.0, description="Gimbal pitch degree")
+    compute_stream: str = Field(
+        "swiftmap-engine",
+        description="Name of compute stream to pull next flight navigation points from",
+    )
+    first_waypoints: Waypoints = Field(description="Waypoints definition (area, alt, algo, spacing, angle_degrees, trigger_distance).")
+    num_trials: int = Field(3, gt=0, description="Number of trials for iterative flights")
+    # Main logic
+    async def execute(self):
+         first_wps = self.first_waypoints.calculate()
+         first_flight = Patrol(waypoints=first_wps)
+         await first_flight.execute()
+         it_trials = iter(num_trials) # TODO: standard could be any other requirements
+         standard = it_trials.next()
+         while (standard):
+            res: FrameResult = await fetch_results(self.compute_stream)
+            next_wps: Waypoints | None = None
+            if not res or not res.result:
+                logger.info(f"Map: No results from {self.compute_stream}")
+                continue
+            new_wps = res.result.navigation_result # TODO: make sure it is the new one
+            next_flight = Patrol(waypoints = new_wps)
+            # next flight
+            standard.next()
+
