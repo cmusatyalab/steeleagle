@@ -10,6 +10,7 @@ import (
 	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -34,12 +35,13 @@ func getGabrielProducer[T Data](
 				case <-ctx.Done():
 					return
 				case val := <-inputCh:
-					telBytes, err := proto.Marshal(val)
+					anyPayload, err := anypb.New(val)
 					if err != nil {
-						log.Err(err).Msg("error marshaling data")
+						log.Err(err).Msg("error packing data into Any")
+						continue
 					}
-					payload := &gabrielpb.InputFrame_BytePayload{
-						BytePayload: telBytes,
+					payload := &gabrielpb.InputFrame_AnyPayload{
+						AnyPayload: anyPayload,
 					}
 					frame := &gabrielpb.InputFrame{
 						PayloadType: gabrielpb.PayloadType_TEXT,

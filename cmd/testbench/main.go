@@ -18,7 +18,7 @@ import (
 // which points at a plugin and a list of CLI-style arguments for that plugin.
 type PluginConfig struct {
 	Plugin string   `toml:"plugin"`
-    Path   string   `toml:"path,omitempty"`
+	Path   string   `toml:"path,omitempty"`
 	Args   []string `toml:"args"`
 }
 
@@ -30,10 +30,19 @@ type Vehicle struct {
 	Mission  *PluginConfig `toml:"mission,omitempty"`
 }
 
+// GabrielConfig models the [gabriel] table, which configures the Gabriel
+// server the vehicles send telemetry and video frames to.
+type GabrielConfig struct {
+	ServerEndpoint           string   `toml:"server_endpoint"`
+	TelemetryTargetEngines   []string `toml:"telemetry_target_engines"`
+	VideoFramesTargetEngines []string `toml:"video_frames_target_engines"`
+}
+
 // Config models the top-level document: an array of vehicle tables.
 type Config struct {
-	Vehicles  []Vehicle `toml:"vehicles"`
-	PluginDir string    `toml:"plugin_dir"`
+	Vehicles  []Vehicle     `toml:"vehicles"`
+	PluginDir string        `toml:"plugin_dir"`
+	Gabriel   GabrielConfig `toml:"gabriel,omitempty"`
 }
 
 func main() {
@@ -61,25 +70,25 @@ func main() {
 	}
 
 	for _, veh := range cfg.Vehicles {
-		spawnVehicle(&veh, cfg.PluginDir)
+		spawnVehicle(&veh, cfg.PluginDir, cfg.Gabriel)
 	}
 }
 
-func spawnVehicle(veh *Vehicle, pluginDir string) {
+func spawnVehicle(veh *Vehicle, pluginDir string, gabrielCfg GabrielConfig) {
 	if veh.Driver == nil {
 		log.Fatal().Msgf("driver plugin not specified")
 	}
-    driverDir := pluginDir
-    if veh.Driver.Path != "" {
-        driverDir = veh.Driver.Path
-    }
+	driverDir := pluginDir
+	if veh.Driver.Path != "" {
+		driverDir = veh.Driver.Path
+	}
 	driverPlugin := createDriverPlugin(veh, driverDir)
 	var missionPlugin util.Plugin
 	if veh.Mission != nil {
-        missionDir := pluginDir
-        if veh.Mission.Path != "" {
-            missionDir = veh.Mission.Path
-        }
+		missionDir := pluginDir
+		if veh.Mission.Path != "" {
+			missionDir = veh.Mission.Path
+		}
 		missionPlugin = createMissionPlugin(veh, missionDir)
 	}
 
@@ -99,12 +108,19 @@ func spawnVehicle(veh *Vehicle, pluginDir string) {
 	// Build plugin config
 	pluginConfig := vehicle.PluginConfig{Driver: driverPlugin, Mission: missionPlugin}
 	videoConfig := vehicle.VideoStreamConfig{StreamType: vehicle.Frames}
-	vehicle, err := vehicle.NewVehicle(
-		pluginConfig,
+	opts := []vehicle.VehicleOption{
 		vehicle.WithName(veh.Name),
 		vehicle.WithServerListener(serverLn, nil),
 		vehicle.WithVideoStreamConfig(videoConfig),
-	)
+	}
+	if gabrielCfg.ServerEndpoint != "" {
+		opts = append(opts, vehicle.WithGabrielConfig(vehicle.GabrielConfig{
+			ServerEndpoint:           gabrielCfg.ServerEndpoint,
+			TelemetryTargetEngines:   gabrielCfg.TelemetryTargetEngines,
+			VideoFramesTargetEngines: gabrielCfg.VideoFramesTargetEngines,
+		}))
+	}
+	vehicle, err := vehicle.NewVehicle(pluginConfig, opts...)
 	if err != nil {
 		log.Fatal().Err(err).Msg("couldn't create vehicle")
 	}
@@ -152,7 +168,7 @@ func createMissionPlugin(veh *Vehicle, pluginDir string) util.Plugin {
 	options := []util.PluginOption{
 		util.WithName(veh.Name + "-mission"),
 		util.WithPath(pluginPath),
-        util.WithAuthCode(util.MissionCode),
+		util.WithAuthCode(util.MissionCode),
 	}
 	if len(veh.Mission.Args) > 0 {
 		options = append(options, util.WithScriptArgs(veh.Mission.Args))

@@ -1,4 +1,11 @@
 plugin_dir = ""
+
+[gabriel]
+# If left blank, vehicles will not connect to Gabriel
+server_endpoint = ""
+telemetry_target_engines = ["telemetry", "obstacle-avoidance"]
+video_frames_target_engines = ["obstacle-avoidance"]
+
 [[vehicles]]
 # Name of the vehicle.
 name = "steppeeagle"
