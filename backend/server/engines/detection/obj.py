@@ -67,7 +67,7 @@ def main():
     parser.add_argument(
         "-g",
         "--gabriel",
-        default="tcp://gabriel-server:5555",
+        default="gabriel-server:5555",
         help="Gabriel server endpoint.",
     )
 

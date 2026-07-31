@@ -57,7 +57,7 @@ class TelemetryEngine(cognitive_engine.Engine):
         self.ttl_secs = args.ttl * 24 * 3600
         now = datetime.datetime.now(pytz.timezone("America/New_York"))
         self.mcap = foxglove.open_mcap(
-            f"{self.storage_path}/backend_{now.strftime('%d-%b-%Y-%H-%M')}.mcap"
+            f"{self.storage_path}/backend_{now.strftime('%d-%b-%Y-%H-%M-%S')}.mcap"
         )
         self.fg_server = foxglove.start_server(name="SteelEagle", host="0.0.0.0")
 
@@ -285,7 +285,7 @@ def main():
     parser.add_argument(
         "-g",
         "--gabriel",
-        default="tcp://gabriel-server:5555",
+        default="gabriel-server:5555",
         help="Gabriel server endpoint.",
     )
 
