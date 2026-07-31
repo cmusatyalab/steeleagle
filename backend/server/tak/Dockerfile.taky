@@ -1,0 +1,23 @@
+FROM ghcr.io/astral-sh/uv:debian-slim
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    git \
+ && apt-get clean
+
+RUN mkdir -p /var/taky/logs
+
+WORKDIR /app
+
+#RUN git clone --depth 1 https://github.com/tkuester/taky.git /app \
+# && uv venv --python 3.11 \
+# && uv pip install --no-cache 'setuptools<81.0.0' \
+# && uv pip install --no-cache -e .
+RUN uv venv --python 3.11 \
+ && uv pip install --no-cache 'setuptools<81.0.0' taky
+
+COPY taky.conf /app
+
+CMD ["uv", "run", "taky"]

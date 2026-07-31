@@ -1,0 +1,26 @@
+
+[cors]
+origins = [
+    "*",
+]
+
+[backend]
+[backend.machine1]
+swarm-controller = "{{webserver_url}}:5004"
+redis_host = "{{webserver_url}}"
+redis_port = 6379
+redis_username = "steeleagle"
+redis_password = "{{redis_pw}}"
+webserver = "http://{{webserver_url}}:8080"
+
+[vehicle]
+[vehicle.test1]
+address = 'unix:///tmp/test1-kernel.sock'
+tel_endpoint = 'ipc:///tmp/test1-driver_telem.sock'
+img_endpoint = 'ipc:///tmp/test1-imagery.sock'
+res_endpoint = 'ipc:///tmp/test1-results.sock'
+[vehicle.test2]
+address = 'unix:///tmp/test2-kernel.sock'
+tel_endpoint = 'ipc:///tmp/test2-driver_telem.sock'
+img_endpoint = 'ipc:///tmp/test2-imagery.sock'
+res_endpoint = 'ipc:///tmp/test2-results.sock'
