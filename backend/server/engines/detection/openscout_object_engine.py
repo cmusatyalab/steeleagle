@@ -37,8 +37,9 @@ from predictors import UnknownModelArchError, load_predictor
 from pygeodesy.sphericalNvector import LatLon
 from pykml import parser
 from scipy.spatial.transform import Rotation as R
-from steeleagle_sdk.protocol.messages import result_pb2
-from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
+from steeleagle_protocol.v1 import common_pb2
+from steeleagle_protocol.v1.messages.result import result_pb2
+from steeleagle_protocol.v1.messages.telemetry import telemetry_pb2 as telemetry
 
 logging.basicConfig(
     level=logging.INFO,
@@ -155,7 +156,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         )
         return target_insct + (t * target_dir)
 
-    def calculate_target_pitch_yaw(self, box, image_np, position_info, gimbal_info):
+    def calculate_target_pitch_yaw(self, box, image_np, position_info, gimbal_status):
         img_width = image_np.shape[1]
         img_height = image_np.shape[0]
         pixel_center = (img_width / 2, img_height / 2)
@@ -173,9 +174,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         target_yaw_angle = (target_x_pix / img_width) * HFOV
         target_bottom_pitch_angle = (target_y_pix / img_height) * VFOV
 
-        gimbal_pitch = gimbal_info.gimbals[
-            0
-        ].pose_body.pitch  # TODO: don't assume a single gimbal
+        gimbal_pitch = gimbal_status.pose_body.pitch
         object_heading = position_info.global_position.heading + target_yaw_angle
         logger.info(
             f"BBox: {box}\nTargetXPix: {target_x_pix}\nTargetYPix: {target_y_pix}\nGimbal Pitch: {gimbal_pitch}\nBottom Angle {target_bottom_pitch_angle}\nHeading: {position_info.global_position.heading}\nTarget Yaw Offset {target_yaw_angle}\n"
@@ -305,7 +304,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         self.detector = detector
         self.model = model_name
 
-    def handle(self, input_frame):
+    def handle(self, input_frame, client_info):
         if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
             # if the payload is TEXT, say from a CNC client, we ignore
             status = gabriel_pb2.Status()
@@ -313,33 +312,35 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             status.message = "Ignoring text payload"
             return cognitive_engine.Result(status, None)
 
-        frame = telemetry.Frame()
+        vehicle_info = common_pb2.VehicleInfo()
+        client_info.Unpack(vehicle_info)
+        vehicle_id = vehicle_info.vehicle_id
+
+        frame = telemetry.EncodedFrame()
         assert input_frame.WhichOneof("payload") == "any_payload"
-        assert input_frame.any_payload.Is(telemetry.Frame.DESCRIPTOR)
+        assert input_frame.any_payload.Is(telemetry.EncodedFrame.DESCRIPTOR)
         input_frame.any_payload.Unpack(frame)
 
         self.t0 = time.time()
 
-        frame = telemetry.Frame()
-        input_frame.any_payload.Unpack(frame)
-        results, image_np = self.process_image(frame.data)
+        gimbal_status = frame.gimbal_status if frame.HasField("gimbal_status") else None
+        results, image_np = self.process_image(frame.encoded_data)
         detections = self.process_results(
             image_np,
             results,
-            frame.vehicle_info,
+            vehicle_id,
             frame.position_info,
-            frame.gimbal_info,
+            gimbal_status,
         )
 
         compute_result = result_pb2.ComputeResult()
-        compute_result.engine_name = self.ENGINE_NAME
+        compute_result.timestamp.GetCurrentTime()
 
         try:
             if detections is not None:
                 detection_result = result_pb2.DetectionResult()
-                for i, d in enumerate(detections):
+                for d in detections:
                     det_object = result_pb2.Detection()
-                    det_object.detection_id = i
                     det_object.class_name = d["class"]
                     det_object.score = d["score"] * 100
                     bbox = result_pb2.BoundingBox(
@@ -351,13 +352,9 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                     det_object.bbox.CopyFrom(bbox)
                     detection_result.detections.append(det_object)
                 compute_result.detection_result.CopyFrom(detection_result)
-            frame_result = result_pb2.FrameResult()
-            frame_result.type = "object-detection"
-            frame_result.result.append(compute_result)
-            frame_result.timestamp.GetCurrentTime()
 
             any_payload = Any()
-            any_payload.Pack(frame_result)
+            any_payload.Pack(compute_result)
         except Exception as e:
             logger.error(e)
 
@@ -372,7 +369,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         return cognitive_engine.Result(status, any_payload)
 
     def process_results(
-        self, image_np, sv_detections, vehicle_info, position_info, gimbal_info
+        self, image_np, sv_detections, vehicle_id, position_info, gimbal_status
     ):
         exclusions = self.exclusions or []
         sv_detections = sv_detections[~np.isin(sv_detections.class_id, exclusions)]
@@ -385,7 +382,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 os.environ["WEBSERVER"],
                 "detected",
                 "vehicles",
-                vehicle_info.name,
+                vehicle_id,
                 filename,
             )
         else:
@@ -408,16 +405,16 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 float(x2 / img_width),
             ]
             global_pos = position_info.global_position
-            if gimbal_info.num_gimbals == 0:
+            if gimbal_status is None:
                 logger.warning(
-                    "Number of gimbals is zero, using the vehicle global location for target coordinates"
+                    "No gimbal attached to this frame, using the vehicle global location for target coordinates"
                 )
                 lon = global_pos.longitude
                 lat = global_pos.latitude
                 p = LatLon(lat, lon)
             else:
                 target_pitch, target_yaw = self.calculate_target_pitch_yaw(
-                    box, image_np, position_info, gimbal_info
+                    box, image_np, position_info, gimbal_status
                 )
 
                 rel_pos = position_info.relative_position
@@ -449,7 +446,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 # )
 
             detection = {
-                "id": vehicle_info.name,
+                "id": vehicle_id,
                 "class": class_name,
                 "score": float(confidence),
                 "lat": lat,
@@ -489,7 +486,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
         if run_hsv_filter and not self.unittest:
             logger.info("TODO: need to get hsv bounds")
-            # self.store_hsv_image(image_np, cpt_config, vehicle_info.name)
+            # self.store_hsv_image(image_np, cpt_config, vehicle_id)
 
         # Store detection image
         if self.store_detections and len(sv_detections) > 0 and not self.unittest:
@@ -498,7 +495,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 self.store_detections_disk(
                     annotated,
                     filename,
-                    vehicle_info.name,
+                    vehicle_id,
                     sorted(set(sv_detections.data["class_name"].tolist())),
                 )
             except IndexError:

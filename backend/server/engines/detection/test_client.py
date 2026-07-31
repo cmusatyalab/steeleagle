@@ -10,7 +10,9 @@ import time
 import cv2
 from gabriel_client.zeromq_client import InputProducer, ZeroMQClient
 from gabriel_protocol import gabriel_pb2
-from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
+from google.protobuf.any_pb2 import Any
+from steeleagle_protocol.v1 import common_pb2
+from steeleagle_protocol.v1.messages.telemetry import telemetry_pb2 as telemetry
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -90,16 +92,10 @@ class TestAdapter:
                 input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
                 # input_frame.byte_payload =jpg_buffer.tobytes()
 
-                extras = telemetry.Frame()
-                extras.data = jpg_buffer.tobytes()
+                extras = telemetry.EncodedFrame()
+                extras.encoded_data = jpg_buffer.tobytes()
                 extras.timestamp.GetCurrentTime()
-                height, width, channels = img.shape
-                extras.h_res = height
-                extras.v_res = width
-                extras.d_res = 0
-                extras.channels = channels
                 extras.id = FRAME_ID
-                extras.vehicle_info.name = self.client_id
                 extras.position_info.global_position.latitude = (
                     self.latitude + random.uniform(0.0005, 0.001)
                 )
@@ -107,9 +103,7 @@ class TestAdapter:
                     self.longitude + random.uniform(0.0005, 0.001)
                 )
                 extras.position_info.relative_position.z = self.altitude
-                gimbal = telemetry.GimbalStatus()
-                gimbal.pose_body.pitch = self.gimbal_pitch
-                extras.gimbal_info.gimbals.append(gimbal)
+                extras.gimbal_status.pose_body.pitch = self.gimbal_pitch
 
                 FRAME_ID += 1
                 # Pack extras into the input frame
@@ -170,10 +164,13 @@ def main():
 
     test_adapter = TestAdapter(args)
 
+    client_info = Any()
+    client_info.Pack(common_pb2.VehicleInfo(vehicle_id=args.client_id))
     client = ZeroMQClient(
         f"tcp://{args.server}:{args.port}",
         test_adapter.get_producer_wrappers(),
         test_adapter.process_results,
+        client_info=client_info,
     )
     client.launch()
 

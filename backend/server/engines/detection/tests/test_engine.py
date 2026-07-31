@@ -8,8 +8,10 @@ import pytest
 import supervision as sv
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine
-from steeleagle_sdk.protocol.messages import result_pb2
-from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
+from google.protobuf.any_pb2 import Any
+from steeleagle_protocol.v1 import common_pb2
+from steeleagle_protocol.v1.messages.result import result_pb2
+from steeleagle_protocol.v1.messages.telemetry import telemetry_pb2 as telemetry
 
 
 def _make_engine():
@@ -41,14 +43,14 @@ def test_process_results_normalizes_absolute_pixel_boxes_to_fractional():
     )
     detections.data["class_name"] = np.array(["person"], dtype=object)
 
-    vehicle_info = telemetry.VehicleInfo(name="drone1")
+    vehicle_id = "drone1"
     position_info = telemetry.PositionInfo()
     position_info.global_position.latitude = 40.0
     position_info.global_position.longitude = -79.0
-    gimbal_info = telemetry.GimbalInfo()  # num_gimbals defaults to 0
+    gimbal_status = None  # no gimbal attached to this frame
 
     result = engine.process_results(
-        image_np, detections, vehicle_info, position_info, gimbal_info
+        image_np, detections, vehicle_id, position_info, gimbal_status
     )
 
     assert result is not None
@@ -74,12 +76,12 @@ def test_process_results_filters_excluded_classes():
     )
     detections.data["class_name"] = np.array(["car"], dtype=object)
 
-    vehicle_info = telemetry.VehicleInfo(name="drone1")
+    vehicle_id = "drone1"
     position_info = telemetry.PositionInfo()
-    gimbal_info = telemetry.GimbalInfo()
+    gimbal_status = None
 
     result = engine.process_results(
-        image_np, detections, vehicle_info, position_info, gimbal_info
+        image_np, detections, vehicle_id, position_info, gimbal_status
     )
 
     assert result is None
@@ -131,27 +133,26 @@ def test_handle_does_not_raise_on_zero_detections():
         1
     ].tobytes()
 
-    frame = telemetry.Frame()
-    frame.data = image_bytes
-    frame.vehicle_info.name = "drone1"
+    frame = telemetry.EncodedFrame()
+    frame.encoded_data = image_bytes
     frame.position_info.global_position.latitude = 40.0
     frame.position_info.global_position.longitude = -79.0
-    # gimbal_info left at default (num_gimbals == 0)
+    # gimbal_status left unset (no gimbal attached to this frame)
 
     input_frame = gabriel_pb2.InputFrame()
     input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
     input_frame.any_payload.Pack(frame)
 
-    result = engine.handle(input_frame)
+    client_info = Any()
+    client_info.Pack(common_pb2.VehicleInfo(vehicle_id="drone1"))
+
+    result = engine.handle(input_frame, client_info)
 
     assert isinstance(result, cognitive_engine.Result)
     assert result.payload is not None
 
-    frame_result = result_pb2.FrameResult()
-    assert result.payload.Is(result_pb2.FrameResult.DESCRIPTOR)
-    result.payload.Unpack(frame_result)
+    compute_result = result_pb2.ComputeResult()
+    assert result.payload.Is(result_pb2.ComputeResult.DESCRIPTOR)
+    result.payload.Unpack(compute_result)
 
-    assert frame_result.type == "object-detection"
-    assert len(frame_result.result) == 1
-    compute_result = frame_result.result[0]
     assert len(compute_result.detection_result.detections) == 0
