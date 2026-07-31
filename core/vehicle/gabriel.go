@@ -43,8 +43,12 @@ func getGabrielProducer[T Data](
 					payload := &gabrielpb.InputFrame_AnyPayload{
 						AnyPayload: anyPayload,
 					}
+					payloadType := gabrielpb.PayloadType_TEXT
+					if _, ok := any(val).(*telemetrypb.EncodedFrame); ok {
+						payloadType = gabrielpb.PayloadType_IMAGE
+					}
 					frame := &gabrielpb.InputFrame{
-						PayloadType: gabrielpb.PayloadType_TEXT,
+						PayloadType: payloadType,
 						Payload:     payload,
 					}
 					ch <- frame
