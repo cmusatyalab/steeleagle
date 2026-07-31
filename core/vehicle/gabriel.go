@@ -5,6 +5,7 @@ import (
 
 	gabrielclient "github.com/cmusatyalab/gabriel/go-client"
 	gabrielpb "github.com/cmusatyalab/gabriel/protocol/go"
+	steeleaglepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1"
 	"github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/result"
 	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
 	"github.com/rs/zerolog/log"
@@ -23,7 +24,7 @@ type Data interface {
 func getGabrielProducer[T Data](
 	producerName string,
 	inputCh <-chan T,
-	targetEngines []string) *gabrielclient.InputProducer {
+	targetEngines []string) *gabrielclient.InputSource {
 
 	producer := func(ctx context.Context) <-chan *gabrielpb.InputFrame {
 		ch := make(chan *gabrielpb.InputFrame, 1)
@@ -50,7 +51,7 @@ func getGabrielProducer[T Data](
 		}()
 		return ch
 	}
-	return gabrielclient.NewInputProducer(producerName, producer, targetEngines)
+	return gabrielclient.NewInputSource(producerName, producer, targetEngines)
 }
 
 // Create a Gabriel client with telemetry and video frame input producers.
@@ -74,10 +75,10 @@ func (v *Vehicle) createGabrielClient() error {
 		v.store.addResult(res.TargetEngineId, cmpRes)
 	}
 
-	var err error
-	v.gabrielClient, err = gabrielclient.NewGrpcClient(
+	v.gabrielClient = gabrielclient.NewGrpcClient(
 		v.gabrielCfg.ServerEndpoint,
-		[]*gabrielclient.InputProducer{telProducer, frameProducer},
-		consumer)
-	return err
+		[]*gabrielclient.InputSource{telProducer, frameProducer},
+		consumer,
+		gabrielclient.WithClientInfo(&steeleaglepb.VehicleInfo{VehicleId: v.Name}))
+	return nil
 }
