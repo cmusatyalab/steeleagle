@@ -230,7 +230,7 @@ wheels = [
 
 [[package]]
 name = "steeleagle-protocol"
-version = "0.1.14"
+version = "0.1.13"
 source = { editable = "../../api/python" }
 dependencies = [
     { name = "grpcio" },

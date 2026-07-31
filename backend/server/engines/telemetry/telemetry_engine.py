@@ -218,7 +218,7 @@ class TelemetryEngine(cognitive_engine.Engine):
                     f"Publishing image to redis under imagery.{vehicle_id} topic."
                 )
                 self.r.publish(
-                    f"imagery.{vehicle_id}", frame.encoded_data
+                    f"imagery.{vehicle_id}", input_frame.payloads[0]
                 )
             # store images in the shared volume
             try:
@@ -228,7 +228,8 @@ class TelemetryEngine(cognitive_engine.Engine):
                 img = Image.fromarray(img)
 
                 vehicle_raw_dir = f"{self.storage_path}/raw/{vehicle_id}"
-                os.makedirs(vehicle_raw_dir, exist_ok=True)
+                if not os.path.exists(vehicle_raw_dir):
+                    os.mkdir(vehicle_raw_dir)
                 now = datetime.datetime.now(pytz.timezone("America/New_York"))
                 current_path = f"{vehicle_raw_dir}/{now.strftime('%d-%b-%Y')}"
                 try:
