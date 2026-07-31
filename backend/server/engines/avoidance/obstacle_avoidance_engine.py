@@ -34,8 +34,9 @@ from google.protobuf.any_pb2 import Any
 from metric3d_models import Metric3DModelLoader
 from metric3d_utils import Metric3DInference
 from PIL import Image, ImageDraw
-from steeleagle_sdk.protocol.messages import result_pb2
-from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
+from steeleagle_protocol.v1 import common_pb2
+from steeleagle_protocol.v1.messages.result import result_pb2
+from steeleagle_protocol.v1.messages.telemetry import telemetry_pb2 as telemetry
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -49,6 +50,7 @@ class AvoidanceEngine(ABC):
         self.store_detections = args.store
         self.model = args.model
         self.unittest = args.unittest
+        self.strafe_speed = args.strafe_speed
         if not self.unittest:
             self.r = redis.Redis(
                 host="redis",
@@ -139,24 +141,28 @@ class AvoidanceEngine(ABC):
             else:
                 self.load_model(model)
 
-    def handle_helper(self, input_frame):
+    def handle_helper(self, input_frame, client_info):
         if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
             return self.text_payload_reply()
 
-        frame = telemetry.Frame()
+        vehicle_info = common_pb2.VehicleInfo()
+        client_info.Unpack(vehicle_info)
+        vehicle_id = vehicle_info.vehicle_id
+
+        frame = telemetry.EncodedFrame()
         assert input_frame.WhichOneof("payload") == "any_payload"
-        assert input_frame.any_payload.Is(telemetry.Frame.DESCRIPTOR)
+        assert input_frame.any_payload.Is(telemetry.EncodedFrame.DESCRIPTOR)
         input_frame.any_payload.Unpack(frame)
 
-        vector, depth_img = self.process_image(frame.data)
+        vector, depth_img = self.process_image(frame.encoded_data)
         status = gabriel_pb2.Status()
 
         compute_result = result_pb2.ComputeResult()
-        compute_result.engine_name = self.ENGINE_NAME
-        compute_result.avoidance_result.actuation_vector = vector
+        compute_result.timestamp.GetCurrentTime()
+        compute_result.guidance_result.trajectory.y_vel = vector * self.strafe_speed
         logger.info(f"Vector returned by obstacle avoidance algorithm: {vector}")
         if not self.unittest:
-            self.store_vector(frame.vehicle_info.name, vector)
+            self.store_vector(vehicle_id, vector)
 
         if self.store_detections:
             self.store_detection(depth_img)
@@ -166,12 +172,8 @@ class AvoidanceEngine(ABC):
             self.print_inference_stats()
 
         self.lasttime = self.t1
-        frame_result = result_pb2.FrameResult()
-        frame_result.type = "obstacle-avoidance"
-        frame_result.result.append(compute_result)
-        frame_result.timestamp.GetCurrentTime()
         any_payload = Any()
-        any_payload.Pack(frame_result)
+        any_payload.Pack(compute_result)
         return cognitive_engine.Result(status, any_payload)
 
 
@@ -226,8 +228,8 @@ class MidasAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
         logger.info(f"Depth predictor initialized with the following model: {model}")
         logger.info(f"Depth Threshold: {self.threshold}")
 
-    def handle(self, input_frame):
-        return self.handle_helper(input_frame)
+    def handle(self, input_frame, client_info):
+        return self.handle_helper(input_frame, client_info)
 
     def inference(self, img):
         """Allow timing engine to override this"""
@@ -331,8 +333,8 @@ class Metric3DAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
         logger.info(f"Device: {self.device}")
         logger.info(f"Depth Threshold: {self.threshold}")
 
-    def handle(self, input_frame):
-        return self.handle_helper(input_frame)
+    def handle(self, input_frame, client_info):
+        return self.handle_helper(input_frame, client_info)
 
     def inference(self, img):
         """
@@ -455,6 +457,13 @@ def main():
         type=int,
         default=190,
         help="Depth threshold for filtering.",
+    )
+
+    parser.add_argument(
+        "--strafe-speed",
+        type=float,
+        default=1.0,
+        help="Lateral (strafe) velocity in meters/s to command at full actuation.",
     )
 
     parser.add_argument(
