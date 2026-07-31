@@ -1,0 +1,17 @@
+name: Build and push ArUco detector engine
+
+on:
+  push:
+    branches: [ "v4.0-beta" ]
+    paths:
+      - '.github/workflows/build-aruco-engine.yml'
+      - 'backend/server/engines/aruco-engine/**'
+jobs:
+  build-and-push:
+    uses: ./.github/workflows/deploy-docker-img.yml
+    with:
+      name: steeleagle-aruco-marker-engine
+      dockerfile: backend/server/engines/aruco-engine/Dockerfile
+      free_disk_space: true
+      ctx: backend/server/engines/aruco-engine/
+    secrets: inherit

@@ -1,0 +1,13 @@
+[project]
+name = "steeleagle-aruco-marker-detector"
+version = "1.0.0"
+description = "Detecting ArUco markers using OpenCV"
+readme = "README.md"
+requires-python = "==3.11.*"
+dependencies = [
+   "opencv-contrib-python-headless",
+   "numpy",
+   "redis",
+   "gabriel-server>=5.0.0",
+   "steeleagle-protocol",
+]

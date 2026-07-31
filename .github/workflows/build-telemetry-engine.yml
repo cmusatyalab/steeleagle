@@ -2,8 +2,7 @@ name: Build and push telemetry engine
 
 on:
   push:
-    branches: [ "main", "dev" ]
-    tags: [ "v*" ]
+    branches: [ "v4.0-beta" ]
     paths:
       - '.github/workflows/build-telemetry-engine.yml'
       - 'backend/server/engines/telemetry/**'

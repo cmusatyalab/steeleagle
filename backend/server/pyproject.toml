@@ -1,0 +1,9 @@
+[project]
+name = "steeleagle-backend-wizard"
+version = "1.0.0"
+description = "Setup wizard for SteelEagle backend configuration."
+requires-python = ">=3.10"
+dependencies = [
+   "jinja2",
+   "prompt_toolkit",
+]
