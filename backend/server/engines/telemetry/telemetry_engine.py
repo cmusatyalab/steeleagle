@@ -23,7 +23,8 @@ from foxglove.schemas import CompressedImage, LocationFix
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine, local_engine
 from PIL import Image
-from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
+from steeleagle_protocol.v1 import common_pb2
+from steeleagle_protocol.v1.messages.telemetry import telemetry_pb2 as telemetry
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +71,7 @@ class TelemetryEngine(cognitive_engine.Engine):
     frequently updated data is stored in a STREAM.
     """
 
-    def updateVehicle(self, extras):
+    def updateVehicle(self, vehicle_id, extras):
         global_pos = extras.position_info.global_position
         rel_pos = extras.position_info.relative_position
         body_vel = extras.position_info.velocity_body
@@ -78,20 +79,19 @@ class TelemetryEngine(cognitive_engine.Engine):
         # gimb_pose = extras.gimbal_info.gimbals[
         #    0
         # ].pose_body  # TODO: Change this to check if gimbal exists
-        vehicle_info = extras.vehicle_info
         alert_info = extras.alert_info
 
         key = self.r.xadd(
-            f"telemetry:{extras.vehicle_info.name}",
+            f"telemetry:{vehicle_id}",
             {
                 "latitude": global_pos.latitude,
                 "longitude": global_pos.longitude,
                 "abs_altitude": global_pos.altitude,
                 "rel_altitude": rel_pos.z,
                 "bearing": int(global_pos.heading),
-                "battery": vehicle_info.battery_info.percentage,
+                "battery": extras.battery_info.percentage,
                 "mag": alert_info.magnetometer_warning,
-                "sats": vehicle_info.gps_info.satellites,
+                "sats": extras.gps_info.satellites,
                 # Relative Pos (ENU)
                 "neu_east": rel_pos.y,
                 "neu_north": rel_pos.x,
@@ -124,12 +124,12 @@ class TelemetryEngine(cognitive_engine.Engine):
                 # "gimbal_yaw": gimb_pose.yaw,
             },
         )
-        self.r.expire(f"telemetry:{extras.vehicle_info.name}", self.ttl_secs)
+        self.r.expire(f"telemetry:{vehicle_id}", self.ttl_secs)
         logger.debug(
-            f"Updated status of {extras.vehicle_info.name} in redis under stream telemetry at key {key}"
+            f"Updated status of {vehicle_id} in redis under stream telemetry at key {key}"
         )
         foxglove.log(
-            f"/{extras.vehicle_info.name}/location",
+            f"/{vehicle_id}/location",
             LocationFix(
                 latitude=global_pos.latitude,
                 longitude=global_pos.longitude,
@@ -138,7 +138,7 @@ class TelemetryEngine(cognitive_engine.Engine):
             log_time=time.time_ns(),
         )
         foxglove.log(
-            f"/{extras.vehicle_info.name}/telemetry",
+            f"/{vehicle_id}/telemetry",
             json_format.MessageToJson(
                 extras,
                 always_print_fields_with_no_presence=True,
@@ -146,7 +146,7 @@ class TelemetryEngine(cognitive_engine.Engine):
             log_time=time.time_ns(),
         )
 
-        vehicle_key = f"vehicle:{extras.vehicle_info.name}"
+        vehicle_key = f"vehicle:{vehicle_id}"
         self.r.hset(vehicle_key, "last_seen", f"{time.time()}")
         self.r.hset(vehicle_key, "battery", f"{extras.alert_info.battery_warning}")
         self.r.hset(vehicle_key, "mag", f"{extras.alert_info.magnetometer_warning}")
@@ -154,7 +154,6 @@ class TelemetryEngine(cognitive_engine.Engine):
         self.r.hset(
             vehicle_key, "connection", f"{extras.alert_info.connection_warning}"
         )
-        self.r.hset(vehicle_key, "model", f"{extras.vehicle_info.model}")
         # Home Location
         self.r.hset(
             vehicle_key,
@@ -171,43 +170,6 @@ class TelemetryEngine(cognitive_engine.Engine):
             "position_info.home_alt",
             f"{extras.position_info.home.altitude}",
         )
-        # Camera Information
-        self.r.hset(
-            vehicle_key,
-            "streams_allowed",
-            f"{extras.imaging_sensor_info.stream_status.stream_capacity}",
-        )
-        self.r.hset(
-            vehicle_key,
-            "streams_active",
-            f"{extras.imaging_sensor_info.stream_status.num_streams}",
-        )
-        self.r.hset(
-            vehicle_key,
-            "primary_cam_id",
-            f"{extras.imaging_sensor_info.stream_status.primary_cam}",
-        )
-        for i in range(len(extras.imaging_sensor_info.stream_status.secondary_cams)):
-            self.r.hset(
-                vehicle_key,
-                f"cam_{i}_id",
-                f"{extras.imaging_sensor_info.sensors[i].id}",
-            )
-            self.r.hset(
-                vehicle_key,
-                f"cam_{i}_type",
-                f"{extras.imaging_sensor_info.sensors[i].type}",
-            )
-            self.r.hset(
-                vehicle_key,
-                f"cam_{i}_active",
-                f"{extras.imaging_sensor_info.sensors[i].active}",
-            )
-            self.r.hset(
-                vehicle_key,
-                f"cam_{i}_support_sec",
-                f"{extras.imaging_sensor_info.sensors[i].supports_secondary}",
-            )
 
         self.r.expire(vehicle_key, self.ttl_secs)
         logger.debug(f"Updating {vehicle_key} status: last_seen: {time.time()}")
@@ -218,41 +180,42 @@ class TelemetryEngine(cognitive_engine.Engine):
     it writes the images to disk.
     """
 
-    def handle(self, input_frame):
+    def handle(self, input_frame, client_info):
         logger.info("Processing incoming input frame from Gabriel...")
 
         status = gabriel_pb2.Status()
 
+        vehicle_info = common_pb2.VehicleInfo()
+        client_info.Unpack(vehicle_info)
+        vehicle_id = vehicle_info.vehicle_id
+        if vehicle_id == "":
+            status.code = gabriel_pb2.StatusCode.ENGINE_ERROR
+            status.message = "Client did not register a vehicle id"
+            return cognitive_engine.Result(status, None)
+
         if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
-            tel = telemetry.DriverTelemetry()
+            tel = telemetry.Telemetry()
             assert input_frame.WhichOneof("payload") == "any_payload"
-            assert input_frame.any_payload.Is(telemetry.DriverTelemetry.DESCRIPTOR)
+            assert input_frame.any_payload.Is(telemetry.Telemetry.DESCRIPTOR)
             input_frame.any_payload.Unpack(tel)
 
-            logger.info(tel.vehicle_info.name)
-            if tel.vehicle_info.name == "":
-                status.code = gabriel_pb2.StatusCode.ENGINE_ERROR
-                status.message = "Vehicle name is an empty string"
-                return cognitive_engine.Result(status, None)
-
-            self.updateVehicle(tel)
+            logger.info(vehicle_id)
+            self.updateVehicle(vehicle_id, tel)
             return cognitive_engine.Result(status, "Telemetry updated")
 
         if input_frame.payload_type == gabriel_pb2.PayloadType.IMAGE:
-            frame = telemetry.Frame()
+            frame = telemetry.EncodedFrame()
             assert input_frame.WhichOneof("payload") == "any_payload"
-            assert input_frame.any_payload.Is(telemetry.Frame.DESCRIPTOR)
+            assert input_frame.any_payload.Is(telemetry.EncodedFrame.DESCRIPTOR)
             input_frame.any_payload.Unpack(frame)
-            image_np = np.frombuffer(frame.data, dtype=np.uint8)
+            image_np = np.frombuffer(frame.encoded_data, dtype=np.uint8)
 
             # have redis publish the latest image
             if self.publish:
                 logger.info(
-                    f"Publishing image to redis under imagery.{frame.vehicle_info.name} topic."
+                    f"Publishing image to redis under imagery.{vehicle_id} topic."
                 )
-                self.r.publish(
-                    f"imagery.{frame.vehicle_info.name}", input_frame.payloads[0]
-                )
+                self.r.publish(f"imagery.{vehicle_id}", frame.encoded_data)
             # store images in the shared volume
             try:
                 img = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
@@ -260,9 +223,8 @@ class TelemetryEngine(cognitive_engine.Engine):
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 img = Image.fromarray(img)
 
-                vehicle_raw_dir = f"{self.storage_path}/raw/{frame.vehicle_info.name}"
-                if not os.path.exists(vehicle_raw_dir):
-                    os.mkdir(vehicle_raw_dir)
+                vehicle_raw_dir = f"{self.storage_path}/raw/{vehicle_id}"
+                os.makedirs(vehicle_raw_dir, exist_ok=True)
                 now = datetime.datetime.now(pytz.timezone("America/New_York"))
                 current_path = f"{vehicle_raw_dir}/{now.strftime('%d-%b-%Y')}"
                 try:
@@ -275,7 +237,6 @@ class TelemetryEngine(cognitive_engine.Engine):
                     f"{current_path}/{now.strftime('%H%M.%S%f')}.jpg", format="JPEG"
                 )
 
-                vehicle_raw_dir = f"{self.storage_path}/raw/{frame.vehicle_info.name}"
                 img.save(f"{vehicle_raw_dir}/temp.jpg", format="JPEG")
                 os.rename(
                     f"{vehicle_raw_dir}/temp.jpg", f"{vehicle_raw_dir}/latest.jpg"
@@ -285,11 +246,11 @@ class TelemetryEngine(cognitive_engine.Engine):
                 img.save(resampled_out, format="JPEG")
                 thumbnail = resampled_out.getvalue()
                 foxglove.log(
-                    f"/{frame.vehicle_info.name}/imagery",
+                    f"/{vehicle_id}/imagery",
                     CompressedImage(data=thumbnail, format="jpeg"),
                     log_time=time.time_ns(),
                 )
-                logger.debug(f"Updated latest image for {frame.vehicle_info.name}")
+                logger.debug(f"Updated latest image for {vehicle_id}")
                 return cognitive_engine.Result(status, "Telemetry updated")
             except Exception as e:
                 logger.error(f"Exception trying to store imagery: {e}")
