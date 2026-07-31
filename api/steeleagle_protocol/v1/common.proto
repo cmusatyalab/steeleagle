@@ -47,9 +47,3 @@ message RelativePosition {
   optional double z = 3; // up offset [meters]
   optional double angle = 4; // angular offset [degrees]
 }
-
-// Identifies a vehicle registering as a Gabriel client, made available to
-// engines alongside any data it subsequently sends.
-message VehicleInfo {
-  string vehicle_id = 1; // unique identifier of the vehicle
-}
