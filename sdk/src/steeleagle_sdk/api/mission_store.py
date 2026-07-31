@@ -131,9 +131,6 @@ class MissionStore:
                 msg.ParseFromString(payload)
                 frame_result = result_proto.FrameResult()
                 msg.any_result.Unpack(frame_result)
-                frame_result.timestamp.GetCurrentTime()
-                if not frame_result.HasField('timestamp'):
-                    logger.error(f'Timestamp field absent; {MessageToString(frame_result)}')
                 data = MessageToDict(
                     frame_result,
                     always_print_fields_with_no_presence=True,

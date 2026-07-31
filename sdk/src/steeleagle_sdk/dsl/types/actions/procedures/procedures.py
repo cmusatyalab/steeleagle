@@ -779,8 +779,10 @@ class AvoidTask(Action):
             await asyncio.sleep(self._poll_period)
 
 
-@register_action
+# @register_action
 class Map(Action):
+    # TODO: Revise the following draft for map task
+    pass
     # Fields
     gimbal_pitch: float = Field(45, ge=0.0, description="Gimbal pitch degree")
     compute_stream: str = Field(
@@ -791,15 +793,15 @@ class Map(Action):
     num_trials: int = Field(3, gt=0, description="Number of trials for iterative flights")
     # Main logic
     async def execute(self):
-         first_wps = self.first_waypoints.calculate()
-         first_flight = Patrol(waypoints=first_wps)
-         await first_flight.execute()
-         for trial in range(num_trials):
-             res = await types.COMPUTE.find_results(
-             compute_stream=self.compute_stream, data_key=self.data_key)
-             if res and res.result and hasattr(res.result,'navigation_result'):
-                 new_wps = res.result.navigation_result
-                 next_flight = Patrol(waypoints=new_wps)
-            await next_flight.execute()
+        first_wps = self.first_waypoints.calculate()
+        first_flight = Patrol(waypoints=first_wps)
+        await first_flight.execute()
+        for trial in range(num_trials):
+            res = await types.COMPUTE.find_results(
+            compute_stream=self.compute_stream, data_key=self.data_key)
+            if res and res.result and hasattr(res.result,'navigation_result'):
+                new_wps = res.result.navigation_result
+                next_flight = Patrol(waypoints=new_wps)
+        await next_flight.execute()
 
 
