@@ -1,0 +1,25 @@
+// SPDX-FileCopyrightText: 2026 Carnegie Mellon University - Living Edge Lab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+package steeleagle_protocol.v1.services.driver.info;
+
+option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver/info;info";
+
+/*
+ * Used to query static hardware identity from the driver.
+ *
+ * This is an internal service used to retrieve identifying information about
+ * the vehicle hardware the driver is controlling. This function should only be
+ * called by the OS, and not by any plugins.
+ */
+service InfoService {
+  rpc GetVehicleInfo (GetVehicleInfoRequest) returns (GetVehicleInfoResponse);
+}
+
+message GetVehicleInfoRequest {}
+
+message GetVehicleInfoResponse {
+  string model = 1; // model of the vehicle, e.g. "DJI Mini 4 Pro", "Parrot ANAFI"
+}

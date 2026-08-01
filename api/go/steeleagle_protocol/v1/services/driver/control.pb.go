@@ -281,9 +281,9 @@ func (PoseMode) EnumDescriptor() ([]byte, []int) {
 type TakeOffRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// take off height in relative altitude [meters]
-	TakeOffAltitude float32 `protobuf:"fixed32,1,opt,name=take_off_altitude,json=takeOffAltitude,proto3" json:"take_off_altitude,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	Altitude      float32 `protobuf:"fixed32,1,opt,name=altitude,proto3" json:"altitude,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *TakeOffRequest) Reset() {
@@ -316,9 +316,9 @@ func (*TakeOffRequest) Descriptor() ([]byte, []int) {
 	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *TakeOffRequest) GetTakeOffAltitude() float32 {
+func (x *TakeOffRequest) GetAltitude() float32 {
 	if x != nil {
-		return x.TakeOffAltitude
+		return x.Altitude
 	}
 	return 0
 }
@@ -1168,9 +1168,9 @@ var File_steeleagle_protocol_v1_services_driver_control_proto protoreflect.FileD
 
 const file_steeleagle_protocol_v1_services_driver_control_proto_rawDesc = "" +
 	"\n" +
-	"4steeleagle_protocol/v1/services/driver/control.proto\x12.steeleagle_protocol.v1.services.driver.control\x1a#steeleagle_protocol/v1/common.proto\"<\n" +
-	"\x0eTakeOffRequest\x12*\n" +
-	"\x11take_off_altitude\x18\x01 \x01(\x02R\x0ftakeOffAltitude\"\x11\n" +
+	"4steeleagle_protocol/v1/services/driver/control.proto\x12.steeleagle_protocol.v1.services.driver.control\x1a#steeleagle_protocol/v1/common.proto\",\n" +
+	"\x0eTakeOffRequest\x12\x1a\n" +
+	"\baltitude\x18\x01 \x01(\x02R\baltitude\"\x11\n" +
 	"\x0fTakeOffResponse\"\r\n" +
 	"\vLandRequest\"\x0e\n" +
 	"\fLandResponse\"\r\n" +

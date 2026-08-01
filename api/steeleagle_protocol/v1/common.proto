@@ -52,4 +52,5 @@ message RelativePosition {
 // engines alongside any data it subsequently sends.
 message VehicleInfo {
   string vehicle_id = 1; // unique identifier of the vehicle
+  string model = 2; // model of the vehicle
 }

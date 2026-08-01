@@ -71,7 +71,7 @@ class TelemetryEngine(cognitive_engine.Engine):
     frequently updated data is stored in a STREAM.
     """
 
-    def updateVehicle(self, vehicle_id, extras):
+    def updateVehicle(self, vehicle_id, extras, model=""):
         global_pos = extras.position_info.global_position
         rel_pos = extras.position_info.relative_position
         body_vel = extras.position_info.velocity_body
@@ -148,6 +148,8 @@ class TelemetryEngine(cognitive_engine.Engine):
 
         vehicle_key = f"vehicle:{vehicle_id}"
         self.r.hset(vehicle_key, "last_seen", f"{time.time()}")
+        if model:
+            self.r.hset(vehicle_key, "model", model)
         self.r.hset(vehicle_key, "battery", f"{extras.alert_info.battery_warning}")
         self.r.hset(vehicle_key, "mag", f"{extras.alert_info.magnetometer_warning}")
         self.r.hset(vehicle_key, "sats", f"{extras.alert_info.gps_warning}")
@@ -200,7 +202,7 @@ class TelemetryEngine(cognitive_engine.Engine):
             input_frame.any_payload.Unpack(tel)
 
             logger.info(vehicle_id)
-            self.updateVehicle(vehicle_id, tel)
+            self.updateVehicle(vehicle_id, tel, vehicle_info.model)
             return cognitive_engine.Result(status, "Telemetry updated")
 
         if input_frame.payload_type == gabriel_pb2.PayloadType.IMAGE:
@@ -265,14 +267,23 @@ class TelemetryEngine(cognitive_engine.Engine):
         )
         return cognitive_engine.Result(status, None)
 
+
 def add_watermark(img):
     ts = time.strftime("%H:%M:%S")
-    cv2.putText(img, f"{ts}", (10,30),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.6,
-                (0,0,0), 5, cv2.LINE_AA)
-    cv2.putText(img, f"{ts}", (10,30),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.6,
-                (255,255,255), 2, cv2.LINE_AA)
+    cv2.putText(
+        img, f"{ts}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 5, cv2.LINE_AA
+    )
+    cv2.putText(
+        img,
+        f"{ts}",
+        (10, 30),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.6,
+        (255, 255, 255),
+        2,
+        cv2.LINE_AA,
+    )
+
 
 def main():
     """Starts the Gabriel server."""

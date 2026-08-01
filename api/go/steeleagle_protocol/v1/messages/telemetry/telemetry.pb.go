@@ -548,9 +548,13 @@ type GimbalStatus struct {
 	// current pose in the body (forward, right, up) reference frame
 	PoseBody *v1.Pose `protobuf:"bytes,2,opt,name=pose_body,json=poseBody,proto3" json:"pose_body,omitempty"`
 	// current pose in the NEU (North, East, Up) reference frame
-	PoseNeu       *v1.Pose `protobuf:"bytes,3,opt,name=pose_neu,json=poseNeu,proto3" json:"pose_neu,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	PoseNeu *v1.Pose `protobuf:"bytes,3,opt,name=pose_neu,json=poseNeu,proto3" json:"pose_neu,omitempty"`
+	// angular velocity in the body (forward, right, up) reference frame
+	AngularVelocityBody *v1.Pose `protobuf:"bytes,4,opt,name=angular_velocity_body,json=angularVelocityBody,proto3" json:"angular_velocity_body,omitempty"`
+	// angular velocity in the NEU (North, East, Up) reference frame
+	AngularVelocityNeu *v1.Pose `protobuf:"bytes,5,opt,name=angular_velocity_neu,json=angularVelocityNeu,proto3" json:"angular_velocity_neu,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *GimbalStatus) Reset() {
@@ -600,6 +604,20 @@ func (x *GimbalStatus) GetPoseBody() *v1.Pose {
 func (x *GimbalStatus) GetPoseNeu() *v1.Pose {
 	if x != nil {
 		return x.PoseNeu
+	}
+	return nil
+}
+
+func (x *GimbalStatus) GetAngularVelocityBody() *v1.Pose {
+	if x != nil {
+		return x.AngularVelocityBody
+	}
+	return nil
+}
+
+func (x *GimbalStatus) GetAngularVelocityNeu() *v1.Pose {
+	if x != nil {
+		return x.AngularVelocityNeu
 	}
 	return nil
 }
@@ -734,8 +752,9 @@ func (x *AlertInfo) GetCompassWarning() AlertInfo_CompassWarning {
 
 // Telemetry message for the vehicle, originating from the driver module.
 //
-// This message provides frame data from currently streaming imaging sensors. It
-// is one of two message (`Telemetry`, `Frame`) that is broadcast by the driver.
+// This message provides frame data from currently streaming imaging sensors.
+// It is one of two message (`Telemetry`, `Frame`) that is broadcast by the
+// driver.
 type Telemetry struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// timestamp of message
@@ -1069,11 +1088,13 @@ const file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDesc = "
 	"\x19MOTION_STATUS_UNSPECIFIED\x10\x00\x12\x19\n" +
 	"\x15MOTION_STATUS_HOLDING\x10\x01\x12\x1c\n" +
 	"\x18MOTION_STATUS_IN_TRANSIT\x10\x02\x12\x19\n" +
-	"\x15MOTION_STATUS_STOPPED\x10\x03\"\x92\x01\n" +
+	"\x15MOTION_STATUS_STOPPED\x10\x03\"\xb4\x02\n" +
 	"\fGimbalStatus\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x129\n" +
 	"\tpose_body\x18\x02 \x01(\v2\x1c.steeleagle_protocol.v1.PoseR\bposeBody\x127\n" +
-	"\bpose_neu\x18\x03 \x01(\v2\x1c.steeleagle_protocol.v1.PoseR\aposeNeu\"_\n" +
+	"\bpose_neu\x18\x03 \x01(\v2\x1c.steeleagle_protocol.v1.PoseR\aposeNeu\x12P\n" +
+	"\x15angular_velocity_body\x18\x04 \x01(\v2\x1c.steeleagle_protocol.v1.PoseR\x13angularVelocityBody\x12N\n" +
+	"\x14angular_velocity_neu\x18\x05 \x01(\v2\x1c.steeleagle_protocol.v1.PoseR\x12angularVelocityNeu\"_\n" +
 	"\n" +
 	"GimbalInfo\x12Q\n" +
 	"\agimbals\x18\x01 \x03(\v27.steeleagle_protocol.v1.messages.telemetry.GimbalStatusR\agimbals\"\xe2\b\n" +
@@ -1181,29 +1202,31 @@ var file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_depIdxs = []i
 	18, // 6: steeleagle_protocol.v1.messages.telemetry.PositionInfo.setpoint:type_name -> google.protobuf.Any
 	19, // 7: steeleagle_protocol.v1.messages.telemetry.GimbalStatus.pose_body:type_name -> steeleagle_protocol.v1.Pose
 	19, // 8: steeleagle_protocol.v1.messages.telemetry.GimbalStatus.pose_neu:type_name -> steeleagle_protocol.v1.Pose
-	9,  // 9: steeleagle_protocol.v1.messages.telemetry.GimbalInfo.gimbals:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalStatus
-	1,  // 10: steeleagle_protocol.v1.messages.telemetry.AlertInfo.battery_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.BatteryWarning
-	2,  // 11: steeleagle_protocol.v1.messages.telemetry.AlertInfo.gps_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.GPSWarning
-	3,  // 12: steeleagle_protocol.v1.messages.telemetry.AlertInfo.magnetometer_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.MagnetometerWarning
-	4,  // 13: steeleagle_protocol.v1.messages.telemetry.AlertInfo.connection_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.ConnectionWarning
-	5,  // 14: steeleagle_protocol.v1.messages.telemetry.AlertInfo.compass_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.CompassWarning
-	20, // 15: steeleagle_protocol.v1.messages.telemetry.Telemetry.timestamp:type_name -> google.protobuf.Timestamp
-	6,  // 16: steeleagle_protocol.v1.messages.telemetry.Telemetry.battery_info:type_name -> steeleagle_protocol.v1.messages.telemetry.BatteryInfo
-	7,  // 17: steeleagle_protocol.v1.messages.telemetry.Telemetry.gps_info:type_name -> steeleagle_protocol.v1.messages.telemetry.GPSInfo
-	8,  // 18: steeleagle_protocol.v1.messages.telemetry.Telemetry.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
-	10, // 19: steeleagle_protocol.v1.messages.telemetry.Telemetry.gimbal_info:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalInfo
-	11, // 20: steeleagle_protocol.v1.messages.telemetry.Telemetry.alert_info:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo
-	20, // 21: steeleagle_protocol.v1.messages.telemetry.RawFrame.timestamp:type_name -> google.protobuf.Timestamp
-	8,  // 22: steeleagle_protocol.v1.messages.telemetry.RawFrame.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
-	9,  // 23: steeleagle_protocol.v1.messages.telemetry.RawFrame.gimbal_status:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalStatus
-	20, // 24: steeleagle_protocol.v1.messages.telemetry.EncodedFrame.timestamp:type_name -> google.protobuf.Timestamp
-	8,  // 25: steeleagle_protocol.v1.messages.telemetry.EncodedFrame.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
-	9,  // 26: steeleagle_protocol.v1.messages.telemetry.EncodedFrame.gimbal_status:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalStatus
-	27, // [27:27] is the sub-list for method output_type
-	27, // [27:27] is the sub-list for method input_type
-	27, // [27:27] is the sub-list for extension type_name
-	27, // [27:27] is the sub-list for extension extendee
-	0,  // [0:27] is the sub-list for field type_name
+	19, // 9: steeleagle_protocol.v1.messages.telemetry.GimbalStatus.angular_velocity_body:type_name -> steeleagle_protocol.v1.Pose
+	19, // 10: steeleagle_protocol.v1.messages.telemetry.GimbalStatus.angular_velocity_neu:type_name -> steeleagle_protocol.v1.Pose
+	9,  // 11: steeleagle_protocol.v1.messages.telemetry.GimbalInfo.gimbals:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalStatus
+	1,  // 12: steeleagle_protocol.v1.messages.telemetry.AlertInfo.battery_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.BatteryWarning
+	2,  // 13: steeleagle_protocol.v1.messages.telemetry.AlertInfo.gps_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.GPSWarning
+	3,  // 14: steeleagle_protocol.v1.messages.telemetry.AlertInfo.magnetometer_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.MagnetometerWarning
+	4,  // 15: steeleagle_protocol.v1.messages.telemetry.AlertInfo.connection_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.ConnectionWarning
+	5,  // 16: steeleagle_protocol.v1.messages.telemetry.AlertInfo.compass_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.CompassWarning
+	20, // 17: steeleagle_protocol.v1.messages.telemetry.Telemetry.timestamp:type_name -> google.protobuf.Timestamp
+	6,  // 18: steeleagle_protocol.v1.messages.telemetry.Telemetry.battery_info:type_name -> steeleagle_protocol.v1.messages.telemetry.BatteryInfo
+	7,  // 19: steeleagle_protocol.v1.messages.telemetry.Telemetry.gps_info:type_name -> steeleagle_protocol.v1.messages.telemetry.GPSInfo
+	8,  // 20: steeleagle_protocol.v1.messages.telemetry.Telemetry.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
+	10, // 21: steeleagle_protocol.v1.messages.telemetry.Telemetry.gimbal_info:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalInfo
+	11, // 22: steeleagle_protocol.v1.messages.telemetry.Telemetry.alert_info:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo
+	20, // 23: steeleagle_protocol.v1.messages.telemetry.RawFrame.timestamp:type_name -> google.protobuf.Timestamp
+	8,  // 24: steeleagle_protocol.v1.messages.telemetry.RawFrame.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
+	9,  // 25: steeleagle_protocol.v1.messages.telemetry.RawFrame.gimbal_status:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalStatus
+	20, // 26: steeleagle_protocol.v1.messages.telemetry.EncodedFrame.timestamp:type_name -> google.protobuf.Timestamp
+	8,  // 27: steeleagle_protocol.v1.messages.telemetry.EncodedFrame.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
+	9,  // 28: steeleagle_protocol.v1.messages.telemetry.EncodedFrame.gimbal_status:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalStatus
+	29, // [29:29] is the sub-list for method output_type
+	29, // [29:29] is the sub-list for method input_type
+	29, // [29:29] is the sub-list for extension type_name
+	29, // [29:29] is the sub-list for extension extendee
+	0,  // [0:29] is the sub-list for field type_name
 }
 
 func init() { file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_init() }

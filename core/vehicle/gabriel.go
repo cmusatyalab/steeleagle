@@ -85,6 +85,9 @@ func (v *Vehicle) createGabrielClient() error {
 		v.gabrielCfg.ServerEndpoint,
 		[]*gabrielclient.InputSource{telProducer, frameProducer},
 		consumer,
-		gabrielclient.WithClientInfo(&steeleaglepb.VehicleInfo{VehicleId: v.Name}))
+		gabrielclient.WithClientInfo(&steeleaglepb.VehicleInfo{
+			VehicleId: v.Name,
+			Model:     v.Model,
+		}))
 	return nil
 }

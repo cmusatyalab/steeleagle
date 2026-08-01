@@ -308,6 +308,7 @@ func (x *RelativePosition) GetAngle() float64 {
 type VehicleInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	VehicleId     string                 `protobuf:"bytes,1,opt,name=vehicle_id,json=vehicleId,proto3" json:"vehicle_id,omitempty"` // unique identifier of the vehicle
+	Model         string                 `protobuf:"bytes,2,opt,name=model,proto3" json:"model,omitempty"`                          // model of the vehicle
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -345,6 +346,13 @@ func (*VehicleInfo) Descriptor() ([]byte, []int) {
 func (x *VehicleInfo) GetVehicleId() string {
 	if x != nil {
 		return x.VehicleId
+	}
+	return ""
+}
+
+func (x *VehicleInfo) GetModel() string {
+	if x != nil {
+		return x.Model
 	}
 	return ""
 }
@@ -390,10 +398,11 @@ const file_steeleagle_protocol_v1_common_proto_rawDesc = "" +
 	"\x02_xB\x04\n" +
 	"\x02_yB\x04\n" +
 	"\x02_zB\b\n" +
-	"\x06_angle\",\n" +
+	"\x06_angle\"B\n" +
 	"\vVehicleInfo\x12\x1d\n" +
 	"\n" +
-	"vehicle_id\x18\x01 \x01(\tR\tvehicleIdB\xf5\x01\n" +
+	"vehicle_id\x18\x01 \x01(\tR\tvehicleId\x12\x14\n" +
+	"\x05model\x18\x02 \x01(\tR\x05modelB\xf5\x01\n" +
 	"\x1acom.steeleagle_protocol.v1B\vCommonProtoP\x01ZUgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1;steeleagle_protocolv1\xa2\x02\x03SXX\xaa\x02\x15SteeleagleProtocol.V1\xca\x02\x15SteeleagleProtocol\\V1\xe2\x02!SteeleagleProtocol\\V1\\GPBMetadata\xea\x02\x16SteeleagleProtocol::V1b\x06proto3"
 
 var (

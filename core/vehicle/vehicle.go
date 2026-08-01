@@ -21,6 +21,7 @@ import (
 
 type Vehicle struct {
 	Name          string                  // vehicle name
+	Model         string                  // vehicle hardware model, reported by the driver
 	RunDir        string                  // path to vehicle runtime directory
 	running       atomic.Bool             // whether or not the vehicle is currently running
 	pluginCfg     PluginConfig            // plugin configuration
@@ -151,6 +152,15 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		return err
 	}
 	v.log.Debug().Msgf("driver plugin %s started!", v.pluginCfg.Driver.Name())
+
+	// Query the driver for its hardware model before registering with Gabriel.
+	// Not every driver implements InfoService, so a failure here is non-fatal;
+	// the vehicle just registers with an empty model.
+	if model, err := v.getDriverModel(ctx); err != nil {
+		v.log.Warn().Err(err).Msg("could not get vehicle model from driver")
+	} else {
+		v.Model = model
+	}
 
 	// Start mission plugin
 	if v.pluginCfg.Mission == nil {
