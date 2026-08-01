@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getApiUrl } from './App.jsx';
+import { getApiUrl } from './urls.js';
 
 const TYPE_ICONS = {
     TakeOff: '🛫', Land: '🛬', ReturnToHome: '🏠',

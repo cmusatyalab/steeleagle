@@ -17,7 +17,7 @@ import TaskNodePanel from './TaskNodePanel.jsx';
 import EdgePanel from './EdgePanel.jsx';
 import FsmPalette from './FsmPalette.jsx';
 import ConnectModal from './ConnectModal.jsx';
-import { getApiUrl } from './App.jsx';
+import { getApiUrl } from './urls.js';
 import { runValidation } from './validation.js';
 
 const nodeTypes = { taskNode: TaskNode };
@@ -151,15 +151,15 @@ function getNamedAreas(featuresStr) {
 }
 
 function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventInstances,
-                     startNodeId, setStartNodeId, schema, features, panelNode, setPanelNode,
-                     setPanelEdgeId, pushSnapshot, toast, theme }) {
+                     startNodeId, setStartNodeId, schema, features, setPanelNode,
+                     setPanelEdgeId, pushSnapshot, theme }) {
     const { screenToFlowPosition } = useReactFlow();
     const [connectModal, setConnectModal] = useState({ visible: false, connection: null });
     const [contextMenu, setContextMenu] = useState(null);
     const namedAreas = getNamedAreas(features);
 
-    const onNodesChange = useCallback((changes) => setNodes(ns => applyNodeChanges(changes, ns)), []);
-    const onEdgesChange = useCallback((changes) => setEdges(es => applyEdgeChanges(changes, es)), []);
+    const onNodesChange = useCallback((changes) => setNodes(ns => applyNodeChanges(changes, ns)), [setNodes]);
+    const onEdgesChange = useCallback((changes) => setEdges(es => applyEdgeChanges(changes, es)), [setEdges]);
 
     // Called when a connection is drawn between two handles (including self-loops)
     const onConnect = useCallback((connection) => {
@@ -229,7 +229,7 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
         pushSnapshot();
         setNodes(ns => [...ns, newNode]);
         if (isFirst) setStartNodeId(id);
-    }, [nodes, schema, namedAreas, screenToFlowPosition, pushSnapshot]);
+    }, [nodes, schema, namedAreas, screenToFlowPosition, pushSnapshot, setNodes, setPanelNode, setStartNodeId]);
 
     // Right-click context menu on a node
     const onNodeContextMenu = useCallback((event, node) => {
@@ -351,7 +351,7 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
     );
 }
 
-function PlanPage({ vehicles, squadList, theme }) {
+function PlanPage({ squadList, theme }) {
     const [nodes, setNodes] = useState([]);
     const [edges, setEdges] = useState([]);
     const [eventInstances, setEventInstances] = useState([]);
@@ -548,7 +548,7 @@ function PlanPage({ vehicles, squadList, theme }) {
             });
             if (!resp.ok) {
                 let detail = `Server error ${resp.status}`;
-                try { const err = await resp.json(); detail = err.detail ?? detail; } catch (_) { detail = await resp.text().catch(() => detail); }
+                try { const err = await resp.json(); detail = err.detail ?? detail; } catch { detail = await resp.text().catch(() => detail); }
                 toast.current.show({ severity: 'error', summary: 'Deploy failed', detail });
             } else {
                 toast.current.show({ severity: 'success', summary: 'Deployed', detail: `Mission sent to ${squadList.join(', ')}.` });
@@ -601,7 +601,6 @@ function PlanPage({ vehicles, squadList, theme }) {
 
     function loadFromParsed(parsed) {
         pushSnapshot();
-        const evMap = Object.fromEntries(parsed.events.map(ev => [ev.instance_id, ev]));
 
         // Use instance_id as the React Flow node id for simplicity
         const rfNodes = parsed.nodes.map(n => ({

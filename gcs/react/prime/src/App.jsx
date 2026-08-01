@@ -15,25 +15,13 @@ import { Knob } from 'primereact/knob';
 import 'primereact/resources/primereact.min.css';        // Core PrimeReact CSS
 import 'primeicons/primeicons.css';                     // Icons
 import 'primeflex/primeflex.css';                       // PrimeFlex utilities
-import { classNames } from 'primereact/utils';
 import { useEventListener } from 'primereact/hooks';
 import GameControls from './GameControls.jsx'
 import Cli from './Cli.jsx';
 import ControlPage from './ControlPage.jsx';
 import MonitorPage from './MonitorPage.jsx';
 import PlanPage from './PlanPage.jsx';
-
-function getWebSocketUrl(path) {
-  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const host = window.location.host; // includes port if present
-  return `${protocol}//${host}${path}`;
-}
-
-export function getApiUrl(path) {
-  const protocol = window.location.protocol;
-  const host = window.location.host; // includes port if present
-  return `${protocol}//${host}${path}`;
-}
+import { getWebSocketUrl, getApiUrl } from './urls.js';
 
 
 function App() {
@@ -43,12 +31,12 @@ function App() {
   const toast = useRef(null);
   const [selectedMenu, setSeletectedMenu] = useState('Control');
   const [planMounted, setPlanMounted] = useState(false);
-  const [keyPressed, setKeyPressed] = useState(false);
-  const [key, setKey] = useState('');
+  const [, setKeyPressed] = useState(false);
+  const [, setKey] = useState('');
   const [gamePadButton, setGamePadButton] = useState(-99);
   const [gamePadAxis, setGamePadAxis] = useState({ 'index': -99, 'value': -99 });
   const [selectedVehicle, setSelectedVehicle] = useState("");
-  const [error, setError] = useState(null);
+  const [, setError] = useState(null);
   const [tracking, setTracking] = useState(true);
   const [theme, setTheme] = useState(() => localStorage.getItem('se-theme') || 'dark');
 
@@ -77,7 +65,7 @@ function App() {
     setSocketUrl(getWebSocketUrl(`/ws/imagery/remote/${selectedVehicle}`));
   }, [selectedVehicle]);
 
-  const { sendMessage, lastMessage, readyState } = useWebSocket(
+  const { lastMessage, readyState } = useWebSocket(
     socketUrl,
     {
       share: false,
@@ -122,12 +110,16 @@ function App() {
   }, []);
 
   useEffect(() => {
+    let lastErrorDetail = null;
     const fetchData = async () => {
       try {
         const response = await fetch(getApiUrl('/api/remote/vehicles'));
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          const body = await response.json().catch(() => ({}));
+          const detail = body.detail || `HTTP error! status: ${response.status}`;
+          throw new Error(detail);
         }
+        lastErrorDetail = null;
         const result = await response.json();
         // Only update state (and trigger a re-render) when the data has actually changed
         const resultJson = JSON.stringify(result);
@@ -137,6 +129,11 @@ function App() {
         }
       } catch (error) {
         setError(error);
+        // Avoid re-toasting the same error on every 500ms poll
+        if (error.message !== lastErrorDetail) {
+          lastErrorDetail = error.message;
+          toast.current.show({ severity: 'error', summary: 'Failed to Load Vehicles', detail: error.message });
+        }
       }
     };
 
@@ -209,7 +206,7 @@ function App() {
 
   const [bindKeyUp, unbindKeyUp] = useEventListener({
     type: 'keyup',
-    listener: (e) => {
+    listener: () => {
       setKeyPressed(false);
       //toast.current.show({ severity: 'info', summary: 'Key Released', detail: `Released ${e.code}. This is where we would make some GRPC call to hover.` });
     }
@@ -311,7 +308,7 @@ function App() {
         toast.current.show({ severity: 'error', summary: 'Joystick Error', detail: `HTTP error! status: ${result.detail}` });
       }
       else {
-        const result = await response.json();
+        await response.json();
         // toast.current.show({severity: 'success', summary: 'Joystick Success', detail: `${result}`});
 
       }
@@ -369,7 +366,7 @@ function App() {
         toast.current.show({ severity: 'error', summary: 'Command Error', detail: `HTTP error! status: ${result.detail}` });
       }
       else {
-        const result = await response.json();
+        await response.json();
       }
     }
 

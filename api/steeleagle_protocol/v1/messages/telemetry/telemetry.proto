@@ -57,7 +57,7 @@ message PositionInfo {
   // current motion status of the vehicle
   MotionStatus motion_status = 6;
   // current setpoint of the vehicle
-  google.protobuf.Any setpoint = 7; 
+  google.protobuf.Any setpoint = 7;
 }
 
 // Status of a gimbal.
@@ -140,8 +140,9 @@ message AlertInfo {
 /*
  * Telemetry message for the vehicle, originating from the driver module.
  *
- * This message provides frame data from currently streaming imaging sensors. It
- * is one of two message (`Telemetry`, `Frame`) that is broadcast by the driver.
+ * This message provides frame data from currently streaming imaging sensors.
+ * It is one of two message (`Telemetry`, `Frame`) that is broadcast by the
+ * driver.
  */
 message Telemetry {
   // timestamp of message

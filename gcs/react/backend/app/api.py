@@ -478,41 +478,50 @@ async def get_vehicles() -> list[Vehicle]:
         fields = red.hgetall(k)
         drone_name = k.split(":")[-1]
         fields["name"] = drone_name
-        home_loc = Location(
-            lat=fields["position_info.home_lat"],
-            long=fields["position_info.home_long"],
-            alt=fields["position_info.home_alt"],
-        )
-        if red.exists(f"telemetry:{drone_name}"):
-            telem = red.xrevrange(f"telemetry:{drone_name}", "+", "-", 1)
-            for item in telem:
-                t = item[1]
-                current = Location(
-                    lat=t["latitude"],
-                    long=t["longitude"],
-                    alt=max(0, float(t["rel_altitude"])),
-                )
-                bearing = t["bearing"]
-                vel = Velocity(
-                    x_vel=t["v_body_forward"],
-                    y_vel=t["v_body_lateral"],
-                    z_vel=t["v_body_altitude"],
-                    angular_vel=t["v_body_angular"],
-                )
-        data.append(
-            Vehicle(
-                name=fields["name"],
-                model=fields["model"],
-                battery=t["battery"],
-                sats=t["sats"],
-                mag=fields["mag"],
-                last_updated=round(time.time() - float(fields["last_seen"]), 2),
-                home=home_loc,
-                current=current,
-                bearing=bearing,
-                velocity=vel,
+        try:
+            home_loc = Location(
+                lat=fields["position_info.home_lat"],
+                long=fields["position_info.home_long"],
+                alt=fields["position_info.home_alt"],
             )
-        )
+            if red.exists(f"telemetry:{drone_name}"):
+                telem = red.xrevrange(f"telemetry:{drone_name}", "+", "-", 1)
+                for item in telem:
+                    t = item[1]
+                    current = Location(
+                        lat=t["latitude"],
+                        long=t["longitude"],
+                        alt=max(0, float(t["rel_altitude"])),
+                    )
+                    bearing = t["bearing"]
+                    vel = Velocity(
+                        x_vel=t["v_body_forward"],
+                        y_vel=t["v_body_lateral"],
+                        z_vel=t["v_body_altitude"],
+                        angular_vel=t["v_body_angular"],
+                    )
+            data.append(
+                Vehicle(
+                    name=fields["name"],
+                    model=fields["model"],
+                    battery=t["battery"],
+                    sats=t["sats"],
+                    mag=fields["mag"],
+                    last_updated=round(time.time() - float(fields["last_seen"]), 2),
+                    home=home_loc,
+                    current=current,
+                    bearing=bearing,
+                    velocity=vel,
+                )
+            )
+        except KeyError as e:
+            logger.error(
+                f"Vehicle '{drone_name}' is missing required field {e} in Redis"
+            )
+            raise HTTPException(
+                status_code=502,
+                detail=f"Vehicle '{drone_name}' is missing required field {e}",
+            ) from e
 
     return data
 
