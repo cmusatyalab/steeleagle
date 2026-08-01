@@ -234,7 +234,7 @@ async def consume_keys(
                 if not drone.connected:
                     print(f"[{drone.name}] Not connected, skipping")
                     continue
-                request = control_pb2.TakeOffRequest(take_off_altitude=10.0)
+                request = control_pb2.TakeOffRequest(altitude=10.0)
                 call = drone.control_stub.TakeOff(request)
                 asyncio.create_task(_send(drone, call, "TakeOff"))
 
