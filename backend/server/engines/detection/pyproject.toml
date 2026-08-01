@@ -16,7 +16,7 @@ dependencies = [
    "scipy",
    "Pillow",
    "gabriel-server>=5.0.0",
-   "steeleagle-protocol>=0.1.14",
+   "steeleagle-protocol>=0.1.15",
    "torch"
 ]
 
