@@ -9,7 +9,7 @@ import time
 
 import cv2
 from gabriel_client.zeromq_client import InputProducer, ZeroMQClient
-from gabriel_protocol import gabriel_pb2
+from gabriel_protocol.v1 import gabriel_pb2
 from google.protobuf.any_pb2 import Any
 from steeleagle_protocol.v1.common import common_pb2
 from steeleagle_protocol.v1.messages.telemetry import telemetry_pb2 as telemetry

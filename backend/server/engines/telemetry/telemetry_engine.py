@@ -20,7 +20,7 @@ import numpy as np
 import pytz
 import redis
 from foxglove.schemas import CompressedImage, LocationFix
-from gabriel_protocol import gabriel_pb2
+from gabriel_protocol.v1 import gabriel_pb2
 from gabriel_server import cognitive_engine, local_engine
 from PIL import Image
 from steeleagle_protocol.v1.common import common_pb2

@@ -29,7 +29,7 @@ import cv2
 import numpy as np
 import redis
 import supervision as sv
-from gabriel_protocol import gabriel_pb2
+from gabriel_protocol.v1 import gabriel_pb2
 from gabriel_server import cognitive_engine, local_engine
 from google.protobuf.any_pb2 import Any
 from PIL import Image
