@@ -292,15 +292,15 @@ requires-dist = [
 
 [[package]]
 name = "steeleagle-protocol"
-version = "0.1.15"
+version = "0.1.16"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "grpcio" },
     { name = "protobuf" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/19/0a/6e94a325cca1acf856c6138a44ddceed86995b3a218acd26cdacb09655c1/steeleagle_protocol-0.1.15.tar.gz", hash = "sha256:e9ddd86a9ee68800377e6979e96d313374c38094887ba2e98b51ef4149cc6528", size = 21921, upload-time = "2026-08-01T02:50:07.402Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/57/cd/1d659466102696247de2f94e8a1f2c26750d55a6fdc4dd56802e70d726ac/steeleagle_protocol-0.1.16.tar.gz", hash = "sha256:745eb6bad85ca36f4c381fce3dcf26a907c1ee5cf3c62d759bccd1e10a86fe21", size = 21506, upload-time = "2026-08-02T05:25:40.018Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b8/86/4df90ec252a749ac15abfae2ea6e0d46c48d969b2c45ca98cc14bf0c1d17/steeleagle_protocol-0.1.15-py3-none-any.whl", hash = "sha256:0d4a599743c571ce6910a4ce6c6df8f78ab342592f617ada8127d9dbb77df31e", size = 35917, upload-time = "2026-08-01T02:50:06.14Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/f8/80405476a7d8b870ef16668a566ee25d8184a6a58f2ef18af2d20da37e2a/steeleagle_protocol-0.1.16-py3-none-any.whl", hash = "sha256:3c0d8ce61513a0cc5f17d14e80068305daef07bfc4108a7a1b45a99acf4f4b45", size = 35870, upload-time = "2026-08-02T05:25:38.835Z" },
 ]
 
 [[package]]
