@@ -156,6 +156,7 @@ class AvoidanceEngine(ABC):
 
         vector, depth_img = self.process_image(frame.encoded_data)
         status = gabriel_pb2.Status()
+        status.code = gabriel_pb2.StatusCode.SUCCESS
 
         compute_result = result_pb2.ComputeResult()
         compute_result.timestamp.GetCurrentTime()

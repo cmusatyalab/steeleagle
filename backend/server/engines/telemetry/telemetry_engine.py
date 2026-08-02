@@ -186,6 +186,7 @@ class TelemetryEngine(cognitive_engine.Engine):
         logger.info("Processing incoming input frame from Gabriel...")
 
         status = gabriel_pb2.Status()
+        status.code = gabriel_pb2.StatusCode.SUCCESS
 
         vehicle_info = common_pb2.VehicleInfo()
         client_info.Unpack(vehicle_info)

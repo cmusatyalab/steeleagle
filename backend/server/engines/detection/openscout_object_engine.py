@@ -366,6 +366,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         self.lasttime = self.t1
 
         status = gabriel_pb2.Status()
+        status.code = gabriel_pb2.StatusCode.SUCCESS
         return cognitive_engine.Result(status, any_payload)
 
     def process_results(
