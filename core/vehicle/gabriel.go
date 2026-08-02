@@ -5,8 +5,8 @@ import (
 
 	gabrielclient "github.com/cmusatyalab/gabriel/go-client"
 	gabrielpb "github.com/cmusatyalab/gabriel/protocol/go"
-	steeleaglepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1"
-	"github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/result"
+	commonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/common"
+	resultpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/result"
 	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/protobuf/proto"
@@ -75,7 +75,7 @@ func (v *Vehicle) createGabrielClient() error {
 		v.gabrielCfg.VideoFramesTargetEngines)
 
 	consumer := func(res *gabrielpb.Result) {
-		cmpRes := &result.ComputeResult{
+		cmpRes := &resultpb.ComputeResult{
 			Timestamp: timestamppb.Now(),
 		}
 		v.store.addResult(res.TargetEngineId, cmpRes)
@@ -85,7 +85,7 @@ func (v *Vehicle) createGabrielClient() error {
 		v.gabrielCfg.ServerEndpoint,
 		[]*gabrielclient.InputSource{telProducer, frameProducer},
 		consumer,
-		gabrielclient.WithClientInfo(&steeleaglepb.VehicleInfo{
+		gabrielclient.WithClientInfo(&commonpb.VehicleInfo{
 			VehicleId: v.Name,
 			Model:     v.Model,
 		}))

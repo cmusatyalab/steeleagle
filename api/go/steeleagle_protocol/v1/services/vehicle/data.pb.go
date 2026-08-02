@@ -439,7 +439,7 @@ var File_steeleagle_protocol_v1_services_vehicle_data_proto protoreflect.FileDes
 
 const file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDesc = "" +
 	"\n" +
-	"2steeleagle_protocol/v1/services/vehicle/data.proto\x12,steeleagle_protocol.v1.services.vehicle.data\x1a3steeleagle_protocol/v1/messages/result/result.proto\x1a9steeleagle_protocol/v1/messages/telemetry/telemetry.proto\"&\n" +
+	"2steeleagle_protocol/v1/services/vehicle/data.proto\x12'steeleagle_protocol.v1.services.vehicle\x1a3steeleagle_protocol/v1/messages/result/result.proto\x1a9steeleagle_protocol/v1/messages/telemetry/telemetry.proto\"&\n" +
 	"\x10GetResultRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\"b\n" +
 	"\x11GetResultResponse\x12M\n" +
@@ -455,14 +455,14 @@ const file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDesc = "" +
 	"\x05frame\x18\x01 \x01(\v27.steeleagle_protocol.v1.messages.telemetry.EncodedFrameR\x05frame\"\x18\n" +
 	"\x16StreamTelemetryRequest\"m\n" +
 	"\x17StreamTelemetryResponse\x12R\n" +
-	"\ttelemetry\x18\x01 \x01(\v24.steeleagle_protocol.v1.messages.telemetry.TelemetryR\ttelemetry2\x92\x06\n" +
-	"\vDataService\x12\x8e\x01\n" +
-	"\tGetResult\x12>.steeleagle_protocol.v1.services.vehicle.data.GetResultRequest\x1a?.steeleagle_protocol.v1.services.vehicle.data.GetResultResponse\"\x00\x12\x97\x01\n" +
-	"\fGetTelemetry\x12A.steeleagle_protocol.v1.services.vehicle.data.GetTelemetryRequest\x1aB.steeleagle_protocol.v1.services.vehicle.data.GetTelemetryResponse\"\x00\x12\x8b\x01\n" +
-	"\bGetFrame\x12=.steeleagle_protocol.v1.services.vehicle.data.GetFrameRequest\x1a>.steeleagle_protocol.v1.services.vehicle.data.GetFrameResponse\"\x00\x12\xa6\x01\n" +
-	"\x11StreamVideoFrames\x12F.steeleagle_protocol.v1.services.vehicle.data.StreamVideoFramesRequest\x1aG.steeleagle_protocol.v1.services.vehicle.data.StreamVideoFramesResponse0\x01\x12\xa0\x01\n" +
-	"\x0fStreamTelemetry\x12D.steeleagle_protocol.v1.services.vehicle.data.StreamTelemetryRequest\x1aE.steeleagle_protocol.v1.services.vehicle.data.StreamTelemetryResponse0\x01B\xe1\x02\n" +
-	"0com.steeleagle_protocol.v1.services.vehicle.dataB\tDataProtoP\x01ZPgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle\xa2\x02\x05SVSVD\xaa\x02+SteeleagleProtocol.V1.Services.Vehicle.Data\xca\x02+SteeleagleProtocol\\V1\\Services\\Vehicle\\Data\xe2\x027SteeleagleProtocol\\V1\\Services\\Vehicle\\Data\\GPBMetadata\xea\x02/SteeleagleProtocol::V1::Services::Vehicle::Datab\x06proto3"
+	"\ttelemetry\x18\x01 \x01(\v24.steeleagle_protocol.v1.messages.telemetry.TelemetryR\ttelemetry2\xe0\x05\n" +
+	"\vDataService\x12\x84\x01\n" +
+	"\tGetResult\x129.steeleagle_protocol.v1.services.vehicle.GetResultRequest\x1a:.steeleagle_protocol.v1.services.vehicle.GetResultResponse\"\x00\x12\x8d\x01\n" +
+	"\fGetTelemetry\x12<.steeleagle_protocol.v1.services.vehicle.GetTelemetryRequest\x1a=.steeleagle_protocol.v1.services.vehicle.GetTelemetryResponse\"\x00\x12\x81\x01\n" +
+	"\bGetFrame\x128.steeleagle_protocol.v1.services.vehicle.GetFrameRequest\x1a9.steeleagle_protocol.v1.services.vehicle.GetFrameResponse\"\x00\x12\x9c\x01\n" +
+	"\x11StreamVideoFrames\x12A.steeleagle_protocol.v1.services.vehicle.StreamVideoFramesRequest\x1aB.steeleagle_protocol.v1.services.vehicle.StreamVideoFramesResponse0\x01\x12\x96\x01\n" +
+	"\x0fStreamTelemetry\x12?.steeleagle_protocol.v1.services.vehicle.StreamTelemetryRequest\x1a@.steeleagle_protocol.v1.services.vehicle.StreamTelemetryResponse0\x01B\xc6\x02\n" +
+	"+com.steeleagle_protocol.v1.services.vehicleB\tDataProtoP\x01ZPgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle\xa2\x02\x04SVSV\xaa\x02&SteeleagleProtocol.V1.Services.Vehicle\xca\x02&SteeleagleProtocol\\V1\\Services\\Vehicle\xe2\x022SteeleagleProtocol\\V1\\Services\\Vehicle\\GPBMetadata\xea\x02)SteeleagleProtocol::V1::Services::Vehicleb\x06proto3"
 
 var (
 	file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDescOnce sync.Once
@@ -478,36 +478,36 @@ func file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDescGZIP() []byt
 
 var file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_steeleagle_protocol_v1_services_vehicle_data_proto_goTypes = []any{
-	(*GetResultRequest)(nil),          // 0: steeleagle_protocol.v1.services.vehicle.data.GetResultRequest
-	(*GetResultResponse)(nil),         // 1: steeleagle_protocol.v1.services.vehicle.data.GetResultResponse
-	(*GetTelemetryRequest)(nil),       // 2: steeleagle_protocol.v1.services.vehicle.data.GetTelemetryRequest
-	(*GetTelemetryResponse)(nil),      // 3: steeleagle_protocol.v1.services.vehicle.data.GetTelemetryResponse
-	(*GetFrameRequest)(nil),           // 4: steeleagle_protocol.v1.services.vehicle.data.GetFrameRequest
-	(*GetFrameResponse)(nil),          // 5: steeleagle_protocol.v1.services.vehicle.data.GetFrameResponse
-	(*StreamVideoFramesRequest)(nil),  // 6: steeleagle_protocol.v1.services.vehicle.data.StreamVideoFramesRequest
-	(*StreamVideoFramesResponse)(nil), // 7: steeleagle_protocol.v1.services.vehicle.data.StreamVideoFramesResponse
-	(*StreamTelemetryRequest)(nil),    // 8: steeleagle_protocol.v1.services.vehicle.data.StreamTelemetryRequest
-	(*StreamTelemetryResponse)(nil),   // 9: steeleagle_protocol.v1.services.vehicle.data.StreamTelemetryResponse
+	(*GetResultRequest)(nil),          // 0: steeleagle_protocol.v1.services.vehicle.GetResultRequest
+	(*GetResultResponse)(nil),         // 1: steeleagle_protocol.v1.services.vehicle.GetResultResponse
+	(*GetTelemetryRequest)(nil),       // 2: steeleagle_protocol.v1.services.vehicle.GetTelemetryRequest
+	(*GetTelemetryResponse)(nil),      // 3: steeleagle_protocol.v1.services.vehicle.GetTelemetryResponse
+	(*GetFrameRequest)(nil),           // 4: steeleagle_protocol.v1.services.vehicle.GetFrameRequest
+	(*GetFrameResponse)(nil),          // 5: steeleagle_protocol.v1.services.vehicle.GetFrameResponse
+	(*StreamVideoFramesRequest)(nil),  // 6: steeleagle_protocol.v1.services.vehicle.StreamVideoFramesRequest
+	(*StreamVideoFramesResponse)(nil), // 7: steeleagle_protocol.v1.services.vehicle.StreamVideoFramesResponse
+	(*StreamTelemetryRequest)(nil),    // 8: steeleagle_protocol.v1.services.vehicle.StreamTelemetryRequest
+	(*StreamTelemetryResponse)(nil),   // 9: steeleagle_protocol.v1.services.vehicle.StreamTelemetryResponse
 	(*result.ComputeResult)(nil),      // 10: steeleagle_protocol.v1.messages.result.ComputeResult
 	(*telemetry.Telemetry)(nil),       // 11: steeleagle_protocol.v1.messages.telemetry.Telemetry
 	(*telemetry.EncodedFrame)(nil),    // 12: steeleagle_protocol.v1.messages.telemetry.EncodedFrame
 }
 var file_steeleagle_protocol_v1_services_vehicle_data_proto_depIdxs = []int32{
-	10, // 0: steeleagle_protocol.v1.services.vehicle.data.GetResultResponse.result:type_name -> steeleagle_protocol.v1.messages.result.ComputeResult
-	11, // 1: steeleagle_protocol.v1.services.vehicle.data.GetTelemetryResponse.telemetry:type_name -> steeleagle_protocol.v1.messages.telemetry.Telemetry
-	12, // 2: steeleagle_protocol.v1.services.vehicle.data.GetFrameResponse.frame:type_name -> steeleagle_protocol.v1.messages.telemetry.EncodedFrame
-	12, // 3: steeleagle_protocol.v1.services.vehicle.data.StreamVideoFramesResponse.frame:type_name -> steeleagle_protocol.v1.messages.telemetry.EncodedFrame
-	11, // 4: steeleagle_protocol.v1.services.vehicle.data.StreamTelemetryResponse.telemetry:type_name -> steeleagle_protocol.v1.messages.telemetry.Telemetry
-	0,  // 5: steeleagle_protocol.v1.services.vehicle.data.DataService.GetResult:input_type -> steeleagle_protocol.v1.services.vehicle.data.GetResultRequest
-	2,  // 6: steeleagle_protocol.v1.services.vehicle.data.DataService.GetTelemetry:input_type -> steeleagle_protocol.v1.services.vehicle.data.GetTelemetryRequest
-	4,  // 7: steeleagle_protocol.v1.services.vehicle.data.DataService.GetFrame:input_type -> steeleagle_protocol.v1.services.vehicle.data.GetFrameRequest
-	6,  // 8: steeleagle_protocol.v1.services.vehicle.data.DataService.StreamVideoFrames:input_type -> steeleagle_protocol.v1.services.vehicle.data.StreamVideoFramesRequest
-	8,  // 9: steeleagle_protocol.v1.services.vehicle.data.DataService.StreamTelemetry:input_type -> steeleagle_protocol.v1.services.vehicle.data.StreamTelemetryRequest
-	1,  // 10: steeleagle_protocol.v1.services.vehicle.data.DataService.GetResult:output_type -> steeleagle_protocol.v1.services.vehicle.data.GetResultResponse
-	3,  // 11: steeleagle_protocol.v1.services.vehicle.data.DataService.GetTelemetry:output_type -> steeleagle_protocol.v1.services.vehicle.data.GetTelemetryResponse
-	5,  // 12: steeleagle_protocol.v1.services.vehicle.data.DataService.GetFrame:output_type -> steeleagle_protocol.v1.services.vehicle.data.GetFrameResponse
-	7,  // 13: steeleagle_protocol.v1.services.vehicle.data.DataService.StreamVideoFrames:output_type -> steeleagle_protocol.v1.services.vehicle.data.StreamVideoFramesResponse
-	9,  // 14: steeleagle_protocol.v1.services.vehicle.data.DataService.StreamTelemetry:output_type -> steeleagle_protocol.v1.services.vehicle.data.StreamTelemetryResponse
+	10, // 0: steeleagle_protocol.v1.services.vehicle.GetResultResponse.result:type_name -> steeleagle_protocol.v1.messages.result.ComputeResult
+	11, // 1: steeleagle_protocol.v1.services.vehicle.GetTelemetryResponse.telemetry:type_name -> steeleagle_protocol.v1.messages.telemetry.Telemetry
+	12, // 2: steeleagle_protocol.v1.services.vehicle.GetFrameResponse.frame:type_name -> steeleagle_protocol.v1.messages.telemetry.EncodedFrame
+	12, // 3: steeleagle_protocol.v1.services.vehicle.StreamVideoFramesResponse.frame:type_name -> steeleagle_protocol.v1.messages.telemetry.EncodedFrame
+	11, // 4: steeleagle_protocol.v1.services.vehicle.StreamTelemetryResponse.telemetry:type_name -> steeleagle_protocol.v1.messages.telemetry.Telemetry
+	0,  // 5: steeleagle_protocol.v1.services.vehicle.DataService.GetResult:input_type -> steeleagle_protocol.v1.services.vehicle.GetResultRequest
+	2,  // 6: steeleagle_protocol.v1.services.vehicle.DataService.GetTelemetry:input_type -> steeleagle_protocol.v1.services.vehicle.GetTelemetryRequest
+	4,  // 7: steeleagle_protocol.v1.services.vehicle.DataService.GetFrame:input_type -> steeleagle_protocol.v1.services.vehicle.GetFrameRequest
+	6,  // 8: steeleagle_protocol.v1.services.vehicle.DataService.StreamVideoFrames:input_type -> steeleagle_protocol.v1.services.vehicle.StreamVideoFramesRequest
+	8,  // 9: steeleagle_protocol.v1.services.vehicle.DataService.StreamTelemetry:input_type -> steeleagle_protocol.v1.services.vehicle.StreamTelemetryRequest
+	1,  // 10: steeleagle_protocol.v1.services.vehicle.DataService.GetResult:output_type -> steeleagle_protocol.v1.services.vehicle.GetResultResponse
+	3,  // 11: steeleagle_protocol.v1.services.vehicle.DataService.GetTelemetry:output_type -> steeleagle_protocol.v1.services.vehicle.GetTelemetryResponse
+	5,  // 12: steeleagle_protocol.v1.services.vehicle.DataService.GetFrame:output_type -> steeleagle_protocol.v1.services.vehicle.GetFrameResponse
+	7,  // 13: steeleagle_protocol.v1.services.vehicle.DataService.StreamVideoFrames:output_type -> steeleagle_protocol.v1.services.vehicle.StreamVideoFramesResponse
+	9,  // 14: steeleagle_protocol.v1.services.vehicle.DataService.StreamTelemetry:output_type -> steeleagle_protocol.v1.services.vehicle.StreamTelemetryResponse
 	10, // [10:15] is the sub-list for method output_type
 	5,  // [5:10] is the sub-list for method input_type
 	5,  // [5:5] is the sub-list for extension type_name

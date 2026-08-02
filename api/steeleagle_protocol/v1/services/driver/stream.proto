@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package steeleagle_protocol.v1.services.driver.stream;
+package steeleagle_protocol.v1.services.driver;
 
-option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver/stream;stream";
+option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver;driver";
 
 import "steeleagle_protocol/v1/messages/telemetry/telemetry.proto";
 

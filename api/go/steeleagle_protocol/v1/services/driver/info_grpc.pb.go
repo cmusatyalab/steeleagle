@@ -23,7 +23,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	InfoService_GetVehicleInfo_FullMethodName = "/steeleagle_protocol.v1.services.driver.info.InfoService/GetVehicleInfo"
+	InfoService_GetVehicleInfo_FullMethodName = "/steeleagle_protocol.v1.services.driver.InfoService/GetVehicleInfo"
 )
 
 // InfoServiceClient is the client API for InfoService service.
@@ -124,7 +124,7 @@ func _InfoService_GetVehicleInfo_Handler(srv interface{}, ctx context.Context, d
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var InfoService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "steeleagle_protocol.v1.services.driver.info.InfoService",
+	ServiceName: "steeleagle_protocol.v1.services.driver.InfoService",
 	HandlerType: (*InfoServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

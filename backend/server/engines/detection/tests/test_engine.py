@@ -9,7 +9,7 @@ import supervision as sv
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine
 from google.protobuf.any_pb2 import Any
-from steeleagle_protocol.v1 import common_pb2
+from steeleagle_protocol.v1.common import common_pb2
 from steeleagle_protocol.v1.messages.result import result_pb2
 from steeleagle_protocol.v1.messages.telemetry import telemetry_pb2 as telemetry
 

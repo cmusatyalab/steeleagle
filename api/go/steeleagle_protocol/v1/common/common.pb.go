@@ -6,9 +6,9 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        (unknown)
-// source: steeleagle_protocol/v1/common.proto
+// source: steeleagle_protocol/v1/common/common.proto
 
-package steeleagle_protocolv1
+package common
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -37,7 +37,7 @@ type Pose struct {
 
 func (x *Pose) Reset() {
 	*x = Pose{}
-	mi := &file_steeleagle_protocol_v1_common_proto_msgTypes[0]
+	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -49,7 +49,7 @@ func (x *Pose) String() string {
 func (*Pose) ProtoMessage() {}
 
 func (x *Pose) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_common_proto_msgTypes[0]
+	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -62,7 +62,7 @@ func (x *Pose) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Pose.ProtoReflect.Descriptor instead.
 func (*Pose) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_common_proto_rawDescGZIP(), []int{0}
+	return file_steeleagle_protocol_v1_common_common_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Pose) GetPitch() float64 {
@@ -103,7 +103,7 @@ type Velocity struct {
 
 func (x *Velocity) Reset() {
 	*x = Velocity{}
-	mi := &file_steeleagle_protocol_v1_common_proto_msgTypes[1]
+	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -115,7 +115,7 @@ func (x *Velocity) String() string {
 func (*Velocity) ProtoMessage() {}
 
 func (x *Velocity) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_common_proto_msgTypes[1]
+	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -128,7 +128,7 @@ func (x *Velocity) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Velocity.ProtoReflect.Descriptor instead.
 func (*Velocity) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_common_proto_rawDescGZIP(), []int{1}
+	return file_steeleagle_protocol_v1_common_common_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *Velocity) GetXVel() float64 {
@@ -172,7 +172,7 @@ type GlobalPosition struct {
 
 func (x *GlobalPosition) Reset() {
 	*x = GlobalPosition{}
-	mi := &file_steeleagle_protocol_v1_common_proto_msgTypes[2]
+	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -184,7 +184,7 @@ func (x *GlobalPosition) String() string {
 func (*GlobalPosition) ProtoMessage() {}
 
 func (x *GlobalPosition) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_common_proto_msgTypes[2]
+	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -197,7 +197,7 @@ func (x *GlobalPosition) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GlobalPosition.ProtoReflect.Descriptor instead.
 func (*GlobalPosition) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_common_proto_rawDescGZIP(), []int{2}
+	return file_steeleagle_protocol_v1_common_common_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *GlobalPosition) GetLatitude() float64 {
@@ -247,7 +247,7 @@ type RelativePosition struct {
 
 func (x *RelativePosition) Reset() {
 	*x = RelativePosition{}
-	mi := &file_steeleagle_protocol_v1_common_proto_msgTypes[3]
+	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -259,7 +259,7 @@ func (x *RelativePosition) String() string {
 func (*RelativePosition) ProtoMessage() {}
 
 func (x *RelativePosition) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_common_proto_msgTypes[3]
+	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -272,7 +272,7 @@ func (x *RelativePosition) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RelativePosition.ProtoReflect.Descriptor instead.
 func (*RelativePosition) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_common_proto_rawDescGZIP(), []int{3}
+	return file_steeleagle_protocol_v1_common_common_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *RelativePosition) GetX() float64 {
@@ -315,7 +315,7 @@ type VehicleInfo struct {
 
 func (x *VehicleInfo) Reset() {
 	*x = VehicleInfo{}
-	mi := &file_steeleagle_protocol_v1_common_proto_msgTypes[4]
+	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -327,7 +327,7 @@ func (x *VehicleInfo) String() string {
 func (*VehicleInfo) ProtoMessage() {}
 
 func (x *VehicleInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_common_proto_msgTypes[4]
+	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -340,7 +340,7 @@ func (x *VehicleInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VehicleInfo.ProtoReflect.Descriptor instead.
 func (*VehicleInfo) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_common_proto_rawDescGZIP(), []int{4}
+	return file_steeleagle_protocol_v1_common_common_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *VehicleInfo) GetVehicleId() string {
@@ -357,11 +357,11 @@ func (x *VehicleInfo) GetModel() string {
 	return ""
 }
 
-var File_steeleagle_protocol_v1_common_proto protoreflect.FileDescriptor
+var File_steeleagle_protocol_v1_common_common_proto protoreflect.FileDescriptor
 
-const file_steeleagle_protocol_v1_common_proto_rawDesc = "" +
+const file_steeleagle_protocol_v1_common_common_proto_rawDesc = "" +
 	"\n" +
-	"#steeleagle_protocol/v1/common.proto\x12\x16steeleagle_protocol.v1\"l\n" +
+	"*steeleagle_protocol/v1/common/common.proto\x12\x1dsteeleagle_protocol.v1.common\"l\n" +
 	"\x04Pose\x12\x19\n" +
 	"\x05pitch\x18\x01 \x01(\x01H\x00R\x05pitch\x88\x01\x01\x12\x17\n" +
 	"\x04roll\x18\x02 \x01(\x01H\x01R\x04roll\x88\x01\x01\x12\x15\n" +
@@ -402,30 +402,30 @@ const file_steeleagle_protocol_v1_common_proto_rawDesc = "" +
 	"\vVehicleInfo\x12\x1d\n" +
 	"\n" +
 	"vehicle_id\x18\x01 \x01(\tR\tvehicleId\x12\x14\n" +
-	"\x05model\x18\x02 \x01(\tR\x05modelB\xf5\x01\n" +
-	"\x1acom.steeleagle_protocol.v1B\vCommonProtoP\x01ZUgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1;steeleagle_protocolv1\xa2\x02\x03SXX\xaa\x02\x15SteeleagleProtocol.V1\xca\x02\x15SteeleagleProtocol\\V1\xe2\x02!SteeleagleProtocol\\V1\\GPBMetadata\xea\x02\x16SteeleagleProtocol::V1b\x06proto3"
+	"\x05model\x18\x02 \x01(\tR\x05modelB\x8a\x02\n" +
+	"!com.steeleagle_protocol.v1.commonB\vCommonProtoP\x01ZFgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/common\xa2\x02\x03SVC\xaa\x02\x1cSteeleagleProtocol.V1.Common\xca\x02\x1cSteeleagleProtocol\\V1\\Common\xe2\x02(SteeleagleProtocol\\V1\\Common\\GPBMetadata\xea\x02\x1eSteeleagleProtocol::V1::Commonb\x06proto3"
 
 var (
-	file_steeleagle_protocol_v1_common_proto_rawDescOnce sync.Once
-	file_steeleagle_protocol_v1_common_proto_rawDescData []byte
+	file_steeleagle_protocol_v1_common_common_proto_rawDescOnce sync.Once
+	file_steeleagle_protocol_v1_common_common_proto_rawDescData []byte
 )
 
-func file_steeleagle_protocol_v1_common_proto_rawDescGZIP() []byte {
-	file_steeleagle_protocol_v1_common_proto_rawDescOnce.Do(func() {
-		file_steeleagle_protocol_v1_common_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_common_proto_rawDesc), len(file_steeleagle_protocol_v1_common_proto_rawDesc)))
+func file_steeleagle_protocol_v1_common_common_proto_rawDescGZIP() []byte {
+	file_steeleagle_protocol_v1_common_common_proto_rawDescOnce.Do(func() {
+		file_steeleagle_protocol_v1_common_common_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_common_common_proto_rawDesc), len(file_steeleagle_protocol_v1_common_common_proto_rawDesc)))
 	})
-	return file_steeleagle_protocol_v1_common_proto_rawDescData
+	return file_steeleagle_protocol_v1_common_common_proto_rawDescData
 }
 
-var file_steeleagle_protocol_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
-var file_steeleagle_protocol_v1_common_proto_goTypes = []any{
-	(*Pose)(nil),             // 0: steeleagle_protocol.v1.Pose
-	(*Velocity)(nil),         // 1: steeleagle_protocol.v1.Velocity
-	(*GlobalPosition)(nil),   // 2: steeleagle_protocol.v1.GlobalPosition
-	(*RelativePosition)(nil), // 3: steeleagle_protocol.v1.RelativePosition
-	(*VehicleInfo)(nil),      // 4: steeleagle_protocol.v1.VehicleInfo
+var file_steeleagle_protocol_v1_common_common_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_steeleagle_protocol_v1_common_common_proto_goTypes = []any{
+	(*Pose)(nil),             // 0: steeleagle_protocol.v1.common.Pose
+	(*Velocity)(nil),         // 1: steeleagle_protocol.v1.common.Velocity
+	(*GlobalPosition)(nil),   // 2: steeleagle_protocol.v1.common.GlobalPosition
+	(*RelativePosition)(nil), // 3: steeleagle_protocol.v1.common.RelativePosition
+	(*VehicleInfo)(nil),      // 4: steeleagle_protocol.v1.common.VehicleInfo
 }
-var file_steeleagle_protocol_v1_common_proto_depIdxs = []int32{
+var file_steeleagle_protocol_v1_common_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
 	0, // [0:0] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -433,30 +433,30 @@ var file_steeleagle_protocol_v1_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for field type_name
 }
 
-func init() { file_steeleagle_protocol_v1_common_proto_init() }
-func file_steeleagle_protocol_v1_common_proto_init() {
-	if File_steeleagle_protocol_v1_common_proto != nil {
+func init() { file_steeleagle_protocol_v1_common_common_proto_init() }
+func file_steeleagle_protocol_v1_common_common_proto_init() {
+	if File_steeleagle_protocol_v1_common_common_proto != nil {
 		return
 	}
-	file_steeleagle_protocol_v1_common_proto_msgTypes[0].OneofWrappers = []any{}
-	file_steeleagle_protocol_v1_common_proto_msgTypes[1].OneofWrappers = []any{}
-	file_steeleagle_protocol_v1_common_proto_msgTypes[2].OneofWrappers = []any{}
-	file_steeleagle_protocol_v1_common_proto_msgTypes[3].OneofWrappers = []any{}
+	file_steeleagle_protocol_v1_common_common_proto_msgTypes[0].OneofWrappers = []any{}
+	file_steeleagle_protocol_v1_common_common_proto_msgTypes[1].OneofWrappers = []any{}
+	file_steeleagle_protocol_v1_common_common_proto_msgTypes[2].OneofWrappers = []any{}
+	file_steeleagle_protocol_v1_common_common_proto_msgTypes[3].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_common_proto_rawDesc), len(file_steeleagle_protocol_v1_common_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_common_common_proto_rawDesc), len(file_steeleagle_protocol_v1_common_common_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_steeleagle_protocol_v1_common_proto_goTypes,
-		DependencyIndexes: file_steeleagle_protocol_v1_common_proto_depIdxs,
-		MessageInfos:      file_steeleagle_protocol_v1_common_proto_msgTypes,
+		GoTypes:           file_steeleagle_protocol_v1_common_common_proto_goTypes,
+		DependencyIndexes: file_steeleagle_protocol_v1_common_common_proto_depIdxs,
+		MessageInfos:      file_steeleagle_protocol_v1_common_common_proto_msgTypes,
 	}.Build()
-	File_steeleagle_protocol_v1_common_proto = out.File
-	file_steeleagle_protocol_v1_common_proto_goTypes = nil
-	file_steeleagle_protocol_v1_common_proto_depIdxs = nil
+	File_steeleagle_protocol_v1_common_common_proto = out.File
+	file_steeleagle_protocol_v1_common_common_proto_goTypes = nil
+	file_steeleagle_protocol_v1_common_common_proto_depIdxs = nil
 }

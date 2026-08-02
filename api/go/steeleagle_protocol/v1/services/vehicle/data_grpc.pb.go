@@ -23,11 +23,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	DataService_GetResult_FullMethodName         = "/steeleagle_protocol.v1.services.vehicle.data.DataService/GetResult"
-	DataService_GetTelemetry_FullMethodName      = "/steeleagle_protocol.v1.services.vehicle.data.DataService/GetTelemetry"
-	DataService_GetFrame_FullMethodName          = "/steeleagle_protocol.v1.services.vehicle.data.DataService/GetFrame"
-	DataService_StreamVideoFrames_FullMethodName = "/steeleagle_protocol.v1.services.vehicle.data.DataService/StreamVideoFrames"
-	DataService_StreamTelemetry_FullMethodName   = "/steeleagle_protocol.v1.services.vehicle.data.DataService/StreamTelemetry"
+	DataService_GetResult_FullMethodName         = "/steeleagle_protocol.v1.services.vehicle.DataService/GetResult"
+	DataService_GetTelemetry_FullMethodName      = "/steeleagle_protocol.v1.services.vehicle.DataService/GetTelemetry"
+	DataService_GetFrame_FullMethodName          = "/steeleagle_protocol.v1.services.vehicle.DataService/GetFrame"
+	DataService_StreamVideoFrames_FullMethodName = "/steeleagle_protocol.v1.services.vehicle.DataService/StreamVideoFrames"
+	DataService_StreamTelemetry_FullMethodName   = "/steeleagle_protocol.v1.services.vehicle.DataService/StreamTelemetry"
 )
 
 // DataServiceClient is the client API for DataService service.
@@ -292,7 +292,7 @@ type DataService_StreamTelemetryServer = grpc.ServerStreamingServer[StreamTeleme
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var DataService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "steeleagle_protocol.v1.services.vehicle.data.DataService",
+	ServiceName: "steeleagle_protocol.v1.services.vehicle.DataService",
 	HandlerType: (*DataServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

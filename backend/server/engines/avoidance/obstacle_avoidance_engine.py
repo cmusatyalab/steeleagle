@@ -34,7 +34,7 @@ from google.protobuf.any_pb2 import Any
 from metric3d_models import Metric3DModelLoader
 from metric3d_utils import Metric3DInference
 from PIL import Image, ImageDraw
-from steeleagle_protocol.v1 import common_pb2
+from steeleagle_protocol.v1.common import common_pb2
 from steeleagle_protocol.v1.messages.result import result_pb2
 from steeleagle_protocol.v1.messages.telemetry import telemetry_pb2 as telemetry
 

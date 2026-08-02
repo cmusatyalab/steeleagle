@@ -23,7 +23,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ComputeService_SetEnginesForTopic_FullMethodName = "/steeleagle_protocol.v1.services.vehicle.compute.ComputeService/SetEnginesForTopic"
+	ComputeService_SetEnginesForTopic_FullMethodName = "/steeleagle_protocol.v1.services.vehicle.ComputeService/SetEnginesForTopic"
 )
 
 // ComputeServiceClient is the client API for ComputeService service.
@@ -132,7 +132,7 @@ func _ComputeService_SetEnginesForTopic_Handler(srv interface{}, ctx context.Con
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ComputeService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "steeleagle_protocol.v1.services.vehicle.compute.ComputeService",
+	ServiceName: "steeleagle_protocol.v1.services.vehicle.ComputeService",
 	HandlerType: (*ComputeServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

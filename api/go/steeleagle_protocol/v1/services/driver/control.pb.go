@@ -11,7 +11,7 @@
 package driver
 
 import (
-	v1 "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1"
+	common "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/common"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -577,7 +577,7 @@ func (*KillResponse) Descriptor() ([]byte, []int) {
 
 type SetHomeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	NewHome       *v1.GlobalPosition     `protobuf:"bytes,1,opt,name=new_home,json=newHome,proto3" json:"new_home,omitempty"` // new home location
+	NewHome       *common.GlobalPosition `protobuf:"bytes,1,opt,name=new_home,json=newHome,proto3" json:"new_home,omitempty"` // new home location
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -612,7 +612,7 @@ func (*SetHomeRequest) Descriptor() ([]byte, []int) {
 	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *SetHomeRequest) GetNewHome() *v1.GlobalPosition {
+func (x *SetHomeRequest) GetNewHome() *common.GlobalPosition {
 	if x != nil {
 		return x.NewHome
 	}
@@ -658,7 +658,7 @@ func (*SetHomeResponse) Descriptor() ([]byte, []int) {
 type ReturnToHomeRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// what the vehicle should do after returning home
-	EndBehavior ReturnToHomeEndBehavior `protobuf:"varint,1,opt,name=end_behavior,json=endBehavior,proto3,enum=steeleagle_protocol.v1.services.driver.control.ReturnToHomeEndBehavior" json:"end_behavior,omitempty"`
+	EndBehavior ReturnToHomeEndBehavior `protobuf:"varint,1,opt,name=end_behavior,json=endBehavior,proto3,enum=steeleagle_protocol.v1.services.driver.ReturnToHomeEndBehavior" json:"end_behavior,omitempty"`
 	// minimum altitude that the vehicle should move at while reurning home
 	MinReturnAltitude uint32 `protobuf:"varint,2,opt,name=min_return_altitude,json=minReturnAltitude,proto3" json:"min_return_altitude,omitempty"`
 	// altitude that the vehicle should hover AGL (above ground level), for hover end behavior
@@ -756,11 +756,11 @@ func (*ReturnToHomeResponse) Descriptor() ([]byte, []int) {
 
 type GoToGlobalPositionRequest struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
-	Position *v1.GlobalPosition     `protobuf:"bytes,1,opt,name=position,proto3" json:"position,omitempty"` // target global position
+	Position *common.GlobalPosition `protobuf:"bytes,1,opt,name=position,proto3" json:"position,omitempty"` // target global position
 	// determines how the vehicle will orient during transit (default: `TO_TARGET`)
-	HeadingMode *HeadingMode `protobuf:"varint,2,opt,name=heading_mode,json=headingMode,proto3,enum=steeleagle_protocol.v1.services.driver.control.HeadingMode,oneof" json:"heading_mode,omitempty"`
+	HeadingMode *HeadingMode `protobuf:"varint,2,opt,name=heading_mode,json=headingMode,proto3,enum=steeleagle_protocol.v1.services.driver.HeadingMode,oneof" json:"heading_mode,omitempty"`
 	// determines how the vehicle will interpret altitude (default: `ABSOLUTE`)
-	AltitudeMode *AltitudeMode `protobuf:"varint,3,opt,name=altitude_mode,json=altitudeMode,proto3,enum=steeleagle_protocol.v1.services.driver.control.AltitudeMode,oneof" json:"altitude_mode,omitempty"`
+	AltitudeMode *AltitudeMode `protobuf:"varint,3,opt,name=altitude_mode,json=altitudeMode,proto3,enum=steeleagle_protocol.v1.services.driver.AltitudeMode,oneof" json:"altitude_mode,omitempty"`
 	// speed during transit
 	Speed *float32 `protobuf:"fixed32,4,opt,name=speed,proto3,oneof" json:"speed,omitempty"`
 	// angular speed during transit
@@ -799,7 +799,7 @@ func (*GoToGlobalPositionRequest) Descriptor() ([]byte, []int) {
 	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{12}
 }
 
-func (x *GoToGlobalPositionRequest) GetPosition() *v1.GlobalPosition {
+func (x *GoToGlobalPositionRequest) GetPosition() *common.GlobalPosition {
 	if x != nil {
 		return x.Position
 	}
@@ -873,13 +873,13 @@ func (*GoToGlobalPositionResponse) Descriptor() ([]byte, []int) {
 type GoToRelativePositionRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// target relative position
-	Position *v1.RelativePosition `protobuf:"bytes,1,opt,name=position,proto3" json:"position,omitempty"`
+	Position *common.RelativePosition `protobuf:"bytes,1,opt,name=position,proto3" json:"position,omitempty"`
 	// speed during transit
 	Speed *float32 `protobuf:"fixed32,2,opt,name=speed,proto3,oneof" json:"speed,omitempty"`
 	// angular speed during transit
 	AngularSpeed *float32 `protobuf:"fixed32,3,opt,name=angular_speed,json=angularSpeed,proto3,oneof" json:"angular_speed,omitempty"`
 	// frame of reference
-	Frame         *ReferenceFrame `protobuf:"varint,4,opt,name=frame,proto3,enum=steeleagle_protocol.v1.services.driver.control.ReferenceFrame,oneof" json:"frame,omitempty"`
+	Frame         *ReferenceFrame `protobuf:"varint,4,opt,name=frame,proto3,enum=steeleagle_protocol.v1.services.driver.ReferenceFrame,oneof" json:"frame,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -914,7 +914,7 @@ func (*GoToRelativePositionRequest) Descriptor() ([]byte, []int) {
 	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{14}
 }
 
-func (x *GoToRelativePositionRequest) GetPosition() *v1.RelativePosition {
+func (x *GoToRelativePositionRequest) GetPosition() *common.RelativePosition {
 	if x != nil {
 		return x.Position
 	}
@@ -981,9 +981,9 @@ func (*GoToRelativePositionResponse) Descriptor() ([]byte, []int) {
 type SetVelocityRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// target velocity
-	Velocity *v1.Velocity `protobuf:"bytes,1,opt,name=velocity,proto3" json:"velocity,omitempty"`
+	Velocity *common.Velocity `protobuf:"bytes,1,opt,name=velocity,proto3" json:"velocity,omitempty"`
 	// frame of reference
-	Frame         *ReferenceFrame `protobuf:"varint,2,opt,name=frame,proto3,enum=steeleagle_protocol.v1.services.driver.control.ReferenceFrame,oneof" json:"frame,omitempty"`
+	Frame         *ReferenceFrame `protobuf:"varint,2,opt,name=frame,proto3,enum=steeleagle_protocol.v1.services.driver.ReferenceFrame,oneof" json:"frame,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1018,7 +1018,7 @@ func (*SetVelocityRequest) Descriptor() ([]byte, []int) {
 	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{16}
 }
 
-func (x *SetVelocityRequest) GetVelocity() *v1.Velocity {
+func (x *SetVelocityRequest) GetVelocity() *common.Velocity {
 	if x != nil {
 		return x.Velocity
 	}
@@ -1070,9 +1070,9 @@ func (*SetVelocityResponse) Descriptor() ([]byte, []int) {
 
 type SetGimbalPoseRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	GimbalId      uint32                 `protobuf:"varint,1,opt,name=gimbal_id,json=gimbalId,proto3" json:"gimbal_id,omitempty"`                                                                    // ID of the target gimbal
-	Pose          *v1.Pose               `protobuf:"bytes,2,opt,name=pose,proto3" json:"pose,omitempty"`                                                                                             // target pose
-	PoseMode      *PoseMode              `protobuf:"varint,3,opt,name=pose_mode,json=poseMode,proto3,enum=steeleagle_protocol.v1.services.driver.control.PoseMode,oneof" json:"pose_mode,omitempty"` // specifies how to interpret the target pose
+	GimbalId      uint32                 `protobuf:"varint,1,opt,name=gimbal_id,json=gimbalId,proto3" json:"gimbal_id,omitempty"`                                                            // ID of the target gimbal
+	Pose          *common.Pose           `protobuf:"bytes,2,opt,name=pose,proto3" json:"pose,omitempty"`                                                                                     // target pose
+	PoseMode      *PoseMode              `protobuf:"varint,3,opt,name=pose_mode,json=poseMode,proto3,enum=steeleagle_protocol.v1.services.driver.PoseMode,oneof" json:"pose_mode,omitempty"` // specifies how to interpret the target pose
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1114,7 +1114,7 @@ func (x *SetGimbalPoseRequest) GetGimbalId() uint32 {
 	return 0
 }
 
-func (x *SetGimbalPoseRequest) GetPose() *v1.Pose {
+func (x *SetGimbalPoseRequest) GetPose() *common.Pose {
 	if x != nil {
 		return x.Pose
 	}
@@ -1168,7 +1168,7 @@ var File_steeleagle_protocol_v1_services_driver_control_proto protoreflect.FileD
 
 const file_steeleagle_protocol_v1_services_driver_control_proto_rawDesc = "" +
 	"\n" +
-	"4steeleagle_protocol/v1/services/driver/control.proto\x12.steeleagle_protocol.v1.services.driver.control\x1a#steeleagle_protocol/v1/common.proto\",\n" +
+	"4steeleagle_protocol/v1/services/driver/control.proto\x12&steeleagle_protocol.v1.services.driver\x1a*steeleagle_protocol/v1/common/common.proto\",\n" +
 	"\x0eTakeOffRequest\x12\x1a\n" +
 	"\baltitude\x18\x01 \x01(\x02R\baltitude\"\x11\n" +
 	"\x0fTakeOffResponse\"\r\n" +
@@ -1177,44 +1177,44 @@ const file_steeleagle_protocol_v1_services_driver_control_proto_rawDesc = "" +
 	"\vHoldRequest\"\x0e\n" +
 	"\fHoldResponse\"\r\n" +
 	"\vKillRequest\"\x0e\n" +
-	"\fKillResponse\"S\n" +
-	"\x0eSetHomeRequest\x12A\n" +
-	"\bnew_home\x18\x01 \x01(\v2&.steeleagle_protocol.v1.GlobalPositionR\anewHome\"\x11\n" +
-	"\x0fSetHomeResponse\"\xd8\x01\n" +
-	"\x13ReturnToHomeRequest\x12j\n" +
-	"\fend_behavior\x18\x01 \x01(\x0e2G.steeleagle_protocol.v1.services.driver.control.ReturnToHomeEndBehaviorR\vendBehavior\x12.\n" +
+	"\fKillResponse\"Z\n" +
+	"\x0eSetHomeRequest\x12H\n" +
+	"\bnew_home\x18\x01 \x01(\v2-.steeleagle_protocol.v1.common.GlobalPositionR\anewHome\"\x11\n" +
+	"\x0fSetHomeResponse\"\xd0\x01\n" +
+	"\x13ReturnToHomeRequest\x12b\n" +
+	"\fend_behavior\x18\x01 \x01(\x0e2?.steeleagle_protocol.v1.services.driver.ReturnToHomeEndBehaviorR\vendBehavior\x12.\n" +
 	"\x13min_return_altitude\x18\x02 \x01(\rR\x11minReturnAltitude\x12%\n" +
 	"\x0efinal_altitude\x18\x03 \x01(\rR\rfinalAltitude\"\x16\n" +
-	"\x14ReturnToHomeResponse\"\xb0\x03\n" +
-	"\x19GoToGlobalPositionRequest\x12B\n" +
-	"\bposition\x18\x01 \x01(\v2&.steeleagle_protocol.v1.GlobalPositionR\bposition\x12c\n" +
-	"\fheading_mode\x18\x02 \x01(\x0e2;.steeleagle_protocol.v1.services.driver.control.HeadingModeH\x00R\vheadingMode\x88\x01\x01\x12f\n" +
-	"\raltitude_mode\x18\x03 \x01(\x0e2<.steeleagle_protocol.v1.services.driver.control.AltitudeModeH\x01R\faltitudeMode\x88\x01\x01\x12\x19\n" +
+	"\x14ReturnToHomeResponse\"\xa7\x03\n" +
+	"\x19GoToGlobalPositionRequest\x12I\n" +
+	"\bposition\x18\x01 \x01(\v2-.steeleagle_protocol.v1.common.GlobalPositionR\bposition\x12[\n" +
+	"\fheading_mode\x18\x02 \x01(\x0e23.steeleagle_protocol.v1.services.driver.HeadingModeH\x00R\vheadingMode\x88\x01\x01\x12^\n" +
+	"\raltitude_mode\x18\x03 \x01(\x0e24.steeleagle_protocol.v1.services.driver.AltitudeModeH\x01R\faltitudeMode\x88\x01\x01\x12\x19\n" +
 	"\x05speed\x18\x04 \x01(\x02H\x02R\x05speed\x88\x01\x01\x12(\n" +
 	"\rangular_speed\x18\x05 \x01(\x02H\x03R\fangularSpeed\x88\x01\x01B\x0f\n" +
 	"\r_heading_modeB\x10\n" +
 	"\x0e_altitude_modeB\b\n" +
 	"\x06_speedB\x10\n" +
 	"\x0e_angular_speed\"\x1c\n" +
-	"\x1aGoToGlobalPositionResponse\"\xa9\x02\n" +
-	"\x1bGoToRelativePositionRequest\x12D\n" +
-	"\bposition\x18\x01 \x01(\v2(.steeleagle_protocol.v1.RelativePositionR\bposition\x12\x19\n" +
+	"\x1aGoToGlobalPositionResponse\"\xa8\x02\n" +
+	"\x1bGoToRelativePositionRequest\x12K\n" +
+	"\bposition\x18\x01 \x01(\v2/.steeleagle_protocol.v1.common.RelativePositionR\bposition\x12\x19\n" +
 	"\x05speed\x18\x02 \x01(\x02H\x00R\x05speed\x88\x01\x01\x12(\n" +
-	"\rangular_speed\x18\x03 \x01(\x02H\x01R\fangularSpeed\x88\x01\x01\x12Y\n" +
-	"\x05frame\x18\x04 \x01(\x0e2>.steeleagle_protocol.v1.services.driver.control.ReferenceFrameH\x02R\x05frame\x88\x01\x01B\b\n" +
+	"\rangular_speed\x18\x03 \x01(\x02H\x01R\fangularSpeed\x88\x01\x01\x12Q\n" +
+	"\x05frame\x18\x04 \x01(\x0e26.steeleagle_protocol.v1.services.driver.ReferenceFrameH\x02R\x05frame\x88\x01\x01B\b\n" +
 	"\x06_speedB\x10\n" +
 	"\x0e_angular_speedB\b\n" +
 	"\x06_frame\"\x1e\n" +
-	"\x1cGoToRelativePositionResponse\"\xb7\x01\n" +
-	"\x12SetVelocityRequest\x12<\n" +
-	"\bvelocity\x18\x01 \x01(\v2 .steeleagle_protocol.v1.VelocityR\bvelocity\x12Y\n" +
-	"\x05frame\x18\x02 \x01(\x0e2>.steeleagle_protocol.v1.services.driver.control.ReferenceFrameH\x00R\x05frame\x88\x01\x01B\b\n" +
+	"\x1cGoToRelativePositionResponse\"\xb6\x01\n" +
+	"\x12SetVelocityRequest\x12C\n" +
+	"\bvelocity\x18\x01 \x01(\v2'.steeleagle_protocol.v1.common.VelocityR\bvelocity\x12Q\n" +
+	"\x05frame\x18\x02 \x01(\x0e26.steeleagle_protocol.v1.services.driver.ReferenceFrameH\x00R\x05frame\x88\x01\x01B\b\n" +
 	"\x06_frame\"\x15\n" +
-	"\x13SetVelocityResponse\"\xcf\x01\n" +
+	"\x13SetVelocityResponse\"\xce\x01\n" +
 	"\x14SetGimbalPoseRequest\x12\x1b\n" +
-	"\tgimbal_id\x18\x01 \x01(\rR\bgimbalId\x120\n" +
-	"\x04pose\x18\x02 \x01(\v2\x1c.steeleagle_protocol.v1.PoseR\x04pose\x12Z\n" +
-	"\tpose_mode\x18\x03 \x01(\x0e28.steeleagle_protocol.v1.services.driver.control.PoseModeH\x00R\bposeMode\x88\x01\x01B\f\n" +
+	"\tgimbal_id\x18\x01 \x01(\rR\bgimbalId\x127\n" +
+	"\x04pose\x18\x02 \x01(\v2#.steeleagle_protocol.v1.common.PoseR\x04pose\x12R\n" +
+	"\tpose_mode\x18\x03 \x01(\x0e20.steeleagle_protocol.v1.services.driver.PoseModeH\x00R\bposeMode\x88\x01\x01B\f\n" +
 	"\n" +
 	"_pose_mode\"\x17\n" +
 	"\x15SetGimbalPoseResponse*\x93\x01\n" +
@@ -1238,19 +1238,20 @@ const file_steeleagle_protocol_v1_services_driver_control_proto_rawDesc = "" +
 	"\x15POSE_MODE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fPOSE_MODE_ANGLE\x10\x01\x12\x14\n" +
 	"\x10POSE_MODE_OFFSET\x10\x02\x12\x16\n" +
-	"\x12POSE_MODE_VELOCITY\x10\x032\x80\f\n" +
-	"\x0eControlService\x12\x8c\x01\n" +
-	"\aTakeOff\x12>.steeleagle_protocol.v1.services.driver.control.TakeOffRequest\x1a?.steeleagle_protocol.v1.services.driver.control.TakeOffResponse\"\x00\x12\x83\x01\n" +
-	"\x04Land\x12;.steeleagle_protocol.v1.services.driver.control.LandRequest\x1a<.steeleagle_protocol.v1.services.driver.control.LandResponse\"\x00\x12\x83\x01\n" +
-	"\x04Hold\x12;.steeleagle_protocol.v1.services.driver.control.HoldRequest\x1a<.steeleagle_protocol.v1.services.driver.control.HoldResponse\"\x00\x12\x83\x01\n" +
-	"\x04Kill\x12;.steeleagle_protocol.v1.services.driver.control.KillRequest\x1a<.steeleagle_protocol.v1.services.driver.control.KillResponse\"\x00\x12\x8c\x01\n" +
-	"\aSetHome\x12>.steeleagle_protocol.v1.services.driver.control.SetHomeRequest\x1a?.steeleagle_protocol.v1.services.driver.control.SetHomeResponse\"\x00\x12\x9b\x01\n" +
-	"\fReturnToHome\x12C.steeleagle_protocol.v1.services.driver.control.ReturnToHomeRequest\x1aD.steeleagle_protocol.v1.services.driver.control.ReturnToHomeResponse\"\x00\x12\xad\x01\n" +
-	"\x12GoToGlobalPosition\x12I.steeleagle_protocol.v1.services.driver.control.GoToGlobalPositionRequest\x1aJ.steeleagle_protocol.v1.services.driver.control.GoToGlobalPositionResponse\"\x00\x12\xb3\x01\n" +
-	"\x14GoToRelativePosition\x12K.steeleagle_protocol.v1.services.driver.control.GoToRelativePositionRequest\x1aL.steeleagle_protocol.v1.services.driver.control.GoToRelativePositionResponse\"\x00\x12\x98\x01\n" +
-	"\vSetVelocity\x12B.steeleagle_protocol.v1.services.driver.control.SetVelocityRequest\x1aC.steeleagle_protocol.v1.services.driver.control.SetVelocityResponse\"\x00\x12\x9e\x01\n" +
-	"\rSetGimbalPose\x12D.steeleagle_protocol.v1.services.driver.control.SetGimbalPoseRequest\x1aE.steeleagle_protocol.v1.services.driver.control.SetGimbalPoseResponse\"\x00B\xed\x02\n" +
-	"2com.steeleagle_protocol.v1.services.driver.controlB\fControlProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\xa2\x02\x05SVSDC\xaa\x02-SteeleagleProtocol.V1.Services.Driver.Control\xca\x02-SteeleagleProtocol\\V1\\Services\\Driver\\Control\xe2\x029SteeleagleProtocol\\V1\\Services\\Driver\\Control\\GPBMetadata\xea\x021SteeleagleProtocol::V1::Services::Driver::Controlb\x06proto3"
+	"\x12POSE_MODE_VELOCITY\x10\x032\xdb\n" +
+	"\n" +
+	"\x0eControlService\x12|\n" +
+	"\aTakeOff\x126.steeleagle_protocol.v1.services.driver.TakeOffRequest\x1a7.steeleagle_protocol.v1.services.driver.TakeOffResponse\"\x00\x12s\n" +
+	"\x04Land\x123.steeleagle_protocol.v1.services.driver.LandRequest\x1a4.steeleagle_protocol.v1.services.driver.LandResponse\"\x00\x12s\n" +
+	"\x04Hold\x123.steeleagle_protocol.v1.services.driver.HoldRequest\x1a4.steeleagle_protocol.v1.services.driver.HoldResponse\"\x00\x12s\n" +
+	"\x04Kill\x123.steeleagle_protocol.v1.services.driver.KillRequest\x1a4.steeleagle_protocol.v1.services.driver.KillResponse\"\x00\x12|\n" +
+	"\aSetHome\x126.steeleagle_protocol.v1.services.driver.SetHomeRequest\x1a7.steeleagle_protocol.v1.services.driver.SetHomeResponse\"\x00\x12\x8b\x01\n" +
+	"\fReturnToHome\x12;.steeleagle_protocol.v1.services.driver.ReturnToHomeRequest\x1a<.steeleagle_protocol.v1.services.driver.ReturnToHomeResponse\"\x00\x12\x9d\x01\n" +
+	"\x12GoToGlobalPosition\x12A.steeleagle_protocol.v1.services.driver.GoToGlobalPositionRequest\x1aB.steeleagle_protocol.v1.services.driver.GoToGlobalPositionResponse\"\x00\x12\xa3\x01\n" +
+	"\x14GoToRelativePosition\x12C.steeleagle_protocol.v1.services.driver.GoToRelativePositionRequest\x1aD.steeleagle_protocol.v1.services.driver.GoToRelativePositionResponse\"\x00\x12\x88\x01\n" +
+	"\vSetVelocity\x12:.steeleagle_protocol.v1.services.driver.SetVelocityRequest\x1a;.steeleagle_protocol.v1.services.driver.SetVelocityResponse\"\x00\x12\x8e\x01\n" +
+	"\rSetGimbalPose\x12<.steeleagle_protocol.v1.services.driver.SetGimbalPoseRequest\x1a=.steeleagle_protocol.v1.services.driver.SetGimbalPoseResponse\"\x00B\xc3\x02\n" +
+	"*com.steeleagle_protocol.v1.services.driverB\fControlProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\xa2\x02\x04SVSD\xaa\x02%SteeleagleProtocol.V1.Services.Driver\xca\x02%SteeleagleProtocol\\V1\\Services\\Driver\xe2\x021SteeleagleProtocol\\V1\\Services\\Driver\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Services::Driverb\x06proto3"
 
 var (
 	file_steeleagle_protocol_v1_services_driver_control_proto_rawDescOnce sync.Once
@@ -1267,68 +1268,68 @@ func file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP() []b
 var file_steeleagle_protocol_v1_services_driver_control_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
 var file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_steeleagle_protocol_v1_services_driver_control_proto_goTypes = []any{
-	(ReturnToHomeEndBehavior)(0),         // 0: steeleagle_protocol.v1.services.driver.control.ReturnToHomeEndBehavior
-	(AltitudeMode)(0),                    // 1: steeleagle_protocol.v1.services.driver.control.AltitudeMode
-	(HeadingMode)(0),                     // 2: steeleagle_protocol.v1.services.driver.control.HeadingMode
-	(ReferenceFrame)(0),                  // 3: steeleagle_protocol.v1.services.driver.control.ReferenceFrame
-	(PoseMode)(0),                        // 4: steeleagle_protocol.v1.services.driver.control.PoseMode
-	(*TakeOffRequest)(nil),               // 5: steeleagle_protocol.v1.services.driver.control.TakeOffRequest
-	(*TakeOffResponse)(nil),              // 6: steeleagle_protocol.v1.services.driver.control.TakeOffResponse
-	(*LandRequest)(nil),                  // 7: steeleagle_protocol.v1.services.driver.control.LandRequest
-	(*LandResponse)(nil),                 // 8: steeleagle_protocol.v1.services.driver.control.LandResponse
-	(*HoldRequest)(nil),                  // 9: steeleagle_protocol.v1.services.driver.control.HoldRequest
-	(*HoldResponse)(nil),                 // 10: steeleagle_protocol.v1.services.driver.control.HoldResponse
-	(*KillRequest)(nil),                  // 11: steeleagle_protocol.v1.services.driver.control.KillRequest
-	(*KillResponse)(nil),                 // 12: steeleagle_protocol.v1.services.driver.control.KillResponse
-	(*SetHomeRequest)(nil),               // 13: steeleagle_protocol.v1.services.driver.control.SetHomeRequest
-	(*SetHomeResponse)(nil),              // 14: steeleagle_protocol.v1.services.driver.control.SetHomeResponse
-	(*ReturnToHomeRequest)(nil),          // 15: steeleagle_protocol.v1.services.driver.control.ReturnToHomeRequest
-	(*ReturnToHomeResponse)(nil),         // 16: steeleagle_protocol.v1.services.driver.control.ReturnToHomeResponse
-	(*GoToGlobalPositionRequest)(nil),    // 17: steeleagle_protocol.v1.services.driver.control.GoToGlobalPositionRequest
-	(*GoToGlobalPositionResponse)(nil),   // 18: steeleagle_protocol.v1.services.driver.control.GoToGlobalPositionResponse
-	(*GoToRelativePositionRequest)(nil),  // 19: steeleagle_protocol.v1.services.driver.control.GoToRelativePositionRequest
-	(*GoToRelativePositionResponse)(nil), // 20: steeleagle_protocol.v1.services.driver.control.GoToRelativePositionResponse
-	(*SetVelocityRequest)(nil),           // 21: steeleagle_protocol.v1.services.driver.control.SetVelocityRequest
-	(*SetVelocityResponse)(nil),          // 22: steeleagle_protocol.v1.services.driver.control.SetVelocityResponse
-	(*SetGimbalPoseRequest)(nil),         // 23: steeleagle_protocol.v1.services.driver.control.SetGimbalPoseRequest
-	(*SetGimbalPoseResponse)(nil),        // 24: steeleagle_protocol.v1.services.driver.control.SetGimbalPoseResponse
-	(*v1.GlobalPosition)(nil),            // 25: steeleagle_protocol.v1.GlobalPosition
-	(*v1.RelativePosition)(nil),          // 26: steeleagle_protocol.v1.RelativePosition
-	(*v1.Velocity)(nil),                  // 27: steeleagle_protocol.v1.Velocity
-	(*v1.Pose)(nil),                      // 28: steeleagle_protocol.v1.Pose
+	(ReturnToHomeEndBehavior)(0),         // 0: steeleagle_protocol.v1.services.driver.ReturnToHomeEndBehavior
+	(AltitudeMode)(0),                    // 1: steeleagle_protocol.v1.services.driver.AltitudeMode
+	(HeadingMode)(0),                     // 2: steeleagle_protocol.v1.services.driver.HeadingMode
+	(ReferenceFrame)(0),                  // 3: steeleagle_protocol.v1.services.driver.ReferenceFrame
+	(PoseMode)(0),                        // 4: steeleagle_protocol.v1.services.driver.PoseMode
+	(*TakeOffRequest)(nil),               // 5: steeleagle_protocol.v1.services.driver.TakeOffRequest
+	(*TakeOffResponse)(nil),              // 6: steeleagle_protocol.v1.services.driver.TakeOffResponse
+	(*LandRequest)(nil),                  // 7: steeleagle_protocol.v1.services.driver.LandRequest
+	(*LandResponse)(nil),                 // 8: steeleagle_protocol.v1.services.driver.LandResponse
+	(*HoldRequest)(nil),                  // 9: steeleagle_protocol.v1.services.driver.HoldRequest
+	(*HoldResponse)(nil),                 // 10: steeleagle_protocol.v1.services.driver.HoldResponse
+	(*KillRequest)(nil),                  // 11: steeleagle_protocol.v1.services.driver.KillRequest
+	(*KillResponse)(nil),                 // 12: steeleagle_protocol.v1.services.driver.KillResponse
+	(*SetHomeRequest)(nil),               // 13: steeleagle_protocol.v1.services.driver.SetHomeRequest
+	(*SetHomeResponse)(nil),              // 14: steeleagle_protocol.v1.services.driver.SetHomeResponse
+	(*ReturnToHomeRequest)(nil),          // 15: steeleagle_protocol.v1.services.driver.ReturnToHomeRequest
+	(*ReturnToHomeResponse)(nil),         // 16: steeleagle_protocol.v1.services.driver.ReturnToHomeResponse
+	(*GoToGlobalPositionRequest)(nil),    // 17: steeleagle_protocol.v1.services.driver.GoToGlobalPositionRequest
+	(*GoToGlobalPositionResponse)(nil),   // 18: steeleagle_protocol.v1.services.driver.GoToGlobalPositionResponse
+	(*GoToRelativePositionRequest)(nil),  // 19: steeleagle_protocol.v1.services.driver.GoToRelativePositionRequest
+	(*GoToRelativePositionResponse)(nil), // 20: steeleagle_protocol.v1.services.driver.GoToRelativePositionResponse
+	(*SetVelocityRequest)(nil),           // 21: steeleagle_protocol.v1.services.driver.SetVelocityRequest
+	(*SetVelocityResponse)(nil),          // 22: steeleagle_protocol.v1.services.driver.SetVelocityResponse
+	(*SetGimbalPoseRequest)(nil),         // 23: steeleagle_protocol.v1.services.driver.SetGimbalPoseRequest
+	(*SetGimbalPoseResponse)(nil),        // 24: steeleagle_protocol.v1.services.driver.SetGimbalPoseResponse
+	(*common.GlobalPosition)(nil),        // 25: steeleagle_protocol.v1.common.GlobalPosition
+	(*common.RelativePosition)(nil),      // 26: steeleagle_protocol.v1.common.RelativePosition
+	(*common.Velocity)(nil),              // 27: steeleagle_protocol.v1.common.Velocity
+	(*common.Pose)(nil),                  // 28: steeleagle_protocol.v1.common.Pose
 }
 var file_steeleagle_protocol_v1_services_driver_control_proto_depIdxs = []int32{
-	25, // 0: steeleagle_protocol.v1.services.driver.control.SetHomeRequest.new_home:type_name -> steeleagle_protocol.v1.GlobalPosition
-	0,  // 1: steeleagle_protocol.v1.services.driver.control.ReturnToHomeRequest.end_behavior:type_name -> steeleagle_protocol.v1.services.driver.control.ReturnToHomeEndBehavior
-	25, // 2: steeleagle_protocol.v1.services.driver.control.GoToGlobalPositionRequest.position:type_name -> steeleagle_protocol.v1.GlobalPosition
-	2,  // 3: steeleagle_protocol.v1.services.driver.control.GoToGlobalPositionRequest.heading_mode:type_name -> steeleagle_protocol.v1.services.driver.control.HeadingMode
-	1,  // 4: steeleagle_protocol.v1.services.driver.control.GoToGlobalPositionRequest.altitude_mode:type_name -> steeleagle_protocol.v1.services.driver.control.AltitudeMode
-	26, // 5: steeleagle_protocol.v1.services.driver.control.GoToRelativePositionRequest.position:type_name -> steeleagle_protocol.v1.RelativePosition
-	3,  // 6: steeleagle_protocol.v1.services.driver.control.GoToRelativePositionRequest.frame:type_name -> steeleagle_protocol.v1.services.driver.control.ReferenceFrame
-	27, // 7: steeleagle_protocol.v1.services.driver.control.SetVelocityRequest.velocity:type_name -> steeleagle_protocol.v1.Velocity
-	3,  // 8: steeleagle_protocol.v1.services.driver.control.SetVelocityRequest.frame:type_name -> steeleagle_protocol.v1.services.driver.control.ReferenceFrame
-	28, // 9: steeleagle_protocol.v1.services.driver.control.SetGimbalPoseRequest.pose:type_name -> steeleagle_protocol.v1.Pose
-	4,  // 10: steeleagle_protocol.v1.services.driver.control.SetGimbalPoseRequest.pose_mode:type_name -> steeleagle_protocol.v1.services.driver.control.PoseMode
-	5,  // 11: steeleagle_protocol.v1.services.driver.control.ControlService.TakeOff:input_type -> steeleagle_protocol.v1.services.driver.control.TakeOffRequest
-	7,  // 12: steeleagle_protocol.v1.services.driver.control.ControlService.Land:input_type -> steeleagle_protocol.v1.services.driver.control.LandRequest
-	9,  // 13: steeleagle_protocol.v1.services.driver.control.ControlService.Hold:input_type -> steeleagle_protocol.v1.services.driver.control.HoldRequest
-	11, // 14: steeleagle_protocol.v1.services.driver.control.ControlService.Kill:input_type -> steeleagle_protocol.v1.services.driver.control.KillRequest
-	13, // 15: steeleagle_protocol.v1.services.driver.control.ControlService.SetHome:input_type -> steeleagle_protocol.v1.services.driver.control.SetHomeRequest
-	15, // 16: steeleagle_protocol.v1.services.driver.control.ControlService.ReturnToHome:input_type -> steeleagle_protocol.v1.services.driver.control.ReturnToHomeRequest
-	17, // 17: steeleagle_protocol.v1.services.driver.control.ControlService.GoToGlobalPosition:input_type -> steeleagle_protocol.v1.services.driver.control.GoToGlobalPositionRequest
-	19, // 18: steeleagle_protocol.v1.services.driver.control.ControlService.GoToRelativePosition:input_type -> steeleagle_protocol.v1.services.driver.control.GoToRelativePositionRequest
-	21, // 19: steeleagle_protocol.v1.services.driver.control.ControlService.SetVelocity:input_type -> steeleagle_protocol.v1.services.driver.control.SetVelocityRequest
-	23, // 20: steeleagle_protocol.v1.services.driver.control.ControlService.SetGimbalPose:input_type -> steeleagle_protocol.v1.services.driver.control.SetGimbalPoseRequest
-	6,  // 21: steeleagle_protocol.v1.services.driver.control.ControlService.TakeOff:output_type -> steeleagle_protocol.v1.services.driver.control.TakeOffResponse
-	8,  // 22: steeleagle_protocol.v1.services.driver.control.ControlService.Land:output_type -> steeleagle_protocol.v1.services.driver.control.LandResponse
-	10, // 23: steeleagle_protocol.v1.services.driver.control.ControlService.Hold:output_type -> steeleagle_protocol.v1.services.driver.control.HoldResponse
-	12, // 24: steeleagle_protocol.v1.services.driver.control.ControlService.Kill:output_type -> steeleagle_protocol.v1.services.driver.control.KillResponse
-	14, // 25: steeleagle_protocol.v1.services.driver.control.ControlService.SetHome:output_type -> steeleagle_protocol.v1.services.driver.control.SetHomeResponse
-	16, // 26: steeleagle_protocol.v1.services.driver.control.ControlService.ReturnToHome:output_type -> steeleagle_protocol.v1.services.driver.control.ReturnToHomeResponse
-	18, // 27: steeleagle_protocol.v1.services.driver.control.ControlService.GoToGlobalPosition:output_type -> steeleagle_protocol.v1.services.driver.control.GoToGlobalPositionResponse
-	20, // 28: steeleagle_protocol.v1.services.driver.control.ControlService.GoToRelativePosition:output_type -> steeleagle_protocol.v1.services.driver.control.GoToRelativePositionResponse
-	22, // 29: steeleagle_protocol.v1.services.driver.control.ControlService.SetVelocity:output_type -> steeleagle_protocol.v1.services.driver.control.SetVelocityResponse
-	24, // 30: steeleagle_protocol.v1.services.driver.control.ControlService.SetGimbalPose:output_type -> steeleagle_protocol.v1.services.driver.control.SetGimbalPoseResponse
+	25, // 0: steeleagle_protocol.v1.services.driver.SetHomeRequest.new_home:type_name -> steeleagle_protocol.v1.common.GlobalPosition
+	0,  // 1: steeleagle_protocol.v1.services.driver.ReturnToHomeRequest.end_behavior:type_name -> steeleagle_protocol.v1.services.driver.ReturnToHomeEndBehavior
+	25, // 2: steeleagle_protocol.v1.services.driver.GoToGlobalPositionRequest.position:type_name -> steeleagle_protocol.v1.common.GlobalPosition
+	2,  // 3: steeleagle_protocol.v1.services.driver.GoToGlobalPositionRequest.heading_mode:type_name -> steeleagle_protocol.v1.services.driver.HeadingMode
+	1,  // 4: steeleagle_protocol.v1.services.driver.GoToGlobalPositionRequest.altitude_mode:type_name -> steeleagle_protocol.v1.services.driver.AltitudeMode
+	26, // 5: steeleagle_protocol.v1.services.driver.GoToRelativePositionRequest.position:type_name -> steeleagle_protocol.v1.common.RelativePosition
+	3,  // 6: steeleagle_protocol.v1.services.driver.GoToRelativePositionRequest.frame:type_name -> steeleagle_protocol.v1.services.driver.ReferenceFrame
+	27, // 7: steeleagle_protocol.v1.services.driver.SetVelocityRequest.velocity:type_name -> steeleagle_protocol.v1.common.Velocity
+	3,  // 8: steeleagle_protocol.v1.services.driver.SetVelocityRequest.frame:type_name -> steeleagle_protocol.v1.services.driver.ReferenceFrame
+	28, // 9: steeleagle_protocol.v1.services.driver.SetGimbalPoseRequest.pose:type_name -> steeleagle_protocol.v1.common.Pose
+	4,  // 10: steeleagle_protocol.v1.services.driver.SetGimbalPoseRequest.pose_mode:type_name -> steeleagle_protocol.v1.services.driver.PoseMode
+	5,  // 11: steeleagle_protocol.v1.services.driver.ControlService.TakeOff:input_type -> steeleagle_protocol.v1.services.driver.TakeOffRequest
+	7,  // 12: steeleagle_protocol.v1.services.driver.ControlService.Land:input_type -> steeleagle_protocol.v1.services.driver.LandRequest
+	9,  // 13: steeleagle_protocol.v1.services.driver.ControlService.Hold:input_type -> steeleagle_protocol.v1.services.driver.HoldRequest
+	11, // 14: steeleagle_protocol.v1.services.driver.ControlService.Kill:input_type -> steeleagle_protocol.v1.services.driver.KillRequest
+	13, // 15: steeleagle_protocol.v1.services.driver.ControlService.SetHome:input_type -> steeleagle_protocol.v1.services.driver.SetHomeRequest
+	15, // 16: steeleagle_protocol.v1.services.driver.ControlService.ReturnToHome:input_type -> steeleagle_protocol.v1.services.driver.ReturnToHomeRequest
+	17, // 17: steeleagle_protocol.v1.services.driver.ControlService.GoToGlobalPosition:input_type -> steeleagle_protocol.v1.services.driver.GoToGlobalPositionRequest
+	19, // 18: steeleagle_protocol.v1.services.driver.ControlService.GoToRelativePosition:input_type -> steeleagle_protocol.v1.services.driver.GoToRelativePositionRequest
+	21, // 19: steeleagle_protocol.v1.services.driver.ControlService.SetVelocity:input_type -> steeleagle_protocol.v1.services.driver.SetVelocityRequest
+	23, // 20: steeleagle_protocol.v1.services.driver.ControlService.SetGimbalPose:input_type -> steeleagle_protocol.v1.services.driver.SetGimbalPoseRequest
+	6,  // 21: steeleagle_protocol.v1.services.driver.ControlService.TakeOff:output_type -> steeleagle_protocol.v1.services.driver.TakeOffResponse
+	8,  // 22: steeleagle_protocol.v1.services.driver.ControlService.Land:output_type -> steeleagle_protocol.v1.services.driver.LandResponse
+	10, // 23: steeleagle_protocol.v1.services.driver.ControlService.Hold:output_type -> steeleagle_protocol.v1.services.driver.HoldResponse
+	12, // 24: steeleagle_protocol.v1.services.driver.ControlService.Kill:output_type -> steeleagle_protocol.v1.services.driver.KillResponse
+	14, // 25: steeleagle_protocol.v1.services.driver.ControlService.SetHome:output_type -> steeleagle_protocol.v1.services.driver.SetHomeResponse
+	16, // 26: steeleagle_protocol.v1.services.driver.ControlService.ReturnToHome:output_type -> steeleagle_protocol.v1.services.driver.ReturnToHomeResponse
+	18, // 27: steeleagle_protocol.v1.services.driver.ControlService.GoToGlobalPosition:output_type -> steeleagle_protocol.v1.services.driver.GoToGlobalPositionResponse
+	20, // 28: steeleagle_protocol.v1.services.driver.ControlService.GoToRelativePosition:output_type -> steeleagle_protocol.v1.services.driver.GoToRelativePositionResponse
+	22, // 29: steeleagle_protocol.v1.services.driver.ControlService.SetVelocity:output_type -> steeleagle_protocol.v1.services.driver.SetVelocityResponse
+	24, // 30: steeleagle_protocol.v1.services.driver.ControlService.SetGimbalPose:output_type -> steeleagle_protocol.v1.services.driver.SetGimbalPoseResponse
 	21, // [21:31] is the sub-list for method output_type
 	11, // [11:21] is the sub-list for method input_type
 	11, // [11:11] is the sub-list for extension type_name

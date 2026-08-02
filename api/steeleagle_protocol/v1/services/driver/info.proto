@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package steeleagle_protocol.v1.services.driver.info;
+package steeleagle_protocol.v1.services.driver;
 
-option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver/info;info";
+option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver;driver";
 
 /*
  * Used to query static hardware identity from the driver.

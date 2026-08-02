@@ -22,7 +22,7 @@ class ComputeServiceStub:
             channel: A grpc.Channel.
         """
         self.SetEnginesForTopic = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.vehicle.compute.ComputeService/SetEnginesForTopic',
+                '/steeleagle_protocol.v1.services.vehicle.ComputeService/SetEnginesForTopic',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_compute__pb2.SetEnginesForTopicRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_compute__pb2.SetEnginesForTopicResponse.FromString,
                 _registered_method=True)
@@ -58,9 +58,9 @@ def add_ComputeServiceServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'steeleagle_protocol.v1.services.vehicle.compute.ComputeService', rpc_method_handlers)
+            'steeleagle_protocol.v1.services.vehicle.ComputeService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('steeleagle_protocol.v1.services.vehicle.compute.ComputeService', rpc_method_handlers)
+    server.add_registered_method_handlers('steeleagle_protocol.v1.services.vehicle.ComputeService', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
@@ -88,7 +88,7 @@ class ComputeService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.vehicle.compute.ComputeService/SetEnginesForTopic',
+            '/steeleagle_protocol.v1.services.vehicle.ComputeService/SetEnginesForTopic',
             steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_compute__pb2.SetEnginesForTopicRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_compute__pb2.SetEnginesForTopicResponse.FromString,
             options,

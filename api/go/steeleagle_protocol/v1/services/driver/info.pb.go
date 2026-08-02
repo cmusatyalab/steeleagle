@@ -109,13 +109,13 @@ var File_steeleagle_protocol_v1_services_driver_info_proto protoreflect.FileDesc
 
 const file_steeleagle_protocol_v1_services_driver_info_proto_rawDesc = "" +
 	"\n" +
-	"1steeleagle_protocol/v1/services/driver/info.proto\x12+steeleagle_protocol.v1.services.driver.info\"\x17\n" +
+	"1steeleagle_protocol/v1/services/driver/info.proto\x12&steeleagle_protocol.v1.services.driver\"\x17\n" +
 	"\x15GetVehicleInfoRequest\".\n" +
 	"\x16GetVehicleInfoResponse\x12\x14\n" +
-	"\x05model\x18\x01 \x01(\tR\x05model2\xa9\x01\n" +
-	"\vInfoService\x12\x99\x01\n" +
-	"\x0eGetVehicleInfo\x12B.steeleagle_protocol.v1.services.driver.info.GetVehicleInfoRequest\x1aC.steeleagle_protocol.v1.services.driver.info.GetVehicleInfoResponseB\xdb\x02\n" +
-	"/com.steeleagle_protocol.v1.services.driver.infoB\tInfoProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\xa2\x02\x05SVSDI\xaa\x02*SteeleagleProtocol.V1.Services.Driver.Info\xca\x02*SteeleagleProtocol\\V1\\Services\\Driver\\Info\xe2\x026SteeleagleProtocol\\V1\\Services\\Driver\\Info\\GPBMetadata\xea\x02.SteeleagleProtocol::V1::Services::Driver::Infob\x06proto3"
+	"\x05model\x18\x01 \x01(\tR\x05model2\x9f\x01\n" +
+	"\vInfoService\x12\x8f\x01\n" +
+	"\x0eGetVehicleInfo\x12=.steeleagle_protocol.v1.services.driver.GetVehicleInfoRequest\x1a>.steeleagle_protocol.v1.services.driver.GetVehicleInfoResponseB\xc0\x02\n" +
+	"*com.steeleagle_protocol.v1.services.driverB\tInfoProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\xa2\x02\x04SVSD\xaa\x02%SteeleagleProtocol.V1.Services.Driver\xca\x02%SteeleagleProtocol\\V1\\Services\\Driver\xe2\x021SteeleagleProtocol\\V1\\Services\\Driver\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Services::Driverb\x06proto3"
 
 var (
 	file_steeleagle_protocol_v1_services_driver_info_proto_rawDescOnce sync.Once
@@ -131,12 +131,12 @@ func file_steeleagle_protocol_v1_services_driver_info_proto_rawDescGZIP() []byte
 
 var file_steeleagle_protocol_v1_services_driver_info_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_steeleagle_protocol_v1_services_driver_info_proto_goTypes = []any{
-	(*GetVehicleInfoRequest)(nil),  // 0: steeleagle_protocol.v1.services.driver.info.GetVehicleInfoRequest
-	(*GetVehicleInfoResponse)(nil), // 1: steeleagle_protocol.v1.services.driver.info.GetVehicleInfoResponse
+	(*GetVehicleInfoRequest)(nil),  // 0: steeleagle_protocol.v1.services.driver.GetVehicleInfoRequest
+	(*GetVehicleInfoResponse)(nil), // 1: steeleagle_protocol.v1.services.driver.GetVehicleInfoResponse
 }
 var file_steeleagle_protocol_v1_services_driver_info_proto_depIdxs = []int32{
-	0, // 0: steeleagle_protocol.v1.services.driver.info.InfoService.GetVehicleInfo:input_type -> steeleagle_protocol.v1.services.driver.info.GetVehicleInfoRequest
-	1, // 1: steeleagle_protocol.v1.services.driver.info.InfoService.GetVehicleInfo:output_type -> steeleagle_protocol.v1.services.driver.info.GetVehicleInfoResponse
+	0, // 0: steeleagle_protocol.v1.services.driver.InfoService.GetVehicleInfo:input_type -> steeleagle_protocol.v1.services.driver.GetVehicleInfoRequest
+	1, // 1: steeleagle_protocol.v1.services.driver.InfoService.GetVehicleInfo:output_type -> steeleagle_protocol.v1.services.driver.GetVehicleInfoResponse
 	1, // [1:2] is the sub-list for method output_type
 	0, // [0:1] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name

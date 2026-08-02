@@ -25,28 +25,28 @@ _sym_db = _symbol_database.Default()
 from steeleagle_protocol.v1.messages.telemetry import telemetry_pb2 as steeleagle__protocol_dot_v1_dot_messages_dot_telemetry_dot_telemetry__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n3steeleagle_protocol/v1/services/driver/stream.proto\x12-steeleagle_protocol.v1.services.driver.stream\x1a\x39steeleagle_protocol/v1/messages/telemetry/telemetry.proto\"\x8b\x02\n\x18GetVideoStreamURLRequest\x12r\n\nresolution\x18\x01 \x01(\x0e\x32R.steeleagle_protocol.v1.services.driver.stream.GetVideoStreamURLRequest.ResolutionR\nresolution\"{\n\nResolution\x12\x1a\n\x16RESOLUTION_UNSPECIFIED\x10\x00\x12\x13\n\x0fRESOLUTION_480P\x10\x01\x12\x13\n\x0fRESOLUTION_720P\x10\x02\x12\x14\n\x10RESOLUTION_1080P\x10\x03\x12\x11\n\rRESOLUTION_4K\x10\x04\"m\n\x19GetVideoStreamURLResponse\x12\x1d\n\nstream_url\x18\x01 \x01(\tR\tstreamUrl\x12\"\n\ntarget_fps\x18\x02 \x01(\rH\x00R\ttargetFps\x88\x01\x01\x42\r\n\x0b_target_fps\"M\n\x18StreamVideoFramesRequest\x12\"\n\ntarget_fps\x18\x01 \x01(\rH\x00R\ttargetFps\x88\x01\x01\x42\r\n\x0b_target_fps\"j\n\x19StreamVideoFramesResponse\x12M\n\x05\x66rame\x18\x01 \x01(\x0b\x32\x37.steeleagle_protocol.v1.messages.telemetry.EncodedFrameR\x05\x66rame\"K\n\x16StreamTelemetryRequest\x12\"\n\ntarget_fps\x18\x01 \x01(\rH\x00R\ttargetFps\x88\x01\x01\x42\r\n\x0b_target_fps\"m\n\x17StreamTelemetryResponse\x12R\n\ttelemetry\x18\x01 \x01(\x0b\x32\x34.steeleagle_protocol.v1.messages.telemetry.TelemetryR\ttelemetry2\x88\x04\n\rStreamService\x12\xa6\x01\n\x11GetVideoStreamURL\x12G.steeleagle_protocol.v1.services.driver.stream.GetVideoStreamURLRequest\x1aH.steeleagle_protocol.v1.services.driver.stream.GetVideoStreamURLResponse\x12\xa8\x01\n\x11StreamVideoFrames\x12G.steeleagle_protocol.v1.services.driver.stream.StreamVideoFramesRequest\x1aH.steeleagle_protocol.v1.services.driver.stream.StreamVideoFramesResponse0\x01\x12\xa2\x01\n\x0fStreamTelemetry\x12\x45.steeleagle_protocol.v1.services.driver.stream.StreamTelemetryRequest\x1a\x46.steeleagle_protocol.v1.services.driver.stream.StreamTelemetryResponse0\x01\x42\xe7\x02\n1com.steeleagle_protocol.v1.services.driver.streamB\x0bStreamProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\xa2\x02\x05SVSDS\xaa\x02,SteeleagleProtocol.V1.Services.Driver.Stream\xca\x02,SteeleagleProtocol\\V1\\Services\\Driver\\Stream\xe2\x02\x38SteeleagleProtocol\\V1\\Services\\Driver\\Stream\\GPBMetadata\xea\x02\x30SteeleagleProtocol::V1::Services::Driver::Streamb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n3steeleagle_protocol/v1/services/driver/stream.proto\x12&steeleagle_protocol.v1.services.driver\x1a\x39steeleagle_protocol/v1/messages/telemetry/telemetry.proto\"\x84\x02\n\x18GetVideoStreamURLRequest\x12k\n\nresolution\x18\x01 \x01(\x0e\x32K.steeleagle_protocol.v1.services.driver.GetVideoStreamURLRequest.ResolutionR\nresolution\"{\n\nResolution\x12\x1a\n\x16RESOLUTION_UNSPECIFIED\x10\x00\x12\x13\n\x0fRESOLUTION_480P\x10\x01\x12\x13\n\x0fRESOLUTION_720P\x10\x02\x12\x14\n\x10RESOLUTION_1080P\x10\x03\x12\x11\n\rRESOLUTION_4K\x10\x04\"m\n\x19GetVideoStreamURLResponse\x12\x1d\n\nstream_url\x18\x01 \x01(\tR\tstreamUrl\x12\"\n\ntarget_fps\x18\x02 \x01(\rH\x00R\ttargetFps\x88\x01\x01\x42\r\n\x0b_target_fps\"M\n\x18StreamVideoFramesRequest\x12\"\n\ntarget_fps\x18\x01 \x01(\rH\x00R\ttargetFps\x88\x01\x01\x42\r\n\x0b_target_fps\"j\n\x19StreamVideoFramesResponse\x12M\n\x05\x66rame\x18\x01 \x01(\x0b\x32\x37.steeleagle_protocol.v1.messages.telemetry.EncodedFrameR\x05\x66rame\"K\n\x16StreamTelemetryRequest\x12\"\n\ntarget_fps\x18\x01 \x01(\rH\x00R\ttargetFps\x88\x01\x01\x42\r\n\x0b_target_fps\"m\n\x17StreamTelemetryResponse\x12R\n\ttelemetry\x18\x01 \x01(\x0b\x32\x34.steeleagle_protocol.v1.messages.telemetry.TelemetryR\ttelemetry2\xde\x03\n\rStreamService\x12\x98\x01\n\x11GetVideoStreamURL\x12@.steeleagle_protocol.v1.services.driver.GetVideoStreamURLRequest\x1a\x41.steeleagle_protocol.v1.services.driver.GetVideoStreamURLResponse\x12\x9a\x01\n\x11StreamVideoFrames\x12@.steeleagle_protocol.v1.services.driver.StreamVideoFramesRequest\x1a\x41.steeleagle_protocol.v1.services.driver.StreamVideoFramesResponse0\x01\x12\x94\x01\n\x0fStreamTelemetry\x12>.steeleagle_protocol.v1.services.driver.StreamTelemetryRequest\x1a?.steeleagle_protocol.v1.services.driver.StreamTelemetryResponse0\x01\x42\xc2\x02\n*com.steeleagle_protocol.v1.services.driverB\x0bStreamProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\xa2\x02\x04SVSD\xaa\x02%SteeleagleProtocol.V1.Services.Driver\xca\x02%SteeleagleProtocol\\V1\\Services\\Driver\xe2\x02\x31SteeleagleProtocol\\V1\\Services\\Driver\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Services::Driverb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'steeleagle_protocol.v1.services.driver.stream_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
-  _globals['DESCRIPTOR']._serialized_options = b'\n1com.steeleagle_protocol.v1.services.driver.streamB\013StreamProtoP\001ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\242\002\005SVSDS\252\002,SteeleagleProtocol.V1.Services.Driver.Stream\312\002,SteeleagleProtocol\\V1\\Services\\Driver\\Stream\342\0028SteeleagleProtocol\\V1\\Services\\Driver\\Stream\\GPBMetadata\352\0020SteeleagleProtocol::V1::Services::Driver::Stream'
-  _globals['_GETVIDEOSTREAMURLREQUEST']._serialized_start=162
-  _globals['_GETVIDEOSTREAMURLREQUEST']._serialized_end=429
-  _globals['_GETVIDEOSTREAMURLREQUEST_RESOLUTION']._serialized_start=306
-  _globals['_GETVIDEOSTREAMURLREQUEST_RESOLUTION']._serialized_end=429
-  _globals['_GETVIDEOSTREAMURLRESPONSE']._serialized_start=431
-  _globals['_GETVIDEOSTREAMURLRESPONSE']._serialized_end=540
-  _globals['_STREAMVIDEOFRAMESREQUEST']._serialized_start=542
-  _globals['_STREAMVIDEOFRAMESREQUEST']._serialized_end=619
-  _globals['_STREAMVIDEOFRAMESRESPONSE']._serialized_start=621
-  _globals['_STREAMVIDEOFRAMESRESPONSE']._serialized_end=727
-  _globals['_STREAMTELEMETRYREQUEST']._serialized_start=729
-  _globals['_STREAMTELEMETRYREQUEST']._serialized_end=804
-  _globals['_STREAMTELEMETRYRESPONSE']._serialized_start=806
-  _globals['_STREAMTELEMETRYRESPONSE']._serialized_end=915
-  _globals['_STREAMSERVICE']._serialized_start=918
-  _globals['_STREAMSERVICE']._serialized_end=1438
+  _globals['DESCRIPTOR']._serialized_options = b'\n*com.steeleagle_protocol.v1.services.driverB\013StreamProtoP\001ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\242\002\004SVSD\252\002%SteeleagleProtocol.V1.Services.Driver\312\002%SteeleagleProtocol\\V1\\Services\\Driver\342\0021SteeleagleProtocol\\V1\\Services\\Driver\\GPBMetadata\352\002(SteeleagleProtocol::V1::Services::Driver'
+  _globals['_GETVIDEOSTREAMURLREQUEST']._serialized_start=155
+  _globals['_GETVIDEOSTREAMURLREQUEST']._serialized_end=415
+  _globals['_GETVIDEOSTREAMURLREQUEST_RESOLUTION']._serialized_start=292
+  _globals['_GETVIDEOSTREAMURLREQUEST_RESOLUTION']._serialized_end=415
+  _globals['_GETVIDEOSTREAMURLRESPONSE']._serialized_start=417
+  _globals['_GETVIDEOSTREAMURLRESPONSE']._serialized_end=526
+  _globals['_STREAMVIDEOFRAMESREQUEST']._serialized_start=528
+  _globals['_STREAMVIDEOFRAMESREQUEST']._serialized_end=605
+  _globals['_STREAMVIDEOFRAMESRESPONSE']._serialized_start=607
+  _globals['_STREAMVIDEOFRAMESRESPONSE']._serialized_end=713
+  _globals['_STREAMTELEMETRYREQUEST']._serialized_start=715
+  _globals['_STREAMTELEMETRYREQUEST']._serialized_end=790
+  _globals['_STREAMTELEMETRYRESPONSE']._serialized_start=792
+  _globals['_STREAMTELEMETRYRESPONSE']._serialized_end=901
+  _globals['_STREAMSERVICE']._serialized_start=904
+  _globals['_STREAMSERVICE']._serialized_end=1382
 # @@protoc_insertion_point(module_scope)

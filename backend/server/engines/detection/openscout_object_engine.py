@@ -37,7 +37,7 @@ from predictors import UnknownModelArchError, load_predictor
 from pygeodesy.sphericalNvector import LatLon
 from pykml import parser
 from scipy.spatial.transform import Rotation as R
-from steeleagle_protocol.v1 import common_pb2
+from steeleagle_protocol.v1.common import common_pb2
 from steeleagle_protocol.v1.messages.result import result_pb2
 from steeleagle_protocol.v1.messages.telemetry import telemetry_pb2 as telemetry
 

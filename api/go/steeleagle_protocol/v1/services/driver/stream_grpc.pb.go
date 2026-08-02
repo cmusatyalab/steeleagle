@@ -23,9 +23,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	StreamService_GetVideoStreamURL_FullMethodName = "/steeleagle_protocol.v1.services.driver.stream.StreamService/GetVideoStreamURL"
-	StreamService_StreamVideoFrames_FullMethodName = "/steeleagle_protocol.v1.services.driver.stream.StreamService/StreamVideoFrames"
-	StreamService_StreamTelemetry_FullMethodName   = "/steeleagle_protocol.v1.services.driver.stream.StreamService/StreamTelemetry"
+	StreamService_GetVideoStreamURL_FullMethodName = "/steeleagle_protocol.v1.services.driver.StreamService/GetVideoStreamURL"
+	StreamService_StreamVideoFrames_FullMethodName = "/steeleagle_protocol.v1.services.driver.StreamService/StreamVideoFrames"
+	StreamService_StreamTelemetry_FullMethodName   = "/steeleagle_protocol.v1.services.driver.StreamService/StreamTelemetry"
 )
 
 // StreamServiceClient is the client API for StreamService service.
@@ -224,7 +224,7 @@ type StreamService_StreamTelemetryServer = grpc.ServerStreamingServer[StreamTele
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var StreamService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "steeleagle_protocol.v1.services.driver.stream.StreamService",
+	ServiceName: "steeleagle_protocol.v1.services.driver.StreamService",
 	HandlerType: (*StreamServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

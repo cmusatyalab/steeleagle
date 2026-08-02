@@ -21,7 +21,7 @@ class InfoServiceStub:
             channel: A grpc.Channel.
         """
         self.GetVehicleInfo = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.info.InfoService/GetVehicleInfo',
+                '/steeleagle_protocol.v1.services.driver.InfoService/GetVehicleInfo',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_info__pb2.GetVehicleInfoRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_info__pb2.GetVehicleInfoResponse.FromString,
                 _registered_method=True)
@@ -52,9 +52,9 @@ def add_InfoServiceServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'steeleagle_protocol.v1.services.driver.info.InfoService', rpc_method_handlers)
+            'steeleagle_protocol.v1.services.driver.InfoService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('steeleagle_protocol.v1.services.driver.info.InfoService', rpc_method_handlers)
+    server.add_registered_method_handlers('steeleagle_protocol.v1.services.driver.InfoService', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
@@ -81,7 +81,7 @@ class InfoService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.info.InfoService/GetVehicleInfo',
+            '/steeleagle_protocol.v1.services.driver.InfoService/GetVehicleInfo',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_info__pb2.GetVehicleInfoRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_info__pb2.GetVehicleInfoResponse.FromString,
             options,

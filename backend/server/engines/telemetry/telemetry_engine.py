@@ -23,7 +23,7 @@ from foxglove.schemas import CompressedImage, LocationFix
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine, local_engine
 from PIL import Image
-from steeleagle_protocol.v1 import common_pb2
+from steeleagle_protocol.v1.common import common_pb2
 from steeleagle_protocol.v1.messages.telemetry import telemetry_pb2 as telemetry
 
 logger = logging.getLogger(__name__)

@@ -12,7 +12,7 @@ from typing import Dict, List, Set
 import cv2
 import grpc
 import numpy as np
-from steeleagle_protocol.v1 import common_pb2
+from steeleagle_protocol.v1.common import common_pb2
 from steeleagle_protocol.v1.services.driver import control_pb2, control_pb2_grpc
 from steeleagle_protocol.v1.services.mission import mission_pb2, mission_pb2_grpc
 from steeleagle_protocol.v1.services.vehicle import data_pb2, data_pb2_grpc

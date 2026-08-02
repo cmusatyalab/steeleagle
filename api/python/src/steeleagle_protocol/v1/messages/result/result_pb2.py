@@ -22,11 +22,11 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
-from steeleagle_protocol.v1 import common_pb2 as steeleagle__protocol_dot_v1_dot_common__pb2
+from steeleagle_protocol.v1.common import common_pb2 as steeleagle__protocol_dot_v1_dot_common_dot_common__pb2
 from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n3steeleagle_protocol/v1/messages/result/result.proto\x12&steeleagle_protocol.v1.messages.result\x1a#steeleagle_protocol/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"a\n\x0b\x42oundingBox\x12\x13\n\x05y_min\x18\x01 \x01(\x01R\x04yMin\x12\x13\n\x05x_min\x18\x02 \x01(\x01R\x04xMin\x12\x13\n\x05y_max\x18\x03 \x01(\x01R\x04yMax\x12\x13\n\x05x_max\x18\x04 \x01(\x01R\x04xMax\"\x89\x01\n\tDetection\x12\x1d\n\nclass_name\x18\x01 \x01(\tR\tclassName\x12\x14\n\x05score\x18\x02 \x01(\x01R\x05score\x12G\n\x04\x62\x62ox\x18\x03 \x01(\x0b\x32\x33.steeleagle_protocol.v1.messages.result.BoundingBoxR\x04\x62\x62ox\"d\n\x0f\x44\x65tectionResult\x12Q\n\ndetections\x18\x01 \x03(\x0b\x32\x31.steeleagle_protocol.v1.messages.result.DetectionR\ndetections\"R\n\x0eGuidanceResult\x12@\n\ntrajectory\x18\x01 \x01(\x0b\x32 .steeleagle_protocol.v1.VelocityR\ntrajectory\"\xc4\x01\n\nSLAMResult\x12W\n\x11relative_position\x18\x01 \x01(\x0b\x32(.steeleagle_protocol.v1.RelativePositionH\x00R\x10relativePosition\x12Q\n\x0fglobal_position\x18\x02 \x01(\x0b\x32&.steeleagle_protocol.v1.GlobalPositionH\x00R\x0eglobalPositionB\n\n\x08position\"\x9a\x03\n\rComputeResult\x12\x38\n\ttimestamp\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\ttimestamp\x12\x64\n\x10\x64\x65tection_result\x18\x02 \x01(\x0b\x32\x37.steeleagle_protocol.v1.messages.result.DetectionResultH\x00R\x0f\x64\x65tectionResult\x12\x61\n\x0fguidance_result\x18\x03 \x01(\x0b\x32\x36.steeleagle_protocol.v1.messages.result.GuidanceResultH\x00R\x0eguidanceResult\x12U\n\x0bslam_result\x18\x04 \x01(\x0b\x32\x32.steeleagle_protocol.v1.messages.result.SLAMResultH\x00R\nslamResult\x12\'\n\x0egeneric_result\x18\x05 \x01(\x0cH\x00R\rgenericResultB\x06\n\x04typeB\xc2\x02\n*com.steeleagle_protocol.v1.messages.resultB\x0bResultProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/result\xa2\x02\x04SVMR\xaa\x02%SteeleagleProtocol.V1.Messages.Result\xca\x02%SteeleagleProtocol\\V1\\Messages\\Result\xe2\x02\x31SteeleagleProtocol\\V1\\Messages\\Result\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Messages::Resultb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n3steeleagle_protocol/v1/messages/result/result.proto\x12&steeleagle_protocol.v1.messages.result\x1a*steeleagle_protocol/v1/common/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"a\n\x0b\x42oundingBox\x12\x13\n\x05y_min\x18\x01 \x01(\x01R\x04yMin\x12\x13\n\x05x_min\x18\x02 \x01(\x01R\x04xMin\x12\x13\n\x05y_max\x18\x03 \x01(\x01R\x04yMax\x12\x13\n\x05x_max\x18\x04 \x01(\x01R\x04xMax\"\x89\x01\n\tDetection\x12\x1d\n\nclass_name\x18\x01 \x01(\tR\tclassName\x12\x14\n\x05score\x18\x02 \x01(\x01R\x05score\x12G\n\x04\x62\x62ox\x18\x03 \x01(\x0b\x32\x33.steeleagle_protocol.v1.messages.result.BoundingBoxR\x04\x62\x62ox\"d\n\x0f\x44\x65tectionResult\x12Q\n\ndetections\x18\x01 \x03(\x0b\x32\x31.steeleagle_protocol.v1.messages.result.DetectionR\ndetections\"Y\n\x0eGuidanceResult\x12G\n\ntrajectory\x18\x01 \x01(\x0b\x32\'.steeleagle_protocol.v1.common.VelocityR\ntrajectory\"\xd2\x01\n\nSLAMResult\x12^\n\x11relative_position\x18\x01 \x01(\x0b\x32/.steeleagle_protocol.v1.common.RelativePositionH\x00R\x10relativePosition\x12X\n\x0fglobal_position\x18\x02 \x01(\x0b\x32-.steeleagle_protocol.v1.common.GlobalPositionH\x00R\x0eglobalPositionB\n\n\x08position\"\x9a\x03\n\rComputeResult\x12\x38\n\ttimestamp\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\ttimestamp\x12\x64\n\x10\x64\x65tection_result\x18\x02 \x01(\x0b\x32\x37.steeleagle_protocol.v1.messages.result.DetectionResultH\x00R\x0f\x64\x65tectionResult\x12\x61\n\x0fguidance_result\x18\x03 \x01(\x0b\x32\x36.steeleagle_protocol.v1.messages.result.GuidanceResultH\x00R\x0eguidanceResult\x12U\n\x0bslam_result\x18\x04 \x01(\x0b\x32\x32.steeleagle_protocol.v1.messages.result.SLAMResultH\x00R\nslamResult\x12\'\n\x0egeneric_result\x18\x05 \x01(\x0cH\x00R\rgenericResultB\x06\n\x04typeB\xc2\x02\n*com.steeleagle_protocol.v1.messages.resultB\x0bResultProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/result\xa2\x02\x04SVMR\xaa\x02%SteeleagleProtocol.V1.Messages.Result\xca\x02%SteeleagleProtocol\\V1\\Messages\\Result\xe2\x02\x31SteeleagleProtocol\\V1\\Messages\\Result\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Messages::Resultb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -34,16 +34,16 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'steeleagle_protocol.v1.mess
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'\n*com.steeleagle_protocol.v1.messages.resultB\013ResultProtoP\001ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/result\242\002\004SVMR\252\002%SteeleagleProtocol.V1.Messages.Result\312\002%SteeleagleProtocol\\V1\\Messages\\Result\342\0021SteeleagleProtocol\\V1\\Messages\\Result\\GPBMetadata\352\002(SteeleagleProtocol::V1::Messages::Result'
-  _globals['_BOUNDINGBOX']._serialized_start=165
-  _globals['_BOUNDINGBOX']._serialized_end=262
-  _globals['_DETECTION']._serialized_start=265
-  _globals['_DETECTION']._serialized_end=402
-  _globals['_DETECTIONRESULT']._serialized_start=404
-  _globals['_DETECTIONRESULT']._serialized_end=504
-  _globals['_GUIDANCERESULT']._serialized_start=506
-  _globals['_GUIDANCERESULT']._serialized_end=588
-  _globals['_SLAMRESULT']._serialized_start=591
-  _globals['_SLAMRESULT']._serialized_end=787
-  _globals['_COMPUTERESULT']._serialized_start=790
-  _globals['_COMPUTERESULT']._serialized_end=1200
+  _globals['_BOUNDINGBOX']._serialized_start=172
+  _globals['_BOUNDINGBOX']._serialized_end=269
+  _globals['_DETECTION']._serialized_start=272
+  _globals['_DETECTION']._serialized_end=409
+  _globals['_DETECTIONRESULT']._serialized_start=411
+  _globals['_DETECTIONRESULT']._serialized_end=511
+  _globals['_GUIDANCERESULT']._serialized_start=513
+  _globals['_GUIDANCERESULT']._serialized_end=602
+  _globals['_SLAMRESULT']._serialized_start=605
+  _globals['_SLAMRESULT']._serialized_end=815
+  _globals['_COMPUTERESULT']._serialized_start=818
+  _globals['_COMPUTERESULT']._serialized_end=1228
 # @@protoc_insertion_point(module_scope)

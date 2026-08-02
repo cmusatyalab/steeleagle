@@ -24,18 +24,18 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n1steeleagle_protocol/v1/services/driver/info.proto\x12+steeleagle_protocol.v1.services.driver.info\"\x17\n\x15GetVehicleInfoRequest\".\n\x16GetVehicleInfoResponse\x12\x14\n\x05model\x18\x01 \x01(\tR\x05model2\xa9\x01\n\x0bInfoService\x12\x99\x01\n\x0eGetVehicleInfo\x12\x42.steeleagle_protocol.v1.services.driver.info.GetVehicleInfoRequest\x1a\x43.steeleagle_protocol.v1.services.driver.info.GetVehicleInfoResponseB\xdb\x02\n/com.steeleagle_protocol.v1.services.driver.infoB\tInfoProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\xa2\x02\x05SVSDI\xaa\x02*SteeleagleProtocol.V1.Services.Driver.Info\xca\x02*SteeleagleProtocol\\V1\\Services\\Driver\\Info\xe2\x02\x36SteeleagleProtocol\\V1\\Services\\Driver\\Info\\GPBMetadata\xea\x02.SteeleagleProtocol::V1::Services::Driver::Infob\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n1steeleagle_protocol/v1/services/driver/info.proto\x12&steeleagle_protocol.v1.services.driver\"\x17\n\x15GetVehicleInfoRequest\".\n\x16GetVehicleInfoResponse\x12\x14\n\x05model\x18\x01 \x01(\tR\x05model2\x9f\x01\n\x0bInfoService\x12\x8f\x01\n\x0eGetVehicleInfo\x12=.steeleagle_protocol.v1.services.driver.GetVehicleInfoRequest\x1a>.steeleagle_protocol.v1.services.driver.GetVehicleInfoResponseB\xc0\x02\n*com.steeleagle_protocol.v1.services.driverB\tInfoProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\xa2\x02\x04SVSD\xaa\x02%SteeleagleProtocol.V1.Services.Driver\xca\x02%SteeleagleProtocol\\V1\\Services\\Driver\xe2\x02\x31SteeleagleProtocol\\V1\\Services\\Driver\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Services::Driverb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'steeleagle_protocol.v1.services.driver.info_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
-  _globals['DESCRIPTOR']._serialized_options = b'\n/com.steeleagle_protocol.v1.services.driver.infoB\tInfoProtoP\001ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\242\002\005SVSDI\252\002*SteeleagleProtocol.V1.Services.Driver.Info\312\002*SteeleagleProtocol\\V1\\Services\\Driver\\Info\342\0026SteeleagleProtocol\\V1\\Services\\Driver\\Info\\GPBMetadata\352\002.SteeleagleProtocol::V1::Services::Driver::Info'
-  _globals['_GETVEHICLEINFOREQUEST']._serialized_start=98
-  _globals['_GETVEHICLEINFOREQUEST']._serialized_end=121
-  _globals['_GETVEHICLEINFORESPONSE']._serialized_start=123
-  _globals['_GETVEHICLEINFORESPONSE']._serialized_end=169
-  _globals['_INFOSERVICE']._serialized_start=172
-  _globals['_INFOSERVICE']._serialized_end=341
+  _globals['DESCRIPTOR']._serialized_options = b'\n*com.steeleagle_protocol.v1.services.driverB\tInfoProtoP\001ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\242\002\004SVSD\252\002%SteeleagleProtocol.V1.Services.Driver\312\002%SteeleagleProtocol\\V1\\Services\\Driver\342\0021SteeleagleProtocol\\V1\\Services\\Driver\\GPBMetadata\352\002(SteeleagleProtocol::V1::Services::Driver'
+  _globals['_GETVEHICLEINFOREQUEST']._serialized_start=93
+  _globals['_GETVEHICLEINFOREQUEST']._serialized_end=116
+  _globals['_GETVEHICLEINFORESPONSE']._serialized_start=118
+  _globals['_GETVEHICLEINFORESPONSE']._serialized_end=164
+  _globals['_INFOSERVICE']._serialized_start=167
+  _globals['_INFOSERVICE']._serialized_end=326
 # @@protoc_insertion_point(module_scope)

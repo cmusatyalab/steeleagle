@@ -7,7 +7,7 @@ package steeleagle_protocol.v1.messages.telemetry;
 
 option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry;telemetry";
 
-import "steeleagle_protocol/v1/common.proto";
+import "steeleagle_protocol/v1/common/common.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/any.proto";
 
@@ -24,25 +24,25 @@ message GPSInfo {
 // Information about the vehicle position.
 message PositionInfo {
   // global position that will be used when returning home
-  GlobalPosition home = 1;
+  common.GlobalPosition home = 1;
   // current global position of the vehicle
-  GlobalPosition global_position = 2;
+  common.GlobalPosition global_position = 2;
   /*
    * current relative position of the vehicle in the global NEU
    * (North, East, Up) coordinate frame, relative to start
    * position
    */
-  RelativePosition relative_position = 3;
+  common.RelativePosition relative_position = 3;
   /*
    * current velocity of the vehicle in the body (forward, right, up)
    * coordinate frame
    */
-  Velocity velocity_body = 4;
+  common.Velocity velocity_body = 4;
   /*
    * current velocity of the vehicle in the global NEU (North, East, Up)
    * coordinate frame
    */
-  Velocity velocity_neu = 5;
+  common.Velocity velocity_neu = 5;
   // Motion status of the vehicle.
   enum MotionStatus {
       // the vehicle is not providing information on its motion status
@@ -65,13 +65,13 @@ message GimbalStatus {
   // ID of the gimbal
   uint32 id = 1;
   // current pose in the body (forward, right, up) reference frame
-  Pose pose_body = 2;
+  common.Pose pose_body = 2;
   // current pose in the NEU (North, East, Up) reference frame
-  Pose pose_neu = 3;
+  common.Pose pose_neu = 3;
   // angular velocity in the body (forward, right, up) reference frame
-  Pose angular_velocity_body = 4;
+  common.Pose angular_velocity_body = 4;
   // angular velocity in the NEU (North, East, Up) reference frame
-  Pose angular_velocity_neu = 5;
+  common.Pose angular_velocity_neu = 5;
 }
 
 // Info of all attached gimbals.

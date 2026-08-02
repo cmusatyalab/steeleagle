@@ -23,16 +23,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ControlService_TakeOff_FullMethodName              = "/steeleagle_protocol.v1.services.driver.control.ControlService/TakeOff"
-	ControlService_Land_FullMethodName                 = "/steeleagle_protocol.v1.services.driver.control.ControlService/Land"
-	ControlService_Hold_FullMethodName                 = "/steeleagle_protocol.v1.services.driver.control.ControlService/Hold"
-	ControlService_Kill_FullMethodName                 = "/steeleagle_protocol.v1.services.driver.control.ControlService/Kill"
-	ControlService_SetHome_FullMethodName              = "/steeleagle_protocol.v1.services.driver.control.ControlService/SetHome"
-	ControlService_ReturnToHome_FullMethodName         = "/steeleagle_protocol.v1.services.driver.control.ControlService/ReturnToHome"
-	ControlService_GoToGlobalPosition_FullMethodName   = "/steeleagle_protocol.v1.services.driver.control.ControlService/GoToGlobalPosition"
-	ControlService_GoToRelativePosition_FullMethodName = "/steeleagle_protocol.v1.services.driver.control.ControlService/GoToRelativePosition"
-	ControlService_SetVelocity_FullMethodName          = "/steeleagle_protocol.v1.services.driver.control.ControlService/SetVelocity"
-	ControlService_SetGimbalPose_FullMethodName        = "/steeleagle_protocol.v1.services.driver.control.ControlService/SetGimbalPose"
+	ControlService_TakeOff_FullMethodName              = "/steeleagle_protocol.v1.services.driver.ControlService/TakeOff"
+	ControlService_Land_FullMethodName                 = "/steeleagle_protocol.v1.services.driver.ControlService/Land"
+	ControlService_Hold_FullMethodName                 = "/steeleagle_protocol.v1.services.driver.ControlService/Hold"
+	ControlService_Kill_FullMethodName                 = "/steeleagle_protocol.v1.services.driver.ControlService/Kill"
+	ControlService_SetHome_FullMethodName              = "/steeleagle_protocol.v1.services.driver.ControlService/SetHome"
+	ControlService_ReturnToHome_FullMethodName         = "/steeleagle_protocol.v1.services.driver.ControlService/ReturnToHome"
+	ControlService_GoToGlobalPosition_FullMethodName   = "/steeleagle_protocol.v1.services.driver.ControlService/GoToGlobalPosition"
+	ControlService_GoToRelativePosition_FullMethodName = "/steeleagle_protocol.v1.services.driver.ControlService/GoToRelativePosition"
+	ControlService_SetVelocity_FullMethodName          = "/steeleagle_protocol.v1.services.driver.ControlService/SetVelocity"
+	ControlService_SetGimbalPose_FullMethodName        = "/steeleagle_protocol.v1.services.driver.ControlService/SetGimbalPose"
 )
 
 // ControlServiceClient is the client API for ControlService service.
@@ -612,7 +612,7 @@ func _ControlService_SetGimbalPose_Handler(srv interface{}, ctx context.Context,
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ControlService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "steeleagle_protocol.v1.services.driver.control.ControlService",
+	ServiceName: "steeleagle_protocol.v1.services.driver.ControlService",
 	HandlerType: (*ControlServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
