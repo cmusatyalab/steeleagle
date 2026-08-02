@@ -89,10 +89,14 @@ github.com/cmusatyalab/gabriel/go-client v0.1.1 h1:m1p0e0PoI5GC/g0jmdMohxygQn1OB
 github.com/cmusatyalab/gabriel/go-client v0.1.1/go.mod h1:eI2KZGfr7NwezGGGDkEPj+2ocP3ztiV8ZtQs/ZKbqE4=
 github.com/cmusatyalab/gabriel/go-client v0.2.0 h1:qJcbe44lxQSYmMgTQ6McoEYLlTcxsQjZV1bBRlBvxnk=
 github.com/cmusatyalab/gabriel/go-client v0.2.0/go.mod h1:pkMh8eVbFDcP0Lslh7vL70K8xUghuWEXDtyDW78x+Yk=
+github.com/cmusatyalab/gabriel/go-client v0.3.0 h1:6J34V0Xy36mDJ1Wlrg7uQlRTlwwL2C5TezGy7n7D8QY=
+github.com/cmusatyalab/gabriel/go-client v0.3.0/go.mod h1:v8fAh3mDB8eKZUZ9VbTW4Uy24udW00iB84sztx3QF8c=
 github.com/cmusatyalab/gabriel/protocol/go v0.1.1-0.20260707195611-936af3c0b393 h1:dYyElyVnjKRxrbBTBgLC8U8j1gX1gaVIittMU5mfHhM=
 github.com/cmusatyalab/gabriel/protocol/go v0.1.1-0.20260707195611-936af3c0b393/go.mod h1:fpTyumzatxpXsCUBSNkAmD/CBeJOKgmx8+w5f6kbMms=
 github.com/cmusatyalab/gabriel/protocol/go v0.2.0 h1:gEAEsNuok3bLBKtfexn2s+BAUQyIHJ4ie+pQKkEf3+U=
 github.com/cmusatyalab/gabriel/protocol/go v0.2.0/go.mod h1:fpTyumzatxpXsCUBSNkAmD/CBeJOKgmx8+w5f6kbMms=
+github.com/cmusatyalab/gabriel/protocol/go v0.3.0 h1:TniyTQZaSWcw0PlPCelO+3XVvsXC7IveGQZaDFHDVwY=
+github.com/cmusatyalab/gabriel/protocol/go v0.3.0/go.mod h1:rzDrMuUGyYnW2iaM+vxyIrYIiSGCy091/LqNP6MUO1c=
 github.com/coder/websocket v1.8.12 h1:5bUXkEPPIbewrnkU8LTCLVaxi4N4J8ahufH2vlo4NAo=
 github.com/coder/websocket v1.8.12/go.mod h1:LNVeNrXQZfe5qhS9ALED3uA+l5pPqvwXg3CKoDBB2gs=
 github.com/coder/websocket v1.8.15 h1:6B2JPeOGlpff2Uz6vOEH1Vzpi0iUz20A+lPVhPHtNUA=

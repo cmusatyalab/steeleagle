@@ -6,8 +6,8 @@ require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/adrg/xdg v0.5.3
 	github.com/alecthomas/participle/v2 v2.1.4
-	github.com/cmusatyalab/gabriel/go-client v0.2.0
-	github.com/cmusatyalab/gabriel/protocol/go v0.2.0
+	github.com/cmusatyalab/gabriel/go-client v0.3.0
+	github.com/cmusatyalab/gabriel/protocol/go v0.3.0
 	github.com/google/uuid v1.6.0
 	github.com/mwitkow/grpc-proxy v0.0.0-20250813121105-2866842de9a5
 	github.com/open-policy-agent/opa v1.19.0
