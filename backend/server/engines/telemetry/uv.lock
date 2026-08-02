@@ -57,20 +57,20 @@ wheels = [
 
 [[package]]
 name = "gabriel-protocol"
-version = "5.0"
+version = "5.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "grpcio" },
     { name = "protobuf" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/71/15/ced6cda2c40dc767b96be071272f8a65fd51ca5dc9e737628f8e0e91b286/gabriel_protocol-5.0.tar.gz", hash = "sha256:54617f079284f5f321da1953fa242f2d205acfaa5c7492e6e92f4fc55614e719", size = 10068, upload-time = "2026-07-31T14:51:01.361Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cb/db/db28e86e0e1cbf2d63b0c858c680d398f093dd640f7036d1e1d3f6ab9940/gabriel_protocol-5.1.tar.gz", hash = "sha256:e3c588f42670e1528ad338a9d00535653ea03d73b1adfab2e5211f14a77888cd", size = 10146, upload-time = "2026-08-02T03:35:17.256Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1d/21/3335eea49cb323284f61a8058e5c6c0f489981d1328f2399fac447dc8608/gabriel_protocol-5.0-py3-none-any.whl", hash = "sha256:a0d726e27776c3ad6330ca9762bdf8cf11e59ea49009374a0f50fb9b0fb2385c", size = 11670, upload-time = "2026-07-31T14:51:00.314Z" },
+    { url = "https://files.pythonhosted.org/packages/59/d5/1f1e5a1193c63bc3cb1b172d41a23079d85f7f28f6ee5d39e2f1af42f237/gabriel_protocol-5.1-py3-none-any.whl", hash = "sha256:85fc12abbfe6c8e2d5ad511ef97f96e6a0e534f2e29a4333ba718192bd0b7bff", size = 11715, upload-time = "2026-08-02T03:35:16.155Z" },
 ]
 
 [[package]]
 name = "gabriel-server"
-version = "5.0.0"
+version = "5.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "gabriel-protocol" },
@@ -80,9 +80,9 @@ dependencies = [
     { name = "pyzmq" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d8/22/d1de129555b600c29868b2d745256cfbdc0af4f328b990ad62ec4c8bae4d/gabriel_server-5.0.0.tar.gz", hash = "sha256:29f130f79b609793517bc0d4a7cae63a70f1373dcfa28a247ff7ce3429860c62", size = 28130, upload-time = "2026-07-31T14:52:36.084Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5d/47/e90fc3cd3897f048b3348a757d94ef0a9d5c9fa8360c25d6f05c0ee1ff94/gabriel_server-5.1.0.tar.gz", hash = "sha256:32c44a78cdfbe4b951c31c367dbdafc675d2be1f5922e0ef532331b5b2e32538", size = 28346, upload-time = "2026-08-02T03:38:54.843Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b5/39/3f4347753a348f4168c4a7627b72e7bd77f88670c6b412aed5e01df29f17/gabriel_server-5.0.0-py3-none-any.whl", hash = "sha256:ee4a6f068dbf26da502cb80b51f32a3a5207eeead9fa452c3cf1b6543f4ecd63", size = 32403, upload-time = "2026-07-31T14:52:34.979Z" },
+    { url = "https://files.pythonhosted.org/packages/ff/1a/4fc7922574235db5ab3e9068fa6721b7d21f0d1eaeea93594c1b5e58ebeb/gabriel_server-5.1.0-py3-none-any.whl", hash = "sha256:6964a57e3b2256b91ea05c80a370b57199633183dcd8ec6dc83059ec5f3bd40f", size = 32431, upload-time = "2026-08-02T03:38:53.677Z" },
 ]
 
 [[package]]
@@ -281,7 +281,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "foxglove-sdk" },
-    { name = "gabriel-server", specifier = ">=5.0.0" },
+    { name = "gabriel-server", specifier = ">=5.1.0" },
     { name = "numpy" },
     { name = "opencv-python-headless", specifier = ">=3,<5" },
     { name = "pillow" },
