@@ -2,8 +2,8 @@ package sdk
 
 import (
 	"context"
+	"sync"
 	"time"
-    "sync"
 )
 
 // pollFunc checks the current status of an operation. It should return
@@ -16,24 +16,24 @@ type waiter struct {
 	poll     pollFunc
 	err      error
 	interval time.Duration
-    once     sync.Once
-    done     chan struct{}
+	once     sync.Once
+	done     chan struct{}
 }
 
 // newWaiter creates a waiter object that checks the status of an in-flight
 // RPC, returning the result once it is complete.
 func newWaiter(ctx context.Context, poll pollFunc, err error) *waiter {
-    w := &waiter{
-        ctx: ctx,
-        poll: poll,
-        err: err,
-        interval: 500 * time.Millisecond,
-        done: make(chan struct{}),
-    }
-    if err != nil {
-        w.cleanup() // want to indicate that there is nothing to wait on
-    }
-    return w
+	w := &waiter{
+		ctx:      ctx,
+		poll:     poll,
+		err:      err,
+		interval: 500 * time.Millisecond,
+		done:     make(chan struct{}),
+	}
+	if err != nil {
+		w.cleanup() // want to indicate that there is nothing to wait on
+	}
+	return w
 }
 
 // WithPollInterval sets the initial delay between status checks.
@@ -44,7 +44,7 @@ func (w *waiter) WithPollInterval(d time.Duration) *waiter {
 
 // Wait blocks until the operation completes, ctx is done, or polling fails.
 func (w *waiter) Wait() error {
-    defer w.cleanup()
+	defer w.cleanup()
 	if w.err != nil {
 		return w.err
 	}
@@ -52,12 +52,12 @@ func (w *waiter) Wait() error {
 	for {
 		done, err := w.poll(w.ctx)
 		if err != nil || done {
-            w.err = err
+			w.err = err
 			return err
 		}
 		select {
 		case <-w.ctx.Done():
-            w.err = w.ctx.Err()
+			w.err = w.ctx.Err()
 			return w.ctx.Err()
 		case <-time.After(interval):
 		}
@@ -66,17 +66,17 @@ func (w *waiter) Wait() error {
 
 // Check checks whether the operation has completed, and if so with what error.
 func (w *waiter) Check() (bool, error) {
-    select {
-    case <-w.done:
-        return true, w.err // safe read, happens after close(done)
-    default:
-        return false, nil // not done yet
-    }
+	select {
+	case <-w.done:
+		return true, w.err // safe read, happens after close(done)
+	default:
+		return false, nil // not done yet
+	}
 }
 
 // cleanup closes the done channel in a safe way.
 func (w *waiter) cleanup() {
-    w.once.Do(func() {
-        close(w.done)
-    })
+	w.once.Do(func() {
+		close(w.done)
+	})
 }

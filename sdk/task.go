@@ -1,9 +1,9 @@
 package sdk
 
 import (
-    "context"
+	"context"
 )
 
 type TaskContext struct {
-    context.Context
+	context.Context
 }
