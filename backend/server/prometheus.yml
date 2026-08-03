@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: 'steeleagle'
+    static_configs:
+      - targets: ['gabriel-server:8000']

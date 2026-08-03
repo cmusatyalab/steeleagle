@@ -24,20 +24,20 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n6steeleagle_protocol/v1/services/driver/calibrate.proto\x12\x32steeleagle_protocol.v1.services.driver.calibration\"\xe6\x01\n\x10\x43\x61librateRequest\x12\x63\n\x06sensor\x18\x01 \x01(\x0e\x32K.steeleagle_protocol.v1.services.driver.calibration.CalibrateRequest.SensorR\x06sensor\x12\x0e\n\x02id\x18\x02 \x01(\rR\x02id\"]\n\x06Sensor\x12\x16\n\x12SENSOR_UNSPECIFIED\x10\x00\x12\x17\n\x13SENSOR_MAGNETOMETER\x10\x01\x12\x11\n\rSENSOR_GIMBAL\x10\x02\x12\x0f\n\x0bSENSOR_GYRO\x10\x03\"\x84\x01\n\x11\x43\x61librateResponse\x12)\n\x10next_instruction\x18\x01 \x01(\tR\x0fnextInstruction\x12\x12\n\x04step\x18\x02 \x01(\rR\x04step\x12\x14\n\x05total\x18\x03 \x01(\rR\x05total\x12\x1a\n\x08\x63omplete\x18\x04 \x01(\x08R\x08\x63omplete2\xaf\x01\n\x10\x43\x61librateService\x12\x9a\x01\n\tCalibrate\x12\x44.steeleagle_protocol.v1.services.driver.calibration.CalibrateRequest\x1a\x45.steeleagle_protocol.v1.services.driver.calibration.CalibrateResponse0\x01\x42\x83\x03\n6com.steeleagle_protocol.v1.services.driver.calibrationB\x0e\x43\x61librateProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\xa2\x02\x05SVSDC\xaa\x02\x31SteeleagleProtocol.V1.Services.Driver.Calibration\xca\x02\x31SteeleagleProtocol\\V1\\Services\\Driver\\Calibration\xe2\x02=SteeleagleProtocol\\V1\\Services\\Driver\\Calibration\\GPBMetadata\xea\x02\x35SteeleagleProtocol::V1::Services::Driver::Calibrationb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n6steeleagle_protocol/v1/services/driver/calibrate.proto\x12&steeleagle_protocol.v1.services.driver\"\xda\x01\n\x10\x43\x61librateRequest\x12W\n\x06sensor\x18\x01 \x01(\x0e\x32?.steeleagle_protocol.v1.services.driver.CalibrateRequest.SensorR\x06sensor\x12\x0e\n\x02id\x18\x02 \x01(\rR\x02id\"]\n\x06Sensor\x12\x16\n\x12SENSOR_UNSPECIFIED\x10\x00\x12\x17\n\x13SENSOR_MAGNETOMETER\x10\x01\x12\x11\n\rSENSOR_GIMBAL\x10\x02\x12\x0f\n\x0bSENSOR_GYRO\x10\x03\"\x84\x01\n\x11\x43\x61librateResponse\x12)\n\x10next_instruction\x18\x01 \x01(\tR\x0fnextInstruction\x12\x12\n\x04step\x18\x02 \x01(\rR\x04step\x12\x14\n\x05total\x18\x03 \x01(\rR\x05total\x12\x1a\n\x08\x63omplete\x18\x04 \x01(\x08R\x08\x63omplete2\x97\x01\n\x10\x43\x61librateService\x12\x82\x01\n\tCalibrate\x12\x38.steeleagle_protocol.v1.services.driver.CalibrateRequest\x1a\x39.steeleagle_protocol.v1.services.driver.CalibrateResponse0\x01\x42\xc5\x02\n*com.steeleagle_protocol.v1.services.driverB\x0e\x43\x61librateProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\xa2\x02\x04SVSD\xaa\x02%SteeleagleProtocol.V1.Services.Driver\xca\x02%SteeleagleProtocol\\V1\\Services\\Driver\xe2\x02\x31SteeleagleProtocol\\V1\\Services\\Driver\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Services::Driverb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'steeleagle_protocol.v1.services.driver.calibrate_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
-  _globals['DESCRIPTOR']._serialized_options = b'\n6com.steeleagle_protocol.v1.services.driver.calibrationB\016CalibrateProtoP\001ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\242\002\005SVSDC\252\0021SteeleagleProtocol.V1.Services.Driver.Calibration\312\0021SteeleagleProtocol\\V1\\Services\\Driver\\Calibration\342\002=SteeleagleProtocol\\V1\\Services\\Driver\\Calibration\\GPBMetadata\352\0025SteeleagleProtocol::V1::Services::Driver::Calibration'
-  _globals['_CALIBRATEREQUEST']._serialized_start=111
-  _globals['_CALIBRATEREQUEST']._serialized_end=341
-  _globals['_CALIBRATEREQUEST_SENSOR']._serialized_start=248
-  _globals['_CALIBRATEREQUEST_SENSOR']._serialized_end=341
-  _globals['_CALIBRATERESPONSE']._serialized_start=344
-  _globals['_CALIBRATERESPONSE']._serialized_end=476
-  _globals['_CALIBRATESERVICE']._serialized_start=479
-  _globals['_CALIBRATESERVICE']._serialized_end=654
+  _globals['DESCRIPTOR']._serialized_options = b'\n*com.steeleagle_protocol.v1.services.driverB\016CalibrateProtoP\001ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\242\002\004SVSD\252\002%SteeleagleProtocol.V1.Services.Driver\312\002%SteeleagleProtocol\\V1\\Services\\Driver\342\0021SteeleagleProtocol\\V1\\Services\\Driver\\GPBMetadata\352\002(SteeleagleProtocol::V1::Services::Driver'
+  _globals['_CALIBRATEREQUEST']._serialized_start=99
+  _globals['_CALIBRATEREQUEST']._serialized_end=317
+  _globals['_CALIBRATEREQUEST_SENSOR']._serialized_start=224
+  _globals['_CALIBRATEREQUEST_SENSOR']._serialized_end=317
+  _globals['_CALIBRATERESPONSE']._serialized_start=320
+  _globals['_CALIBRATERESPONSE']._serialized_end=452
+  _globals['_CALIBRATESERVICE']._serialized_start=455
+  _globals['_CALIBRATESERVICE']._serialized_end=606
 # @@protoc_insertion_point(module_scope)

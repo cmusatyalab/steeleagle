@@ -73,7 +73,7 @@ func (x CalibrateRequest_Sensor) Number() protoreflect.EnumNumber {
 
 type CalibrateRequest struct {
 	state             protoimpl.MessageState  `protogen:"opaque.v1"`
-	xxx_hidden_Sensor CalibrateRequest_Sensor `protobuf:"varint,1,opt,name=sensor,proto3,enum=steeleagle_protocol.v1.services.driver.calibration.CalibrateRequest_Sensor"`
+	xxx_hidden_Sensor CalibrateRequest_Sensor `protobuf:"varint,1,opt,name=sensor,proto3,enum=steeleagle_protocol.v1.services.driver.CalibrateRequest_Sensor"`
 	xxx_hidden_Id     uint32                  `protobuf:"varint,2,opt,name=id,proto3"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -245,9 +245,9 @@ var File_steeleagle_protocol_v1_services_driver_calibrate_proto protoreflect.Fil
 
 const file_steeleagle_protocol_v1_services_driver_calibrate_proto_rawDesc = "" +
 	"\n" +
-	"6steeleagle_protocol/v1/services/driver/calibrate.proto\x122steeleagle_protocol.v1.services.driver.calibration\"\xe6\x01\n" +
-	"\x10CalibrateRequest\x12c\n" +
-	"\x06sensor\x18\x01 \x01(\x0e2K.steeleagle_protocol.v1.services.driver.calibration.CalibrateRequest.SensorR\x06sensor\x12\x0e\n" +
+	"6steeleagle_protocol/v1/services/driver/calibrate.proto\x12&steeleagle_protocol.v1.services.driver\"\xda\x01\n" +
+	"\x10CalibrateRequest\x12W\n" +
+	"\x06sensor\x18\x01 \x01(\x0e2?.steeleagle_protocol.v1.services.driver.CalibrateRequest.SensorR\x06sensor\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\rR\x02id\"]\n" +
 	"\x06Sensor\x12\x16\n" +
 	"\x12SENSOR_UNSPECIFIED\x10\x00\x12\x17\n" +
@@ -258,22 +258,22 @@ const file_steeleagle_protocol_v1_services_driver_calibrate_proto_rawDesc = "" +
 	"\x10next_instruction\x18\x01 \x01(\tR\x0fnextInstruction\x12\x12\n" +
 	"\x04step\x18\x02 \x01(\rR\x04step\x12\x14\n" +
 	"\x05total\x18\x03 \x01(\rR\x05total\x12\x1a\n" +
-	"\bcomplete\x18\x04 \x01(\bR\bcomplete2\xaf\x01\n" +
-	"\x10CalibrateService\x12\x9a\x01\n" +
-	"\tCalibrate\x12D.steeleagle_protocol.v1.services.driver.calibration.CalibrateRequest\x1aE.steeleagle_protocol.v1.services.driver.calibration.CalibrateResponse0\x01B\x83\x03\n" +
-	"6com.steeleagle_protocol.v1.services.driver.calibrationB\x0eCalibrateProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\xa2\x02\x05SVSDC\xaa\x021SteeleagleProtocol.V1.Services.Driver.Calibration\xca\x021SteeleagleProtocol\\V1\\Services\\Driver\\Calibration\xe2\x02=SteeleagleProtocol\\V1\\Services\\Driver\\Calibration\\GPBMetadata\xea\x025SteeleagleProtocol::V1::Services::Driver::Calibrationb\x06proto3"
+	"\bcomplete\x18\x04 \x01(\bR\bcomplete2\x97\x01\n" +
+	"\x10CalibrateService\x12\x82\x01\n" +
+	"\tCalibrate\x128.steeleagle_protocol.v1.services.driver.CalibrateRequest\x1a9.steeleagle_protocol.v1.services.driver.CalibrateResponse0\x01B\xc5\x02\n" +
+	"*com.steeleagle_protocol.v1.services.driverB\x0eCalibrateProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\xa2\x02\x04SVSD\xaa\x02%SteeleagleProtocol.V1.Services.Driver\xca\x02%SteeleagleProtocol\\V1\\Services\\Driver\xe2\x021SteeleagleProtocol\\V1\\Services\\Driver\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Services::Driverb\x06proto3"
 
 var file_steeleagle_protocol_v1_services_driver_calibrate_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_steeleagle_protocol_v1_services_driver_calibrate_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_steeleagle_protocol_v1_services_driver_calibrate_proto_goTypes = []any{
-	(CalibrateRequest_Sensor)(0), // 0: steeleagle_protocol.v1.services.driver.calibration.CalibrateRequest.Sensor
-	(*CalibrateRequest)(nil),     // 1: steeleagle_protocol.v1.services.driver.calibration.CalibrateRequest
-	(*CalibrateResponse)(nil),    // 2: steeleagle_protocol.v1.services.driver.calibration.CalibrateResponse
+	(CalibrateRequest_Sensor)(0), // 0: steeleagle_protocol.v1.services.driver.CalibrateRequest.Sensor
+	(*CalibrateRequest)(nil),     // 1: steeleagle_protocol.v1.services.driver.CalibrateRequest
+	(*CalibrateResponse)(nil),    // 2: steeleagle_protocol.v1.services.driver.CalibrateResponse
 }
 var file_steeleagle_protocol_v1_services_driver_calibrate_proto_depIdxs = []int32{
-	0, // 0: steeleagle_protocol.v1.services.driver.calibration.CalibrateRequest.sensor:type_name -> steeleagle_protocol.v1.services.driver.calibration.CalibrateRequest.Sensor
-	1, // 1: steeleagle_protocol.v1.services.driver.calibration.CalibrateService.Calibrate:input_type -> steeleagle_protocol.v1.services.driver.calibration.CalibrateRequest
-	2, // 2: steeleagle_protocol.v1.services.driver.calibration.CalibrateService.Calibrate:output_type -> steeleagle_protocol.v1.services.driver.calibration.CalibrateResponse
+	0, // 0: steeleagle_protocol.v1.services.driver.CalibrateRequest.sensor:type_name -> steeleagle_protocol.v1.services.driver.CalibrateRequest.Sensor
+	1, // 1: steeleagle_protocol.v1.services.driver.CalibrateService.Calibrate:input_type -> steeleagle_protocol.v1.services.driver.CalibrateRequest
+	2, // 2: steeleagle_protocol.v1.services.driver.CalibrateService.Calibrate:output_type -> steeleagle_protocol.v1.services.driver.CalibrateResponse
 	2, // [2:3] is the sub-list for method output_type
 	1, // [1:2] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name

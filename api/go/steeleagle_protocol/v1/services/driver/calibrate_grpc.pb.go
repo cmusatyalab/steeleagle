@@ -23,7 +23,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	CalibrateService_Calibrate_FullMethodName = "/steeleagle_protocol.v1.services.driver.calibration.CalibrateService/Calibrate"
+	CalibrateService_Calibrate_FullMethodName = "/steeleagle_protocol.v1.services.driver.CalibrateService/Calibrate"
 )
 
 // CalibrateServiceClient is the client API for CalibrateService service.
@@ -138,7 +138,7 @@ type CalibrateService_CalibrateServer = grpc.ServerStreamingServer[CalibrateResp
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var CalibrateService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "steeleagle_protocol.v1.services.driver.calibration.CalibrateService",
+	ServiceName: "steeleagle_protocol.v1.services.driver.CalibrateService",
 	HandlerType: (*CalibrateServiceServer)(nil),
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{

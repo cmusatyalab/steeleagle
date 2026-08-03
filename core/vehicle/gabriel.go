@@ -5,10 +5,12 @@ import (
 
 	gabrielclient "github.com/cmusatyalab/gabriel/go-client"
 	gabrielpb "github.com/cmusatyalab/gabriel/protocol/go"
-	"github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/result"
+	commonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/common"
+	resultpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/result"
 	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -33,15 +35,20 @@ func getGabrielProducer[T Data](
 				case <-ctx.Done():
 					return
 				case val := <-inputCh:
-					telBytes, err := proto.Marshal(val)
+					anyPayload, err := anypb.New(val)
 					if err != nil {
-						log.Err(err).Msg("error marshaling data")
+						log.Err(err).Msg("error packing data into Any")
+						continue
 					}
-					payload := &gabrielpb.InputFrame_BytePayload{
-						BytePayload: telBytes,
+					payload := &gabrielpb.InputFrame_AnyPayload{
+						AnyPayload: anyPayload,
+					}
+					payloadType := gabrielpb.PayloadType_TEXT
+					if _, ok := any(val).(*telemetrypb.EncodedFrame); ok {
+						payloadType = gabrielpb.PayloadType_IMAGE
 					}
 					frame := &gabrielpb.InputFrame{
-						PayloadType: gabrielpb.PayloadType_TEXT,
+						PayloadType: payloadType,
 						Payload:     payload,
 					}
 					ch <- frame
@@ -68,16 +75,23 @@ func (v *Vehicle) createGabrielClient() error {
 		v.gabrielCfg.VideoFramesTargetEngines)
 
 	consumer := func(res *gabrielpb.Result) {
-		cmpRes := &result.ComputeResult{
+		cmpRes := &resultpb.ComputeResult{
 			Timestamp: timestamppb.Now(),
 		}
 		v.store.addResult(res.TargetEngineId, cmpRes)
 	}
 
-	var err error
-	v.gabrielClient, err = gabrielclient.NewGrpcClient(
+	client, err := gabrielclient.NewGrpcClient(
 		v.gabrielCfg.ServerEndpoint,
 		[]*gabrielclient.InputProducer{telProducer, frameProducer},
-		consumer)
-	return err
+		consumer,
+		gabrielclient.WithClientInfo(&commonpb.VehicleInfo{
+			VehicleId: v.Name,
+			Model:     v.Model,
+		}))
+	if err != nil {
+		return err
+	}
+	v.gabrielClient = client
+	return nil
 }

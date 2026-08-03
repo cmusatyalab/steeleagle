@@ -21,52 +21,52 @@ class ControlServiceStub:
             channel: A grpc.Channel.
         """
         self.TakeOff = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.control.ControlService/TakeOff',
+                '/steeleagle_protocol.v1.services.driver.ControlService/TakeOff',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.TakeOffRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.TakeOffResponse.FromString,
                 _registered_method=True)
         self.Land = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.control.ControlService/Land',
+                '/steeleagle_protocol.v1.services.driver.ControlService/Land',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.LandRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.LandResponse.FromString,
                 _registered_method=True)
         self.Hold = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.control.ControlService/Hold',
+                '/steeleagle_protocol.v1.services.driver.ControlService/Hold',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.HoldRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.HoldResponse.FromString,
                 _registered_method=True)
         self.Kill = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.control.ControlService/Kill',
+                '/steeleagle_protocol.v1.services.driver.ControlService/Kill',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.KillRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.KillResponse.FromString,
                 _registered_method=True)
         self.SetHome = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.control.ControlService/SetHome',
+                '/steeleagle_protocol.v1.services.driver.ControlService/SetHome',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetHomeRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetHomeResponse.FromString,
                 _registered_method=True)
         self.ReturnToHome = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.control.ControlService/ReturnToHome',
+                '/steeleagle_protocol.v1.services.driver.ControlService/ReturnToHome',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.ReturnToHomeRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.ReturnToHomeResponse.FromString,
                 _registered_method=True)
         self.GoToGlobalPosition = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.control.ControlService/GoToGlobalPosition',
+                '/steeleagle_protocol.v1.services.driver.ControlService/GoToGlobalPosition',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.GoToGlobalPositionRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.GoToGlobalPositionResponse.FromString,
                 _registered_method=True)
         self.GoToRelativePosition = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.control.ControlService/GoToRelativePosition',
+                '/steeleagle_protocol.v1.services.driver.ControlService/GoToRelativePosition',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.GoToRelativePositionRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.GoToRelativePositionResponse.FromString,
                 _registered_method=True)
         self.SetVelocity = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.control.ControlService/SetVelocity',
+                '/steeleagle_protocol.v1.services.driver.ControlService/SetVelocity',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetVelocityRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetVelocityResponse.FromString,
                 _registered_method=True)
         self.SetGimbalPose = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.control.ControlService/SetGimbalPose',
+                '/steeleagle_protocol.v1.services.driver.ControlService/SetGimbalPose',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalPoseRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalPoseResponse.FromString,
                 _registered_method=True)
@@ -297,9 +297,9 @@ def add_ControlServiceServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'steeleagle_protocol.v1.services.driver.control.ControlService', rpc_method_handlers)
+            'steeleagle_protocol.v1.services.driver.ControlService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('steeleagle_protocol.v1.services.driver.control.ControlService', rpc_method_handlers)
+    server.add_registered_method_handlers('steeleagle_protocol.v1.services.driver.ControlService', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
@@ -326,7 +326,7 @@ class ControlService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.control.ControlService/TakeOff',
+            '/steeleagle_protocol.v1.services.driver.ControlService/TakeOff',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.TakeOffRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.TakeOffResponse.FromString,
             options,
@@ -353,7 +353,7 @@ class ControlService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.control.ControlService/Land',
+            '/steeleagle_protocol.v1.services.driver.ControlService/Land',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.LandRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.LandResponse.FromString,
             options,
@@ -380,7 +380,7 @@ class ControlService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.control.ControlService/Hold',
+            '/steeleagle_protocol.v1.services.driver.ControlService/Hold',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.HoldRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.HoldResponse.FromString,
             options,
@@ -407,7 +407,7 @@ class ControlService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.control.ControlService/Kill',
+            '/steeleagle_protocol.v1.services.driver.ControlService/Kill',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.KillRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.KillResponse.FromString,
             options,
@@ -434,7 +434,7 @@ class ControlService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.control.ControlService/SetHome',
+            '/steeleagle_protocol.v1.services.driver.ControlService/SetHome',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetHomeRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetHomeResponse.FromString,
             options,
@@ -461,7 +461,7 @@ class ControlService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.control.ControlService/ReturnToHome',
+            '/steeleagle_protocol.v1.services.driver.ControlService/ReturnToHome',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.ReturnToHomeRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.ReturnToHomeResponse.FromString,
             options,
@@ -488,7 +488,7 @@ class ControlService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.control.ControlService/GoToGlobalPosition',
+            '/steeleagle_protocol.v1.services.driver.ControlService/GoToGlobalPosition',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.GoToGlobalPositionRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.GoToGlobalPositionResponse.FromString,
             options,
@@ -515,7 +515,7 @@ class ControlService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.control.ControlService/GoToRelativePosition',
+            '/steeleagle_protocol.v1.services.driver.ControlService/GoToRelativePosition',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.GoToRelativePositionRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.GoToRelativePositionResponse.FromString,
             options,
@@ -542,7 +542,7 @@ class ControlService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.control.ControlService/SetVelocity',
+            '/steeleagle_protocol.v1.services.driver.ControlService/SetVelocity',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetVelocityRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetVelocityResponse.FromString,
             options,
@@ -569,7 +569,7 @@ class ControlService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.control.ControlService/SetGimbalPose',
+            '/steeleagle_protocol.v1.services.driver.ControlService/SetGimbalPose',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalPoseRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalPoseResponse.FromString,
             options,

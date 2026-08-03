@@ -11,7 +11,7 @@
 package swarm
 
 import (
-	_ "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1"
+	_ "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/common"
 	driver "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver"
 	mission "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/mission"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -1951,61 +1951,61 @@ var File_steeleagle_protocol_v1_services_swarm_swarm_proto protoreflect.FileDesc
 
 const file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDesc = "" +
 	"\n" +
-	"1steeleagle_protocol/v1/services/swarm/swarm.proto\x12%steeleagle_protocol.v1.services.swarm\x1a#steeleagle_protocol/v1/common.proto\x1a4steeleagle_protocol/v1/services/driver/control.proto\x1a5steeleagle_protocol/v1/services/mission/mission.proto\"\x8b\x01\n" +
+	"1steeleagle_protocol/v1/services/swarm/swarm.proto\x12%steeleagle_protocol.v1.services.swarm\x1a*steeleagle_protocol/v1/common/common.proto\x1a4steeleagle_protocol/v1/services/driver/control.proto\x1a5steeleagle_protocol/v1/services/mission/mission.proto\"\x83\x01\n" +
 	"\x13SwarmTakeOffRequest\x12\x1a\n" +
-	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12X\n" +
-	"\arequest\x18\x02 \x01(\v2>.steeleagle_protocol.v1.services.driver.control.TakeOffRequestR\arequest\"\xbb\x01\n" +
+	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12P\n" +
+	"\arequest\x18\x02 \x01(\v26.steeleagle_protocol.v1.services.driver.TakeOffRequestR\arequest\"\xb3\x01\n" +
 	"\x14SwarmTakeOffResponse\x12\x18\n" +
-	"\avehicle\x18\x01 \x01(\tR\avehicle\x12[\n" +
-	"\bresponse\x18\x02 \x01(\v2?.steeleagle_protocol.v1.services.driver.control.TakeOffResponseR\bresponse\x12\x12\n" +
+	"\avehicle\x18\x01 \x01(\tR\avehicle\x12S\n" +
+	"\bresponse\x18\x02 \x01(\v27.steeleagle_protocol.v1.services.driver.TakeOffResponseR\bresponse\x12\x12\n" +
 	"\x04code\x18\x03 \x01(\rR\x04code\x12\x18\n" +
-	"\adetails\x18\x04 \x01(\tR\adetails\"\x85\x01\n" +
+	"\adetails\x18\x04 \x01(\tR\adetails\"}\n" +
 	"\x10SwarmLandRequest\x12\x1a\n" +
-	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12U\n" +
-	"\arequest\x18\x02 \x01(\v2;.steeleagle_protocol.v1.services.driver.control.LandRequestR\arequest\"\xb5\x01\n" +
+	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12M\n" +
+	"\arequest\x18\x02 \x01(\v23.steeleagle_protocol.v1.services.driver.LandRequestR\arequest\"\xad\x01\n" +
 	"\x11SwarmLandResponse\x12\x18\n" +
-	"\avehicle\x18\x01 \x01(\tR\avehicle\x12X\n" +
-	"\bresponse\x18\x02 \x01(\v2<.steeleagle_protocol.v1.services.driver.control.LandResponseR\bresponse\x12\x12\n" +
+	"\avehicle\x18\x01 \x01(\tR\avehicle\x12P\n" +
+	"\bresponse\x18\x02 \x01(\v24.steeleagle_protocol.v1.services.driver.LandResponseR\bresponse\x12\x12\n" +
 	"\x04code\x18\x03 \x01(\rR\x04code\x12\x18\n" +
-	"\adetails\x18\x04 \x01(\tR\adetails\"\x85\x01\n" +
+	"\adetails\x18\x04 \x01(\tR\adetails\"}\n" +
 	"\x10SwarmHoldRequest\x12\x1a\n" +
-	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12U\n" +
-	"\arequest\x18\x02 \x01(\v2;.steeleagle_protocol.v1.services.driver.control.HoldRequestR\arequest\"\xb5\x01\n" +
+	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12M\n" +
+	"\arequest\x18\x02 \x01(\v23.steeleagle_protocol.v1.services.driver.HoldRequestR\arequest\"\xad\x01\n" +
 	"\x11SwarmHoldResponse\x12\x18\n" +
-	"\avehicle\x18\x01 \x01(\tR\avehicle\x12X\n" +
-	"\bresponse\x18\x02 \x01(\v2<.steeleagle_protocol.v1.services.driver.control.HoldResponseR\bresponse\x12\x12\n" +
+	"\avehicle\x18\x01 \x01(\tR\avehicle\x12P\n" +
+	"\bresponse\x18\x02 \x01(\v24.steeleagle_protocol.v1.services.driver.HoldResponseR\bresponse\x12\x12\n" +
 	"\x04code\x18\x03 \x01(\rR\x04code\x12\x18\n" +
-	"\adetails\x18\x04 \x01(\tR\adetails\"\x85\x01\n" +
+	"\adetails\x18\x04 \x01(\tR\adetails\"}\n" +
 	"\x10SwarmKillRequest\x12\x1a\n" +
-	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12U\n" +
-	"\arequest\x18\x02 \x01(\v2;.steeleagle_protocol.v1.services.driver.control.KillRequestR\arequest\"\xb5\x01\n" +
+	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12M\n" +
+	"\arequest\x18\x02 \x01(\v23.steeleagle_protocol.v1.services.driver.KillRequestR\arequest\"\xad\x01\n" +
 	"\x11SwarmKillResponse\x12\x18\n" +
-	"\avehicle\x18\x01 \x01(\tR\avehicle\x12X\n" +
-	"\bresponse\x18\x02 \x01(\v2<.steeleagle_protocol.v1.services.driver.control.KillResponseR\bresponse\x12\x12\n" +
+	"\avehicle\x18\x01 \x01(\tR\avehicle\x12P\n" +
+	"\bresponse\x18\x02 \x01(\v24.steeleagle_protocol.v1.services.driver.KillResponseR\bresponse\x12\x12\n" +
 	"\x04code\x18\x03 \x01(\rR\x04code\x12\x18\n" +
-	"\adetails\x18\x04 \x01(\tR\adetails\"\x95\x01\n" +
+	"\adetails\x18\x04 \x01(\tR\adetails\"\x8d\x01\n" +
 	"\x18SwarmReturnToHomeRequest\x12\x1a\n" +
-	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12]\n" +
-	"\arequest\x18\x02 \x01(\v2C.steeleagle_protocol.v1.services.driver.control.ReturnToHomeRequestR\arequest\"\xc5\x01\n" +
+	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12U\n" +
+	"\arequest\x18\x02 \x01(\v2;.steeleagle_protocol.v1.services.driver.ReturnToHomeRequestR\arequest\"\xbd\x01\n" +
 	"\x19SwarmReturnToHomeResponse\x12\x18\n" +
-	"\avehicle\x18\x01 \x01(\tR\avehicle\x12`\n" +
-	"\bresponse\x18\x02 \x01(\v2D.steeleagle_protocol.v1.services.driver.control.ReturnToHomeResponseR\bresponse\x12\x12\n" +
+	"\avehicle\x18\x01 \x01(\tR\avehicle\x12X\n" +
+	"\bresponse\x18\x02 \x01(\v2<.steeleagle_protocol.v1.services.driver.ReturnToHomeResponseR\bresponse\x12\x12\n" +
 	"\x04code\x18\x03 \x01(\rR\x04code\x12\x18\n" +
-	"\adetails\x18\x04 \x01(\tR\adetails\"\x93\x01\n" +
+	"\adetails\x18\x04 \x01(\tR\adetails\"\x8b\x01\n" +
 	"\x17SwarmSetVelocityRequest\x12\x1a\n" +
-	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12\\\n" +
-	"\arequest\x18\x02 \x01(\v2B.steeleagle_protocol.v1.services.driver.control.SetVelocityRequestR\arequest\"\xc3\x01\n" +
+	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12T\n" +
+	"\arequest\x18\x02 \x01(\v2:.steeleagle_protocol.v1.services.driver.SetVelocityRequestR\arequest\"\xbb\x01\n" +
 	"\x18SwarmSetVelocityResponse\x12\x18\n" +
-	"\avehicle\x18\x01 \x01(\tR\avehicle\x12_\n" +
-	"\bresponse\x18\x02 \x01(\v2C.steeleagle_protocol.v1.services.driver.control.SetVelocityResponseR\bresponse\x12\x12\n" +
+	"\avehicle\x18\x01 \x01(\tR\avehicle\x12W\n" +
+	"\bresponse\x18\x02 \x01(\v2;.steeleagle_protocol.v1.services.driver.SetVelocityResponseR\bresponse\x12\x12\n" +
 	"\x04code\x18\x03 \x01(\rR\x04code\x12\x18\n" +
-	"\adetails\x18\x04 \x01(\tR\adetails\"\x97\x01\n" +
+	"\adetails\x18\x04 \x01(\tR\adetails\"\x8f\x01\n" +
 	"\x19SwarmSetGimbalPoseRequest\x12\x1a\n" +
-	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12^\n" +
-	"\arequest\x18\x02 \x01(\v2D.steeleagle_protocol.v1.services.driver.control.SetGimbalPoseRequestR\arequest\"\xc7\x01\n" +
+	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12V\n" +
+	"\arequest\x18\x02 \x01(\v2<.steeleagle_protocol.v1.services.driver.SetGimbalPoseRequestR\arequest\"\xbf\x01\n" +
 	"\x1aSwarmSetGimbalPoseResponse\x12\x18\n" +
-	"\avehicle\x18\x01 \x01(\tR\avehicle\x12a\n" +
-	"\bresponse\x18\x02 \x01(\v2E.steeleagle_protocol.v1.services.driver.control.SetGimbalPoseResponseR\bresponse\x12\x12\n" +
+	"\avehicle\x18\x01 \x01(\tR\avehicle\x12Y\n" +
+	"\bresponse\x18\x02 \x01(\v2=.steeleagle_protocol.v1.services.driver.SetGimbalPoseResponseR\bresponse\x12\x12\n" +
 	"\x04code\x18\x03 \x01(\rR\x04code\x12\x18\n" +
 	"\adetails\x18\x04 \x01(\tR\adetails\"\x90\x01\n" +
 	"\x19SwarmUploadMissionRequest\x12\x1a\n" +
@@ -2068,20 +2068,20 @@ var file_steeleagle_protocol_v1_services_swarm_swarm_proto_goTypes = []any{
 	(*SwarmStartMissionResponse)(nil),     // 17: steeleagle_protocol.v1.services.swarm.SwarmStartMissionResponse
 	(*SwarmStopMissionRequest)(nil),       // 18: steeleagle_protocol.v1.services.swarm.SwarmStopMissionRequest
 	(*SwarmStopMissionResponse)(nil),      // 19: steeleagle_protocol.v1.services.swarm.SwarmStopMissionResponse
-	(*driver.TakeOffRequest)(nil),         // 20: steeleagle_protocol.v1.services.driver.control.TakeOffRequest
-	(*driver.TakeOffResponse)(nil),        // 21: steeleagle_protocol.v1.services.driver.control.TakeOffResponse
-	(*driver.LandRequest)(nil),            // 22: steeleagle_protocol.v1.services.driver.control.LandRequest
-	(*driver.LandResponse)(nil),           // 23: steeleagle_protocol.v1.services.driver.control.LandResponse
-	(*driver.HoldRequest)(nil),            // 24: steeleagle_protocol.v1.services.driver.control.HoldRequest
-	(*driver.HoldResponse)(nil),           // 25: steeleagle_protocol.v1.services.driver.control.HoldResponse
-	(*driver.KillRequest)(nil),            // 26: steeleagle_protocol.v1.services.driver.control.KillRequest
-	(*driver.KillResponse)(nil),           // 27: steeleagle_protocol.v1.services.driver.control.KillResponse
-	(*driver.ReturnToHomeRequest)(nil),    // 28: steeleagle_protocol.v1.services.driver.control.ReturnToHomeRequest
-	(*driver.ReturnToHomeResponse)(nil),   // 29: steeleagle_protocol.v1.services.driver.control.ReturnToHomeResponse
-	(*driver.SetVelocityRequest)(nil),     // 30: steeleagle_protocol.v1.services.driver.control.SetVelocityRequest
-	(*driver.SetVelocityResponse)(nil),    // 31: steeleagle_protocol.v1.services.driver.control.SetVelocityResponse
-	(*driver.SetGimbalPoseRequest)(nil),   // 32: steeleagle_protocol.v1.services.driver.control.SetGimbalPoseRequest
-	(*driver.SetGimbalPoseResponse)(nil),  // 33: steeleagle_protocol.v1.services.driver.control.SetGimbalPoseResponse
+	(*driver.TakeOffRequest)(nil),         // 20: steeleagle_protocol.v1.services.driver.TakeOffRequest
+	(*driver.TakeOffResponse)(nil),        // 21: steeleagle_protocol.v1.services.driver.TakeOffResponse
+	(*driver.LandRequest)(nil),            // 22: steeleagle_protocol.v1.services.driver.LandRequest
+	(*driver.LandResponse)(nil),           // 23: steeleagle_protocol.v1.services.driver.LandResponse
+	(*driver.HoldRequest)(nil),            // 24: steeleagle_protocol.v1.services.driver.HoldRequest
+	(*driver.HoldResponse)(nil),           // 25: steeleagle_protocol.v1.services.driver.HoldResponse
+	(*driver.KillRequest)(nil),            // 26: steeleagle_protocol.v1.services.driver.KillRequest
+	(*driver.KillResponse)(nil),           // 27: steeleagle_protocol.v1.services.driver.KillResponse
+	(*driver.ReturnToHomeRequest)(nil),    // 28: steeleagle_protocol.v1.services.driver.ReturnToHomeRequest
+	(*driver.ReturnToHomeResponse)(nil),   // 29: steeleagle_protocol.v1.services.driver.ReturnToHomeResponse
+	(*driver.SetVelocityRequest)(nil),     // 30: steeleagle_protocol.v1.services.driver.SetVelocityRequest
+	(*driver.SetVelocityResponse)(nil),    // 31: steeleagle_protocol.v1.services.driver.SetVelocityResponse
+	(*driver.SetGimbalPoseRequest)(nil),   // 32: steeleagle_protocol.v1.services.driver.SetGimbalPoseRequest
+	(*driver.SetGimbalPoseResponse)(nil),  // 33: steeleagle_protocol.v1.services.driver.SetGimbalPoseResponse
 	(*mission.UploadMissionRequest)(nil),  // 34: steeleagle_protocol.v1.services.mission.UploadMissionRequest
 	(*mission.UploadMissionResponse)(nil), // 35: steeleagle_protocol.v1.services.mission.UploadMissionResponse
 	(*mission.StartMissionRequest)(nil),   // 36: steeleagle_protocol.v1.services.mission.StartMissionRequest
@@ -2090,20 +2090,20 @@ var file_steeleagle_protocol_v1_services_swarm_swarm_proto_goTypes = []any{
 	(*mission.StopMissionResponse)(nil),   // 39: steeleagle_protocol.v1.services.mission.StopMissionResponse
 }
 var file_steeleagle_protocol_v1_services_swarm_swarm_proto_depIdxs = []int32{
-	20, // 0: steeleagle_protocol.v1.services.swarm.SwarmTakeOffRequest.request:type_name -> steeleagle_protocol.v1.services.driver.control.TakeOffRequest
-	21, // 1: steeleagle_protocol.v1.services.swarm.SwarmTakeOffResponse.response:type_name -> steeleagle_protocol.v1.services.driver.control.TakeOffResponse
-	22, // 2: steeleagle_protocol.v1.services.swarm.SwarmLandRequest.request:type_name -> steeleagle_protocol.v1.services.driver.control.LandRequest
-	23, // 3: steeleagle_protocol.v1.services.swarm.SwarmLandResponse.response:type_name -> steeleagle_protocol.v1.services.driver.control.LandResponse
-	24, // 4: steeleagle_protocol.v1.services.swarm.SwarmHoldRequest.request:type_name -> steeleagle_protocol.v1.services.driver.control.HoldRequest
-	25, // 5: steeleagle_protocol.v1.services.swarm.SwarmHoldResponse.response:type_name -> steeleagle_protocol.v1.services.driver.control.HoldResponse
-	26, // 6: steeleagle_protocol.v1.services.swarm.SwarmKillRequest.request:type_name -> steeleagle_protocol.v1.services.driver.control.KillRequest
-	27, // 7: steeleagle_protocol.v1.services.swarm.SwarmKillResponse.response:type_name -> steeleagle_protocol.v1.services.driver.control.KillResponse
-	28, // 8: steeleagle_protocol.v1.services.swarm.SwarmReturnToHomeRequest.request:type_name -> steeleagle_protocol.v1.services.driver.control.ReturnToHomeRequest
-	29, // 9: steeleagle_protocol.v1.services.swarm.SwarmReturnToHomeResponse.response:type_name -> steeleagle_protocol.v1.services.driver.control.ReturnToHomeResponse
-	30, // 10: steeleagle_protocol.v1.services.swarm.SwarmSetVelocityRequest.request:type_name -> steeleagle_protocol.v1.services.driver.control.SetVelocityRequest
-	31, // 11: steeleagle_protocol.v1.services.swarm.SwarmSetVelocityResponse.response:type_name -> steeleagle_protocol.v1.services.driver.control.SetVelocityResponse
-	32, // 12: steeleagle_protocol.v1.services.swarm.SwarmSetGimbalPoseRequest.request:type_name -> steeleagle_protocol.v1.services.driver.control.SetGimbalPoseRequest
-	33, // 13: steeleagle_protocol.v1.services.swarm.SwarmSetGimbalPoseResponse.response:type_name -> steeleagle_protocol.v1.services.driver.control.SetGimbalPoseResponse
+	20, // 0: steeleagle_protocol.v1.services.swarm.SwarmTakeOffRequest.request:type_name -> steeleagle_protocol.v1.services.driver.TakeOffRequest
+	21, // 1: steeleagle_protocol.v1.services.swarm.SwarmTakeOffResponse.response:type_name -> steeleagle_protocol.v1.services.driver.TakeOffResponse
+	22, // 2: steeleagle_protocol.v1.services.swarm.SwarmLandRequest.request:type_name -> steeleagle_protocol.v1.services.driver.LandRequest
+	23, // 3: steeleagle_protocol.v1.services.swarm.SwarmLandResponse.response:type_name -> steeleagle_protocol.v1.services.driver.LandResponse
+	24, // 4: steeleagle_protocol.v1.services.swarm.SwarmHoldRequest.request:type_name -> steeleagle_protocol.v1.services.driver.HoldRequest
+	25, // 5: steeleagle_protocol.v1.services.swarm.SwarmHoldResponse.response:type_name -> steeleagle_protocol.v1.services.driver.HoldResponse
+	26, // 6: steeleagle_protocol.v1.services.swarm.SwarmKillRequest.request:type_name -> steeleagle_protocol.v1.services.driver.KillRequest
+	27, // 7: steeleagle_protocol.v1.services.swarm.SwarmKillResponse.response:type_name -> steeleagle_protocol.v1.services.driver.KillResponse
+	28, // 8: steeleagle_protocol.v1.services.swarm.SwarmReturnToHomeRequest.request:type_name -> steeleagle_protocol.v1.services.driver.ReturnToHomeRequest
+	29, // 9: steeleagle_protocol.v1.services.swarm.SwarmReturnToHomeResponse.response:type_name -> steeleagle_protocol.v1.services.driver.ReturnToHomeResponse
+	30, // 10: steeleagle_protocol.v1.services.swarm.SwarmSetVelocityRequest.request:type_name -> steeleagle_protocol.v1.services.driver.SetVelocityRequest
+	31, // 11: steeleagle_protocol.v1.services.swarm.SwarmSetVelocityResponse.response:type_name -> steeleagle_protocol.v1.services.driver.SetVelocityResponse
+	32, // 12: steeleagle_protocol.v1.services.swarm.SwarmSetGimbalPoseRequest.request:type_name -> steeleagle_protocol.v1.services.driver.SetGimbalPoseRequest
+	33, // 13: steeleagle_protocol.v1.services.swarm.SwarmSetGimbalPoseResponse.response:type_name -> steeleagle_protocol.v1.services.driver.SetGimbalPoseResponse
 	34, // 14: steeleagle_protocol.v1.services.swarm.SwarmUploadMissionRequest.request:type_name -> steeleagle_protocol.v1.services.mission.UploadMissionRequest
 	35, // 15: steeleagle_protocol.v1.services.swarm.SwarmUploadMissionResponse.response:type_name -> steeleagle_protocol.v1.services.mission.UploadMissionResponse
 	36, // 16: steeleagle_protocol.v1.services.swarm.SwarmStartMissionRequest.request:type_name -> steeleagle_protocol.v1.services.mission.StartMissionRequest

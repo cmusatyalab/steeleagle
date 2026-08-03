@@ -39,6 +39,14 @@ repos:
       - id: go-build
       - id: go-unit-tests
 
+  - repo: local
+    hooks:
+      - id: eslint-gcs
+        name: eslint (gcs/react/prime)
+        entry: bash -c 'cd gcs/react/prime && npx --no-install eslint --no-warn-ignored "${@#gcs/react/prime/}"' --
+        language: system
+        files: ^gcs/react/prime/.*\.jsx?$
+
 #  - repo: https://github.com/fsfe/reuse-tool
 #    rev: v1.0.0
 #    hooks:

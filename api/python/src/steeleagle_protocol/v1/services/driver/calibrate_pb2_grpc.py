@@ -21,7 +21,7 @@ class CalibrateServiceStub:
             channel: A grpc.Channel.
         """
         self.Calibrate = channel.unary_stream(
-                '/steeleagle_protocol.v1.services.driver.calibration.CalibrateService/Calibrate',
+                '/steeleagle_protocol.v1.services.driver.CalibrateService/Calibrate',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_calibrate__pb2.CalibrateRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_calibrate__pb2.CalibrateResponse.FromString,
                 _registered_method=True)
@@ -59,9 +59,9 @@ def add_CalibrateServiceServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'steeleagle_protocol.v1.services.driver.calibration.CalibrateService', rpc_method_handlers)
+            'steeleagle_protocol.v1.services.driver.CalibrateService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('steeleagle_protocol.v1.services.driver.calibration.CalibrateService', rpc_method_handlers)
+    server.add_registered_method_handlers('steeleagle_protocol.v1.services.driver.CalibrateService', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
@@ -88,7 +88,7 @@ class CalibrateService:
         return grpc.experimental.unary_stream(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.calibration.CalibrateService/Calibrate',
+            '/steeleagle_protocol.v1.services.driver.CalibrateService/Calibrate',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_calibrate__pb2.CalibrateRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_calibrate__pb2.CalibrateResponse.FromString,
             options,

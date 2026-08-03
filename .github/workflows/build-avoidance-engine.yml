@@ -2,7 +2,7 @@ name: Build and push avoidance engine
 
 on:
   push:
-    branches: [ "main", "dev" ]
+    branches: [ "v4.0-beta" ]
     tags: [ "v*" ]
     paths:
       - '.github/workflows/build-avoidance-engine.yml'

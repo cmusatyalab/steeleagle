@@ -121,7 +121,7 @@ func (x Topic) Number() protoreflect.EnumNumber {
 type EngineInfo struct {
 	state               protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id       string                 `protobuf:"bytes,1,opt,name=id,proto3"`
-	xxx_hidden_Location EngineLocation         `protobuf:"varint,2,opt,name=location,proto3,enum=steeleagle_protocol.v1.services.vehicle.compute.EngineLocation"`
+	xxx_hidden_Location EngineLocation         `protobuf:"varint,2,opt,name=location,proto3,enum=steeleagle_protocol.v1.services.vehicle.EngineLocation"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -193,7 +193,7 @@ func (b0 EngineInfo_builder) Build() *EngineInfo {
 
 type SetEnginesForTopicRequest struct {
 	state                protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Topic     Topic                  `protobuf:"varint,1,opt,name=topic,proto3,enum=steeleagle_protocol.v1.services.vehicle.compute.Topic"`
+	xxx_hidden_Topic     Topic                  `protobuf:"varint,1,opt,name=topic,proto3,enum=steeleagle_protocol.v1.services.vehicle.Topic"`
 	xxx_hidden_Datasinks *[]*EngineInfo         `protobuf:"bytes,2,rep,name=datasinks,proto3"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -311,14 +311,14 @@ var File_steeleagle_protocol_v1_services_vehicle_compute_proto protoreflect.File
 
 const file_steeleagle_protocol_v1_services_vehicle_compute_proto_rawDesc = "" +
 	"\n" +
-	"5steeleagle_protocol/v1/services/vehicle/compute.proto\x12/steeleagle_protocol.v1.services.vehicle.compute\"y\n" +
+	"5steeleagle_protocol/v1/services/vehicle/compute.proto\x12'steeleagle_protocol.v1.services.vehicle\"q\n" +
 	"\n" +
 	"EngineInfo\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12[\n" +
-	"\blocation\x18\x02 \x01(\x0e2?.steeleagle_protocol.v1.services.vehicle.compute.EngineLocationR\blocation\"\xc4\x01\n" +
-	"\x19SetEnginesForTopicRequest\x12L\n" +
-	"\x05topic\x18\x01 \x01(\x0e26.steeleagle_protocol.v1.services.vehicle.compute.TopicR\x05topic\x12Y\n" +
-	"\tdatasinks\x18\x02 \x03(\v2;.steeleagle_protocol.v1.services.vehicle.compute.EngineInfoR\tdatasinks\"\x1c\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12S\n" +
+	"\blocation\x18\x02 \x01(\x0e27.steeleagle_protocol.v1.services.vehicle.EngineLocationR\blocation\"\xb4\x01\n" +
+	"\x19SetEnginesForTopicRequest\x12D\n" +
+	"\x05topic\x18\x01 \x01(\x0e2..steeleagle_protocol.v1.services.vehicle.TopicR\x05topic\x12Q\n" +
+	"\tdatasinks\x18\x02 \x03(\v23.steeleagle_protocol.v1.services.vehicle.EngineInfoR\tdatasinks\"\x1c\n" +
 	"\x1aSetEnginesForTopicResponse*\x82\x01\n" +
 	"\x0eEngineLocation\x12\x1f\n" +
 	"\x1bENGINE_LOCATION_UNSPECIFIED\x10\x00\x12\x18\n" +
@@ -328,26 +328,26 @@ const file_steeleagle_protocol_v1_services_vehicle_compute_proto_rawDesc = "" +
 	"\x05Topic\x12\x15\n" +
 	"\x11TOPIC_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fTOPIC_TELEMETRY\x10\x01\x12\x10\n" +
-	"\fTOPIC_FRAMES\x10\x022\xc0\x01\n" +
-	"\x0eComputeService\x12\xad\x01\n" +
-	"\x12SetEnginesForTopic\x12J.steeleagle_protocol.v1.services.vehicle.compute.SetEnginesForTopicRequest\x1aK.steeleagle_protocol.v1.services.vehicle.compute.SetEnginesForTopicResponseB\xf3\x02\n" +
-	"3com.steeleagle_protocol.v1.services.vehicle.computeB\fComputeProtoP\x01ZPgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle\xa2\x02\x05SVSVC\xaa\x02.SteeleagleProtocol.V1.Services.Vehicle.Compute\xca\x02.SteeleagleProtocol\\V1\\Services\\Vehicle\\Compute\xe2\x02:SteeleagleProtocol\\V1\\Services\\Vehicle\\Compute\\GPBMetadata\xea\x022SteeleagleProtocol::V1::Services::Vehicle::Computeb\x06proto3"
+	"\fTOPIC_FRAMES\x10\x022\xb0\x01\n" +
+	"\x0eComputeService\x12\x9d\x01\n" +
+	"\x12SetEnginesForTopic\x12B.steeleagle_protocol.v1.services.vehicle.SetEnginesForTopicRequest\x1aC.steeleagle_protocol.v1.services.vehicle.SetEnginesForTopicResponseB\xc9\x02\n" +
+	"+com.steeleagle_protocol.v1.services.vehicleB\fComputeProtoP\x01ZPgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle\xa2\x02\x04SVSV\xaa\x02&SteeleagleProtocol.V1.Services.Vehicle\xca\x02&SteeleagleProtocol\\V1\\Services\\Vehicle\xe2\x022SteeleagleProtocol\\V1\\Services\\Vehicle\\GPBMetadata\xea\x02)SteeleagleProtocol::V1::Services::Vehicleb\x06proto3"
 
 var file_steeleagle_protocol_v1_services_vehicle_compute_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_steeleagle_protocol_v1_services_vehicle_compute_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_steeleagle_protocol_v1_services_vehicle_compute_proto_goTypes = []any{
-	(EngineLocation)(0),                // 0: steeleagle_protocol.v1.services.vehicle.compute.EngineLocation
-	(Topic)(0),                         // 1: steeleagle_protocol.v1.services.vehicle.compute.Topic
-	(*EngineInfo)(nil),                 // 2: steeleagle_protocol.v1.services.vehicle.compute.EngineInfo
-	(*SetEnginesForTopicRequest)(nil),  // 3: steeleagle_protocol.v1.services.vehicle.compute.SetEnginesForTopicRequest
-	(*SetEnginesForTopicResponse)(nil), // 4: steeleagle_protocol.v1.services.vehicle.compute.SetEnginesForTopicResponse
+	(EngineLocation)(0),                // 0: steeleagle_protocol.v1.services.vehicle.EngineLocation
+	(Topic)(0),                         // 1: steeleagle_protocol.v1.services.vehicle.Topic
+	(*EngineInfo)(nil),                 // 2: steeleagle_protocol.v1.services.vehicle.EngineInfo
+	(*SetEnginesForTopicRequest)(nil),  // 3: steeleagle_protocol.v1.services.vehicle.SetEnginesForTopicRequest
+	(*SetEnginesForTopicResponse)(nil), // 4: steeleagle_protocol.v1.services.vehicle.SetEnginesForTopicResponse
 }
 var file_steeleagle_protocol_v1_services_vehicle_compute_proto_depIdxs = []int32{
-	0, // 0: steeleagle_protocol.v1.services.vehicle.compute.EngineInfo.location:type_name -> steeleagle_protocol.v1.services.vehicle.compute.EngineLocation
-	1, // 1: steeleagle_protocol.v1.services.vehicle.compute.SetEnginesForTopicRequest.topic:type_name -> steeleagle_protocol.v1.services.vehicle.compute.Topic
-	2, // 2: steeleagle_protocol.v1.services.vehicle.compute.SetEnginesForTopicRequest.datasinks:type_name -> steeleagle_protocol.v1.services.vehicle.compute.EngineInfo
-	3, // 3: steeleagle_protocol.v1.services.vehicle.compute.ComputeService.SetEnginesForTopic:input_type -> steeleagle_protocol.v1.services.vehicle.compute.SetEnginesForTopicRequest
-	4, // 4: steeleagle_protocol.v1.services.vehicle.compute.ComputeService.SetEnginesForTopic:output_type -> steeleagle_protocol.v1.services.vehicle.compute.SetEnginesForTopicResponse
+	0, // 0: steeleagle_protocol.v1.services.vehicle.EngineInfo.location:type_name -> steeleagle_protocol.v1.services.vehicle.EngineLocation
+	1, // 1: steeleagle_protocol.v1.services.vehicle.SetEnginesForTopicRequest.topic:type_name -> steeleagle_protocol.v1.services.vehicle.Topic
+	2, // 2: steeleagle_protocol.v1.services.vehicle.SetEnginesForTopicRequest.datasinks:type_name -> steeleagle_protocol.v1.services.vehicle.EngineInfo
+	3, // 3: steeleagle_protocol.v1.services.vehicle.ComputeService.SetEnginesForTopic:input_type -> steeleagle_protocol.v1.services.vehicle.SetEnginesForTopicRequest
+	4, // 4: steeleagle_protocol.v1.services.vehicle.ComputeService.SetEnginesForTopic:output_type -> steeleagle_protocol.v1.services.vehicle.SetEnginesForTopicResponse
 	4, // [4:5] is the sub-list for method output_type
 	3, // [3:4] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name

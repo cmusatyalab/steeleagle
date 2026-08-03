@@ -2,7 +2,7 @@ from collections.abc import AsyncIterator
 
 from google.protobuf.message import Message
 from pydantic import BaseModel
-from steeleagle_protocol.v1 import common_pb2
+from steeleagle_protocol.v1.common import common_pb2
 from steeleagle_protocol.v1.services.driver import control_pb2
 from steeleagle_protocol.v1.services.mission import mission_pb2
 from steeleagle_protocol.v1.services.swarm import swarm_pb2, swarm_pb2_grpc

@@ -1,3 +1,5 @@
+//go:build ignore
+
 package sdk
 
 // Action holds an action type that can be used as a state in the mission FSM.

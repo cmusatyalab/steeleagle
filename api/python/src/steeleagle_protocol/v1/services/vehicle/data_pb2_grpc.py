@@ -20,27 +20,27 @@ class DataServiceStub:
             channel: A grpc.Channel.
         """
         self.GetResult = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.vehicle.data.DataService/GetResult',
+                '/steeleagle_protocol.v1.services.vehicle.DataService/GetResult',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetResultRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetResultResponse.FromString,
                 _registered_method=True)
         self.GetTelemetry = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.vehicle.data.DataService/GetTelemetry',
+                '/steeleagle_protocol.v1.services.vehicle.DataService/GetTelemetry',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetTelemetryRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetTelemetryResponse.FromString,
                 _registered_method=True)
         self.GetFrame = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.vehicle.data.DataService/GetFrame',
+                '/steeleagle_protocol.v1.services.vehicle.DataService/GetFrame',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetFrameRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetFrameResponse.FromString,
                 _registered_method=True)
         self.StreamVideoFrames = channel.unary_stream(
-                '/steeleagle_protocol.v1.services.vehicle.data.DataService/StreamVideoFrames',
+                '/steeleagle_protocol.v1.services.vehicle.DataService/StreamVideoFrames',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamVideoFramesRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamVideoFramesResponse.FromString,
                 _registered_method=True)
         self.StreamTelemetry = channel.unary_stream(
-                '/steeleagle_protocol.v1.services.vehicle.data.DataService/StreamTelemetry',
+                '/steeleagle_protocol.v1.services.vehicle.DataService/StreamTelemetry',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamTelemetryRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamTelemetryResponse.FromString,
                 _registered_method=True)
@@ -134,9 +134,9 @@ def add_DataServiceServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'steeleagle_protocol.v1.services.vehicle.data.DataService', rpc_method_handlers)
+            'steeleagle_protocol.v1.services.vehicle.DataService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('steeleagle_protocol.v1.services.vehicle.data.DataService', rpc_method_handlers)
+    server.add_registered_method_handlers('steeleagle_protocol.v1.services.vehicle.DataService', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
@@ -162,7 +162,7 @@ class DataService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.vehicle.data.DataService/GetResult',
+            '/steeleagle_protocol.v1.services.vehicle.DataService/GetResult',
             steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetResultRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetResultResponse.FromString,
             options,
@@ -189,7 +189,7 @@ class DataService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.vehicle.data.DataService/GetTelemetry',
+            '/steeleagle_protocol.v1.services.vehicle.DataService/GetTelemetry',
             steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetTelemetryRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetTelemetryResponse.FromString,
             options,
@@ -216,7 +216,7 @@ class DataService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.vehicle.data.DataService/GetFrame',
+            '/steeleagle_protocol.v1.services.vehicle.DataService/GetFrame',
             steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetFrameRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetFrameResponse.FromString,
             options,
@@ -243,7 +243,7 @@ class DataService:
         return grpc.experimental.unary_stream(
             request,
             target,
-            '/steeleagle_protocol.v1.services.vehicle.data.DataService/StreamVideoFrames',
+            '/steeleagle_protocol.v1.services.vehicle.DataService/StreamVideoFrames',
             steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamVideoFramesRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamVideoFramesResponse.FromString,
             options,
@@ -270,7 +270,7 @@ class DataService:
         return grpc.experimental.unary_stream(
             request,
             target,
-            '/steeleagle_protocol.v1.services.vehicle.data.DataService/StreamTelemetry',
+            '/steeleagle_protocol.v1.services.vehicle.DataService/StreamTelemetry',
             steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamTelemetryRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamTelemetryResponse.FromString,
             options,

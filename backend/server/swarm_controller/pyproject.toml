@@ -1,0 +1,15 @@
+[project]
+name = "steeleagle-backend-swarm-controller"
+version = "1.0.0"
+description = "Control plane for SteelEagle vehicles."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+   "redis",
+   "gabriel-server",
+   "gabriel-protocol",
+   "gabriel-client",
+   "steeleagle-sdk",
+   "aiorwlock",
+   "zmq"
+]

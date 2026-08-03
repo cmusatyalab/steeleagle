@@ -12,7 +12,7 @@ from typing import Dict, List, Set
 import cv2
 import grpc
 import numpy as np
-from steeleagle_protocol.v1 import common_pb2
+from steeleagle_protocol.v1.common import common_pb2
 from steeleagle_protocol.v1.services.driver import control_pb2, control_pb2_grpc
 from steeleagle_protocol.v1.services.mission import mission_pb2, mission_pb2_grpc
 from steeleagle_protocol.v1.services.vehicle import data_pb2, data_pb2_grpc
@@ -234,7 +234,7 @@ async def consume_keys(
                 if not drone.connected:
                     print(f"[{drone.name}] Not connected, skipping")
                     continue
-                request = control_pb2.TakeOffRequest(take_off_altitude=10.0)
+                request = control_pb2.TakeOffRequest(altitude=10.0)
                 call = drone.control_stub.TakeOff(request)
                 asyncio.create_task(_send(drone, call, "TakeOff"))
 

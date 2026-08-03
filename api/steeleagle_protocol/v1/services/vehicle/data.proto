@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package steeleagle_protocol.v1.services.vehicle.data;
+package steeleagle_protocol.v1.services.vehicle;
 
-option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle/data;data";
+option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle;vehicle";
 
 import "steeleagle_protocol/v1/messages/result/result.proto";
 import "steeleagle_protocol/v1/messages/telemetry/telemetry.proto";

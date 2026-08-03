@@ -7,7 +7,7 @@ package steeleagle_protocol.v1.services.swarm;
 
 option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/swarm;swarm";
 
-import "steeleagle_protocol/v1/common.proto";
+import "steeleagle_protocol/v1/common/common.proto";
 import "steeleagle_protocol/v1/services/driver/control.proto";
 import "steeleagle_protocol/v1/services/mission/mission.proto";
 
@@ -126,84 +126,84 @@ service SwarmService {
 
 message SwarmTakeOffRequest {
   repeated string vehicles = 1; // target vehicles
-  steeleagle_protocol.v1.services.driver.control.TakeOffRequest request = 2; // proxied request object
+  steeleagle_protocol.v1.services.driver.TakeOffRequest request = 2; // proxied request object
 }
 
 message SwarmTakeOffResponse {
   string vehicle = 1; // ID of vehicle
-  steeleagle_protocol.v1.services.driver.control.TakeOffResponse response = 2; // proxied response object
+  steeleagle_protocol.v1.services.driver.TakeOffResponse response = 2; // proxied response object
   uint32 code = 3; // gRPC status code
   string details = 4; // error details, if applicable
 }
 
 message SwarmLandRequest {
   repeated string vehicles = 1; // target vehicles
-  steeleagle_protocol.v1.services.driver.control.LandRequest request = 2; // proxied request object
+  steeleagle_protocol.v1.services.driver.LandRequest request = 2; // proxied request object
 }
 
 message SwarmLandResponse {
   string vehicle = 1; // ID of vehicle
-  steeleagle_protocol.v1.services.driver.control.LandResponse response = 2; // proxied response object
+  steeleagle_protocol.v1.services.driver.LandResponse response = 2; // proxied response object
   uint32 code = 3; // gRPC status code
   string details = 4; // error details, if applicable
 }
 
 message SwarmHoldRequest {
   repeated string vehicles = 1; // target vehicles
-  steeleagle_protocol.v1.services.driver.control.HoldRequest request = 2; // proxied request object
+  steeleagle_protocol.v1.services.driver.HoldRequest request = 2; // proxied request object
 }
 
 message SwarmHoldResponse {
   string vehicle = 1; // ID of vehicle
-  steeleagle_protocol.v1.services.driver.control.HoldResponse response = 2; // proxied response object
+  steeleagle_protocol.v1.services.driver.HoldResponse response = 2; // proxied response object
   uint32 code = 3; // gRPC status code
   string details = 4; // error details, if applicable
 }
 
 message SwarmKillRequest {
   repeated string vehicles = 1; // target vehicles
-  steeleagle_protocol.v1.services.driver.control.KillRequest request = 2; // proxied request object
+  steeleagle_protocol.v1.services.driver.KillRequest request = 2; // proxied request object
 }
 
 message SwarmKillResponse {
   string vehicle = 1; // ID of vehicle
-  steeleagle_protocol.v1.services.driver.control.KillResponse response = 2; // proxied response object
+  steeleagle_protocol.v1.services.driver.KillResponse response = 2; // proxied response object
   uint32 code = 3; // gRPC status code
   string details = 4; // error details, if applicable
 }
 
 message SwarmReturnToHomeRequest {
   repeated string vehicles = 1; // target vehicles
-  steeleagle_protocol.v1.services.driver.control.ReturnToHomeRequest request = 2; // proxied request object
+  steeleagle_protocol.v1.services.driver.ReturnToHomeRequest request = 2; // proxied request object
 }
 
 message SwarmReturnToHomeResponse {
   string vehicle = 1; // ID of vehicle
-  steeleagle_protocol.v1.services.driver.control.ReturnToHomeResponse response = 2; // proxied response object
+  steeleagle_protocol.v1.services.driver.ReturnToHomeResponse response = 2; // proxied response object
   uint32 code = 3; // gRPC status code
   string details = 4; // error details, if applicable
 }
 
 message SwarmSetVelocityRequest {
   repeated string vehicles = 1; // target vehicles
-  steeleagle_protocol.v1.services.driver.control.SetVelocityRequest request = 2; // proxied request object
+  steeleagle_protocol.v1.services.driver.SetVelocityRequest request = 2; // proxied request object
 }
 
 message SwarmSetVelocityResponse {
   string vehicle = 1; // ID of vehicle
-  steeleagle_protocol.v1.services.driver.control.SetVelocityResponse response = 2; // proxied response object
+  steeleagle_protocol.v1.services.driver.SetVelocityResponse response = 2; // proxied response object
   uint32 code = 3; // gRPC status code
   string details = 4; // error details, if applicable
 }
 
 message SwarmSetGimbalPoseRequest{
   repeated string vehicles = 1; // target vehicles
-  steeleagle_protocol.v1.services.driver.control.SetGimbalPoseRequest request = 2; // proxied request object
+  steeleagle_protocol.v1.services.driver.SetGimbalPoseRequest request = 2; // proxied request object
 }
 
 message SwarmSetGimbalPoseResponse {
   string vehicle = 1; // ID of vehicle
-  steeleagle_protocol.v1.services.driver.control.SetGimbalPoseResponse response = 2; // proxied response object
+  steeleagle_protocol.v1.services.driver.SetGimbalPoseResponse response = 2; // proxied response object
   uint32 code = 3; // gRPC status code
   string details = 4; // error details, if applicable
 }

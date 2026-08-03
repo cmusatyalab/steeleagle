@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useMemo } from 'react';
+import { useRef, useState, useMemo } from 'react';
 import { Knob } from 'primereact/knob';
 import { Button } from 'primereact/button';
 import { ToggleButton } from 'primereact/togglebutton';
@@ -17,7 +17,7 @@ import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Divider } from 'primereact/divider';
 import React from 'react';
-import { getApiUrl } from './App.jsx';
+import { getApiUrl } from './urls.js';
 import Status from './Status.jsx';
 import Mapbox from './Mapbox.jsx';
 import { CONTROL_MAPPINGS } from './controlMappings.js';
@@ -30,8 +30,7 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
   manualControl, setManualControl, squadList, setSquadList, basePlanarVelocity, setBasePlanarVelocity,
   baseAngularVelocity, setBaseAngularVelocity, gamepadDeadzone, setGamepadDeadzone, takeOffAltitude, setTakeOffAltitude,
   showDetections, onToggleDetections, gimbalVelocity, setGimbalVelocity }) {
-  const [mapPanelSize, setMapPanelSize] = useState(0);
-  const [armed, setArmed] = useState(false);
+  const [mapPanelSize] = useState(0);
   const op = useRef(null);
   const op2 = useRef(null);
   const onProgress = () => {
@@ -129,7 +128,7 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
       <FileUpload className="m-2" itemTemplate={itemTemplate} chooseOptions={chooseOptions} uploadOptions={uploadOptions} cancelOptions={cancelOptions} mode="advanced" name="mission[]" url={'/api/upload'} multiple accept=".json,.kml,application/json,application/vnd.google-earth.kml+xml,text/xml,application/xml" maxFileSize={10000} customUpload uploadHandler={uploadHandler} onProgress={onProgress} onUpload={onUploadComplete} />
       <Button icon="pi pi-play-circle" label="Start Mission" className="m-2 p-button-success" onClick={onMissionStart} />
     </>
-  ), [uploadHandler, onMissionStart]);
+  ), [uploadHandler, onMissionStart, onProgress, onUploadComplete]);
 
   const controlButtons = useMemo(() => (
     <>
@@ -148,7 +147,7 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
         </ButtonGroup>
       </div>
     </>
-  ), [onCommand]);
+  ), [onCommand, takeOffAltitude]);
 
   const vehicleNames = useMemo(() => vehicles.map(v => v.name), [vehicles]);
 
