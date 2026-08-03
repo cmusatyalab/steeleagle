@@ -17,7 +17,6 @@ import (
 	anypb "google.golang.org/protobuf/types/known/anypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
-	sync "sync"
 	unsafe "unsafe"
 )
 
@@ -80,11 +79,6 @@ func (x PositionInfo_MotionStatus) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use PositionInfo_MotionStatus.Descriptor instead.
-func (PositionInfo_MotionStatus) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{2, 0}
-}
-
 // Battery warnings and alerts.
 type AlertInfo_BatteryWarning int32
 
@@ -133,62 +127,52 @@ func (x AlertInfo_BatteryWarning) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use AlertInfo_BatteryWarning.Descriptor instead.
-func (AlertInfo_BatteryWarning) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{5, 0}
-}
-
 // GPS fix warnings and alerts.
-type AlertInfo_GPSWarning int32
+type AlertInfo_GpsWarning int32
 
 const (
 	// GPS readings are nominal and a fix has been achieved
-	AlertInfo_GPS_WARNING_UNSPECIFIED AlertInfo_GPSWarning = 0
+	AlertInfo_GPS_WARNING_UNSPECIFIED AlertInfo_GpsWarning = 0
 	// weak GPS fix, expect errant global position data
-	AlertInfo_GPS_WARNING_WEAK_SIGNAL AlertInfo_GPSWarning = 1
+	AlertInfo_GPS_WARNING_WEAK_SIGNAL AlertInfo_GpsWarning = 1
 	// no GPS fix
-	AlertInfo_GPS_WARNING_NO_FIX AlertInfo_GPSWarning = 2
+	AlertInfo_GPS_WARNING_NO_FIX AlertInfo_GpsWarning = 2
 )
 
-// Enum value maps for AlertInfo_GPSWarning.
+// Enum value maps for AlertInfo_GpsWarning.
 var (
-	AlertInfo_GPSWarning_name = map[int32]string{
+	AlertInfo_GpsWarning_name = map[int32]string{
 		0: "GPS_WARNING_UNSPECIFIED",
 		1: "GPS_WARNING_WEAK_SIGNAL",
 		2: "GPS_WARNING_NO_FIX",
 	}
-	AlertInfo_GPSWarning_value = map[string]int32{
+	AlertInfo_GpsWarning_value = map[string]int32{
 		"GPS_WARNING_UNSPECIFIED": 0,
 		"GPS_WARNING_WEAK_SIGNAL": 1,
 		"GPS_WARNING_NO_FIX":      2,
 	}
 )
 
-func (x AlertInfo_GPSWarning) Enum() *AlertInfo_GPSWarning {
-	p := new(AlertInfo_GPSWarning)
+func (x AlertInfo_GpsWarning) Enum() *AlertInfo_GpsWarning {
+	p := new(AlertInfo_GpsWarning)
 	*p = x
 	return p
 }
 
-func (x AlertInfo_GPSWarning) String() string {
+func (x AlertInfo_GpsWarning) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (AlertInfo_GPSWarning) Descriptor() protoreflect.EnumDescriptor {
+func (AlertInfo_GpsWarning) Descriptor() protoreflect.EnumDescriptor {
 	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[2].Descriptor()
 }
 
-func (AlertInfo_GPSWarning) Type() protoreflect.EnumType {
+func (AlertInfo_GpsWarning) Type() protoreflect.EnumType {
 	return &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[2]
 }
 
-func (x AlertInfo_GPSWarning) Number() protoreflect.EnumNumber {
+func (x AlertInfo_GpsWarning) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use AlertInfo_GPSWarning.Descriptor instead.
-func (AlertInfo_GPSWarning) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{5, 1}
 }
 
 // Magnetometer warnings and alerts.
@@ -233,11 +217,6 @@ func (AlertInfo_MagnetometerWarning) Type() protoreflect.EnumType {
 
 func (x AlertInfo_MagnetometerWarning) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use AlertInfo_MagnetometerWarning.Descriptor instead.
-func (AlertInfo_MagnetometerWarning) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{5, 2}
 }
 
 // Connection warnings and alerts.
@@ -288,11 +267,6 @@ func (x AlertInfo_ConnectionWarning) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use AlertInfo_ConnectionWarning.Descriptor instead.
-func (AlertInfo_ConnectionWarning) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{5, 3}
-}
-
 // Compass warnings and alerts.
 type AlertInfo_CompassWarning int32
 
@@ -341,17 +315,12 @@ func (x AlertInfo_CompassWarning) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use AlertInfo_CompassWarning.Descriptor instead.
-func (AlertInfo_CompassWarning) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{5, 4}
-}
-
 // Information about the vehicle battery.
 type BatteryInfo struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Percentage    uint32                 `protobuf:"varint,1,opt,name=percentage,proto3" json:"percentage,omitempty"` // battery level [0-100]%
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                 protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Percentage uint32                 `protobuf:"varint,1,opt,name=percentage,proto3"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *BatteryInfo) Reset() {
@@ -379,40 +348,53 @@ func (x *BatteryInfo) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use BatteryInfo.ProtoReflect.Descriptor instead.
-func (*BatteryInfo) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{0}
-}
-
 func (x *BatteryInfo) GetPercentage() uint32 {
 	if x != nil {
-		return x.Percentage
+		return x.xxx_hidden_Percentage
 	}
 	return 0
 }
 
-// Information about the vehicle GPS fix.
-type GPSInfo struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Satellites    uint32                 `protobuf:"varint,1,opt,name=satellites,proto3" json:"satellites,omitempty"` // number of satellites used in GPS fix
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+func (x *BatteryInfo) SetPercentage(v uint32) {
+	x.xxx_hidden_Percentage = v
 }
 
-func (x *GPSInfo) Reset() {
-	*x = GPSInfo{}
+type BatteryInfo_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Percentage uint32
+}
+
+func (b0 BatteryInfo_builder) Build() *BatteryInfo {
+	m0 := &BatteryInfo{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Percentage = b.Percentage
+	return m0
+}
+
+// Information about the vehicle GPS fix.
+type GpsInfo struct {
+	state                 protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Satellites uint32                 `protobuf:"varint,1,opt,name=satellites,proto3"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *GpsInfo) Reset() {
+	*x = GpsInfo{}
 	mi := &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GPSInfo) String() string {
+func (x *GpsInfo) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GPSInfo) ProtoMessage() {}
+func (*GpsInfo) ProtoMessage() {}
 
-func (x *GPSInfo) ProtoReflect() protoreflect.Message {
+func (x *GpsInfo) ProtoReflect() protoreflect.Message {
 	mi := &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -424,41 +406,43 @@ func (x *GPSInfo) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GPSInfo.ProtoReflect.Descriptor instead.
-func (*GPSInfo) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *GPSInfo) GetSatellites() uint32 {
+func (x *GpsInfo) GetSatellites() uint32 {
 	if x != nil {
-		return x.Satellites
+		return x.xxx_hidden_Satellites
 	}
 	return 0
 }
 
+func (x *GpsInfo) SetSatellites(v uint32) {
+	x.xxx_hidden_Satellites = v
+}
+
+type GpsInfo_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Satellites uint32
+}
+
+func (b0 GpsInfo_builder) Build() *GpsInfo {
+	m0 := &GpsInfo{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Satellites = b.Satellites
+	return m0
+}
+
 // Information about the vehicle position.
 type PositionInfo struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// global position that will be used when returning home
-	Home *v1.GlobalPosition `protobuf:"bytes,1,opt,name=home,proto3" json:"home,omitempty"`
-	// current global position of the vehicle
-	GlobalPosition *v1.GlobalPosition `protobuf:"bytes,2,opt,name=global_position,json=globalPosition,proto3" json:"global_position,omitempty"`
-	// current relative position of the vehicle in the global NEU
-	// (North, East, Up) coordinate frame, relative to start
-	// position
-	RelativePosition *v1.RelativePosition `protobuf:"bytes,3,opt,name=relative_position,json=relativePosition,proto3" json:"relative_position,omitempty"`
-	// current velocity of the vehicle in the body (forward, right, up)
-	// coordinate frame
-	VelocityBody *v1.Velocity `protobuf:"bytes,4,opt,name=velocity_body,json=velocityBody,proto3" json:"velocity_body,omitempty"`
-	// current velocity of the vehicle in the global NEU (North, East, Up)
-	// coordinate frame
-	VelocityNeu *v1.Velocity `protobuf:"bytes,5,opt,name=velocity_neu,json=velocityNeu,proto3" json:"velocity_neu,omitempty"`
-	// current motion status of the vehicle
-	MotionStatus PositionInfo_MotionStatus `protobuf:"varint,6,opt,name=motion_status,json=motionStatus,proto3,enum=steeleagle_protocol.v1.messages.telemetry.PositionInfo_MotionStatus" json:"motion_status,omitempty"`
-	// current setpoint of the vehicle
-	Setpoint      *anypb.Any `protobuf:"bytes,7,opt,name=setpoint,proto3" json:"setpoint,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                       protoimpl.MessageState    `protogen:"opaque.v1"`
+	xxx_hidden_Home             *v1.GlobalPosition        `protobuf:"bytes,1,opt,name=home,proto3"`
+	xxx_hidden_GlobalPosition   *v1.GlobalPosition        `protobuf:"bytes,2,opt,name=global_position,json=globalPosition,proto3"`
+	xxx_hidden_RelativePosition *v1.RelativePosition      `protobuf:"bytes,3,opt,name=relative_position,json=relativePosition,proto3"`
+	xxx_hidden_VelocityBody     *v1.Velocity              `protobuf:"bytes,4,opt,name=velocity_body,json=velocityBody,proto3"`
+	xxx_hidden_VelocityNeu      *v1.Velocity              `protobuf:"bytes,5,opt,name=velocity_neu,json=velocityNeu,proto3"`
+	xxx_hidden_MotionStatus     PositionInfo_MotionStatus `protobuf:"varint,6,opt,name=motion_status,json=motionStatus,proto3,enum=steeleagle_protocol.v1.messages.telemetry.PositionInfo_MotionStatus"`
+	xxx_hidden_Setpoint         *anypb.Any                `protobuf:"bytes,7,opt,name=setpoint,proto3"`
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
 }
 
 func (x *PositionInfo) Reset() {
@@ -486,71 +470,196 @@ func (x *PositionInfo) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PositionInfo.ProtoReflect.Descriptor instead.
-func (*PositionInfo) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{2}
-}
-
 func (x *PositionInfo) GetHome() *v1.GlobalPosition {
 	if x != nil {
-		return x.Home
+		return x.xxx_hidden_Home
 	}
 	return nil
 }
 
 func (x *PositionInfo) GetGlobalPosition() *v1.GlobalPosition {
 	if x != nil {
-		return x.GlobalPosition
+		return x.xxx_hidden_GlobalPosition
 	}
 	return nil
 }
 
 func (x *PositionInfo) GetRelativePosition() *v1.RelativePosition {
 	if x != nil {
-		return x.RelativePosition
+		return x.xxx_hidden_RelativePosition
 	}
 	return nil
 }
 
 func (x *PositionInfo) GetVelocityBody() *v1.Velocity {
 	if x != nil {
-		return x.VelocityBody
+		return x.xxx_hidden_VelocityBody
 	}
 	return nil
 }
 
 func (x *PositionInfo) GetVelocityNeu() *v1.Velocity {
 	if x != nil {
-		return x.VelocityNeu
+		return x.xxx_hidden_VelocityNeu
 	}
 	return nil
 }
 
 func (x *PositionInfo) GetMotionStatus() PositionInfo_MotionStatus {
 	if x != nil {
-		return x.MotionStatus
+		return x.xxx_hidden_MotionStatus
 	}
 	return PositionInfo_MOTION_STATUS_UNSPECIFIED
 }
 
 func (x *PositionInfo) GetSetpoint() *anypb.Any {
 	if x != nil {
-		return x.Setpoint
+		return x.xxx_hidden_Setpoint
 	}
 	return nil
 }
 
+func (x *PositionInfo) SetHome(v *v1.GlobalPosition) {
+	x.xxx_hidden_Home = v
+}
+
+func (x *PositionInfo) SetGlobalPosition(v *v1.GlobalPosition) {
+	x.xxx_hidden_GlobalPosition = v
+}
+
+func (x *PositionInfo) SetRelativePosition(v *v1.RelativePosition) {
+	x.xxx_hidden_RelativePosition = v
+}
+
+func (x *PositionInfo) SetVelocityBody(v *v1.Velocity) {
+	x.xxx_hidden_VelocityBody = v
+}
+
+func (x *PositionInfo) SetVelocityNeu(v *v1.Velocity) {
+	x.xxx_hidden_VelocityNeu = v
+}
+
+func (x *PositionInfo) SetMotionStatus(v PositionInfo_MotionStatus) {
+	x.xxx_hidden_MotionStatus = v
+}
+
+func (x *PositionInfo) SetSetpoint(v *anypb.Any) {
+	x.xxx_hidden_Setpoint = v
+}
+
+func (x *PositionInfo) HasHome() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Home != nil
+}
+
+func (x *PositionInfo) HasGlobalPosition() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_GlobalPosition != nil
+}
+
+func (x *PositionInfo) HasRelativePosition() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_RelativePosition != nil
+}
+
+func (x *PositionInfo) HasVelocityBody() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_VelocityBody != nil
+}
+
+func (x *PositionInfo) HasVelocityNeu() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_VelocityNeu != nil
+}
+
+func (x *PositionInfo) HasSetpoint() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Setpoint != nil
+}
+
+func (x *PositionInfo) ClearHome() {
+	x.xxx_hidden_Home = nil
+}
+
+func (x *PositionInfo) ClearGlobalPosition() {
+	x.xxx_hidden_GlobalPosition = nil
+}
+
+func (x *PositionInfo) ClearRelativePosition() {
+	x.xxx_hidden_RelativePosition = nil
+}
+
+func (x *PositionInfo) ClearVelocityBody() {
+	x.xxx_hidden_VelocityBody = nil
+}
+
+func (x *PositionInfo) ClearVelocityNeu() {
+	x.xxx_hidden_VelocityNeu = nil
+}
+
+func (x *PositionInfo) ClearSetpoint() {
+	x.xxx_hidden_Setpoint = nil
+}
+
+type PositionInfo_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// global position that will be used when returning home
+	Home *v1.GlobalPosition
+	// current global position of the vehicle
+	GlobalPosition *v1.GlobalPosition
+	// current relative position of the vehicle in the global NEU
+	// (North, East, Up) coordinate frame, relative to start
+	// position
+	RelativePosition *v1.RelativePosition
+	// current velocity of the vehicle in the body (forward, right, up)
+	// coordinate frame
+	VelocityBody *v1.Velocity
+	// current velocity of the vehicle in the global NEU (North, East, Up)
+	// coordinate frame
+	VelocityNeu *v1.Velocity
+	// current motion status of the vehicle
+	MotionStatus PositionInfo_MotionStatus
+	// current setpoint of the vehicle
+	Setpoint *anypb.Any
+}
+
+func (b0 PositionInfo_builder) Build() *PositionInfo {
+	m0 := &PositionInfo{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Home = b.Home
+	x.xxx_hidden_GlobalPosition = b.GlobalPosition
+	x.xxx_hidden_RelativePosition = b.RelativePosition
+	x.xxx_hidden_VelocityBody = b.VelocityBody
+	x.xxx_hidden_VelocityNeu = b.VelocityNeu
+	x.xxx_hidden_MotionStatus = b.MotionStatus
+	x.xxx_hidden_Setpoint = b.Setpoint
+	return m0
+}
+
 // Status of a gimbal.
 type GimbalStatus struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// ID of the gimbal
-	Id uint32 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	// current pose in the body (forward, right, up) reference frame
-	PoseBody *v1.Pose `protobuf:"bytes,2,opt,name=pose_body,json=poseBody,proto3" json:"pose_body,omitempty"`
-	// current pose in the NEU (North, East, Up) reference frame
-	PoseNeu       *v1.Pose `protobuf:"bytes,3,opt,name=pose_neu,json=poseNeu,proto3" json:"pose_neu,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                          protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id                  uint32                 `protobuf:"varint,1,opt,name=id,proto3"`
+	xxx_hidden_PoseBody            *v1.Pose               `protobuf:"bytes,2,opt,name=pose_body,json=poseBody,proto3"`
+	xxx_hidden_PoseNeu             *v1.Pose               `protobuf:"bytes,3,opt,name=pose_neu,json=poseNeu,proto3"`
+	xxx_hidden_AngularVelocityBody *v1.Pose               `protobuf:"bytes,4,opt,name=angular_velocity_body,json=angularVelocityBody,proto3"`
+	xxx_hidden_AngularVelocityNeu  *v1.Pose               `protobuf:"bytes,5,opt,name=angular_velocity_neu,json=angularVelocityNeu,proto3"`
+	unknownFields                  protoimpl.UnknownFields
+	sizeCache                      protoimpl.SizeCache
 }
 
 func (x *GimbalStatus) Reset() {
@@ -578,39 +687,138 @@ func (x *GimbalStatus) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GimbalStatus.ProtoReflect.Descriptor instead.
-func (*GimbalStatus) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{3}
-}
-
 func (x *GimbalStatus) GetId() uint32 {
 	if x != nil {
-		return x.Id
+		return x.xxx_hidden_Id
 	}
 	return 0
 }
 
 func (x *GimbalStatus) GetPoseBody() *v1.Pose {
 	if x != nil {
-		return x.PoseBody
+		return x.xxx_hidden_PoseBody
 	}
 	return nil
 }
 
 func (x *GimbalStatus) GetPoseNeu() *v1.Pose {
 	if x != nil {
-		return x.PoseNeu
+		return x.xxx_hidden_PoseNeu
 	}
 	return nil
 }
 
+func (x *GimbalStatus) GetAngularVelocityBody() *v1.Pose {
+	if x != nil {
+		return x.xxx_hidden_AngularVelocityBody
+	}
+	return nil
+}
+
+func (x *GimbalStatus) GetAngularVelocityNeu() *v1.Pose {
+	if x != nil {
+		return x.xxx_hidden_AngularVelocityNeu
+	}
+	return nil
+}
+
+func (x *GimbalStatus) SetId(v uint32) {
+	x.xxx_hidden_Id = v
+}
+
+func (x *GimbalStatus) SetPoseBody(v *v1.Pose) {
+	x.xxx_hidden_PoseBody = v
+}
+
+func (x *GimbalStatus) SetPoseNeu(v *v1.Pose) {
+	x.xxx_hidden_PoseNeu = v
+}
+
+func (x *GimbalStatus) SetAngularVelocityBody(v *v1.Pose) {
+	x.xxx_hidden_AngularVelocityBody = v
+}
+
+func (x *GimbalStatus) SetAngularVelocityNeu(v *v1.Pose) {
+	x.xxx_hidden_AngularVelocityNeu = v
+}
+
+func (x *GimbalStatus) HasPoseBody() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_PoseBody != nil
+}
+
+func (x *GimbalStatus) HasPoseNeu() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_PoseNeu != nil
+}
+
+func (x *GimbalStatus) HasAngularVelocityBody() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_AngularVelocityBody != nil
+}
+
+func (x *GimbalStatus) HasAngularVelocityNeu() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_AngularVelocityNeu != nil
+}
+
+func (x *GimbalStatus) ClearPoseBody() {
+	x.xxx_hidden_PoseBody = nil
+}
+
+func (x *GimbalStatus) ClearPoseNeu() {
+	x.xxx_hidden_PoseNeu = nil
+}
+
+func (x *GimbalStatus) ClearAngularVelocityBody() {
+	x.xxx_hidden_AngularVelocityBody = nil
+}
+
+func (x *GimbalStatus) ClearAngularVelocityNeu() {
+	x.xxx_hidden_AngularVelocityNeu = nil
+}
+
+type GimbalStatus_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// ID of the gimbal
+	Id uint32
+	// current pose in the body (forward, right, up) reference frame
+	PoseBody *v1.Pose
+	// current pose in the NEU (North, East, Up) reference frame
+	PoseNeu *v1.Pose
+	// angular velocity in the body (forward, right, up) reference frame
+	AngularVelocityBody *v1.Pose
+	// angular velocity in the NEU (North, East, Up) reference frame
+	AngularVelocityNeu *v1.Pose
+}
+
+func (b0 GimbalStatus_builder) Build() *GimbalStatus {
+	m0 := &GimbalStatus{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Id = b.Id
+	x.xxx_hidden_PoseBody = b.PoseBody
+	x.xxx_hidden_PoseNeu = b.PoseNeu
+	x.xxx_hidden_AngularVelocityBody = b.AngularVelocityBody
+	x.xxx_hidden_AngularVelocityNeu = b.AngularVelocityNeu
+	return m0
+}
+
 // Info of all attached gimbals.
 type GimbalInfo struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// list of connected gimbals
-	Gimbals       []*GimbalStatus `protobuf:"bytes,1,rep,name=gimbals,proto3" json:"gimbals,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Gimbals *[]*GimbalStatus       `protobuf:"bytes,1,rep,name=gimbals,proto3"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *GimbalInfo) Reset() {
@@ -638,33 +846,44 @@ func (x *GimbalInfo) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GimbalInfo.ProtoReflect.Descriptor instead.
-func (*GimbalInfo) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{4}
-}
-
 func (x *GimbalInfo) GetGimbals() []*GimbalStatus {
 	if x != nil {
-		return x.Gimbals
+		if x.xxx_hidden_Gimbals != nil {
+			return *x.xxx_hidden_Gimbals
+		}
 	}
 	return nil
 }
 
+func (x *GimbalInfo) SetGimbals(v []*GimbalStatus) {
+	x.xxx_hidden_Gimbals = &v
+}
+
+type GimbalInfo_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// list of connected gimbals
+	Gimbals []*GimbalStatus
+}
+
+func (b0 GimbalInfo_builder) Build() *GimbalInfo {
+	m0 := &GimbalInfo{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Gimbals = &b.Gimbals
+	return m0
+}
+
 // Information about all vehicle warning and alerts.
 type AlertInfo struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// battery warnings
-	BatteryWarning AlertInfo_BatteryWarning `protobuf:"varint,1,opt,name=battery_warning,json=batteryWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.AlertInfo_BatteryWarning" json:"battery_warning,omitempty"`
-	// GPS warnings
-	GpsWarning AlertInfo_GPSWarning `protobuf:"varint,2,opt,name=gps_warning,json=gpsWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.AlertInfo_GPSWarning" json:"gps_warning,omitempty"`
-	// magnetometer warnings
-	MagnetometerWarning AlertInfo_MagnetometerWarning `protobuf:"varint,3,opt,name=magnetometer_warning,json=magnetometerWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.AlertInfo_MagnetometerWarning" json:"magnetometer_warning,omitempty"`
-	// connection warnings
-	ConnectionWarning AlertInfo_ConnectionWarning `protobuf:"varint,4,opt,name=connection_warning,json=connectionWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.AlertInfo_ConnectionWarning" json:"connection_warning,omitempty"`
-	// compass warnings
-	CompassWarning AlertInfo_CompassWarning `protobuf:"varint,5,opt,name=compass_warning,json=compassWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.AlertInfo_CompassWarning" json:"compass_warning,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state                          protoimpl.MessageState        `protogen:"opaque.v1"`
+	xxx_hidden_BatteryWarning      AlertInfo_BatteryWarning      `protobuf:"varint,1,opt,name=battery_warning,json=batteryWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.AlertInfo_BatteryWarning"`
+	xxx_hidden_GpsWarning          AlertInfo_GpsWarning          `protobuf:"varint,2,opt,name=gps_warning,json=gpsWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.AlertInfo_GpsWarning"`
+	xxx_hidden_MagnetometerWarning AlertInfo_MagnetometerWarning `protobuf:"varint,3,opt,name=magnetometer_warning,json=magnetometerWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.AlertInfo_MagnetometerWarning"`
+	xxx_hidden_ConnectionWarning   AlertInfo_ConnectionWarning   `protobuf:"varint,4,opt,name=connection_warning,json=connectionWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.AlertInfo_ConnectionWarning"`
+	xxx_hidden_CompassWarning      AlertInfo_CompassWarning      `protobuf:"varint,5,opt,name=compass_warning,json=compassWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.AlertInfo_CompassWarning"`
+	unknownFields                  protoimpl.UnknownFields
+	sizeCache                      protoimpl.SizeCache
 }
 
 func (x *AlertInfo) Reset() {
@@ -692,44 +911,86 @@ func (x *AlertInfo) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use AlertInfo.ProtoReflect.Descriptor instead.
-func (*AlertInfo) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{5}
-}
-
 func (x *AlertInfo) GetBatteryWarning() AlertInfo_BatteryWarning {
 	if x != nil {
-		return x.BatteryWarning
+		return x.xxx_hidden_BatteryWarning
 	}
 	return AlertInfo_BATTERY_WARNING_UNSPECIFIED
 }
 
-func (x *AlertInfo) GetGpsWarning() AlertInfo_GPSWarning {
+func (x *AlertInfo) GetGpsWarning() AlertInfo_GpsWarning {
 	if x != nil {
-		return x.GpsWarning
+		return x.xxx_hidden_GpsWarning
 	}
 	return AlertInfo_GPS_WARNING_UNSPECIFIED
 }
 
 func (x *AlertInfo) GetMagnetometerWarning() AlertInfo_MagnetometerWarning {
 	if x != nil {
-		return x.MagnetometerWarning
+		return x.xxx_hidden_MagnetometerWarning
 	}
 	return AlertInfo_MAGNETOMETER_WARNING_UNSPECIFIED
 }
 
 func (x *AlertInfo) GetConnectionWarning() AlertInfo_ConnectionWarning {
 	if x != nil {
-		return x.ConnectionWarning
+		return x.xxx_hidden_ConnectionWarning
 	}
 	return AlertInfo_CONNECTION_WARNING_UNSPECIFIED
 }
 
 func (x *AlertInfo) GetCompassWarning() AlertInfo_CompassWarning {
 	if x != nil {
-		return x.CompassWarning
+		return x.xxx_hidden_CompassWarning
 	}
 	return AlertInfo_COMPASS_WARNING_UNSPECIFIED
+}
+
+func (x *AlertInfo) SetBatteryWarning(v AlertInfo_BatteryWarning) {
+	x.xxx_hidden_BatteryWarning = v
+}
+
+func (x *AlertInfo) SetGpsWarning(v AlertInfo_GpsWarning) {
+	x.xxx_hidden_GpsWarning = v
+}
+
+func (x *AlertInfo) SetMagnetometerWarning(v AlertInfo_MagnetometerWarning) {
+	x.xxx_hidden_MagnetometerWarning = v
+}
+
+func (x *AlertInfo) SetConnectionWarning(v AlertInfo_ConnectionWarning) {
+	x.xxx_hidden_ConnectionWarning = v
+}
+
+func (x *AlertInfo) SetCompassWarning(v AlertInfo_CompassWarning) {
+	x.xxx_hidden_CompassWarning = v
+}
+
+type AlertInfo_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// battery warnings
+	BatteryWarning AlertInfo_BatteryWarning
+	// GPS warnings
+	GpsWarning AlertInfo_GpsWarning
+	// magnetometer warnings
+	MagnetometerWarning AlertInfo_MagnetometerWarning
+	// connection warnings
+	ConnectionWarning AlertInfo_ConnectionWarning
+	// compass warnings
+	CompassWarning AlertInfo_CompassWarning
+}
+
+func (b0 AlertInfo_builder) Build() *AlertInfo {
+	m0 := &AlertInfo{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_BatteryWarning = b.BatteryWarning
+	x.xxx_hidden_GpsWarning = b.GpsWarning
+	x.xxx_hidden_MagnetometerWarning = b.MagnetometerWarning
+	x.xxx_hidden_ConnectionWarning = b.ConnectionWarning
+	x.xxx_hidden_CompassWarning = b.CompassWarning
+	return m0
 }
 
 // Telemetry message for the vehicle, originating from the driver module.
@@ -737,21 +998,15 @@ func (x *AlertInfo) GetCompassWarning() AlertInfo_CompassWarning {
 // This message provides frame data from currently streaming imaging sensors. It
 // is one of two message (`Telemetry`, `Frame`) that is broadcast by the driver.
 type Telemetry struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// timestamp of message
-	Timestamp *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	// battery info
-	BatteryInfo *BatteryInfo `protobuf:"bytes,2,opt,name=battery_info,json=batteryInfo,proto3" json:"battery_info,omitempty"`
-	// GPS and satellite info
-	GpsInfo *GPSInfo `protobuf:"bytes,3,opt,name=gps_info,json=gpsInfo,proto3" json:"gps_info,omitempty"`
-	// positional info about the vehicle
-	PositionInfo *PositionInfo `protobuf:"bytes,4,opt,name=position_info,json=positionInfo,proto3" json:"position_info,omitempty"`
-	// status on attached gimbals and their orientations
-	GimbalInfo *GimbalInfo `protobuf:"bytes,5,opt,name=gimbal_info,json=gimbalInfo,proto3" json:"gimbal_info,omitempty"`
-	// enumeration of vehicle warnings
-	AlertInfo     *AlertInfo `protobuf:"bytes,6,opt,name=alert_info,json=alertInfo,proto3" json:"alert_info,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Timestamp    *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=timestamp,proto3"`
+	xxx_hidden_BatteryInfo  *BatteryInfo           `protobuf:"bytes,2,opt,name=battery_info,json=batteryInfo,proto3"`
+	xxx_hidden_GpsInfo      *GpsInfo               `protobuf:"bytes,3,opt,name=gps_info,json=gpsInfo,proto3"`
+	xxx_hidden_PositionInfo *PositionInfo          `protobuf:"bytes,4,opt,name=position_info,json=positionInfo,proto3"`
+	xxx_hidden_GimbalInfo   *GimbalInfo            `protobuf:"bytes,5,opt,name=gimbal_info,json=gimbalInfo,proto3"`
+	xxx_hidden_AlertInfo    *AlertInfo             `protobuf:"bytes,6,opt,name=alert_info,json=alertInfo,proto3"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *Telemetry) Reset() {
@@ -779,78 +1034,183 @@ func (x *Telemetry) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Telemetry.ProtoReflect.Descriptor instead.
-func (*Telemetry) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{6}
-}
-
 func (x *Telemetry) GetTimestamp() *timestamppb.Timestamp {
 	if x != nil {
-		return x.Timestamp
+		return x.xxx_hidden_Timestamp
 	}
 	return nil
 }
 
 func (x *Telemetry) GetBatteryInfo() *BatteryInfo {
 	if x != nil {
-		return x.BatteryInfo
+		return x.xxx_hidden_BatteryInfo
 	}
 	return nil
 }
 
-func (x *Telemetry) GetGpsInfo() *GPSInfo {
+func (x *Telemetry) GetGpsInfo() *GpsInfo {
 	if x != nil {
-		return x.GpsInfo
+		return x.xxx_hidden_GpsInfo
 	}
 	return nil
 }
 
 func (x *Telemetry) GetPositionInfo() *PositionInfo {
 	if x != nil {
-		return x.PositionInfo
+		return x.xxx_hidden_PositionInfo
 	}
 	return nil
 }
 
 func (x *Telemetry) GetGimbalInfo() *GimbalInfo {
 	if x != nil {
-		return x.GimbalInfo
+		return x.xxx_hidden_GimbalInfo
 	}
 	return nil
 }
 
 func (x *Telemetry) GetAlertInfo() *AlertInfo {
 	if x != nil {
-		return x.AlertInfo
+		return x.xxx_hidden_AlertInfo
 	}
 	return nil
 }
 
+func (x *Telemetry) SetTimestamp(v *timestamppb.Timestamp) {
+	x.xxx_hidden_Timestamp = v
+}
+
+func (x *Telemetry) SetBatteryInfo(v *BatteryInfo) {
+	x.xxx_hidden_BatteryInfo = v
+}
+
+func (x *Telemetry) SetGpsInfo(v *GpsInfo) {
+	x.xxx_hidden_GpsInfo = v
+}
+
+func (x *Telemetry) SetPositionInfo(v *PositionInfo) {
+	x.xxx_hidden_PositionInfo = v
+}
+
+func (x *Telemetry) SetGimbalInfo(v *GimbalInfo) {
+	x.xxx_hidden_GimbalInfo = v
+}
+
+func (x *Telemetry) SetAlertInfo(v *AlertInfo) {
+	x.xxx_hidden_AlertInfo = v
+}
+
+func (x *Telemetry) HasTimestamp() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Timestamp != nil
+}
+
+func (x *Telemetry) HasBatteryInfo() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_BatteryInfo != nil
+}
+
+func (x *Telemetry) HasGpsInfo() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_GpsInfo != nil
+}
+
+func (x *Telemetry) HasPositionInfo() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_PositionInfo != nil
+}
+
+func (x *Telemetry) HasGimbalInfo() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_GimbalInfo != nil
+}
+
+func (x *Telemetry) HasAlertInfo() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_AlertInfo != nil
+}
+
+func (x *Telemetry) ClearTimestamp() {
+	x.xxx_hidden_Timestamp = nil
+}
+
+func (x *Telemetry) ClearBatteryInfo() {
+	x.xxx_hidden_BatteryInfo = nil
+}
+
+func (x *Telemetry) ClearGpsInfo() {
+	x.xxx_hidden_GpsInfo = nil
+}
+
+func (x *Telemetry) ClearPositionInfo() {
+	x.xxx_hidden_PositionInfo = nil
+}
+
+func (x *Telemetry) ClearGimbalInfo() {
+	x.xxx_hidden_GimbalInfo = nil
+}
+
+func (x *Telemetry) ClearAlertInfo() {
+	x.xxx_hidden_AlertInfo = nil
+}
+
+type Telemetry_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// timestamp of message
+	Timestamp *timestamppb.Timestamp
+	// battery info
+	BatteryInfo *BatteryInfo
+	// GPS and satellite info
+	GpsInfo *GpsInfo
+	// positional info about the vehicle
+	PositionInfo *PositionInfo
+	// status on attached gimbals and their orientations
+	GimbalInfo *GimbalInfo
+	// enumeration of vehicle warnings
+	AlertInfo *AlertInfo
+}
+
+func (b0 Telemetry_builder) Build() *Telemetry {
+	m0 := &Telemetry{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Timestamp = b.Timestamp
+	x.xxx_hidden_BatteryInfo = b.BatteryInfo
+	x.xxx_hidden_GpsInfo = b.GpsInfo
+	x.xxx_hidden_PositionInfo = b.PositionInfo
+	x.xxx_hidden_GimbalInfo = b.GimbalInfo
+	x.xxx_hidden_AlertInfo = b.AlertInfo
+	return m0
+}
+
 // Raw camera frames
 type RawFrame struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// capture timestamp of the frame
-	Timestamp *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	// raw bytes representing the frame
-	Data []byte `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
-	// horizontal frame resolution in pixels
-	HRes uint64 `protobuf:"varint,3,opt,name=h_res,json=hRes,proto3" json:"h_res,omitempty"`
-	// vertical frame resolution in pixels
-	VRes uint64 `protobuf:"varint,4,opt,name=v_res,json=vRes,proto3" json:"v_res,omitempty"`
-	// depth resolution in pixels
-	DRes uint64 `protobuf:"varint,5,opt,name=d_res,json=dRes,proto3" json:"d_res,omitempty"`
-	// number of channels
-	Channels uint64 `protobuf:"varint,6,opt,name=channels,proto3" json:"channels,omitempty"`
-	// frame ID for future correlation
-	Id uint64 `protobuf:"varint,7,opt,name=id,proto3" json:"id,omitempty"`
-	// positional info about the vehicle
-	PositionInfo *PositionInfo `protobuf:"bytes,8,opt,name=position_info,json=positionInfo,proto3" json:"position_info,omitempty"`
-	// status on gimbal this frame is attached to, if applicable
-	GimbalStatus *GimbalStatus `protobuf:"bytes,9,opt,name=gimbal_status,json=gimbalStatus,proto3" json:"gimbal_status,omitempty"`
-	// ID of origin camera
-	CameraId      uint64 `protobuf:"varint,10,opt,name=camera_id,json=cameraId,proto3" json:"camera_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Timestamp    *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=timestamp,proto3"`
+	xxx_hidden_Data         []byte                 `protobuf:"bytes,2,opt,name=data,proto3"`
+	xxx_hidden_HRes         uint64                 `protobuf:"varint,3,opt,name=h_res,json=hRes,proto3"`
+	xxx_hidden_VRes         uint64                 `protobuf:"varint,4,opt,name=v_res,json=vRes,proto3"`
+	xxx_hidden_DRes         uint64                 `protobuf:"varint,5,opt,name=d_res,json=dRes,proto3"`
+	xxx_hidden_Channels     uint64                 `protobuf:"varint,6,opt,name=channels,proto3"`
+	xxx_hidden_Id           uint64                 `protobuf:"varint,7,opt,name=id,proto3"`
+	xxx_hidden_PositionInfo *PositionInfo          `protobuf:"bytes,8,opt,name=position_info,json=positionInfo,proto3"`
+	xxx_hidden_GimbalStatus *GimbalStatus          `protobuf:"bytes,9,opt,name=gimbal_status,json=gimbalStatus,proto3"`
+	xxx_hidden_CameraId     uint64                 `protobuf:"varint,10,opt,name=camera_id,json=cameraId,proto3"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *RawFrame) Reset() {
@@ -878,98 +1238,205 @@ func (x *RawFrame) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RawFrame.ProtoReflect.Descriptor instead.
-func (*RawFrame) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{7}
-}
-
 func (x *RawFrame) GetTimestamp() *timestamppb.Timestamp {
 	if x != nil {
-		return x.Timestamp
+		return x.xxx_hidden_Timestamp
 	}
 	return nil
 }
 
 func (x *RawFrame) GetData() []byte {
 	if x != nil {
-		return x.Data
+		return x.xxx_hidden_Data
 	}
 	return nil
 }
 
 func (x *RawFrame) GetHRes() uint64 {
 	if x != nil {
-		return x.HRes
+		return x.xxx_hidden_HRes
 	}
 	return 0
 }
 
 func (x *RawFrame) GetVRes() uint64 {
 	if x != nil {
-		return x.VRes
+		return x.xxx_hidden_VRes
 	}
 	return 0
 }
 
 func (x *RawFrame) GetDRes() uint64 {
 	if x != nil {
-		return x.DRes
+		return x.xxx_hidden_DRes
 	}
 	return 0
 }
 
 func (x *RawFrame) GetChannels() uint64 {
 	if x != nil {
-		return x.Channels
+		return x.xxx_hidden_Channels
 	}
 	return 0
 }
 
 func (x *RawFrame) GetId() uint64 {
 	if x != nil {
-		return x.Id
+		return x.xxx_hidden_Id
 	}
 	return 0
 }
 
 func (x *RawFrame) GetPositionInfo() *PositionInfo {
 	if x != nil {
-		return x.PositionInfo
+		return x.xxx_hidden_PositionInfo
 	}
 	return nil
 }
 
 func (x *RawFrame) GetGimbalStatus() *GimbalStatus {
 	if x != nil {
-		return x.GimbalStatus
+		return x.xxx_hidden_GimbalStatus
 	}
 	return nil
 }
 
 func (x *RawFrame) GetCameraId() uint64 {
 	if x != nil {
-		return x.CameraId
+		return x.xxx_hidden_CameraId
 	}
 	return 0
 }
 
+func (x *RawFrame) SetTimestamp(v *timestamppb.Timestamp) {
+	x.xxx_hidden_Timestamp = v
+}
+
+func (x *RawFrame) SetData(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Data = v
+}
+
+func (x *RawFrame) SetHRes(v uint64) {
+	x.xxx_hidden_HRes = v
+}
+
+func (x *RawFrame) SetVRes(v uint64) {
+	x.xxx_hidden_VRes = v
+}
+
+func (x *RawFrame) SetDRes(v uint64) {
+	x.xxx_hidden_DRes = v
+}
+
+func (x *RawFrame) SetChannels(v uint64) {
+	x.xxx_hidden_Channels = v
+}
+
+func (x *RawFrame) SetId(v uint64) {
+	x.xxx_hidden_Id = v
+}
+
+func (x *RawFrame) SetPositionInfo(v *PositionInfo) {
+	x.xxx_hidden_PositionInfo = v
+}
+
+func (x *RawFrame) SetGimbalStatus(v *GimbalStatus) {
+	x.xxx_hidden_GimbalStatus = v
+}
+
+func (x *RawFrame) SetCameraId(v uint64) {
+	x.xxx_hidden_CameraId = v
+}
+
+func (x *RawFrame) HasTimestamp() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Timestamp != nil
+}
+
+func (x *RawFrame) HasPositionInfo() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_PositionInfo != nil
+}
+
+func (x *RawFrame) HasGimbalStatus() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_GimbalStatus != nil
+}
+
+func (x *RawFrame) ClearTimestamp() {
+	x.xxx_hidden_Timestamp = nil
+}
+
+func (x *RawFrame) ClearPositionInfo() {
+	x.xxx_hidden_PositionInfo = nil
+}
+
+func (x *RawFrame) ClearGimbalStatus() {
+	x.xxx_hidden_GimbalStatus = nil
+}
+
+type RawFrame_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// capture timestamp of the frame
+	Timestamp *timestamppb.Timestamp
+	// raw bytes representing the frame
+	Data []byte
+	// horizontal frame resolution in pixels
+	HRes uint64
+	// vertical frame resolution in pixels
+	VRes uint64
+	// depth resolution in pixels
+	DRes uint64
+	// number of channels
+	Channels uint64
+	// frame ID for future correlation
+	Id uint64
+	// positional info about the vehicle
+	PositionInfo *PositionInfo
+	// status on gimbal this frame is attached to, if applicable
+	GimbalStatus *GimbalStatus
+	// ID of origin camera
+	CameraId uint64
+}
+
+func (b0 RawFrame_builder) Build() *RawFrame {
+	m0 := &RawFrame{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Timestamp = b.Timestamp
+	x.xxx_hidden_Data = b.Data
+	x.xxx_hidden_HRes = b.HRes
+	x.xxx_hidden_VRes = b.VRes
+	x.xxx_hidden_DRes = b.DRes
+	x.xxx_hidden_Channels = b.Channels
+	x.xxx_hidden_Id = b.Id
+	x.xxx_hidden_PositionInfo = b.PositionInfo
+	x.xxx_hidden_GimbalStatus = b.GimbalStatus
+	x.xxx_hidden_CameraId = b.CameraId
+	return m0
+}
+
 // Compressed camera frames (JPG encoded)
 type EncodedFrame struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// capture timestamp of the frame
-	Timestamp *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	// encoded bytes representing the frame
-	EncodedData []byte `protobuf:"bytes,2,opt,name=encoded_data,json=encodedData,proto3" json:"encoded_data,omitempty"`
-	// frame ID for future correlation
-	Id uint64 `protobuf:"varint,3,opt,name=id,proto3" json:"id,omitempty"`
-	// positional info about the vehicle
-	PositionInfo *PositionInfo `protobuf:"bytes,4,opt,name=position_info,json=positionInfo,proto3" json:"position_info,omitempty"`
-	// status on gimbal this frame is attached to, if applicable
-	GimbalStatus *GimbalStatus `protobuf:"bytes,5,opt,name=gimbal_status,json=gimbalStatus,proto3" json:"gimbal_status,omitempty"`
-	// ID of origin camera
-	CameraId      uint64 `protobuf:"varint,6,opt,name=camera_id,json=cameraId,proto3" json:"camera_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Timestamp    *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=timestamp,proto3"`
+	xxx_hidden_EncodedData  []byte                 `protobuf:"bytes,2,opt,name=encoded_data,json=encodedData,proto3"`
+	xxx_hidden_Id           uint64                 `protobuf:"varint,3,opt,name=id,proto3"`
+	xxx_hidden_PositionInfo *PositionInfo          `protobuf:"bytes,4,opt,name=position_info,json=positionInfo,proto3"`
+	xxx_hidden_GimbalStatus *GimbalStatus          `protobuf:"bytes,5,opt,name=gimbal_status,json=gimbalStatus,proto3"`
+	xxx_hidden_CameraId     uint64                 `protobuf:"varint,6,opt,name=camera_id,json=cameraId,proto3"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *EncodedFrame) Reset() {
@@ -997,51 +1464,136 @@ func (x *EncodedFrame) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use EncodedFrame.ProtoReflect.Descriptor instead.
-func (*EncodedFrame) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{8}
-}
-
 func (x *EncodedFrame) GetTimestamp() *timestamppb.Timestamp {
 	if x != nil {
-		return x.Timestamp
+		return x.xxx_hidden_Timestamp
 	}
 	return nil
 }
 
 func (x *EncodedFrame) GetEncodedData() []byte {
 	if x != nil {
-		return x.EncodedData
+		return x.xxx_hidden_EncodedData
 	}
 	return nil
 }
 
 func (x *EncodedFrame) GetId() uint64 {
 	if x != nil {
-		return x.Id
+		return x.xxx_hidden_Id
 	}
 	return 0
 }
 
 func (x *EncodedFrame) GetPositionInfo() *PositionInfo {
 	if x != nil {
-		return x.PositionInfo
+		return x.xxx_hidden_PositionInfo
 	}
 	return nil
 }
 
 func (x *EncodedFrame) GetGimbalStatus() *GimbalStatus {
 	if x != nil {
-		return x.GimbalStatus
+		return x.xxx_hidden_GimbalStatus
 	}
 	return nil
 }
 
 func (x *EncodedFrame) GetCameraId() uint64 {
 	if x != nil {
-		return x.CameraId
+		return x.xxx_hidden_CameraId
 	}
 	return 0
+}
+
+func (x *EncodedFrame) SetTimestamp(v *timestamppb.Timestamp) {
+	x.xxx_hidden_Timestamp = v
+}
+
+func (x *EncodedFrame) SetEncodedData(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_EncodedData = v
+}
+
+func (x *EncodedFrame) SetId(v uint64) {
+	x.xxx_hidden_Id = v
+}
+
+func (x *EncodedFrame) SetPositionInfo(v *PositionInfo) {
+	x.xxx_hidden_PositionInfo = v
+}
+
+func (x *EncodedFrame) SetGimbalStatus(v *GimbalStatus) {
+	x.xxx_hidden_GimbalStatus = v
+}
+
+func (x *EncodedFrame) SetCameraId(v uint64) {
+	x.xxx_hidden_CameraId = v
+}
+
+func (x *EncodedFrame) HasTimestamp() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Timestamp != nil
+}
+
+func (x *EncodedFrame) HasPositionInfo() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_PositionInfo != nil
+}
+
+func (x *EncodedFrame) HasGimbalStatus() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_GimbalStatus != nil
+}
+
+func (x *EncodedFrame) ClearTimestamp() {
+	x.xxx_hidden_Timestamp = nil
+}
+
+func (x *EncodedFrame) ClearPositionInfo() {
+	x.xxx_hidden_PositionInfo = nil
+}
+
+func (x *EncodedFrame) ClearGimbalStatus() {
+	x.xxx_hidden_GimbalStatus = nil
+}
+
+type EncodedFrame_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// capture timestamp of the frame
+	Timestamp *timestamppb.Timestamp
+	// encoded bytes representing the frame
+	EncodedData []byte
+	// frame ID for future correlation
+	Id uint64
+	// positional info about the vehicle
+	PositionInfo *PositionInfo
+	// status on gimbal this frame is attached to, if applicable
+	GimbalStatus *GimbalStatus
+	// ID of origin camera
+	CameraId uint64
+}
+
+func (b0 EncodedFrame_builder) Build() *EncodedFrame {
+	m0 := &EncodedFrame{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Timestamp = b.Timestamp
+	x.xxx_hidden_EncodedData = b.EncodedData
+	x.xxx_hidden_Id = b.Id
+	x.xxx_hidden_PositionInfo = b.PositionInfo
+	x.xxx_hidden_GimbalStatus = b.GimbalStatus
+	x.xxx_hidden_CameraId = b.CameraId
+	return m0
 }
 
 var File_steeleagle_protocol_v1_messages_telemetry_telemetry_proto protoreflect.FileDescriptor
@@ -1053,7 +1605,7 @@ const file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDesc = "
 	"\n" +
 	"percentage\x18\x01 \x01(\rR\n" +
 	"percentage\")\n" +
-	"\aGPSInfo\x12\x1e\n" +
+	"\aGpsInfo\x12\x1e\n" +
 	"\n" +
 	"satellites\x18\x01 \x01(\rR\n" +
 	"satellites\"\x9f\x05\n" +
@@ -1069,17 +1621,19 @@ const file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDesc = "
 	"\x19MOTION_STATUS_UNSPECIFIED\x10\x00\x12\x19\n" +
 	"\x15MOTION_STATUS_HOLDING\x10\x01\x12\x1c\n" +
 	"\x18MOTION_STATUS_IN_TRANSIT\x10\x02\x12\x19\n" +
-	"\x15MOTION_STATUS_STOPPED\x10\x03\"\x92\x01\n" +
+	"\x15MOTION_STATUS_STOPPED\x10\x03\"\xb4\x02\n" +
 	"\fGimbalStatus\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x129\n" +
 	"\tpose_body\x18\x02 \x01(\v2\x1c.steeleagle_protocol.v1.PoseR\bposeBody\x127\n" +
-	"\bpose_neu\x18\x03 \x01(\v2\x1c.steeleagle_protocol.v1.PoseR\aposeNeu\"_\n" +
+	"\bpose_neu\x18\x03 \x01(\v2\x1c.steeleagle_protocol.v1.PoseR\aposeNeu\x12P\n" +
+	"\x15angular_velocity_body\x18\x04 \x01(\v2\x1c.steeleagle_protocol.v1.PoseR\x13angularVelocityBody\x12N\n" +
+	"\x14angular_velocity_neu\x18\x05 \x01(\v2\x1c.steeleagle_protocol.v1.PoseR\x12angularVelocityNeu\"_\n" +
 	"\n" +
 	"GimbalInfo\x12Q\n" +
 	"\agimbals\x18\x01 \x03(\v27.steeleagle_protocol.v1.messages.telemetry.GimbalStatusR\agimbals\"\xe2\b\n" +
 	"\tAlertInfo\x12l\n" +
 	"\x0fbattery_warning\x18\x01 \x01(\x0e2C.steeleagle_protocol.v1.messages.telemetry.AlertInfo.BatteryWarningR\x0ebatteryWarning\x12`\n" +
-	"\vgps_warning\x18\x02 \x01(\x0e2?.steeleagle_protocol.v1.messages.telemetry.AlertInfo.GPSWarningR\n" +
+	"\vgps_warning\x18\x02 \x01(\x0e2?.steeleagle_protocol.v1.messages.telemetry.AlertInfo.GpsWarningR\n" +
 	"gpsWarning\x12{\n" +
 	"\x14magnetometer_warning\x18\x03 \x01(\x0e2H.steeleagle_protocol.v1.messages.telemetry.AlertInfo.MagnetometerWarningR\x13magnetometerWarning\x12u\n" +
 	"\x12connection_warning\x18\x04 \x01(\x0e2F.steeleagle_protocol.v1.messages.telemetry.AlertInfo.ConnectionWarningR\x11connectionWarning\x12l\n" +
@@ -1089,7 +1643,7 @@ const file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDesc = "
 	"\x13BATTERY_WARNING_LOW\x10\x01\x12\x1c\n" +
 	"\x18BATTERY_WARNING_CRITICAL\x10\x02\"^\n" +
 	"\n" +
-	"GPSWarning\x12\x1b\n" +
+	"GpsWarning\x12\x1b\n" +
 	"\x17GPS_WARNING_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17GPS_WARNING_WEAK_SIGNAL\x10\x01\x12\x16\n" +
 	"\x12GPS_WARNING_NO_FIX\x10\x02\"c\n" +
@@ -1107,7 +1661,7 @@ const file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDesc = "
 	"\tTelemetry\x128\n" +
 	"\ttimestamp\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12Y\n" +
 	"\fbattery_info\x18\x02 \x01(\v26.steeleagle_protocol.v1.messages.telemetry.BatteryInfoR\vbatteryInfo\x12M\n" +
-	"\bgps_info\x18\x03 \x01(\v22.steeleagle_protocol.v1.messages.telemetry.GPSInfoR\agpsInfo\x12\\\n" +
+	"\bgps_info\x18\x03 \x01(\v22.steeleagle_protocol.v1.messages.telemetry.GpsInfoR\agpsInfo\x12\\\n" +
 	"\rposition_info\x18\x04 \x01(\v27.steeleagle_protocol.v1.messages.telemetry.PositionInfoR\fpositionInfo\x12V\n" +
 	"\vgimbal_info\x18\x05 \x01(\v25.steeleagle_protocol.v1.messages.telemetry.GimbalInfoR\n" +
 	"gimbalInfo\x12S\n" +
@@ -1134,29 +1688,17 @@ const file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDesc = "
 	"\tcamera_id\x18\x06 \x01(\x04R\bcameraIdB\xd7\x02\n" +
 	"-com.steeleagle_protocol.v1.messages.telemetryB\x0eTelemetryProtoP\x01ZRgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry\xa2\x02\x04SVMT\xaa\x02(SteeleagleProtocol.V1.Messages.Telemetry\xca\x02(SteeleagleProtocol\\V1\\Messages\\Telemetry\xe2\x024SteeleagleProtocol\\V1\\Messages\\Telemetry\\GPBMetadata\xea\x02+SteeleagleProtocol::V1::Messages::Telemetryb\x06proto3"
 
-var (
-	file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescOnce sync.Once
-	file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescData []byte
-)
-
-func file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP() []byte {
-	file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescOnce.Do(func() {
-		file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDesc), len(file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDesc)))
-	})
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescData
-}
-
 var file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
 var file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_goTypes = []any{
 	(PositionInfo_MotionStatus)(0),     // 0: steeleagle_protocol.v1.messages.telemetry.PositionInfo.MotionStatus
 	(AlertInfo_BatteryWarning)(0),      // 1: steeleagle_protocol.v1.messages.telemetry.AlertInfo.BatteryWarning
-	(AlertInfo_GPSWarning)(0),          // 2: steeleagle_protocol.v1.messages.telemetry.AlertInfo.GPSWarning
+	(AlertInfo_GpsWarning)(0),          // 2: steeleagle_protocol.v1.messages.telemetry.AlertInfo.GpsWarning
 	(AlertInfo_MagnetometerWarning)(0), // 3: steeleagle_protocol.v1.messages.telemetry.AlertInfo.MagnetometerWarning
 	(AlertInfo_ConnectionWarning)(0),   // 4: steeleagle_protocol.v1.messages.telemetry.AlertInfo.ConnectionWarning
 	(AlertInfo_CompassWarning)(0),      // 5: steeleagle_protocol.v1.messages.telemetry.AlertInfo.CompassWarning
 	(*BatteryInfo)(nil),                // 6: steeleagle_protocol.v1.messages.telemetry.BatteryInfo
-	(*GPSInfo)(nil),                    // 7: steeleagle_protocol.v1.messages.telemetry.GPSInfo
+	(*GpsInfo)(nil),                    // 7: steeleagle_protocol.v1.messages.telemetry.GpsInfo
 	(*PositionInfo)(nil),               // 8: steeleagle_protocol.v1.messages.telemetry.PositionInfo
 	(*GimbalStatus)(nil),               // 9: steeleagle_protocol.v1.messages.telemetry.GimbalStatus
 	(*GimbalInfo)(nil),                 // 10: steeleagle_protocol.v1.messages.telemetry.GimbalInfo
@@ -1181,29 +1723,31 @@ var file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_depIdxs = []i
 	18, // 6: steeleagle_protocol.v1.messages.telemetry.PositionInfo.setpoint:type_name -> google.protobuf.Any
 	19, // 7: steeleagle_protocol.v1.messages.telemetry.GimbalStatus.pose_body:type_name -> steeleagle_protocol.v1.Pose
 	19, // 8: steeleagle_protocol.v1.messages.telemetry.GimbalStatus.pose_neu:type_name -> steeleagle_protocol.v1.Pose
-	9,  // 9: steeleagle_protocol.v1.messages.telemetry.GimbalInfo.gimbals:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalStatus
-	1,  // 10: steeleagle_protocol.v1.messages.telemetry.AlertInfo.battery_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.BatteryWarning
-	2,  // 11: steeleagle_protocol.v1.messages.telemetry.AlertInfo.gps_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.GPSWarning
-	3,  // 12: steeleagle_protocol.v1.messages.telemetry.AlertInfo.magnetometer_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.MagnetometerWarning
-	4,  // 13: steeleagle_protocol.v1.messages.telemetry.AlertInfo.connection_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.ConnectionWarning
-	5,  // 14: steeleagle_protocol.v1.messages.telemetry.AlertInfo.compass_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.CompassWarning
-	20, // 15: steeleagle_protocol.v1.messages.telemetry.Telemetry.timestamp:type_name -> google.protobuf.Timestamp
-	6,  // 16: steeleagle_protocol.v1.messages.telemetry.Telemetry.battery_info:type_name -> steeleagle_protocol.v1.messages.telemetry.BatteryInfo
-	7,  // 17: steeleagle_protocol.v1.messages.telemetry.Telemetry.gps_info:type_name -> steeleagle_protocol.v1.messages.telemetry.GPSInfo
-	8,  // 18: steeleagle_protocol.v1.messages.telemetry.Telemetry.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
-	10, // 19: steeleagle_protocol.v1.messages.telemetry.Telemetry.gimbal_info:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalInfo
-	11, // 20: steeleagle_protocol.v1.messages.telemetry.Telemetry.alert_info:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo
-	20, // 21: steeleagle_protocol.v1.messages.telemetry.RawFrame.timestamp:type_name -> google.protobuf.Timestamp
-	8,  // 22: steeleagle_protocol.v1.messages.telemetry.RawFrame.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
-	9,  // 23: steeleagle_protocol.v1.messages.telemetry.RawFrame.gimbal_status:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalStatus
-	20, // 24: steeleagle_protocol.v1.messages.telemetry.EncodedFrame.timestamp:type_name -> google.protobuf.Timestamp
-	8,  // 25: steeleagle_protocol.v1.messages.telemetry.EncodedFrame.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
-	9,  // 26: steeleagle_protocol.v1.messages.telemetry.EncodedFrame.gimbal_status:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalStatus
-	27, // [27:27] is the sub-list for method output_type
-	27, // [27:27] is the sub-list for method input_type
-	27, // [27:27] is the sub-list for extension type_name
-	27, // [27:27] is the sub-list for extension extendee
-	0,  // [0:27] is the sub-list for field type_name
+	19, // 9: steeleagle_protocol.v1.messages.telemetry.GimbalStatus.angular_velocity_body:type_name -> steeleagle_protocol.v1.Pose
+	19, // 10: steeleagle_protocol.v1.messages.telemetry.GimbalStatus.angular_velocity_neu:type_name -> steeleagle_protocol.v1.Pose
+	9,  // 11: steeleagle_protocol.v1.messages.telemetry.GimbalInfo.gimbals:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalStatus
+	1,  // 12: steeleagle_protocol.v1.messages.telemetry.AlertInfo.battery_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.BatteryWarning
+	2,  // 13: steeleagle_protocol.v1.messages.telemetry.AlertInfo.gps_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.GpsWarning
+	3,  // 14: steeleagle_protocol.v1.messages.telemetry.AlertInfo.magnetometer_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.MagnetometerWarning
+	4,  // 15: steeleagle_protocol.v1.messages.telemetry.AlertInfo.connection_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.ConnectionWarning
+	5,  // 16: steeleagle_protocol.v1.messages.telemetry.AlertInfo.compass_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.CompassWarning
+	20, // 17: steeleagle_protocol.v1.messages.telemetry.Telemetry.timestamp:type_name -> google.protobuf.Timestamp
+	6,  // 18: steeleagle_protocol.v1.messages.telemetry.Telemetry.battery_info:type_name -> steeleagle_protocol.v1.messages.telemetry.BatteryInfo
+	7,  // 19: steeleagle_protocol.v1.messages.telemetry.Telemetry.gps_info:type_name -> steeleagle_protocol.v1.messages.telemetry.GpsInfo
+	8,  // 20: steeleagle_protocol.v1.messages.telemetry.Telemetry.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
+	10, // 21: steeleagle_protocol.v1.messages.telemetry.Telemetry.gimbal_info:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalInfo
+	11, // 22: steeleagle_protocol.v1.messages.telemetry.Telemetry.alert_info:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo
+	20, // 23: steeleagle_protocol.v1.messages.telemetry.RawFrame.timestamp:type_name -> google.protobuf.Timestamp
+	8,  // 24: steeleagle_protocol.v1.messages.telemetry.RawFrame.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
+	9,  // 25: steeleagle_protocol.v1.messages.telemetry.RawFrame.gimbal_status:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalStatus
+	20, // 26: steeleagle_protocol.v1.messages.telemetry.EncodedFrame.timestamp:type_name -> google.protobuf.Timestamp
+	8,  // 27: steeleagle_protocol.v1.messages.telemetry.EncodedFrame.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
+	9,  // 28: steeleagle_protocol.v1.messages.telemetry.EncodedFrame.gimbal_status:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalStatus
+	29, // [29:29] is the sub-list for method output_type
+	29, // [29:29] is the sub-list for method input_type
+	29, // [29:29] is the sub-list for extension type_name
+	29, // [29:29] is the sub-list for extension extendee
+	0,  // [0:29] is the sub-list for field type_name
 }
 
 func init() { file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_init() }

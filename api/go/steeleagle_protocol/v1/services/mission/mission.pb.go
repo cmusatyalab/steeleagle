@@ -14,7 +14,6 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
-	sync "sync"
 	unsafe "unsafe"
 )
 
@@ -27,15 +26,13 @@ const (
 
 // Data describing a mission.
 type MissionData struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Types that are valid to be assigned to Content:
-	//
-	//	*MissionData_Json
-	//	*MissionData_Binary
-	Content       isMissionData_Content `protobuf_oneof:"content"`
-	Map           []byte                `protobuf:"bytes,3,opt,name=map,proto3,oneof" json:"map,omitempty"` // kml object
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Content     isMissionData_Content  `protobuf_oneof:"content"`
+	xxx_hidden_Map         []byte                 `protobuf:"bytes,3,opt,name=map,proto3,oneof"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *MissionData) Reset() {
@@ -63,21 +60,9 @@ func (x *MissionData) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use MissionData.ProtoReflect.Descriptor instead.
-func (*MissionData) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_mission_mission_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *MissionData) GetContent() isMissionData_Content {
-	if x != nil {
-		return x.Content
-	}
-	return nil
-}
-
 func (x *MissionData) GetJson() string {
 	if x != nil {
-		if x, ok := x.Content.(*MissionData_Json); ok {
+		if x, ok := x.xxx_hidden_Content.(*missionData_Json); ok {
 			return x.Json
 		}
 	}
@@ -86,7 +71,7 @@ func (x *MissionData) GetJson() string {
 
 func (x *MissionData) GetBinary() []byte {
 	if x != nil {
-		if x, ok := x.Content.(*MissionData_Binary); ok {
+		if x, ok := x.xxx_hidden_Content.(*missionData_Binary); ok {
 			return x.Binary
 		}
 	}
@@ -95,32 +80,157 @@ func (x *MissionData) GetBinary() []byte {
 
 func (x *MissionData) GetMap() []byte {
 	if x != nil {
-		return x.Map
+		return x.xxx_hidden_Map
 	}
 	return nil
+}
+
+func (x *MissionData) SetJson(v string) {
+	x.xxx_hidden_Content = &missionData_Json{v}
+}
+
+func (x *MissionData) SetBinary(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Content = &missionData_Binary{v}
+}
+
+func (x *MissionData) SetMap(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Map = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 2)
+}
+
+func (x *MissionData) HasContent() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Content != nil
+}
+
+func (x *MissionData) HasJson() bool {
+	if x == nil {
+		return false
+	}
+	_, ok := x.xxx_hidden_Content.(*missionData_Json)
+	return ok
+}
+
+func (x *MissionData) HasBinary() bool {
+	if x == nil {
+		return false
+	}
+	_, ok := x.xxx_hidden_Content.(*missionData_Binary)
+	return ok
+}
+
+func (x *MissionData) HasMap() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *MissionData) ClearContent() {
+	x.xxx_hidden_Content = nil
+}
+
+func (x *MissionData) ClearJson() {
+	if _, ok := x.xxx_hidden_Content.(*missionData_Json); ok {
+		x.xxx_hidden_Content = nil
+	}
+}
+
+func (x *MissionData) ClearBinary() {
+	if _, ok := x.xxx_hidden_Content.(*missionData_Binary); ok {
+		x.xxx_hidden_Content = nil
+	}
+}
+
+func (x *MissionData) ClearMap() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Map = nil
+}
+
+const MissionData_Content_not_set_case case_MissionData_Content = 0
+const MissionData_Json_case case_MissionData_Content = 1
+const MissionData_Binary_case case_MissionData_Content = 2
+
+func (x *MissionData) WhichContent() case_MissionData_Content {
+	if x == nil {
+		return MissionData_Content_not_set_case
+	}
+	switch x.xxx_hidden_Content.(type) {
+	case *missionData_Json:
+		return MissionData_Json_case
+	case *missionData_Binary:
+		return MissionData_Binary_case
+	default:
+		return MissionData_Content_not_set_case
+	}
+}
+
+type MissionData_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Fields of oneof xxx_hidden_Content:
+	Json   *string
+	Binary []byte
+	// -- end of xxx_hidden_Content
+	Map []byte
+}
+
+func (b0 MissionData_builder) Build() *MissionData {
+	m0 := &MissionData{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Json != nil {
+		x.xxx_hidden_Content = &missionData_Json{*b.Json}
+	}
+	if b.Binary != nil {
+		x.xxx_hidden_Content = &missionData_Binary{b.Binary}
+	}
+	if b.Map != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 2)
+		x.xxx_hidden_Map = b.Map
+	}
+	return m0
+}
+
+type case_MissionData_Content protoreflect.FieldNumber
+
+func (x case_MissionData_Content) String() string {
+	md := file_steeleagle_protocol_v1_services_mission_mission_proto_msgTypes[0].Descriptor()
+	if x == 0 {
+		return "not set"
+	}
+	return protoimpl.X.MessageFieldStringOf(md, protoreflect.FieldNumber(x))
 }
 
 type isMissionData_Content interface {
 	isMissionData_Content()
 }
 
-type MissionData_Json struct {
+type missionData_Json struct {
 	Json string `protobuf:"bytes,1,opt,name=json,proto3,oneof"` // JSON object, used for Python missions
 }
 
-type MissionData_Binary struct {
+type missionData_Binary struct {
 	Binary []byte `protobuf:"bytes,2,opt,name=binary,proto3,oneof"` // binary object, used for Go missions
 }
 
-func (*MissionData_Json) isMissionData_Content() {}
+func (*missionData_Json) isMissionData_Content() {}
 
-func (*MissionData_Binary) isMissionData_Content() {}
+func (*missionData_Binary) isMissionData_Content() {}
 
 type UploadMissionRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Mission       *MissionData           `protobuf:"bytes,1,opt,name=mission,proto3" json:"mission,omitempty"` // data of the target mission
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Mission *MissionData           `protobuf:"bytes,1,opt,name=mission,proto3"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *UploadMissionRequest) Reset() {
@@ -148,20 +258,44 @@ func (x *UploadMissionRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use UploadMissionRequest.ProtoReflect.Descriptor instead.
-func (*UploadMissionRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_mission_mission_proto_rawDescGZIP(), []int{1}
-}
-
 func (x *UploadMissionRequest) GetMission() *MissionData {
 	if x != nil {
-		return x.Mission
+		return x.xxx_hidden_Mission
 	}
 	return nil
 }
 
+func (x *UploadMissionRequest) SetMission(v *MissionData) {
+	x.xxx_hidden_Mission = v
+}
+
+func (x *UploadMissionRequest) HasMission() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Mission != nil
+}
+
+func (x *UploadMissionRequest) ClearMission() {
+	x.xxx_hidden_Mission = nil
+}
+
+type UploadMissionRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Mission *MissionData
+}
+
+func (b0 UploadMissionRequest_builder) Build() *UploadMissionRequest {
+	m0 := &UploadMissionRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Mission = b.Mission
+	return m0
+}
+
 type UploadMissionResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -191,13 +325,20 @@ func (x *UploadMissionResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use UploadMissionResponse.ProtoReflect.Descriptor instead.
-func (*UploadMissionResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_mission_mission_proto_rawDescGZIP(), []int{2}
+type UploadMissionResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 UploadMissionResponse_builder) Build() *UploadMissionResponse {
+	m0 := &UploadMissionResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
 }
 
 type StartMissionRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -227,13 +368,20 @@ func (x *StartMissionRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StartMissionRequest.ProtoReflect.Descriptor instead.
-func (*StartMissionRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_mission_mission_proto_rawDescGZIP(), []int{3}
+type StartMissionRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 StartMissionRequest_builder) Build() *StartMissionRequest {
+	m0 := &StartMissionRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
 }
 
 type StartMissionResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -263,13 +411,20 @@ func (x *StartMissionResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StartMissionResponse.ProtoReflect.Descriptor instead.
-func (*StartMissionResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_mission_mission_proto_rawDescGZIP(), []int{4}
+type StartMissionResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 StartMissionResponse_builder) Build() *StartMissionResponse {
+	m0 := &StartMissionResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
 }
 
 type StopMissionRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -299,13 +454,20 @@ func (x *StopMissionRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StopMissionRequest.ProtoReflect.Descriptor instead.
-func (*StopMissionRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_mission_mission_proto_rawDescGZIP(), []int{5}
+type StopMissionRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 StopMissionRequest_builder) Build() *StopMissionRequest {
+	m0 := &StopMissionRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
 }
 
 type StopMissionResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -335,9 +497,16 @@ func (x *StopMissionResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StopMissionResponse.ProtoReflect.Descriptor instead.
-func (*StopMissionResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_mission_mission_proto_rawDescGZIP(), []int{6}
+type StopMissionResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 StopMissionResponse_builder) Build() *StopMissionResponse {
+	m0 := &StopMissionResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
 }
 
 var File_steeleagle_protocol_v1_services_mission_mission_proto protoreflect.FileDescriptor
@@ -363,18 +532,6 @@ const file_steeleagle_protocol_v1_services_mission_mission_proto_rawDesc = "" +
 	"\rUploadMission\x12=.steeleagle_protocol.v1.services.mission.UploadMissionRequest\x1a>.steeleagle_protocol.v1.services.mission.UploadMissionResponse\"\x00\x12\x8a\x01\n" +
 	"\vStopMission\x12;.steeleagle_protocol.v1.services.mission.StopMissionRequest\x1a<.steeleagle_protocol.v1.services.mission.StopMissionResponse\"\x00B\xc9\x02\n" +
 	"+com.steeleagle_protocol.v1.services.missionB\fMissionProtoP\x01ZPgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/mission\xa2\x02\x04SVSM\xaa\x02&SteeleagleProtocol.V1.Services.Mission\xca\x02&SteeleagleProtocol\\V1\\Services\\Mission\xe2\x022SteeleagleProtocol\\V1\\Services\\Mission\\GPBMetadata\xea\x02)SteeleagleProtocol::V1::Services::Missionb\x06proto3"
-
-var (
-	file_steeleagle_protocol_v1_services_mission_mission_proto_rawDescOnce sync.Once
-	file_steeleagle_protocol_v1_services_mission_mission_proto_rawDescData []byte
-)
-
-func file_steeleagle_protocol_v1_services_mission_mission_proto_rawDescGZIP() []byte {
-	file_steeleagle_protocol_v1_services_mission_mission_proto_rawDescOnce.Do(func() {
-		file_steeleagle_protocol_v1_services_mission_mission_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_services_mission_mission_proto_rawDesc), len(file_steeleagle_protocol_v1_services_mission_mission_proto_rawDesc)))
-	})
-	return file_steeleagle_protocol_v1_services_mission_mission_proto_rawDescData
-}
 
 var file_steeleagle_protocol_v1_services_mission_mission_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_steeleagle_protocol_v1_services_mission_mission_proto_goTypes = []any{
@@ -407,8 +564,8 @@ func file_steeleagle_protocol_v1_services_mission_mission_proto_init() {
 		return
 	}
 	file_steeleagle_protocol_v1_services_mission_mission_proto_msgTypes[0].OneofWrappers = []any{
-		(*MissionData_Json)(nil),
-		(*MissionData_Binary)(nil),
+		(*missionData_Json)(nil),
+		(*missionData_Binary)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

@@ -17,7 +17,6 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
-	sync "sync"
 	unsafe "unsafe"
 )
 
@@ -29,11 +28,11 @@ const (
 )
 
 type SwarmTakeOffRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Vehicles      []string               `protobuf:"bytes,1,rep,name=vehicles,proto3" json:"vehicles,omitempty"` // target vehicles
-	Request       *driver.TakeOffRequest `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Vehicles []string               `protobuf:"bytes,1,rep,name=vehicles,proto3"`
+	xxx_hidden_Request  *driver.TakeOffRequest `protobuf:"bytes,2,opt,name=request,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *SwarmTakeOffRequest) Reset() {
@@ -61,33 +60,63 @@ func (x *SwarmTakeOffRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SwarmTakeOffRequest.ProtoReflect.Descriptor instead.
-func (*SwarmTakeOffRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescGZIP(), []int{0}
-}
-
 func (x *SwarmTakeOffRequest) GetVehicles() []string {
 	if x != nil {
-		return x.Vehicles
+		return x.xxx_hidden_Vehicles
 	}
 	return nil
 }
 
 func (x *SwarmTakeOffRequest) GetRequest() *driver.TakeOffRequest {
 	if x != nil {
-		return x.Request
+		return x.xxx_hidden_Request
 	}
 	return nil
 }
 
+func (x *SwarmTakeOffRequest) SetVehicles(v []string) {
+	x.xxx_hidden_Vehicles = v
+}
+
+func (x *SwarmTakeOffRequest) SetRequest(v *driver.TakeOffRequest) {
+	x.xxx_hidden_Request = v
+}
+
+func (x *SwarmTakeOffRequest) HasRequest() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Request != nil
+}
+
+func (x *SwarmTakeOffRequest) ClearRequest() {
+	x.xxx_hidden_Request = nil
+}
+
+type SwarmTakeOffRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Vehicles []string
+	Request  *driver.TakeOffRequest
+}
+
+func (b0 SwarmTakeOffRequest_builder) Build() *SwarmTakeOffRequest {
+	m0 := &SwarmTakeOffRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Vehicles = b.Vehicles
+	x.xxx_hidden_Request = b.Request
+	return m0
+}
+
 type SwarmTakeOffResponse struct {
-	state         protoimpl.MessageState  `protogen:"open.v1"`
-	Vehicle       string                  `protobuf:"bytes,1,opt,name=vehicle,proto3" json:"vehicle,omitempty"`   // ID of vehicle
-	Response      *driver.TakeOffResponse `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"` // proxied response object
-	Code          uint32                  `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`        // gRPC status code
-	Details       string                  `protobuf:"bytes,4,opt,name=details,proto3" json:"details,omitempty"`   // error details, if applicable
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState  `protogen:"opaque.v1"`
+	xxx_hidden_Vehicle  string                  `protobuf:"bytes,1,opt,name=vehicle,proto3"`
+	xxx_hidden_Response *driver.TakeOffResponse `protobuf:"bytes,2,opt,name=response,proto3"`
+	xxx_hidden_Code     uint32                  `protobuf:"varint,3,opt,name=code,proto3"`
+	xxx_hidden_Details  string                  `protobuf:"bytes,4,opt,name=details,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *SwarmTakeOffResponse) Reset() {
@@ -115,45 +144,87 @@ func (x *SwarmTakeOffResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SwarmTakeOffResponse.ProtoReflect.Descriptor instead.
-func (*SwarmTakeOffResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescGZIP(), []int{1}
-}
-
 func (x *SwarmTakeOffResponse) GetVehicle() string {
 	if x != nil {
-		return x.Vehicle
+		return x.xxx_hidden_Vehicle
 	}
 	return ""
 }
 
 func (x *SwarmTakeOffResponse) GetResponse() *driver.TakeOffResponse {
 	if x != nil {
-		return x.Response
+		return x.xxx_hidden_Response
 	}
 	return nil
 }
 
 func (x *SwarmTakeOffResponse) GetCode() uint32 {
 	if x != nil {
-		return x.Code
+		return x.xxx_hidden_Code
 	}
 	return 0
 }
 
 func (x *SwarmTakeOffResponse) GetDetails() string {
 	if x != nil {
-		return x.Details
+		return x.xxx_hidden_Details
 	}
 	return ""
 }
 
+func (x *SwarmTakeOffResponse) SetVehicle(v string) {
+	x.xxx_hidden_Vehicle = v
+}
+
+func (x *SwarmTakeOffResponse) SetResponse(v *driver.TakeOffResponse) {
+	x.xxx_hidden_Response = v
+}
+
+func (x *SwarmTakeOffResponse) SetCode(v uint32) {
+	x.xxx_hidden_Code = v
+}
+
+func (x *SwarmTakeOffResponse) SetDetails(v string) {
+	x.xxx_hidden_Details = v
+}
+
+func (x *SwarmTakeOffResponse) HasResponse() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Response != nil
+}
+
+func (x *SwarmTakeOffResponse) ClearResponse() {
+	x.xxx_hidden_Response = nil
+}
+
+type SwarmTakeOffResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Vehicle  string
+	Response *driver.TakeOffResponse
+	Code     uint32
+	Details  string
+}
+
+func (b0 SwarmTakeOffResponse_builder) Build() *SwarmTakeOffResponse {
+	m0 := &SwarmTakeOffResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Vehicle = b.Vehicle
+	x.xxx_hidden_Response = b.Response
+	x.xxx_hidden_Code = b.Code
+	x.xxx_hidden_Details = b.Details
+	return m0
+}
+
 type SwarmLandRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Vehicles      []string               `protobuf:"bytes,1,rep,name=vehicles,proto3" json:"vehicles,omitempty"` // target vehicles
-	Request       *driver.LandRequest    `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Vehicles []string               `protobuf:"bytes,1,rep,name=vehicles,proto3"`
+	xxx_hidden_Request  *driver.LandRequest    `protobuf:"bytes,2,opt,name=request,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *SwarmLandRequest) Reset() {
@@ -181,33 +252,63 @@ func (x *SwarmLandRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SwarmLandRequest.ProtoReflect.Descriptor instead.
-func (*SwarmLandRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescGZIP(), []int{2}
-}
-
 func (x *SwarmLandRequest) GetVehicles() []string {
 	if x != nil {
-		return x.Vehicles
+		return x.xxx_hidden_Vehicles
 	}
 	return nil
 }
 
 func (x *SwarmLandRequest) GetRequest() *driver.LandRequest {
 	if x != nil {
-		return x.Request
+		return x.xxx_hidden_Request
 	}
 	return nil
 }
 
+func (x *SwarmLandRequest) SetVehicles(v []string) {
+	x.xxx_hidden_Vehicles = v
+}
+
+func (x *SwarmLandRequest) SetRequest(v *driver.LandRequest) {
+	x.xxx_hidden_Request = v
+}
+
+func (x *SwarmLandRequest) HasRequest() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Request != nil
+}
+
+func (x *SwarmLandRequest) ClearRequest() {
+	x.xxx_hidden_Request = nil
+}
+
+type SwarmLandRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Vehicles []string
+	Request  *driver.LandRequest
+}
+
+func (b0 SwarmLandRequest_builder) Build() *SwarmLandRequest {
+	m0 := &SwarmLandRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Vehicles = b.Vehicles
+	x.xxx_hidden_Request = b.Request
+	return m0
+}
+
 type SwarmLandResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Vehicle       string                 `protobuf:"bytes,1,opt,name=vehicle,proto3" json:"vehicle,omitempty"`   // ID of vehicle
-	Response      *driver.LandResponse   `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"` // proxied response object
-	Code          uint32                 `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`        // gRPC status code
-	Details       string                 `protobuf:"bytes,4,opt,name=details,proto3" json:"details,omitempty"`   // error details, if applicable
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Vehicle  string                 `protobuf:"bytes,1,opt,name=vehicle,proto3"`
+	xxx_hidden_Response *driver.LandResponse   `protobuf:"bytes,2,opt,name=response,proto3"`
+	xxx_hidden_Code     uint32                 `protobuf:"varint,3,opt,name=code,proto3"`
+	xxx_hidden_Details  string                 `protobuf:"bytes,4,opt,name=details,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *SwarmLandResponse) Reset() {
@@ -235,45 +336,87 @@ func (x *SwarmLandResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SwarmLandResponse.ProtoReflect.Descriptor instead.
-func (*SwarmLandResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescGZIP(), []int{3}
-}
-
 func (x *SwarmLandResponse) GetVehicle() string {
 	if x != nil {
-		return x.Vehicle
+		return x.xxx_hidden_Vehicle
 	}
 	return ""
 }
 
 func (x *SwarmLandResponse) GetResponse() *driver.LandResponse {
 	if x != nil {
-		return x.Response
+		return x.xxx_hidden_Response
 	}
 	return nil
 }
 
 func (x *SwarmLandResponse) GetCode() uint32 {
 	if x != nil {
-		return x.Code
+		return x.xxx_hidden_Code
 	}
 	return 0
 }
 
 func (x *SwarmLandResponse) GetDetails() string {
 	if x != nil {
-		return x.Details
+		return x.xxx_hidden_Details
 	}
 	return ""
 }
 
+func (x *SwarmLandResponse) SetVehicle(v string) {
+	x.xxx_hidden_Vehicle = v
+}
+
+func (x *SwarmLandResponse) SetResponse(v *driver.LandResponse) {
+	x.xxx_hidden_Response = v
+}
+
+func (x *SwarmLandResponse) SetCode(v uint32) {
+	x.xxx_hidden_Code = v
+}
+
+func (x *SwarmLandResponse) SetDetails(v string) {
+	x.xxx_hidden_Details = v
+}
+
+func (x *SwarmLandResponse) HasResponse() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Response != nil
+}
+
+func (x *SwarmLandResponse) ClearResponse() {
+	x.xxx_hidden_Response = nil
+}
+
+type SwarmLandResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Vehicle  string
+	Response *driver.LandResponse
+	Code     uint32
+	Details  string
+}
+
+func (b0 SwarmLandResponse_builder) Build() *SwarmLandResponse {
+	m0 := &SwarmLandResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Vehicle = b.Vehicle
+	x.xxx_hidden_Response = b.Response
+	x.xxx_hidden_Code = b.Code
+	x.xxx_hidden_Details = b.Details
+	return m0
+}
+
 type SwarmHoldRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Vehicles      []string               `protobuf:"bytes,1,rep,name=vehicles,proto3" json:"vehicles,omitempty"` // target vehicles
-	Request       *driver.HoldRequest    `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Vehicles []string               `protobuf:"bytes,1,rep,name=vehicles,proto3"`
+	xxx_hidden_Request  *driver.HoldRequest    `protobuf:"bytes,2,opt,name=request,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *SwarmHoldRequest) Reset() {
@@ -301,33 +444,63 @@ func (x *SwarmHoldRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SwarmHoldRequest.ProtoReflect.Descriptor instead.
-func (*SwarmHoldRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescGZIP(), []int{4}
-}
-
 func (x *SwarmHoldRequest) GetVehicles() []string {
 	if x != nil {
-		return x.Vehicles
+		return x.xxx_hidden_Vehicles
 	}
 	return nil
 }
 
 func (x *SwarmHoldRequest) GetRequest() *driver.HoldRequest {
 	if x != nil {
-		return x.Request
+		return x.xxx_hidden_Request
 	}
 	return nil
 }
 
+func (x *SwarmHoldRequest) SetVehicles(v []string) {
+	x.xxx_hidden_Vehicles = v
+}
+
+func (x *SwarmHoldRequest) SetRequest(v *driver.HoldRequest) {
+	x.xxx_hidden_Request = v
+}
+
+func (x *SwarmHoldRequest) HasRequest() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Request != nil
+}
+
+func (x *SwarmHoldRequest) ClearRequest() {
+	x.xxx_hidden_Request = nil
+}
+
+type SwarmHoldRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Vehicles []string
+	Request  *driver.HoldRequest
+}
+
+func (b0 SwarmHoldRequest_builder) Build() *SwarmHoldRequest {
+	m0 := &SwarmHoldRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Vehicles = b.Vehicles
+	x.xxx_hidden_Request = b.Request
+	return m0
+}
+
 type SwarmHoldResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Vehicle       string                 `protobuf:"bytes,1,opt,name=vehicle,proto3" json:"vehicle,omitempty"`   // ID of vehicle
-	Response      *driver.HoldResponse   `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"` // proxied response object
-	Code          uint32                 `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`        // gRPC status code
-	Details       string                 `protobuf:"bytes,4,opt,name=details,proto3" json:"details,omitempty"`   // error details, if applicable
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Vehicle  string                 `protobuf:"bytes,1,opt,name=vehicle,proto3"`
+	xxx_hidden_Response *driver.HoldResponse   `protobuf:"bytes,2,opt,name=response,proto3"`
+	xxx_hidden_Code     uint32                 `protobuf:"varint,3,opt,name=code,proto3"`
+	xxx_hidden_Details  string                 `protobuf:"bytes,4,opt,name=details,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *SwarmHoldResponse) Reset() {
@@ -355,45 +528,87 @@ func (x *SwarmHoldResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SwarmHoldResponse.ProtoReflect.Descriptor instead.
-func (*SwarmHoldResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescGZIP(), []int{5}
-}
-
 func (x *SwarmHoldResponse) GetVehicle() string {
 	if x != nil {
-		return x.Vehicle
+		return x.xxx_hidden_Vehicle
 	}
 	return ""
 }
 
 func (x *SwarmHoldResponse) GetResponse() *driver.HoldResponse {
 	if x != nil {
-		return x.Response
+		return x.xxx_hidden_Response
 	}
 	return nil
 }
 
 func (x *SwarmHoldResponse) GetCode() uint32 {
 	if x != nil {
-		return x.Code
+		return x.xxx_hidden_Code
 	}
 	return 0
 }
 
 func (x *SwarmHoldResponse) GetDetails() string {
 	if x != nil {
-		return x.Details
+		return x.xxx_hidden_Details
 	}
 	return ""
 }
 
+func (x *SwarmHoldResponse) SetVehicle(v string) {
+	x.xxx_hidden_Vehicle = v
+}
+
+func (x *SwarmHoldResponse) SetResponse(v *driver.HoldResponse) {
+	x.xxx_hidden_Response = v
+}
+
+func (x *SwarmHoldResponse) SetCode(v uint32) {
+	x.xxx_hidden_Code = v
+}
+
+func (x *SwarmHoldResponse) SetDetails(v string) {
+	x.xxx_hidden_Details = v
+}
+
+func (x *SwarmHoldResponse) HasResponse() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Response != nil
+}
+
+func (x *SwarmHoldResponse) ClearResponse() {
+	x.xxx_hidden_Response = nil
+}
+
+type SwarmHoldResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Vehicle  string
+	Response *driver.HoldResponse
+	Code     uint32
+	Details  string
+}
+
+func (b0 SwarmHoldResponse_builder) Build() *SwarmHoldResponse {
+	m0 := &SwarmHoldResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Vehicle = b.Vehicle
+	x.xxx_hidden_Response = b.Response
+	x.xxx_hidden_Code = b.Code
+	x.xxx_hidden_Details = b.Details
+	return m0
+}
+
 type SwarmKillRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Vehicles      []string               `protobuf:"bytes,1,rep,name=vehicles,proto3" json:"vehicles,omitempty"` // target vehicles
-	Request       *driver.KillRequest    `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Vehicles []string               `protobuf:"bytes,1,rep,name=vehicles,proto3"`
+	xxx_hidden_Request  *driver.KillRequest    `protobuf:"bytes,2,opt,name=request,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *SwarmKillRequest) Reset() {
@@ -421,33 +636,63 @@ func (x *SwarmKillRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SwarmKillRequest.ProtoReflect.Descriptor instead.
-func (*SwarmKillRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescGZIP(), []int{6}
-}
-
 func (x *SwarmKillRequest) GetVehicles() []string {
 	if x != nil {
-		return x.Vehicles
+		return x.xxx_hidden_Vehicles
 	}
 	return nil
 }
 
 func (x *SwarmKillRequest) GetRequest() *driver.KillRequest {
 	if x != nil {
-		return x.Request
+		return x.xxx_hidden_Request
 	}
 	return nil
 }
 
+func (x *SwarmKillRequest) SetVehicles(v []string) {
+	x.xxx_hidden_Vehicles = v
+}
+
+func (x *SwarmKillRequest) SetRequest(v *driver.KillRequest) {
+	x.xxx_hidden_Request = v
+}
+
+func (x *SwarmKillRequest) HasRequest() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Request != nil
+}
+
+func (x *SwarmKillRequest) ClearRequest() {
+	x.xxx_hidden_Request = nil
+}
+
+type SwarmKillRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Vehicles []string
+	Request  *driver.KillRequest
+}
+
+func (b0 SwarmKillRequest_builder) Build() *SwarmKillRequest {
+	m0 := &SwarmKillRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Vehicles = b.Vehicles
+	x.xxx_hidden_Request = b.Request
+	return m0
+}
+
 type SwarmKillResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Vehicle       string                 `protobuf:"bytes,1,opt,name=vehicle,proto3" json:"vehicle,omitempty"`   // ID of vehicle
-	Response      *driver.KillResponse   `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"` // proxied response object
-	Code          uint32                 `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`        // gRPC status code
-	Details       string                 `protobuf:"bytes,4,opt,name=details,proto3" json:"details,omitempty"`   // error details, if applicable
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Vehicle  string                 `protobuf:"bytes,1,opt,name=vehicle,proto3"`
+	xxx_hidden_Response *driver.KillResponse   `protobuf:"bytes,2,opt,name=response,proto3"`
+	xxx_hidden_Code     uint32                 `protobuf:"varint,3,opt,name=code,proto3"`
+	xxx_hidden_Details  string                 `protobuf:"bytes,4,opt,name=details,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *SwarmKillResponse) Reset() {
@@ -475,45 +720,87 @@ func (x *SwarmKillResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SwarmKillResponse.ProtoReflect.Descriptor instead.
-func (*SwarmKillResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescGZIP(), []int{7}
-}
-
 func (x *SwarmKillResponse) GetVehicle() string {
 	if x != nil {
-		return x.Vehicle
+		return x.xxx_hidden_Vehicle
 	}
 	return ""
 }
 
 func (x *SwarmKillResponse) GetResponse() *driver.KillResponse {
 	if x != nil {
-		return x.Response
+		return x.xxx_hidden_Response
 	}
 	return nil
 }
 
 func (x *SwarmKillResponse) GetCode() uint32 {
 	if x != nil {
-		return x.Code
+		return x.xxx_hidden_Code
 	}
 	return 0
 }
 
 func (x *SwarmKillResponse) GetDetails() string {
 	if x != nil {
-		return x.Details
+		return x.xxx_hidden_Details
 	}
 	return ""
 }
 
+func (x *SwarmKillResponse) SetVehicle(v string) {
+	x.xxx_hidden_Vehicle = v
+}
+
+func (x *SwarmKillResponse) SetResponse(v *driver.KillResponse) {
+	x.xxx_hidden_Response = v
+}
+
+func (x *SwarmKillResponse) SetCode(v uint32) {
+	x.xxx_hidden_Code = v
+}
+
+func (x *SwarmKillResponse) SetDetails(v string) {
+	x.xxx_hidden_Details = v
+}
+
+func (x *SwarmKillResponse) HasResponse() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Response != nil
+}
+
+func (x *SwarmKillResponse) ClearResponse() {
+	x.xxx_hidden_Response = nil
+}
+
+type SwarmKillResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Vehicle  string
+	Response *driver.KillResponse
+	Code     uint32
+	Details  string
+}
+
+func (b0 SwarmKillResponse_builder) Build() *SwarmKillResponse {
+	m0 := &SwarmKillResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Vehicle = b.Vehicle
+	x.xxx_hidden_Response = b.Response
+	x.xxx_hidden_Code = b.Code
+	x.xxx_hidden_Details = b.Details
+	return m0
+}
+
 type SwarmReturnToHomeRequest struct {
-	state         protoimpl.MessageState      `protogen:"open.v1"`
-	Vehicles      []string                    `protobuf:"bytes,1,rep,name=vehicles,proto3" json:"vehicles,omitempty"` // target vehicles
-	Request       *driver.ReturnToHomeRequest `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState      `protogen:"opaque.v1"`
+	xxx_hidden_Vehicles []string                    `protobuf:"bytes,1,rep,name=vehicles,proto3"`
+	xxx_hidden_Request  *driver.ReturnToHomeRequest `protobuf:"bytes,2,opt,name=request,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *SwarmReturnToHomeRequest) Reset() {
@@ -541,33 +828,63 @@ func (x *SwarmReturnToHomeRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SwarmReturnToHomeRequest.ProtoReflect.Descriptor instead.
-func (*SwarmReturnToHomeRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescGZIP(), []int{8}
-}
-
 func (x *SwarmReturnToHomeRequest) GetVehicles() []string {
 	if x != nil {
-		return x.Vehicles
+		return x.xxx_hidden_Vehicles
 	}
 	return nil
 }
 
 func (x *SwarmReturnToHomeRequest) GetRequest() *driver.ReturnToHomeRequest {
 	if x != nil {
-		return x.Request
+		return x.xxx_hidden_Request
 	}
 	return nil
 }
 
+func (x *SwarmReturnToHomeRequest) SetVehicles(v []string) {
+	x.xxx_hidden_Vehicles = v
+}
+
+func (x *SwarmReturnToHomeRequest) SetRequest(v *driver.ReturnToHomeRequest) {
+	x.xxx_hidden_Request = v
+}
+
+func (x *SwarmReturnToHomeRequest) HasRequest() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Request != nil
+}
+
+func (x *SwarmReturnToHomeRequest) ClearRequest() {
+	x.xxx_hidden_Request = nil
+}
+
+type SwarmReturnToHomeRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Vehicles []string
+	Request  *driver.ReturnToHomeRequest
+}
+
+func (b0 SwarmReturnToHomeRequest_builder) Build() *SwarmReturnToHomeRequest {
+	m0 := &SwarmReturnToHomeRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Vehicles = b.Vehicles
+	x.xxx_hidden_Request = b.Request
+	return m0
+}
+
 type SwarmReturnToHomeResponse struct {
-	state         protoimpl.MessageState       `protogen:"open.v1"`
-	Vehicle       string                       `protobuf:"bytes,1,opt,name=vehicle,proto3" json:"vehicle,omitempty"`   // ID of vehicle
-	Response      *driver.ReturnToHomeResponse `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"` // proxied response object
-	Code          uint32                       `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`        // gRPC status code
-	Details       string                       `protobuf:"bytes,4,opt,name=details,proto3" json:"details,omitempty"`   // error details, if applicable
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState       `protogen:"opaque.v1"`
+	xxx_hidden_Vehicle  string                       `protobuf:"bytes,1,opt,name=vehicle,proto3"`
+	xxx_hidden_Response *driver.ReturnToHomeResponse `protobuf:"bytes,2,opt,name=response,proto3"`
+	xxx_hidden_Code     uint32                       `protobuf:"varint,3,opt,name=code,proto3"`
+	xxx_hidden_Details  string                       `protobuf:"bytes,4,opt,name=details,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *SwarmReturnToHomeResponse) Reset() {
@@ -595,45 +912,87 @@ func (x *SwarmReturnToHomeResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SwarmReturnToHomeResponse.ProtoReflect.Descriptor instead.
-func (*SwarmReturnToHomeResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescGZIP(), []int{9}
-}
-
 func (x *SwarmReturnToHomeResponse) GetVehicle() string {
 	if x != nil {
-		return x.Vehicle
+		return x.xxx_hidden_Vehicle
 	}
 	return ""
 }
 
 func (x *SwarmReturnToHomeResponse) GetResponse() *driver.ReturnToHomeResponse {
 	if x != nil {
-		return x.Response
+		return x.xxx_hidden_Response
 	}
 	return nil
 }
 
 func (x *SwarmReturnToHomeResponse) GetCode() uint32 {
 	if x != nil {
-		return x.Code
+		return x.xxx_hidden_Code
 	}
 	return 0
 }
 
 func (x *SwarmReturnToHomeResponse) GetDetails() string {
 	if x != nil {
-		return x.Details
+		return x.xxx_hidden_Details
 	}
 	return ""
 }
 
+func (x *SwarmReturnToHomeResponse) SetVehicle(v string) {
+	x.xxx_hidden_Vehicle = v
+}
+
+func (x *SwarmReturnToHomeResponse) SetResponse(v *driver.ReturnToHomeResponse) {
+	x.xxx_hidden_Response = v
+}
+
+func (x *SwarmReturnToHomeResponse) SetCode(v uint32) {
+	x.xxx_hidden_Code = v
+}
+
+func (x *SwarmReturnToHomeResponse) SetDetails(v string) {
+	x.xxx_hidden_Details = v
+}
+
+func (x *SwarmReturnToHomeResponse) HasResponse() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Response != nil
+}
+
+func (x *SwarmReturnToHomeResponse) ClearResponse() {
+	x.xxx_hidden_Response = nil
+}
+
+type SwarmReturnToHomeResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Vehicle  string
+	Response *driver.ReturnToHomeResponse
+	Code     uint32
+	Details  string
+}
+
+func (b0 SwarmReturnToHomeResponse_builder) Build() *SwarmReturnToHomeResponse {
+	m0 := &SwarmReturnToHomeResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Vehicle = b.Vehicle
+	x.xxx_hidden_Response = b.Response
+	x.xxx_hidden_Code = b.Code
+	x.xxx_hidden_Details = b.Details
+	return m0
+}
+
 type SwarmSetVelocityRequest struct {
-	state         protoimpl.MessageState     `protogen:"open.v1"`
-	Vehicles      []string                   `protobuf:"bytes,1,rep,name=vehicles,proto3" json:"vehicles,omitempty"` // target vehicles
-	Request       *driver.SetVelocityRequest `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState     `protogen:"opaque.v1"`
+	xxx_hidden_Vehicles []string                   `protobuf:"bytes,1,rep,name=vehicles,proto3"`
+	xxx_hidden_Request  *driver.SetVelocityRequest `protobuf:"bytes,2,opt,name=request,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *SwarmSetVelocityRequest) Reset() {
@@ -661,33 +1020,63 @@ func (x *SwarmSetVelocityRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SwarmSetVelocityRequest.ProtoReflect.Descriptor instead.
-func (*SwarmSetVelocityRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescGZIP(), []int{10}
-}
-
 func (x *SwarmSetVelocityRequest) GetVehicles() []string {
 	if x != nil {
-		return x.Vehicles
+		return x.xxx_hidden_Vehicles
 	}
 	return nil
 }
 
 func (x *SwarmSetVelocityRequest) GetRequest() *driver.SetVelocityRequest {
 	if x != nil {
-		return x.Request
+		return x.xxx_hidden_Request
 	}
 	return nil
 }
 
+func (x *SwarmSetVelocityRequest) SetVehicles(v []string) {
+	x.xxx_hidden_Vehicles = v
+}
+
+func (x *SwarmSetVelocityRequest) SetRequest(v *driver.SetVelocityRequest) {
+	x.xxx_hidden_Request = v
+}
+
+func (x *SwarmSetVelocityRequest) HasRequest() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Request != nil
+}
+
+func (x *SwarmSetVelocityRequest) ClearRequest() {
+	x.xxx_hidden_Request = nil
+}
+
+type SwarmSetVelocityRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Vehicles []string
+	Request  *driver.SetVelocityRequest
+}
+
+func (b0 SwarmSetVelocityRequest_builder) Build() *SwarmSetVelocityRequest {
+	m0 := &SwarmSetVelocityRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Vehicles = b.Vehicles
+	x.xxx_hidden_Request = b.Request
+	return m0
+}
+
 type SwarmSetVelocityResponse struct {
-	state         protoimpl.MessageState      `protogen:"open.v1"`
-	Vehicle       string                      `protobuf:"bytes,1,opt,name=vehicle,proto3" json:"vehicle,omitempty"`   // ID of vehicle
-	Response      *driver.SetVelocityResponse `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"` // proxied response object
-	Code          uint32                      `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`        // gRPC status code
-	Details       string                      `protobuf:"bytes,4,opt,name=details,proto3" json:"details,omitempty"`   // error details, if applicable
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState      `protogen:"opaque.v1"`
+	xxx_hidden_Vehicle  string                      `protobuf:"bytes,1,opt,name=vehicle,proto3"`
+	xxx_hidden_Response *driver.SetVelocityResponse `protobuf:"bytes,2,opt,name=response,proto3"`
+	xxx_hidden_Code     uint32                      `protobuf:"varint,3,opt,name=code,proto3"`
+	xxx_hidden_Details  string                      `protobuf:"bytes,4,opt,name=details,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *SwarmSetVelocityResponse) Reset() {
@@ -715,45 +1104,87 @@ func (x *SwarmSetVelocityResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SwarmSetVelocityResponse.ProtoReflect.Descriptor instead.
-func (*SwarmSetVelocityResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescGZIP(), []int{11}
-}
-
 func (x *SwarmSetVelocityResponse) GetVehicle() string {
 	if x != nil {
-		return x.Vehicle
+		return x.xxx_hidden_Vehicle
 	}
 	return ""
 }
 
 func (x *SwarmSetVelocityResponse) GetResponse() *driver.SetVelocityResponse {
 	if x != nil {
-		return x.Response
+		return x.xxx_hidden_Response
 	}
 	return nil
 }
 
 func (x *SwarmSetVelocityResponse) GetCode() uint32 {
 	if x != nil {
-		return x.Code
+		return x.xxx_hidden_Code
 	}
 	return 0
 }
 
 func (x *SwarmSetVelocityResponse) GetDetails() string {
 	if x != nil {
-		return x.Details
+		return x.xxx_hidden_Details
 	}
 	return ""
 }
 
+func (x *SwarmSetVelocityResponse) SetVehicle(v string) {
+	x.xxx_hidden_Vehicle = v
+}
+
+func (x *SwarmSetVelocityResponse) SetResponse(v *driver.SetVelocityResponse) {
+	x.xxx_hidden_Response = v
+}
+
+func (x *SwarmSetVelocityResponse) SetCode(v uint32) {
+	x.xxx_hidden_Code = v
+}
+
+func (x *SwarmSetVelocityResponse) SetDetails(v string) {
+	x.xxx_hidden_Details = v
+}
+
+func (x *SwarmSetVelocityResponse) HasResponse() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Response != nil
+}
+
+func (x *SwarmSetVelocityResponse) ClearResponse() {
+	x.xxx_hidden_Response = nil
+}
+
+type SwarmSetVelocityResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Vehicle  string
+	Response *driver.SetVelocityResponse
+	Code     uint32
+	Details  string
+}
+
+func (b0 SwarmSetVelocityResponse_builder) Build() *SwarmSetVelocityResponse {
+	m0 := &SwarmSetVelocityResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Vehicle = b.Vehicle
+	x.xxx_hidden_Response = b.Response
+	x.xxx_hidden_Code = b.Code
+	x.xxx_hidden_Details = b.Details
+	return m0
+}
+
 type SwarmSetGimbalPoseRequest struct {
-	state         protoimpl.MessageState       `protogen:"open.v1"`
-	Vehicles      []string                     `protobuf:"bytes,1,rep,name=vehicles,proto3" json:"vehicles,omitempty"` // target vehicles
-	Request       *driver.SetGimbalPoseRequest `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState       `protogen:"opaque.v1"`
+	xxx_hidden_Vehicles []string                     `protobuf:"bytes,1,rep,name=vehicles,proto3"`
+	xxx_hidden_Request  *driver.SetGimbalPoseRequest `protobuf:"bytes,2,opt,name=request,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *SwarmSetGimbalPoseRequest) Reset() {
@@ -781,33 +1212,63 @@ func (x *SwarmSetGimbalPoseRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SwarmSetGimbalPoseRequest.ProtoReflect.Descriptor instead.
-func (*SwarmSetGimbalPoseRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescGZIP(), []int{12}
-}
-
 func (x *SwarmSetGimbalPoseRequest) GetVehicles() []string {
 	if x != nil {
-		return x.Vehicles
+		return x.xxx_hidden_Vehicles
 	}
 	return nil
 }
 
 func (x *SwarmSetGimbalPoseRequest) GetRequest() *driver.SetGimbalPoseRequest {
 	if x != nil {
-		return x.Request
+		return x.xxx_hidden_Request
 	}
 	return nil
 }
 
+func (x *SwarmSetGimbalPoseRequest) SetVehicles(v []string) {
+	x.xxx_hidden_Vehicles = v
+}
+
+func (x *SwarmSetGimbalPoseRequest) SetRequest(v *driver.SetGimbalPoseRequest) {
+	x.xxx_hidden_Request = v
+}
+
+func (x *SwarmSetGimbalPoseRequest) HasRequest() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Request != nil
+}
+
+func (x *SwarmSetGimbalPoseRequest) ClearRequest() {
+	x.xxx_hidden_Request = nil
+}
+
+type SwarmSetGimbalPoseRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Vehicles []string
+	Request  *driver.SetGimbalPoseRequest
+}
+
+func (b0 SwarmSetGimbalPoseRequest_builder) Build() *SwarmSetGimbalPoseRequest {
+	m0 := &SwarmSetGimbalPoseRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Vehicles = b.Vehicles
+	x.xxx_hidden_Request = b.Request
+	return m0
+}
+
 type SwarmSetGimbalPoseResponse struct {
-	state         protoimpl.MessageState        `protogen:"open.v1"`
-	Vehicle       string                        `protobuf:"bytes,1,opt,name=vehicle,proto3" json:"vehicle,omitempty"`   // ID of vehicle
-	Response      *driver.SetGimbalPoseResponse `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"` // proxied response object
-	Code          uint32                        `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`        // gRPC status code
-	Details       string                        `protobuf:"bytes,4,opt,name=details,proto3" json:"details,omitempty"`   // error details, if applicable
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState        `protogen:"opaque.v1"`
+	xxx_hidden_Vehicle  string                        `protobuf:"bytes,1,opt,name=vehicle,proto3"`
+	xxx_hidden_Response *driver.SetGimbalPoseResponse `protobuf:"bytes,2,opt,name=response,proto3"`
+	xxx_hidden_Code     uint32                        `protobuf:"varint,3,opt,name=code,proto3"`
+	xxx_hidden_Details  string                        `protobuf:"bytes,4,opt,name=details,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *SwarmSetGimbalPoseResponse) Reset() {
@@ -835,45 +1296,87 @@ func (x *SwarmSetGimbalPoseResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SwarmSetGimbalPoseResponse.ProtoReflect.Descriptor instead.
-func (*SwarmSetGimbalPoseResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescGZIP(), []int{13}
-}
-
 func (x *SwarmSetGimbalPoseResponse) GetVehicle() string {
 	if x != nil {
-		return x.Vehicle
+		return x.xxx_hidden_Vehicle
 	}
 	return ""
 }
 
 func (x *SwarmSetGimbalPoseResponse) GetResponse() *driver.SetGimbalPoseResponse {
 	if x != nil {
-		return x.Response
+		return x.xxx_hidden_Response
 	}
 	return nil
 }
 
 func (x *SwarmSetGimbalPoseResponse) GetCode() uint32 {
 	if x != nil {
-		return x.Code
+		return x.xxx_hidden_Code
 	}
 	return 0
 }
 
 func (x *SwarmSetGimbalPoseResponse) GetDetails() string {
 	if x != nil {
-		return x.Details
+		return x.xxx_hidden_Details
 	}
 	return ""
 }
 
+func (x *SwarmSetGimbalPoseResponse) SetVehicle(v string) {
+	x.xxx_hidden_Vehicle = v
+}
+
+func (x *SwarmSetGimbalPoseResponse) SetResponse(v *driver.SetGimbalPoseResponse) {
+	x.xxx_hidden_Response = v
+}
+
+func (x *SwarmSetGimbalPoseResponse) SetCode(v uint32) {
+	x.xxx_hidden_Code = v
+}
+
+func (x *SwarmSetGimbalPoseResponse) SetDetails(v string) {
+	x.xxx_hidden_Details = v
+}
+
+func (x *SwarmSetGimbalPoseResponse) HasResponse() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Response != nil
+}
+
+func (x *SwarmSetGimbalPoseResponse) ClearResponse() {
+	x.xxx_hidden_Response = nil
+}
+
+type SwarmSetGimbalPoseResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Vehicle  string
+	Response *driver.SetGimbalPoseResponse
+	Code     uint32
+	Details  string
+}
+
+func (b0 SwarmSetGimbalPoseResponse_builder) Build() *SwarmSetGimbalPoseResponse {
+	m0 := &SwarmSetGimbalPoseResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Vehicle = b.Vehicle
+	x.xxx_hidden_Response = b.Response
+	x.xxx_hidden_Code = b.Code
+	x.xxx_hidden_Details = b.Details
+	return m0
+}
+
 type SwarmUploadMissionRequest struct {
-	state         protoimpl.MessageState        `protogen:"open.v1"`
-	Vehicles      []string                      `protobuf:"bytes,1,rep,name=vehicles,proto3" json:"vehicles,omitempty"` // target vehicles
-	Request       *mission.UploadMissionRequest `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState        `protogen:"opaque.v1"`
+	xxx_hidden_Vehicles []string                      `protobuf:"bytes,1,rep,name=vehicles,proto3"`
+	xxx_hidden_Request  *mission.UploadMissionRequest `protobuf:"bytes,2,opt,name=request,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *SwarmUploadMissionRequest) Reset() {
@@ -901,33 +1404,63 @@ func (x *SwarmUploadMissionRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SwarmUploadMissionRequest.ProtoReflect.Descriptor instead.
-func (*SwarmUploadMissionRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescGZIP(), []int{14}
-}
-
 func (x *SwarmUploadMissionRequest) GetVehicles() []string {
 	if x != nil {
-		return x.Vehicles
+		return x.xxx_hidden_Vehicles
 	}
 	return nil
 }
 
 func (x *SwarmUploadMissionRequest) GetRequest() *mission.UploadMissionRequest {
 	if x != nil {
-		return x.Request
+		return x.xxx_hidden_Request
 	}
 	return nil
 }
 
+func (x *SwarmUploadMissionRequest) SetVehicles(v []string) {
+	x.xxx_hidden_Vehicles = v
+}
+
+func (x *SwarmUploadMissionRequest) SetRequest(v *mission.UploadMissionRequest) {
+	x.xxx_hidden_Request = v
+}
+
+func (x *SwarmUploadMissionRequest) HasRequest() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Request != nil
+}
+
+func (x *SwarmUploadMissionRequest) ClearRequest() {
+	x.xxx_hidden_Request = nil
+}
+
+type SwarmUploadMissionRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Vehicles []string
+	Request  *mission.UploadMissionRequest
+}
+
+func (b0 SwarmUploadMissionRequest_builder) Build() *SwarmUploadMissionRequest {
+	m0 := &SwarmUploadMissionRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Vehicles = b.Vehicles
+	x.xxx_hidden_Request = b.Request
+	return m0
+}
+
 type SwarmUploadMissionResponse struct {
-	state         protoimpl.MessageState         `protogen:"open.v1"`
-	Vehicle       string                         `protobuf:"bytes,1,opt,name=vehicle,proto3" json:"vehicle,omitempty"`   // ID of vehicle
-	Response      *mission.UploadMissionResponse `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"` // proxied response object
-	Code          uint32                         `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`        // gRPC status code
-	Details       string                         `protobuf:"bytes,4,opt,name=details,proto3" json:"details,omitempty"`   // error details, if applicable
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState         `protogen:"opaque.v1"`
+	xxx_hidden_Vehicle  string                         `protobuf:"bytes,1,opt,name=vehicle,proto3"`
+	xxx_hidden_Response *mission.UploadMissionResponse `protobuf:"bytes,2,opt,name=response,proto3"`
+	xxx_hidden_Code     uint32                         `protobuf:"varint,3,opt,name=code,proto3"`
+	xxx_hidden_Details  string                         `protobuf:"bytes,4,opt,name=details,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *SwarmUploadMissionResponse) Reset() {
@@ -955,45 +1488,87 @@ func (x *SwarmUploadMissionResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SwarmUploadMissionResponse.ProtoReflect.Descriptor instead.
-func (*SwarmUploadMissionResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescGZIP(), []int{15}
-}
-
 func (x *SwarmUploadMissionResponse) GetVehicle() string {
 	if x != nil {
-		return x.Vehicle
+		return x.xxx_hidden_Vehicle
 	}
 	return ""
 }
 
 func (x *SwarmUploadMissionResponse) GetResponse() *mission.UploadMissionResponse {
 	if x != nil {
-		return x.Response
+		return x.xxx_hidden_Response
 	}
 	return nil
 }
 
 func (x *SwarmUploadMissionResponse) GetCode() uint32 {
 	if x != nil {
-		return x.Code
+		return x.xxx_hidden_Code
 	}
 	return 0
 }
 
 func (x *SwarmUploadMissionResponse) GetDetails() string {
 	if x != nil {
-		return x.Details
+		return x.xxx_hidden_Details
 	}
 	return ""
 }
 
+func (x *SwarmUploadMissionResponse) SetVehicle(v string) {
+	x.xxx_hidden_Vehicle = v
+}
+
+func (x *SwarmUploadMissionResponse) SetResponse(v *mission.UploadMissionResponse) {
+	x.xxx_hidden_Response = v
+}
+
+func (x *SwarmUploadMissionResponse) SetCode(v uint32) {
+	x.xxx_hidden_Code = v
+}
+
+func (x *SwarmUploadMissionResponse) SetDetails(v string) {
+	x.xxx_hidden_Details = v
+}
+
+func (x *SwarmUploadMissionResponse) HasResponse() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Response != nil
+}
+
+func (x *SwarmUploadMissionResponse) ClearResponse() {
+	x.xxx_hidden_Response = nil
+}
+
+type SwarmUploadMissionResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Vehicle  string
+	Response *mission.UploadMissionResponse
+	Code     uint32
+	Details  string
+}
+
+func (b0 SwarmUploadMissionResponse_builder) Build() *SwarmUploadMissionResponse {
+	m0 := &SwarmUploadMissionResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Vehicle = b.Vehicle
+	x.xxx_hidden_Response = b.Response
+	x.xxx_hidden_Code = b.Code
+	x.xxx_hidden_Details = b.Details
+	return m0
+}
+
 type SwarmStartMissionRequest struct {
-	state         protoimpl.MessageState       `protogen:"open.v1"`
-	Vehicles      []string                     `protobuf:"bytes,1,rep,name=vehicles,proto3" json:"vehicles,omitempty"` // target vehicles
-	Request       *mission.StartMissionRequest `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState       `protogen:"opaque.v1"`
+	xxx_hidden_Vehicles []string                     `protobuf:"bytes,1,rep,name=vehicles,proto3"`
+	xxx_hidden_Request  *mission.StartMissionRequest `protobuf:"bytes,2,opt,name=request,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *SwarmStartMissionRequest) Reset() {
@@ -1021,33 +1596,63 @@ func (x *SwarmStartMissionRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SwarmStartMissionRequest.ProtoReflect.Descriptor instead.
-func (*SwarmStartMissionRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescGZIP(), []int{16}
-}
-
 func (x *SwarmStartMissionRequest) GetVehicles() []string {
 	if x != nil {
-		return x.Vehicles
+		return x.xxx_hidden_Vehicles
 	}
 	return nil
 }
 
 func (x *SwarmStartMissionRequest) GetRequest() *mission.StartMissionRequest {
 	if x != nil {
-		return x.Request
+		return x.xxx_hidden_Request
 	}
 	return nil
 }
 
+func (x *SwarmStartMissionRequest) SetVehicles(v []string) {
+	x.xxx_hidden_Vehicles = v
+}
+
+func (x *SwarmStartMissionRequest) SetRequest(v *mission.StartMissionRequest) {
+	x.xxx_hidden_Request = v
+}
+
+func (x *SwarmStartMissionRequest) HasRequest() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Request != nil
+}
+
+func (x *SwarmStartMissionRequest) ClearRequest() {
+	x.xxx_hidden_Request = nil
+}
+
+type SwarmStartMissionRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Vehicles []string
+	Request  *mission.StartMissionRequest
+}
+
+func (b0 SwarmStartMissionRequest_builder) Build() *SwarmStartMissionRequest {
+	m0 := &SwarmStartMissionRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Vehicles = b.Vehicles
+	x.xxx_hidden_Request = b.Request
+	return m0
+}
+
 type SwarmStartMissionResponse struct {
-	state         protoimpl.MessageState        `protogen:"open.v1"`
-	Vehicle       string                        `protobuf:"bytes,1,opt,name=vehicle,proto3" json:"vehicle,omitempty"`   // ID of vehicle
-	Response      *mission.StartMissionResponse `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"` // proxied response object
-	Code          uint32                        `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`        // gRPC status code
-	Details       string                        `protobuf:"bytes,4,opt,name=details,proto3" json:"details,omitempty"`   // error details, if applicable
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState        `protogen:"opaque.v1"`
+	xxx_hidden_Vehicle  string                        `protobuf:"bytes,1,opt,name=vehicle,proto3"`
+	xxx_hidden_Response *mission.StartMissionResponse `protobuf:"bytes,2,opt,name=response,proto3"`
+	xxx_hidden_Code     uint32                        `protobuf:"varint,3,opt,name=code,proto3"`
+	xxx_hidden_Details  string                        `protobuf:"bytes,4,opt,name=details,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *SwarmStartMissionResponse) Reset() {
@@ -1075,45 +1680,87 @@ func (x *SwarmStartMissionResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SwarmStartMissionResponse.ProtoReflect.Descriptor instead.
-func (*SwarmStartMissionResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescGZIP(), []int{17}
-}
-
 func (x *SwarmStartMissionResponse) GetVehicle() string {
 	if x != nil {
-		return x.Vehicle
+		return x.xxx_hidden_Vehicle
 	}
 	return ""
 }
 
 func (x *SwarmStartMissionResponse) GetResponse() *mission.StartMissionResponse {
 	if x != nil {
-		return x.Response
+		return x.xxx_hidden_Response
 	}
 	return nil
 }
 
 func (x *SwarmStartMissionResponse) GetCode() uint32 {
 	if x != nil {
-		return x.Code
+		return x.xxx_hidden_Code
 	}
 	return 0
 }
 
 func (x *SwarmStartMissionResponse) GetDetails() string {
 	if x != nil {
-		return x.Details
+		return x.xxx_hidden_Details
 	}
 	return ""
 }
 
+func (x *SwarmStartMissionResponse) SetVehicle(v string) {
+	x.xxx_hidden_Vehicle = v
+}
+
+func (x *SwarmStartMissionResponse) SetResponse(v *mission.StartMissionResponse) {
+	x.xxx_hidden_Response = v
+}
+
+func (x *SwarmStartMissionResponse) SetCode(v uint32) {
+	x.xxx_hidden_Code = v
+}
+
+func (x *SwarmStartMissionResponse) SetDetails(v string) {
+	x.xxx_hidden_Details = v
+}
+
+func (x *SwarmStartMissionResponse) HasResponse() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Response != nil
+}
+
+func (x *SwarmStartMissionResponse) ClearResponse() {
+	x.xxx_hidden_Response = nil
+}
+
+type SwarmStartMissionResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Vehicle  string
+	Response *mission.StartMissionResponse
+	Code     uint32
+	Details  string
+}
+
+func (b0 SwarmStartMissionResponse_builder) Build() *SwarmStartMissionResponse {
+	m0 := &SwarmStartMissionResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Vehicle = b.Vehicle
+	x.xxx_hidden_Response = b.Response
+	x.xxx_hidden_Code = b.Code
+	x.xxx_hidden_Details = b.Details
+	return m0
+}
+
 type SwarmStopMissionRequest struct {
-	state         protoimpl.MessageState      `protogen:"open.v1"`
-	Vehicles      []string                    `protobuf:"bytes,1,rep,name=vehicles,proto3" json:"vehicles,omitempty"` // target vehicles
-	Request       *mission.StopMissionRequest `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState      `protogen:"opaque.v1"`
+	xxx_hidden_Vehicles []string                    `protobuf:"bytes,1,rep,name=vehicles,proto3"`
+	xxx_hidden_Request  *mission.StopMissionRequest `protobuf:"bytes,2,opt,name=request,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *SwarmStopMissionRequest) Reset() {
@@ -1141,33 +1788,63 @@ func (x *SwarmStopMissionRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SwarmStopMissionRequest.ProtoReflect.Descriptor instead.
-func (*SwarmStopMissionRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescGZIP(), []int{18}
-}
-
 func (x *SwarmStopMissionRequest) GetVehicles() []string {
 	if x != nil {
-		return x.Vehicles
+		return x.xxx_hidden_Vehicles
 	}
 	return nil
 }
 
 func (x *SwarmStopMissionRequest) GetRequest() *mission.StopMissionRequest {
 	if x != nil {
-		return x.Request
+		return x.xxx_hidden_Request
 	}
 	return nil
 }
 
+func (x *SwarmStopMissionRequest) SetVehicles(v []string) {
+	x.xxx_hidden_Vehicles = v
+}
+
+func (x *SwarmStopMissionRequest) SetRequest(v *mission.StopMissionRequest) {
+	x.xxx_hidden_Request = v
+}
+
+func (x *SwarmStopMissionRequest) HasRequest() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Request != nil
+}
+
+func (x *SwarmStopMissionRequest) ClearRequest() {
+	x.xxx_hidden_Request = nil
+}
+
+type SwarmStopMissionRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Vehicles []string
+	Request  *mission.StopMissionRequest
+}
+
+func (b0 SwarmStopMissionRequest_builder) Build() *SwarmStopMissionRequest {
+	m0 := &SwarmStopMissionRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Vehicles = b.Vehicles
+	x.xxx_hidden_Request = b.Request
+	return m0
+}
+
 type SwarmStopMissionResponse struct {
-	state         protoimpl.MessageState       `protogen:"open.v1"`
-	Vehicle       string                       `protobuf:"bytes,1,opt,name=vehicle,proto3" json:"vehicle,omitempty"`   // ID of vehicle
-	Response      *mission.StopMissionResponse `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"` // proxied response object
-	Code          uint32                       `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`        // gRPC status code
-	Details       string                       `protobuf:"bytes,4,opt,name=details,proto3" json:"details,omitempty"`   // error details, if applicable
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState       `protogen:"opaque.v1"`
+	xxx_hidden_Vehicle  string                       `protobuf:"bytes,1,opt,name=vehicle,proto3"`
+	xxx_hidden_Response *mission.StopMissionResponse `protobuf:"bytes,2,opt,name=response,proto3"`
+	xxx_hidden_Code     uint32                       `protobuf:"varint,3,opt,name=code,proto3"`
+	xxx_hidden_Details  string                       `protobuf:"bytes,4,opt,name=details,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *SwarmStopMissionResponse) Reset() {
@@ -1195,37 +1872,79 @@ func (x *SwarmStopMissionResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SwarmStopMissionResponse.ProtoReflect.Descriptor instead.
-func (*SwarmStopMissionResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescGZIP(), []int{19}
-}
-
 func (x *SwarmStopMissionResponse) GetVehicle() string {
 	if x != nil {
-		return x.Vehicle
+		return x.xxx_hidden_Vehicle
 	}
 	return ""
 }
 
 func (x *SwarmStopMissionResponse) GetResponse() *mission.StopMissionResponse {
 	if x != nil {
-		return x.Response
+		return x.xxx_hidden_Response
 	}
 	return nil
 }
 
 func (x *SwarmStopMissionResponse) GetCode() uint32 {
 	if x != nil {
-		return x.Code
+		return x.xxx_hidden_Code
 	}
 	return 0
 }
 
 func (x *SwarmStopMissionResponse) GetDetails() string {
 	if x != nil {
-		return x.Details
+		return x.xxx_hidden_Details
 	}
 	return ""
+}
+
+func (x *SwarmStopMissionResponse) SetVehicle(v string) {
+	x.xxx_hidden_Vehicle = v
+}
+
+func (x *SwarmStopMissionResponse) SetResponse(v *mission.StopMissionResponse) {
+	x.xxx_hidden_Response = v
+}
+
+func (x *SwarmStopMissionResponse) SetCode(v uint32) {
+	x.xxx_hidden_Code = v
+}
+
+func (x *SwarmStopMissionResponse) SetDetails(v string) {
+	x.xxx_hidden_Details = v
+}
+
+func (x *SwarmStopMissionResponse) HasResponse() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Response != nil
+}
+
+func (x *SwarmStopMissionResponse) ClearResponse() {
+	x.xxx_hidden_Response = nil
+}
+
+type SwarmStopMissionResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Vehicle  string
+	Response *mission.StopMissionResponse
+	Code     uint32
+	Details  string
+}
+
+func (b0 SwarmStopMissionResponse_builder) Build() *SwarmStopMissionResponse {
+	m0 := &SwarmStopMissionResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Vehicle = b.Vehicle
+	x.xxx_hidden_Response = b.Response
+	x.xxx_hidden_Code = b.Code
+	x.xxx_hidden_Details = b.Details
+	return m0
 }
 
 var File_steeleagle_protocol_v1_services_swarm_swarm_proto protoreflect.FileDescriptor
@@ -1326,18 +2045,6 @@ const file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDesc = "" +
 	"\x10SwarmStopMission\x12>.steeleagle_protocol.v1.services.swarm.SwarmStopMissionRequest\x1a?.steeleagle_protocol.v1.services.swarm.SwarmStopMissionResponse\"\x000\x01B\xbb\x02\n" +
 	")com.steeleagle_protocol.v1.services.swarmB\n" +
 	"SwarmProtoP\x01ZNgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/swarm\xa2\x02\x04SVSS\xaa\x02$SteeleagleProtocol.V1.Services.Swarm\xca\x02$SteeleagleProtocol\\V1\\Services\\Swarm\xe2\x020SteeleagleProtocol\\V1\\Services\\Swarm\\GPBMetadata\xea\x02'SteeleagleProtocol::V1::Services::Swarmb\x06proto3"
-
-var (
-	file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescOnce sync.Once
-	file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescData []byte
-)
-
-func file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescGZIP() []byte {
-	file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescOnce.Do(func() {
-		file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDesc), len(file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDesc)))
-	})
-	return file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDescData
-}
 
 var file_steeleagle_protocol_v1_services_swarm_swarm_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_steeleagle_protocol_v1_services_swarm_swarm_proto_goTypes = []any{

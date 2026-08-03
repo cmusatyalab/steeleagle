@@ -14,7 +14,6 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
-	sync "sync"
 	unsafe "unsafe"
 )
 
@@ -72,17 +71,12 @@ func (x CalibrateRequest_Sensor) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use CalibrateRequest_Sensor.Descriptor instead.
-func (CalibrateRequest_Sensor) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_calibrate_proto_rawDescGZIP(), []int{0, 0}
-}
-
 type CalibrateRequest struct {
-	state         protoimpl.MessageState  `protogen:"open.v1"`
-	Sensor        CalibrateRequest_Sensor `protobuf:"varint,1,opt,name=sensor,proto3,enum=steeleagle_protocol.v1.services.driver.calibration.CalibrateRequest_Sensor" json:"sensor,omitempty"` // target sensor type
-	Id            uint32                  `protobuf:"varint,2,opt,name=id,proto3" json:"id,omitempty"`                                                                                         // target sensor ID
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state             protoimpl.MessageState  `protogen:"opaque.v1"`
+	xxx_hidden_Sensor CalibrateRequest_Sensor `protobuf:"varint,1,opt,name=sensor,proto3,enum=steeleagle_protocol.v1.services.driver.calibration.CalibrateRequest_Sensor"`
+	xxx_hidden_Id     uint32                  `protobuf:"varint,2,opt,name=id,proto3"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *CalibrateRequest) Reset() {
@@ -110,33 +104,52 @@ func (x *CalibrateRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CalibrateRequest.ProtoReflect.Descriptor instead.
-func (*CalibrateRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_calibrate_proto_rawDescGZIP(), []int{0}
-}
-
 func (x *CalibrateRequest) GetSensor() CalibrateRequest_Sensor {
 	if x != nil {
-		return x.Sensor
+		return x.xxx_hidden_Sensor
 	}
 	return CalibrateRequest_SENSOR_UNSPECIFIED
 }
 
 func (x *CalibrateRequest) GetId() uint32 {
 	if x != nil {
-		return x.Id
+		return x.xxx_hidden_Id
 	}
 	return 0
 }
 
+func (x *CalibrateRequest) SetSensor(v CalibrateRequest_Sensor) {
+	x.xxx_hidden_Sensor = v
+}
+
+func (x *CalibrateRequest) SetId(v uint32) {
+	x.xxx_hidden_Id = v
+}
+
+type CalibrateRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Sensor CalibrateRequest_Sensor
+	Id     uint32
+}
+
+func (b0 CalibrateRequest_builder) Build() *CalibrateRequest {
+	m0 := &CalibrateRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Sensor = b.Sensor
+	x.xxx_hidden_Id = b.Id
+	return m0
+}
+
 type CalibrateResponse struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	NextInstruction string                 `protobuf:"bytes,1,opt,name=next_instruction,json=nextInstruction,proto3" json:"next_instruction,omitempty"` // the next instructions to follow
-	Step            uint32                 `protobuf:"varint,2,opt,name=step,proto3" json:"step,omitempty"`                                             // step in the calibration procedure
-	Total           uint32                 `protobuf:"varint,3,opt,name=total,proto3" json:"total,omitempty"`                                           // total steps in the calibration procedure
-	Complete        bool                   `protobuf:"varint,4,opt,name=complete,proto3" json:"complete,omitempty"`                                     // whether or not the calibration is complete
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state                      protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_NextInstruction string                 `protobuf:"bytes,1,opt,name=next_instruction,json=nextInstruction,proto3"`
+	xxx_hidden_Step            uint32                 `protobuf:"varint,2,opt,name=step,proto3"`
+	xxx_hidden_Total           uint32                 `protobuf:"varint,3,opt,name=total,proto3"`
+	xxx_hidden_Complete        bool                   `protobuf:"varint,4,opt,name=complete,proto3"`
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
 }
 
 func (x *CalibrateResponse) Reset() {
@@ -164,37 +177,68 @@ func (x *CalibrateResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CalibrateResponse.ProtoReflect.Descriptor instead.
-func (*CalibrateResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_calibrate_proto_rawDescGZIP(), []int{1}
-}
-
 func (x *CalibrateResponse) GetNextInstruction() string {
 	if x != nil {
-		return x.NextInstruction
+		return x.xxx_hidden_NextInstruction
 	}
 	return ""
 }
 
 func (x *CalibrateResponse) GetStep() uint32 {
 	if x != nil {
-		return x.Step
+		return x.xxx_hidden_Step
 	}
 	return 0
 }
 
 func (x *CalibrateResponse) GetTotal() uint32 {
 	if x != nil {
-		return x.Total
+		return x.xxx_hidden_Total
 	}
 	return 0
 }
 
 func (x *CalibrateResponse) GetComplete() bool {
 	if x != nil {
-		return x.Complete
+		return x.xxx_hidden_Complete
 	}
 	return false
+}
+
+func (x *CalibrateResponse) SetNextInstruction(v string) {
+	x.xxx_hidden_NextInstruction = v
+}
+
+func (x *CalibrateResponse) SetStep(v uint32) {
+	x.xxx_hidden_Step = v
+}
+
+func (x *CalibrateResponse) SetTotal(v uint32) {
+	x.xxx_hidden_Total = v
+}
+
+func (x *CalibrateResponse) SetComplete(v bool) {
+	x.xxx_hidden_Complete = v
+}
+
+type CalibrateResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	NextInstruction string
+	Step            uint32
+	Total           uint32
+	Complete        bool
+}
+
+func (b0 CalibrateResponse_builder) Build() *CalibrateResponse {
+	m0 := &CalibrateResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_NextInstruction = b.NextInstruction
+	x.xxx_hidden_Step = b.Step
+	x.xxx_hidden_Total = b.Total
+	x.xxx_hidden_Complete = b.Complete
+	return m0
 }
 
 var File_steeleagle_protocol_v1_services_driver_calibrate_proto protoreflect.FileDescriptor
@@ -218,18 +262,6 @@ const file_steeleagle_protocol_v1_services_driver_calibrate_proto_rawDesc = "" +
 	"\x10CalibrateService\x12\x9a\x01\n" +
 	"\tCalibrate\x12D.steeleagle_protocol.v1.services.driver.calibration.CalibrateRequest\x1aE.steeleagle_protocol.v1.services.driver.calibration.CalibrateResponse0\x01B\x83\x03\n" +
 	"6com.steeleagle_protocol.v1.services.driver.calibrationB\x0eCalibrateProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\xa2\x02\x05SVSDC\xaa\x021SteeleagleProtocol.V1.Services.Driver.Calibration\xca\x021SteeleagleProtocol\\V1\\Services\\Driver\\Calibration\xe2\x02=SteeleagleProtocol\\V1\\Services\\Driver\\Calibration\\GPBMetadata\xea\x025SteeleagleProtocol::V1::Services::Driver::Calibrationb\x06proto3"
-
-var (
-	file_steeleagle_protocol_v1_services_driver_calibrate_proto_rawDescOnce sync.Once
-	file_steeleagle_protocol_v1_services_driver_calibrate_proto_rawDescData []byte
-)
-
-func file_steeleagle_protocol_v1_services_driver_calibrate_proto_rawDescGZIP() []byte {
-	file_steeleagle_protocol_v1_services_driver_calibrate_proto_rawDescOnce.Do(func() {
-		file_steeleagle_protocol_v1_services_driver_calibrate_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_services_driver_calibrate_proto_rawDesc), len(file_steeleagle_protocol_v1_services_driver_calibrate_proto_rawDesc)))
-	})
-	return file_steeleagle_protocol_v1_services_driver_calibrate_proto_rawDescData
-}
 
 var file_steeleagle_protocol_v1_services_driver_calibrate_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_steeleagle_protocol_v1_services_driver_calibrate_proto_msgTypes = make([]protoimpl.MessageInfo, 2)

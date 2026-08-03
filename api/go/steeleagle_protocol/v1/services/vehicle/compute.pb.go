@@ -14,7 +14,6 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
-	sync "sync"
 	unsafe "unsafe"
 )
 
@@ -73,11 +72,6 @@ func (x EngineLocation) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use EngineLocation.Descriptor instead.
-func (EngineLocation) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_vehicle_compute_proto_rawDescGZIP(), []int{0}
-}
-
 // Denotes which type of data to forward.
 type Topic int32
 
@@ -123,20 +117,13 @@ func (x Topic) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use Topic.Descriptor instead.
-func (Topic) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_vehicle_compute_proto_rawDescGZIP(), []int{1}
-}
-
 // Information about an engine.
 type EngineInfo struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// engine ID
-	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	// engine location
-	Location      EngineLocation `protobuf:"varint,2,opt,name=location,proto3,enum=steeleagle_protocol.v1.services.vehicle.compute.EngineLocation" json:"location,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id       string                 `protobuf:"bytes,1,opt,name=id,proto3"`
+	xxx_hidden_Location EngineLocation         `protobuf:"varint,2,opt,name=location,proto3,enum=steeleagle_protocol.v1.services.vehicle.compute.EngineLocation"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *EngineInfo) Reset() {
@@ -164,31 +151,52 @@ func (x *EngineInfo) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use EngineInfo.ProtoReflect.Descriptor instead.
-func (*EngineInfo) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_vehicle_compute_proto_rawDescGZIP(), []int{0}
-}
-
 func (x *EngineInfo) GetId() string {
 	if x != nil {
-		return x.Id
+		return x.xxx_hidden_Id
 	}
 	return ""
 }
 
 func (x *EngineInfo) GetLocation() EngineLocation {
 	if x != nil {
-		return x.Location
+		return x.xxx_hidden_Location
 	}
 	return EngineLocation_ENGINE_LOCATION_UNSPECIFIED
 }
 
+func (x *EngineInfo) SetId(v string) {
+	x.xxx_hidden_Id = v
+}
+
+func (x *EngineInfo) SetLocation(v EngineLocation) {
+	x.xxx_hidden_Location = v
+}
+
+type EngineInfo_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// engine ID
+	Id string
+	// engine location
+	Location EngineLocation
+}
+
+func (b0 EngineInfo_builder) Build() *EngineInfo {
+	m0 := &EngineInfo{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Id = b.Id
+	x.xxx_hidden_Location = b.Location
+	return m0
+}
+
 type SetEnginesForTopicRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Topic         Topic                  `protobuf:"varint,1,opt,name=topic,proto3,enum=steeleagle_protocol.v1.services.vehicle.compute.Topic" json:"topic,omitempty"` // topic to forward
-	Datasinks     []*EngineInfo          `protobuf:"bytes,2,rep,name=datasinks,proto3" json:"datasinks,omitempty"`                                                     // name of target engines
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Topic     Topic                  `protobuf:"varint,1,opt,name=topic,proto3,enum=steeleagle_protocol.v1.services.vehicle.compute.Topic"`
+	xxx_hidden_Datasinks *[]*EngineInfo         `protobuf:"bytes,2,rep,name=datasinks,proto3"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *SetEnginesForTopicRequest) Reset() {
@@ -216,27 +224,48 @@ func (x *SetEnginesForTopicRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SetEnginesForTopicRequest.ProtoReflect.Descriptor instead.
-func (*SetEnginesForTopicRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_vehicle_compute_proto_rawDescGZIP(), []int{1}
-}
-
 func (x *SetEnginesForTopicRequest) GetTopic() Topic {
 	if x != nil {
-		return x.Topic
+		return x.xxx_hidden_Topic
 	}
 	return Topic_TOPIC_UNSPECIFIED
 }
 
 func (x *SetEnginesForTopicRequest) GetDatasinks() []*EngineInfo {
 	if x != nil {
-		return x.Datasinks
+		if x.xxx_hidden_Datasinks != nil {
+			return *x.xxx_hidden_Datasinks
+		}
 	}
 	return nil
 }
 
+func (x *SetEnginesForTopicRequest) SetTopic(v Topic) {
+	x.xxx_hidden_Topic = v
+}
+
+func (x *SetEnginesForTopicRequest) SetDatasinks(v []*EngineInfo) {
+	x.xxx_hidden_Datasinks = &v
+}
+
+type SetEnginesForTopicRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Topic     Topic
+	Datasinks []*EngineInfo
+}
+
+func (b0 SetEnginesForTopicRequest_builder) Build() *SetEnginesForTopicRequest {
+	m0 := &SetEnginesForTopicRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Topic = b.Topic
+	x.xxx_hidden_Datasinks = &b.Datasinks
+	return m0
+}
+
 type SetEnginesForTopicResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -266,9 +295,16 @@ func (x *SetEnginesForTopicResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SetEnginesForTopicResponse.ProtoReflect.Descriptor instead.
-func (*SetEnginesForTopicResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_vehicle_compute_proto_rawDescGZIP(), []int{2}
+type SetEnginesForTopicResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 SetEnginesForTopicResponse_builder) Build() *SetEnginesForTopicResponse {
+	m0 := &SetEnginesForTopicResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
 }
 
 var File_steeleagle_protocol_v1_services_vehicle_compute_proto protoreflect.FileDescriptor
@@ -296,18 +332,6 @@ const file_steeleagle_protocol_v1_services_vehicle_compute_proto_rawDesc = "" +
 	"\x0eComputeService\x12\xad\x01\n" +
 	"\x12SetEnginesForTopic\x12J.steeleagle_protocol.v1.services.vehicle.compute.SetEnginesForTopicRequest\x1aK.steeleagle_protocol.v1.services.vehicle.compute.SetEnginesForTopicResponseB\xf3\x02\n" +
 	"3com.steeleagle_protocol.v1.services.vehicle.computeB\fComputeProtoP\x01ZPgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle\xa2\x02\x05SVSVC\xaa\x02.SteeleagleProtocol.V1.Services.Vehicle.Compute\xca\x02.SteeleagleProtocol\\V1\\Services\\Vehicle\\Compute\xe2\x02:SteeleagleProtocol\\V1\\Services\\Vehicle\\Compute\\GPBMetadata\xea\x022SteeleagleProtocol::V1::Services::Vehicle::Computeb\x06proto3"
-
-var (
-	file_steeleagle_protocol_v1_services_vehicle_compute_proto_rawDescOnce sync.Once
-	file_steeleagle_protocol_v1_services_vehicle_compute_proto_rawDescData []byte
-)
-
-func file_steeleagle_protocol_v1_services_vehicle_compute_proto_rawDescGZIP() []byte {
-	file_steeleagle_protocol_v1_services_vehicle_compute_proto_rawDescOnce.Do(func() {
-		file_steeleagle_protocol_v1_services_vehicle_compute_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_services_vehicle_compute_proto_rawDesc), len(file_steeleagle_protocol_v1_services_vehicle_compute_proto_rawDesc)))
-	})
-	return file_steeleagle_protocol_v1_services_vehicle_compute_proto_rawDescData
-}
 
 var file_steeleagle_protocol_v1_services_vehicle_compute_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_steeleagle_protocol_v1_services_vehicle_compute_proto_msgTypes = make([]protoimpl.MessageInfo, 3)

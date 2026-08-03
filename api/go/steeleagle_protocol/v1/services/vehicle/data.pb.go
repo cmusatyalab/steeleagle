@@ -16,7 +16,6 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
-	sync "sync"
 	unsafe "unsafe"
 )
 
@@ -28,10 +27,10 @@ const (
 )
 
 type GetResultRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"` // name of the result producer to pull from
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Name string                 `protobuf:"bytes,1,opt,name=name,proto3"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *GetResultRequest) Reset() {
@@ -59,23 +58,36 @@ func (x *GetResultRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetResultRequest.ProtoReflect.Descriptor instead.
-func (*GetResultRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDescGZIP(), []int{0}
-}
-
 func (x *GetResultRequest) GetName() string {
 	if x != nil {
-		return x.Name
+		return x.xxx_hidden_Name
 	}
 	return ""
 }
 
+func (x *GetResultRequest) SetName(v string) {
+	x.xxx_hidden_Name = v
+}
+
+type GetResultRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Name string
+}
+
+func (b0 GetResultRequest_builder) Build() *GetResultRequest {
+	m0 := &GetResultRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Name = b.Name
+	return m0
+}
+
 type GetResultResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Result        *result.ComputeResult  `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Result *result.ComputeResult  `protobuf:"bytes,1,opt,name=result,proto3"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *GetResultResponse) Reset() {
@@ -103,20 +115,44 @@ func (x *GetResultResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetResultResponse.ProtoReflect.Descriptor instead.
-func (*GetResultResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDescGZIP(), []int{1}
-}
-
 func (x *GetResultResponse) GetResult() *result.ComputeResult {
 	if x != nil {
-		return x.Result
+		return x.xxx_hidden_Result
 	}
 	return nil
 }
 
+func (x *GetResultResponse) SetResult(v *result.ComputeResult) {
+	x.xxx_hidden_Result = v
+}
+
+func (x *GetResultResponse) HasResult() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Result != nil
+}
+
+func (x *GetResultResponse) ClearResult() {
+	x.xxx_hidden_Result = nil
+}
+
+type GetResultResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Result *result.ComputeResult
+}
+
+func (b0 GetResultResponse_builder) Build() *GetResultResponse {
+	m0 := &GetResultResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Result = b.Result
+	return m0
+}
+
 type GetTelemetryRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -146,16 +182,23 @@ func (x *GetTelemetryRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetTelemetryRequest.ProtoReflect.Descriptor instead.
-func (*GetTelemetryRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDescGZIP(), []int{2}
+type GetTelemetryRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 GetTelemetryRequest_builder) Build() *GetTelemetryRequest {
+	m0 := &GetTelemetryRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
 }
 
 type GetTelemetryResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Telemetry     *telemetry.Telemetry   `protobuf:"bytes,1,opt,name=telemetry,proto3" json:"telemetry,omitempty"` // most recent telemetry
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Telemetry *telemetry.Telemetry   `protobuf:"bytes,1,opt,name=telemetry,proto3"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *GetTelemetryResponse) Reset() {
@@ -183,20 +226,44 @@ func (x *GetTelemetryResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetTelemetryResponse.ProtoReflect.Descriptor instead.
-func (*GetTelemetryResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDescGZIP(), []int{3}
-}
-
 func (x *GetTelemetryResponse) GetTelemetry() *telemetry.Telemetry {
 	if x != nil {
-		return x.Telemetry
+		return x.xxx_hidden_Telemetry
 	}
 	return nil
 }
 
+func (x *GetTelemetryResponse) SetTelemetry(v *telemetry.Telemetry) {
+	x.xxx_hidden_Telemetry = v
+}
+
+func (x *GetTelemetryResponse) HasTelemetry() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Telemetry != nil
+}
+
+func (x *GetTelemetryResponse) ClearTelemetry() {
+	x.xxx_hidden_Telemetry = nil
+}
+
+type GetTelemetryResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Telemetry *telemetry.Telemetry
+}
+
+func (b0 GetTelemetryResponse_builder) Build() *GetTelemetryResponse {
+	m0 := &GetTelemetryResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Telemetry = b.Telemetry
+	return m0
+}
+
 type GetFrameRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -226,16 +293,23 @@ func (x *GetFrameRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetFrameRequest.ProtoReflect.Descriptor instead.
-func (*GetFrameRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDescGZIP(), []int{4}
+type GetFrameRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 GetFrameRequest_builder) Build() *GetFrameRequest {
+	m0 := &GetFrameRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
 }
 
 type GetFrameResponse struct {
-	state         protoimpl.MessageState  `protogen:"open.v1"`
-	Frame         *telemetry.EncodedFrame `protobuf:"bytes,1,opt,name=frame,proto3" json:"frame,omitempty"` // most recent frame
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState  `protogen:"opaque.v1"`
+	xxx_hidden_Frame *telemetry.EncodedFrame `protobuf:"bytes,1,opt,name=frame,proto3"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *GetFrameResponse) Reset() {
@@ -263,20 +337,44 @@ func (x *GetFrameResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetFrameResponse.ProtoReflect.Descriptor instead.
-func (*GetFrameResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDescGZIP(), []int{5}
-}
-
 func (x *GetFrameResponse) GetFrame() *telemetry.EncodedFrame {
 	if x != nil {
-		return x.Frame
+		return x.xxx_hidden_Frame
 	}
 	return nil
 }
 
+func (x *GetFrameResponse) SetFrame(v *telemetry.EncodedFrame) {
+	x.xxx_hidden_Frame = v
+}
+
+func (x *GetFrameResponse) HasFrame() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Frame != nil
+}
+
+func (x *GetFrameResponse) ClearFrame() {
+	x.xxx_hidden_Frame = nil
+}
+
+type GetFrameResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Frame *telemetry.EncodedFrame
+}
+
+func (b0 GetFrameResponse_builder) Build() *GetFrameResponse {
+	m0 := &GetFrameResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Frame = b.Frame
+	return m0
+}
+
 type StreamVideoFramesRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -306,16 +404,23 @@ func (x *StreamVideoFramesRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StreamVideoFramesRequest.ProtoReflect.Descriptor instead.
-func (*StreamVideoFramesRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDescGZIP(), []int{6}
+type StreamVideoFramesRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 StreamVideoFramesRequest_builder) Build() *StreamVideoFramesRequest {
+	m0 := &StreamVideoFramesRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
 }
 
 type StreamVideoFramesResponse struct {
-	state         protoimpl.MessageState  `protogen:"open.v1"`
-	Frame         *telemetry.EncodedFrame `protobuf:"bytes,1,opt,name=frame,proto3" json:"frame,omitempty"` // encoded frame from the camera
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState  `protogen:"opaque.v1"`
+	xxx_hidden_Frame *telemetry.EncodedFrame `protobuf:"bytes,1,opt,name=frame,proto3"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *StreamVideoFramesResponse) Reset() {
@@ -343,20 +448,44 @@ func (x *StreamVideoFramesResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StreamVideoFramesResponse.ProtoReflect.Descriptor instead.
-func (*StreamVideoFramesResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDescGZIP(), []int{7}
-}
-
 func (x *StreamVideoFramesResponse) GetFrame() *telemetry.EncodedFrame {
 	if x != nil {
-		return x.Frame
+		return x.xxx_hidden_Frame
 	}
 	return nil
 }
 
+func (x *StreamVideoFramesResponse) SetFrame(v *telemetry.EncodedFrame) {
+	x.xxx_hidden_Frame = v
+}
+
+func (x *StreamVideoFramesResponse) HasFrame() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Frame != nil
+}
+
+func (x *StreamVideoFramesResponse) ClearFrame() {
+	x.xxx_hidden_Frame = nil
+}
+
+type StreamVideoFramesResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Frame *telemetry.EncodedFrame
+}
+
+func (b0 StreamVideoFramesResponse_builder) Build() *StreamVideoFramesResponse {
+	m0 := &StreamVideoFramesResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Frame = b.Frame
+	return m0
+}
+
 type StreamTelemetryRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -386,16 +515,23 @@ func (x *StreamTelemetryRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StreamTelemetryRequest.ProtoReflect.Descriptor instead.
-func (*StreamTelemetryRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDescGZIP(), []int{8}
+type StreamTelemetryRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 StreamTelemetryRequest_builder) Build() *StreamTelemetryRequest {
+	m0 := &StreamTelemetryRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
 }
 
 type StreamTelemetryResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Telemetry     *telemetry.Telemetry   `protobuf:"bytes,1,opt,name=telemetry,proto3" json:"telemetry,omitempty"` // telemetry from the driver
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Telemetry *telemetry.Telemetry   `protobuf:"bytes,1,opt,name=telemetry,proto3"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *StreamTelemetryResponse) Reset() {
@@ -423,16 +559,40 @@ func (x *StreamTelemetryResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StreamTelemetryResponse.ProtoReflect.Descriptor instead.
-func (*StreamTelemetryResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDescGZIP(), []int{9}
-}
-
 func (x *StreamTelemetryResponse) GetTelemetry() *telemetry.Telemetry {
 	if x != nil {
-		return x.Telemetry
+		return x.xxx_hidden_Telemetry
 	}
 	return nil
+}
+
+func (x *StreamTelemetryResponse) SetTelemetry(v *telemetry.Telemetry) {
+	x.xxx_hidden_Telemetry = v
+}
+
+func (x *StreamTelemetryResponse) HasTelemetry() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Telemetry != nil
+}
+
+func (x *StreamTelemetryResponse) ClearTelemetry() {
+	x.xxx_hidden_Telemetry = nil
+}
+
+type StreamTelemetryResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Telemetry *telemetry.Telemetry
+}
+
+func (b0 StreamTelemetryResponse_builder) Build() *StreamTelemetryResponse {
+	m0 := &StreamTelemetryResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Telemetry = b.Telemetry
+	return m0
 }
 
 var File_steeleagle_protocol_v1_services_vehicle_data_proto protoreflect.FileDescriptor
@@ -463,18 +623,6 @@ const file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDesc = "" +
 	"\x11StreamVideoFrames\x12F.steeleagle_protocol.v1.services.vehicle.data.StreamVideoFramesRequest\x1aG.steeleagle_protocol.v1.services.vehicle.data.StreamVideoFramesResponse0\x01\x12\xa0\x01\n" +
 	"\x0fStreamTelemetry\x12D.steeleagle_protocol.v1.services.vehicle.data.StreamTelemetryRequest\x1aE.steeleagle_protocol.v1.services.vehicle.data.StreamTelemetryResponse0\x01B\xe1\x02\n" +
 	"0com.steeleagle_protocol.v1.services.vehicle.dataB\tDataProtoP\x01ZPgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle\xa2\x02\x05SVSVD\xaa\x02+SteeleagleProtocol.V1.Services.Vehicle.Data\xca\x02+SteeleagleProtocol\\V1\\Services\\Vehicle\\Data\xe2\x027SteeleagleProtocol\\V1\\Services\\Vehicle\\Data\\GPBMetadata\xea\x02/SteeleagleProtocol::V1::Services::Vehicle::Datab\x06proto3"
-
-var (
-	file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDescOnce sync.Once
-	file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDescData []byte
-)
-
-func file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDescGZIP() []byte {
-	file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDescOnce.Do(func() {
-		file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDesc), len(file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDesc)))
-	})
-	return file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDescData
-}
 
 var file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_steeleagle_protocol_v1_services_vehicle_data_proto_goTypes = []any{

@@ -17,7 +17,7 @@ message BatteryInfo {
 }
 
 // Information about the vehicle GPS fix.
-message GPSInfo {
+message GpsInfo {
   uint32 satellites = 1; // number of satellites used in GPS fix
 }
 
@@ -94,7 +94,7 @@ message AlertInfo {
   // battery warnings
   BatteryWarning battery_warning = 1;
   // GPS fix warnings and alerts.
-  enum GPSWarning {
+  enum GpsWarning {
     // GPS readings are nominal and a fix has been achieved
     GPS_WARNING_UNSPECIFIED = 0;
     // weak GPS fix, expect errant global position data
@@ -103,7 +103,7 @@ message AlertInfo {
     GPS_WARNING_NO_FIX = 2;
   }
   // GPS warnings
-  GPSWarning gps_warning = 2;
+  GpsWarning gps_warning = 2;
   // Magnetometer warnings and alerts.
   enum MagnetometerWarning {
     // magnetometer readings are nominal
@@ -149,7 +149,7 @@ message Telemetry {
   // battery info
   BatteryInfo battery_info = 2;
   // GPS and satellite info
-  GPSInfo gps_info = 3;
+  GpsInfo gps_info = 3;
   // positional info about the vehicle
   PositionInfo position_info = 4;
   // status on attached gimbals and their orientations

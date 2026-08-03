@@ -8,7 +8,14 @@ managed:
 plugins:
   - remote: buf.build/protocolbuffers/go
     out: api/go
-    opt: paths=source_relative
+    opt: 
+      - paths=source_relative
+      - default_api_level=API_OPAQUE
+  - local: [go, run, ./cmd/protoc]
+    out: sdk/types
+    opt: 
+      - paths=source_relative
+      - default_api_level=API_OPAQUE
   - remote: buf.build/grpc/go
     out: api/go
     opt: paths=source_relative

@@ -15,7 +15,6 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
-	sync "sync"
 	unsafe "unsafe"
 )
 
@@ -76,16 +75,11 @@ func (x GetVideoStreamURLRequest_Resolution) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use GetVideoStreamURLRequest_Resolution.Descriptor instead.
-func (GetVideoStreamURLRequest_Resolution) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_stream_proto_rawDescGZIP(), []int{0, 0}
-}
-
 type GetVideoStreamURLRequest struct {
-	state         protoimpl.MessageState              `protogen:"open.v1"`
-	Resolution    GetVideoStreamURLRequest_Resolution `protobuf:"varint,1,opt,name=resolution,proto3,enum=steeleagle_protocol.v1.services.driver.stream.GetVideoStreamURLRequest_Resolution" json:"resolution,omitempty"` // video stream resolution
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                 protoimpl.MessageState              `protogen:"opaque.v1"`
+	xxx_hidden_Resolution GetVideoStreamURLRequest_Resolution `protobuf:"varint,1,opt,name=resolution,proto3,enum=steeleagle_protocol.v1.services.driver.stream.GetVideoStreamURLRequest_Resolution"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *GetVideoStreamURLRequest) Reset() {
@@ -113,24 +107,39 @@ func (x *GetVideoStreamURLRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetVideoStreamURLRequest.ProtoReflect.Descriptor instead.
-func (*GetVideoStreamURLRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_stream_proto_rawDescGZIP(), []int{0}
-}
-
 func (x *GetVideoStreamURLRequest) GetResolution() GetVideoStreamURLRequest_Resolution {
 	if x != nil {
-		return x.Resolution
+		return x.xxx_hidden_Resolution
 	}
 	return GetVideoStreamURLRequest_RESOLUTION_UNSPECIFIED
 }
 
+func (x *GetVideoStreamURLRequest) SetResolution(v GetVideoStreamURLRequest_Resolution) {
+	x.xxx_hidden_Resolution = v
+}
+
+type GetVideoStreamURLRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Resolution GetVideoStreamURLRequest_Resolution
+}
+
+func (b0 GetVideoStreamURLRequest_builder) Build() *GetVideoStreamURLRequest {
+	m0 := &GetVideoStreamURLRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Resolution = b.Resolution
+	return m0
+}
+
 type GetVideoStreamURLResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	StreamUrl     string                 `protobuf:"bytes,1,opt,name=stream_url,json=streamUrl,proto3" json:"stream_url,omitempty"`        // URL of the video stream
-	TargetFps     *uint32                `protobuf:"varint,2,opt,name=target_fps,json=targetFps,proto3,oneof" json:"target_fps,omitempty"` // target fps to stream at, if 0 is provided will choose fps
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_StreamUrl   string                 `protobuf:"bytes,1,opt,name=stream_url,json=streamUrl,proto3"`
+	xxx_hidden_TargetFps   uint32                 `protobuf:"varint,2,opt,name=target_fps,json=targetFps,proto3,oneof"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *GetVideoStreamURLResponse) Reset() {
@@ -158,30 +167,67 @@ func (x *GetVideoStreamURLResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetVideoStreamURLResponse.ProtoReflect.Descriptor instead.
-func (*GetVideoStreamURLResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_stream_proto_rawDescGZIP(), []int{1}
-}
-
 func (x *GetVideoStreamURLResponse) GetStreamUrl() string {
 	if x != nil {
-		return x.StreamUrl
+		return x.xxx_hidden_StreamUrl
 	}
 	return ""
 }
 
 func (x *GetVideoStreamURLResponse) GetTargetFps() uint32 {
-	if x != nil && x.TargetFps != nil {
-		return *x.TargetFps
+	if x != nil {
+		return x.xxx_hidden_TargetFps
 	}
 	return 0
 }
 
+func (x *GetVideoStreamURLResponse) SetStreamUrl(v string) {
+	x.xxx_hidden_StreamUrl = v
+}
+
+func (x *GetVideoStreamURLResponse) SetTargetFps(v uint32) {
+	x.xxx_hidden_TargetFps = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 2)
+}
+
+func (x *GetVideoStreamURLResponse) HasTargetFps() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *GetVideoStreamURLResponse) ClearTargetFps() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_TargetFps = 0
+}
+
+type GetVideoStreamURLResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	StreamUrl string
+	TargetFps *uint32
+}
+
+func (b0 GetVideoStreamURLResponse_builder) Build() *GetVideoStreamURLResponse {
+	m0 := &GetVideoStreamURLResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_StreamUrl = b.StreamUrl
+	if b.TargetFps != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 2)
+		x.xxx_hidden_TargetFps = *b.TargetFps
+	}
+	return m0
+}
+
 type StreamVideoFramesRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	TargetFps     *uint32                `protobuf:"varint,1,opt,name=target_fps,json=targetFps,proto3,oneof" json:"target_fps,omitempty"` // target fps to stream at, if 0 is provided will choose fps
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_TargetFps   uint32                 `protobuf:"varint,1,opt,name=target_fps,json=targetFps,proto3,oneof"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *StreamVideoFramesRequest) Reset() {
@@ -209,23 +255,52 @@ func (x *StreamVideoFramesRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StreamVideoFramesRequest.ProtoReflect.Descriptor instead.
-func (*StreamVideoFramesRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_stream_proto_rawDescGZIP(), []int{2}
-}
-
 func (x *StreamVideoFramesRequest) GetTargetFps() uint32 {
-	if x != nil && x.TargetFps != nil {
-		return *x.TargetFps
+	if x != nil {
+		return x.xxx_hidden_TargetFps
 	}
 	return 0
 }
 
+func (x *StreamVideoFramesRequest) SetTargetFps(v uint32) {
+	x.xxx_hidden_TargetFps = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *StreamVideoFramesRequest) HasTargetFps() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *StreamVideoFramesRequest) ClearTargetFps() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_TargetFps = 0
+}
+
+type StreamVideoFramesRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	TargetFps *uint32
+}
+
+func (b0 StreamVideoFramesRequest_builder) Build() *StreamVideoFramesRequest {
+	m0 := &StreamVideoFramesRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.TargetFps != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_TargetFps = *b.TargetFps
+	}
+	return m0
+}
+
 type StreamVideoFramesResponse struct {
-	state         protoimpl.MessageState  `protogen:"open.v1"`
-	Frame         *telemetry.EncodedFrame `protobuf:"bytes,1,opt,name=frame,proto3" json:"frame,omitempty"` // encoded frame from the camera
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState  `protogen:"opaque.v1"`
+	xxx_hidden_Frame *telemetry.EncodedFrame `protobuf:"bytes,1,opt,name=frame,proto3"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *StreamVideoFramesResponse) Reset() {
@@ -253,23 +328,49 @@ func (x *StreamVideoFramesResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StreamVideoFramesResponse.ProtoReflect.Descriptor instead.
-func (*StreamVideoFramesResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_stream_proto_rawDescGZIP(), []int{3}
-}
-
 func (x *StreamVideoFramesResponse) GetFrame() *telemetry.EncodedFrame {
 	if x != nil {
-		return x.Frame
+		return x.xxx_hidden_Frame
 	}
 	return nil
 }
 
+func (x *StreamVideoFramesResponse) SetFrame(v *telemetry.EncodedFrame) {
+	x.xxx_hidden_Frame = v
+}
+
+func (x *StreamVideoFramesResponse) HasFrame() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Frame != nil
+}
+
+func (x *StreamVideoFramesResponse) ClearFrame() {
+	x.xxx_hidden_Frame = nil
+}
+
+type StreamVideoFramesResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Frame *telemetry.EncodedFrame
+}
+
+func (b0 StreamVideoFramesResponse_builder) Build() *StreamVideoFramesResponse {
+	m0 := &StreamVideoFramesResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Frame = b.Frame
+	return m0
+}
+
 type StreamTelemetryRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	TargetFps     *uint32                `protobuf:"varint,1,opt,name=target_fps,json=targetFps,proto3,oneof" json:"target_fps,omitempty"` // target fps to stream at, if 0 is provided will choose fps
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_TargetFps   uint32                 `protobuf:"varint,1,opt,name=target_fps,json=targetFps,proto3,oneof"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *StreamTelemetryRequest) Reset() {
@@ -297,23 +398,52 @@ func (x *StreamTelemetryRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StreamTelemetryRequest.ProtoReflect.Descriptor instead.
-func (*StreamTelemetryRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_stream_proto_rawDescGZIP(), []int{4}
-}
-
 func (x *StreamTelemetryRequest) GetTargetFps() uint32 {
-	if x != nil && x.TargetFps != nil {
-		return *x.TargetFps
+	if x != nil {
+		return x.xxx_hidden_TargetFps
 	}
 	return 0
 }
 
+func (x *StreamTelemetryRequest) SetTargetFps(v uint32) {
+	x.xxx_hidden_TargetFps = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *StreamTelemetryRequest) HasTargetFps() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *StreamTelemetryRequest) ClearTargetFps() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_TargetFps = 0
+}
+
+type StreamTelemetryRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	TargetFps *uint32
+}
+
+func (b0 StreamTelemetryRequest_builder) Build() *StreamTelemetryRequest {
+	m0 := &StreamTelemetryRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.TargetFps != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_TargetFps = *b.TargetFps
+	}
+	return m0
+}
+
 type StreamTelemetryResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Telemetry     *telemetry.Telemetry   `protobuf:"bytes,1,opt,name=telemetry,proto3" json:"telemetry,omitempty"` // telemetry from the driver
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Telemetry *telemetry.Telemetry   `protobuf:"bytes,1,opt,name=telemetry,proto3"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *StreamTelemetryResponse) Reset() {
@@ -341,16 +471,40 @@ func (x *StreamTelemetryResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StreamTelemetryResponse.ProtoReflect.Descriptor instead.
-func (*StreamTelemetryResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_stream_proto_rawDescGZIP(), []int{5}
-}
-
 func (x *StreamTelemetryResponse) GetTelemetry() *telemetry.Telemetry {
 	if x != nil {
-		return x.Telemetry
+		return x.xxx_hidden_Telemetry
 	}
 	return nil
+}
+
+func (x *StreamTelemetryResponse) SetTelemetry(v *telemetry.Telemetry) {
+	x.xxx_hidden_Telemetry = v
+}
+
+func (x *StreamTelemetryResponse) HasTelemetry() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Telemetry != nil
+}
+
+func (x *StreamTelemetryResponse) ClearTelemetry() {
+	x.xxx_hidden_Telemetry = nil
+}
+
+type StreamTelemetryResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Telemetry *telemetry.Telemetry
+}
+
+func (b0 StreamTelemetryResponse_builder) Build() *StreamTelemetryResponse {
+	m0 := &StreamTelemetryResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Telemetry = b.Telemetry
+	return m0
 }
 
 var File_steeleagle_protocol_v1_services_driver_stream_proto protoreflect.FileDescriptor
@@ -392,18 +546,6 @@ const file_steeleagle_protocol_v1_services_driver_stream_proto_rawDesc = "" +
 	"\x11StreamVideoFrames\x12G.steeleagle_protocol.v1.services.driver.stream.StreamVideoFramesRequest\x1aH.steeleagle_protocol.v1.services.driver.stream.StreamVideoFramesResponse0\x01\x12\xa2\x01\n" +
 	"\x0fStreamTelemetry\x12E.steeleagle_protocol.v1.services.driver.stream.StreamTelemetryRequest\x1aF.steeleagle_protocol.v1.services.driver.stream.StreamTelemetryResponse0\x01B\xe7\x02\n" +
 	"1com.steeleagle_protocol.v1.services.driver.streamB\vStreamProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\xa2\x02\x05SVSDS\xaa\x02,SteeleagleProtocol.V1.Services.Driver.Stream\xca\x02,SteeleagleProtocol\\V1\\Services\\Driver\\Stream\xe2\x028SteeleagleProtocol\\V1\\Services\\Driver\\Stream\\GPBMetadata\xea\x020SteeleagleProtocol::V1::Services::Driver::Streamb\x06proto3"
-
-var (
-	file_steeleagle_protocol_v1_services_driver_stream_proto_rawDescOnce sync.Once
-	file_steeleagle_protocol_v1_services_driver_stream_proto_rawDescData []byte
-)
-
-func file_steeleagle_protocol_v1_services_driver_stream_proto_rawDescGZIP() []byte {
-	file_steeleagle_protocol_v1_services_driver_stream_proto_rawDescOnce.Do(func() {
-		file_steeleagle_protocol_v1_services_driver_stream_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_services_driver_stream_proto_rawDesc), len(file_steeleagle_protocol_v1_services_driver_stream_proto_rawDesc)))
-	})
-	return file_steeleagle_protocol_v1_services_driver_stream_proto_rawDescData
-}
 
 var file_steeleagle_protocol_v1_services_driver_stream_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes = make([]protoimpl.MessageInfo, 6)

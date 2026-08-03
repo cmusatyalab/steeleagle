@@ -14,7 +14,6 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
-	sync "sync"
 	unsafe "unsafe"
 )
 
@@ -27,12 +26,14 @@ const (
 
 // Angular offsets or poses in 3 dimensions.
 type Pose struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Pitch         *float64               `protobuf:"fixed64,1,opt,name=pitch,proto3,oneof" json:"pitch,omitempty"` // pitch [degrees]
-	Roll          *float64               `protobuf:"fixed64,2,opt,name=roll,proto3,oneof" json:"roll,omitempty"`   // roll [degrees]
-	Yaw           *float64               `protobuf:"fixed64,3,opt,name=yaw,proto3,oneof" json:"yaw,omitempty"`     // yaw [degrees]
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Pitch       float64                `protobuf:"fixed64,1,opt,name=pitch,proto3,oneof"`
+	xxx_hidden_Roll        float64                `protobuf:"fixed64,2,opt,name=roll,proto3,oneof"`
+	xxx_hidden_Yaw         float64                `protobuf:"fixed64,3,opt,name=yaw,proto3,oneof"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *Pose) Reset() {
@@ -60,30 +61,103 @@ func (x *Pose) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Pose.ProtoReflect.Descriptor instead.
-func (*Pose) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_common_proto_rawDescGZIP(), []int{0}
-}
-
 func (x *Pose) GetPitch() float64 {
-	if x != nil && x.Pitch != nil {
-		return *x.Pitch
+	if x != nil {
+		return x.xxx_hidden_Pitch
 	}
 	return 0
 }
 
 func (x *Pose) GetRoll() float64 {
-	if x != nil && x.Roll != nil {
-		return *x.Roll
+	if x != nil {
+		return x.xxx_hidden_Roll
 	}
 	return 0
 }
 
 func (x *Pose) GetYaw() float64 {
-	if x != nil && x.Yaw != nil {
-		return *x.Yaw
+	if x != nil {
+		return x.xxx_hidden_Yaw
 	}
 	return 0
+}
+
+func (x *Pose) SetPitch(v float64) {
+	x.xxx_hidden_Pitch = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 3)
+}
+
+func (x *Pose) SetRoll(v float64) {
+	x.xxx_hidden_Roll = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 3)
+}
+
+func (x *Pose) SetYaw(v float64) {
+	x.xxx_hidden_Yaw = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
+}
+
+func (x *Pose) HasPitch() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *Pose) HasRoll() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *Pose) HasYaw() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *Pose) ClearPitch() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Pitch = 0
+}
+
+func (x *Pose) ClearRoll() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Roll = 0
+}
+
+func (x *Pose) ClearYaw() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_Yaw = 0
+}
+
+type Pose_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Pitch *float64
+	Roll  *float64
+	Yaw   *float64
+}
+
+func (b0 Pose_builder) Build() *Pose {
+	m0 := &Pose{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Pitch != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 3)
+		x.xxx_hidden_Pitch = *b.Pitch
+	}
+	if b.Roll != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 3)
+		x.xxx_hidden_Roll = *b.Roll
+	}
+	if b.Yaw != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 3)
+		x.xxx_hidden_Yaw = *b.Yaw
+	}
+	return m0
 }
 
 // Representation of velocity in 3-dimensions.
@@ -92,13 +166,15 @@ func (x *Pose) GetYaw() float64 {
 // - `y_vel`: right/eastward velocity
 // - `z_vel`: up velocity
 type Velocity struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	XVel          *float64               `protobuf:"fixed64,1,opt,name=x_vel,json=xVel,proto3,oneof" json:"x_vel,omitempty"`                   // forward/north velocity [meters/s]
-	YVel          *float64               `protobuf:"fixed64,2,opt,name=y_vel,json=yVel,proto3,oneof" json:"y_vel,omitempty"`                   // right/east velocity [meters/s]
-	ZVel          *float64               `protobuf:"fixed64,3,opt,name=z_vel,json=zVel,proto3,oneof" json:"z_vel,omitempty"`                   // up velocity [meters/s]
-	AngularVel    *float64               `protobuf:"fixed64,4,opt,name=angular_vel,json=angularVel,proto3,oneof" json:"angular_vel,omitempty"` // angular velocity [degrees/s]
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_XVel        float64                `protobuf:"fixed64,1,opt,name=x_vel,json=xVel,proto3,oneof"`
+	xxx_hidden_YVel        float64                `protobuf:"fixed64,2,opt,name=y_vel,json=yVel,proto3,oneof"`
+	xxx_hidden_ZVel        float64                `protobuf:"fixed64,3,opt,name=z_vel,json=zVel,proto3,oneof"`
+	xxx_hidden_AngularVel  float64                `protobuf:"fixed64,4,opt,name=angular_vel,json=angularVel,proto3,oneof"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *Velocity) Reset() {
@@ -126,48 +202,145 @@ func (x *Velocity) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Velocity.ProtoReflect.Descriptor instead.
-func (*Velocity) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_common_proto_rawDescGZIP(), []int{1}
-}
-
 func (x *Velocity) GetXVel() float64 {
-	if x != nil && x.XVel != nil {
-		return *x.XVel
+	if x != nil {
+		return x.xxx_hidden_XVel
 	}
 	return 0
 }
 
 func (x *Velocity) GetYVel() float64 {
-	if x != nil && x.YVel != nil {
-		return *x.YVel
+	if x != nil {
+		return x.xxx_hidden_YVel
 	}
 	return 0
 }
 
 func (x *Velocity) GetZVel() float64 {
-	if x != nil && x.ZVel != nil {
-		return *x.ZVel
+	if x != nil {
+		return x.xxx_hidden_ZVel
 	}
 	return 0
 }
 
 func (x *Velocity) GetAngularVel() float64 {
-	if x != nil && x.AngularVel != nil {
-		return *x.AngularVel
+	if x != nil {
+		return x.xxx_hidden_AngularVel
 	}
 	return 0
 }
 
+func (x *Velocity) SetXVel(v float64) {
+	x.xxx_hidden_XVel = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 4)
+}
+
+func (x *Velocity) SetYVel(v float64) {
+	x.xxx_hidden_YVel = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 4)
+}
+
+func (x *Velocity) SetZVel(v float64) {
+	x.xxx_hidden_ZVel = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
+}
+
+func (x *Velocity) SetAngularVel(v float64) {
+	x.xxx_hidden_AngularVel = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
+}
+
+func (x *Velocity) HasXVel() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *Velocity) HasYVel() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *Velocity) HasZVel() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *Velocity) HasAngularVel() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *Velocity) ClearXVel() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_XVel = 0
+}
+
+func (x *Velocity) ClearYVel() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_YVel = 0
+}
+
+func (x *Velocity) ClearZVel() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_ZVel = 0
+}
+
+func (x *Velocity) ClearAngularVel() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_AngularVel = 0
+}
+
+type Velocity_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	XVel       *float64
+	YVel       *float64
+	ZVel       *float64
+	AngularVel *float64
+}
+
+func (b0 Velocity_builder) Build() *Velocity {
+	m0 := &Velocity{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.XVel != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 4)
+		x.xxx_hidden_XVel = *b.XVel
+	}
+	if b.YVel != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 4)
+		x.xxx_hidden_YVel = *b.YVel
+	}
+	if b.ZVel != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
+		x.xxx_hidden_ZVel = *b.ZVel
+	}
+	if b.AngularVel != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
+		x.xxx_hidden_AngularVel = *b.AngularVel
+	}
+	return m0
+}
+
 // Representation of global position.
 type GlobalPosition struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Latitude      *float64               `protobuf:"fixed64,1,opt,name=latitude,proto3,oneof" json:"latitude,omitempty"`
-	Longitude     *float64               `protobuf:"fixed64,2,opt,name=longitude,proto3,oneof" json:"longitude,omitempty"`
-	Altitude      *float64               `protobuf:"fixed64,3,opt,name=altitude,proto3,oneof" json:"altitude,omitempty"`
-	Heading       *float64               `protobuf:"fixed64,4,opt,name=heading,proto3,oneof" json:"heading,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Latitude    float64                `protobuf:"fixed64,1,opt,name=latitude,proto3,oneof"`
+	xxx_hidden_Longitude   float64                `protobuf:"fixed64,2,opt,name=longitude,proto3,oneof"`
+	xxx_hidden_Altitude    float64                `protobuf:"fixed64,3,opt,name=altitude,proto3,oneof"`
+	xxx_hidden_Heading     float64                `protobuf:"fixed64,4,opt,name=heading,proto3,oneof"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *GlobalPosition) Reset() {
@@ -195,37 +368,132 @@ func (x *GlobalPosition) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GlobalPosition.ProtoReflect.Descriptor instead.
-func (*GlobalPosition) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_common_proto_rawDescGZIP(), []int{2}
-}
-
 func (x *GlobalPosition) GetLatitude() float64 {
-	if x != nil && x.Latitude != nil {
-		return *x.Latitude
+	if x != nil {
+		return x.xxx_hidden_Latitude
 	}
 	return 0
 }
 
 func (x *GlobalPosition) GetLongitude() float64 {
-	if x != nil && x.Longitude != nil {
-		return *x.Longitude
+	if x != nil {
+		return x.xxx_hidden_Longitude
 	}
 	return 0
 }
 
 func (x *GlobalPosition) GetAltitude() float64 {
-	if x != nil && x.Altitude != nil {
-		return *x.Altitude
+	if x != nil {
+		return x.xxx_hidden_Altitude
 	}
 	return 0
 }
 
 func (x *GlobalPosition) GetHeading() float64 {
-	if x != nil && x.Heading != nil {
-		return *x.Heading
+	if x != nil {
+		return x.xxx_hidden_Heading
 	}
 	return 0
+}
+
+func (x *GlobalPosition) SetLatitude(v float64) {
+	x.xxx_hidden_Latitude = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 4)
+}
+
+func (x *GlobalPosition) SetLongitude(v float64) {
+	x.xxx_hidden_Longitude = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 4)
+}
+
+func (x *GlobalPosition) SetAltitude(v float64) {
+	x.xxx_hidden_Altitude = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
+}
+
+func (x *GlobalPosition) SetHeading(v float64) {
+	x.xxx_hidden_Heading = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
+}
+
+func (x *GlobalPosition) HasLatitude() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *GlobalPosition) HasLongitude() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *GlobalPosition) HasAltitude() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *GlobalPosition) HasHeading() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *GlobalPosition) ClearLatitude() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Latitude = 0
+}
+
+func (x *GlobalPosition) ClearLongitude() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Longitude = 0
+}
+
+func (x *GlobalPosition) ClearAltitude() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_Altitude = 0
+}
+
+func (x *GlobalPosition) ClearHeading() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_Heading = 0
+}
+
+type GlobalPosition_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Latitude  *float64
+	Longitude *float64
+	Altitude  *float64
+	Heading   *float64
+}
+
+func (b0 GlobalPosition_builder) Build() *GlobalPosition {
+	m0 := &GlobalPosition{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Latitude != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 4)
+		x.xxx_hidden_Latitude = *b.Latitude
+	}
+	if b.Longitude != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 4)
+		x.xxx_hidden_Longitude = *b.Longitude
+	}
+	if b.Altitude != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
+		x.xxx_hidden_Altitude = *b.Altitude
+	}
+	if b.Heading != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
+		x.xxx_hidden_Heading = *b.Heading
+	}
+	return m0
 }
 
 // Representation of relative position in 3-dimensions.
@@ -236,13 +504,15 @@ func (x *GlobalPosition) GetHeading() float64 {
 // - `y`: right offset/east offset
 // - `z“: up offset
 type RelativePosition struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	X             *float64               `protobuf:"fixed64,1,opt,name=x,proto3,oneof" json:"x,omitempty"`         // forward offset/north offset [meters]
-	Y             *float64               `protobuf:"fixed64,2,opt,name=y,proto3,oneof" json:"y,omitempty"`         // right offset/east offset [meters]
-	Z             *float64               `protobuf:"fixed64,3,opt,name=z,proto3,oneof" json:"z,omitempty"`         // up offset [meters]
-	Angle         *float64               `protobuf:"fixed64,4,opt,name=angle,proto3,oneof" json:"angle,omitempty"` // angular offset [degrees]
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_X           float64                `protobuf:"fixed64,1,opt,name=x,proto3,oneof"`
+	xxx_hidden_Y           float64                `protobuf:"fixed64,2,opt,name=y,proto3,oneof"`
+	xxx_hidden_Z           float64                `protobuf:"fixed64,3,opt,name=z,proto3,oneof"`
+	xxx_hidden_Angle       float64                `protobuf:"fixed64,4,opt,name=angle,proto3,oneof"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *RelativePosition) Reset() {
@@ -270,37 +540,132 @@ func (x *RelativePosition) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RelativePosition.ProtoReflect.Descriptor instead.
-func (*RelativePosition) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_common_proto_rawDescGZIP(), []int{3}
-}
-
 func (x *RelativePosition) GetX() float64 {
-	if x != nil && x.X != nil {
-		return *x.X
+	if x != nil {
+		return x.xxx_hidden_X
 	}
 	return 0
 }
 
 func (x *RelativePosition) GetY() float64 {
-	if x != nil && x.Y != nil {
-		return *x.Y
+	if x != nil {
+		return x.xxx_hidden_Y
 	}
 	return 0
 }
 
 func (x *RelativePosition) GetZ() float64 {
-	if x != nil && x.Z != nil {
-		return *x.Z
+	if x != nil {
+		return x.xxx_hidden_Z
 	}
 	return 0
 }
 
 func (x *RelativePosition) GetAngle() float64 {
-	if x != nil && x.Angle != nil {
-		return *x.Angle
+	if x != nil {
+		return x.xxx_hidden_Angle
 	}
 	return 0
+}
+
+func (x *RelativePosition) SetX(v float64) {
+	x.xxx_hidden_X = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 4)
+}
+
+func (x *RelativePosition) SetY(v float64) {
+	x.xxx_hidden_Y = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 4)
+}
+
+func (x *RelativePosition) SetZ(v float64) {
+	x.xxx_hidden_Z = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
+}
+
+func (x *RelativePosition) SetAngle(v float64) {
+	x.xxx_hidden_Angle = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
+}
+
+func (x *RelativePosition) HasX() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *RelativePosition) HasY() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *RelativePosition) HasZ() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *RelativePosition) HasAngle() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *RelativePosition) ClearX() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_X = 0
+}
+
+func (x *RelativePosition) ClearY() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Y = 0
+}
+
+func (x *RelativePosition) ClearZ() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_Z = 0
+}
+
+func (x *RelativePosition) ClearAngle() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_Angle = 0
+}
+
+type RelativePosition_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	X     *float64
+	Y     *float64
+	Z     *float64
+	Angle *float64
+}
+
+func (b0 RelativePosition_builder) Build() *RelativePosition {
+	m0 := &RelativePosition{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.X != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 4)
+		x.xxx_hidden_X = *b.X
+	}
+	if b.Y != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 4)
+		x.xxx_hidden_Y = *b.Y
+	}
+	if b.Z != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
+		x.xxx_hidden_Z = *b.Z
+	}
+	if b.Angle != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
+		x.xxx_hidden_Angle = *b.Angle
+	}
+	return m0
 }
 
 var File_steeleagle_protocol_v1_common_proto protoreflect.FileDescriptor
@@ -346,18 +711,6 @@ const file_steeleagle_protocol_v1_common_proto_rawDesc = "" +
 	"\x02_zB\b\n" +
 	"\x06_angleB\xf5\x01\n" +
 	"\x1acom.steeleagle_protocol.v1B\vCommonProtoP\x01ZUgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1;steeleagle_protocolv1\xa2\x02\x03SXX\xaa\x02\x15SteeleagleProtocol.V1\xca\x02\x15SteeleagleProtocol\\V1\xe2\x02!SteeleagleProtocol\\V1\\GPBMetadata\xea\x02\x16SteeleagleProtocol::V1b\x06proto3"
-
-var (
-	file_steeleagle_protocol_v1_common_proto_rawDescOnce sync.Once
-	file_steeleagle_protocol_v1_common_proto_rawDescData []byte
-)
-
-func file_steeleagle_protocol_v1_common_proto_rawDescGZIP() []byte {
-	file_steeleagle_protocol_v1_common_proto_rawDescOnce.Do(func() {
-		file_steeleagle_protocol_v1_common_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_common_proto_rawDesc), len(file_steeleagle_protocol_v1_common_proto_rawDesc)))
-	})
-	return file_steeleagle_protocol_v1_common_proto_rawDescData
-}
 
 var file_steeleagle_protocol_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_steeleagle_protocol_v1_common_proto_goTypes = []any{

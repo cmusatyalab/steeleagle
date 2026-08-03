@@ -15,7 +15,6 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
-	sync "sync"
 	unsafe "unsafe"
 )
 
@@ -70,11 +69,6 @@ func (x ReturnToHomeEndBehavior) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use ReturnToHomeEndBehavior.Descriptor instead.
-func (ReturnToHomeEndBehavior) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{0}
-}
-
 // Altitude mode switch.
 type AltitudeMode int32
 
@@ -118,11 +112,6 @@ func (AltitudeMode) Type() protoreflect.EnumType {
 
 func (x AltitudeMode) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use AltitudeMode.Descriptor instead.
-func (AltitudeMode) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{1}
 }
 
 // Heading mode switch.
@@ -170,11 +159,6 @@ func (x HeadingMode) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use HeadingMode.Descriptor instead.
-func (HeadingMode) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{2}
-}
-
 // Reference frame mode switch.
 type ReferenceFrame int32
 
@@ -218,11 +202,6 @@ func (ReferenceFrame) Type() protoreflect.EnumType {
 
 func (x ReferenceFrame) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use ReferenceFrame.Descriptor instead.
-func (ReferenceFrame) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{3}
 }
 
 // Pose mode switch.
@@ -273,17 +252,11 @@ func (x PoseMode) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use PoseMode.Descriptor instead.
-func (PoseMode) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{4}
-}
-
 type TakeOffRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// take off height in relative altitude [meters]
-	TakeOffAltitude float32 `protobuf:"fixed32,1,opt,name=take_off_altitude,json=takeOffAltitude,proto3" json:"take_off_altitude,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Altitude float32                `protobuf:"fixed32,1,opt,name=altitude,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *TakeOffRequest) Reset() {
@@ -311,20 +284,34 @@ func (x *TakeOffRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use TakeOffRequest.ProtoReflect.Descriptor instead.
-func (*TakeOffRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *TakeOffRequest) GetTakeOffAltitude() float32 {
+func (x *TakeOffRequest) GetAltitude() float32 {
 	if x != nil {
-		return x.TakeOffAltitude
+		return x.xxx_hidden_Altitude
 	}
 	return 0
 }
 
+func (x *TakeOffRequest) SetAltitude(v float32) {
+	x.xxx_hidden_Altitude = v
+}
+
+type TakeOffRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// take off height in relative altitude [meters]
+	Altitude float32
+}
+
+func (b0 TakeOffRequest_builder) Build() *TakeOffRequest {
+	m0 := &TakeOffRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Altitude = b.Altitude
+	return m0
+}
+
 type TakeOffResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -354,13 +341,20 @@ func (x *TakeOffResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use TakeOffResponse.ProtoReflect.Descriptor instead.
-func (*TakeOffResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{1}
+type TakeOffResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 TakeOffResponse_builder) Build() *TakeOffResponse {
+	m0 := &TakeOffResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
 }
 
 type LandRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -390,13 +384,20 @@ func (x *LandRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use LandRequest.ProtoReflect.Descriptor instead.
-func (*LandRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{2}
+type LandRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 LandRequest_builder) Build() *LandRequest {
+	m0 := &LandRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
 }
 
 type LandResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -426,13 +427,20 @@ func (x *LandResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use LandResponse.ProtoReflect.Descriptor instead.
-func (*LandResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{3}
+type LandResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 LandResponse_builder) Build() *LandResponse {
+	m0 := &LandResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
 }
 
 type HoldRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -462,13 +470,20 @@ func (x *HoldRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use HoldRequest.ProtoReflect.Descriptor instead.
-func (*HoldRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{4}
+type HoldRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 HoldRequest_builder) Build() *HoldRequest {
+	m0 := &HoldRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
 }
 
 type HoldResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -498,13 +513,20 @@ func (x *HoldResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use HoldResponse.ProtoReflect.Descriptor instead.
-func (*HoldResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{5}
+type HoldResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 HoldResponse_builder) Build() *HoldResponse {
+	m0 := &HoldResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
 }
 
 type KillRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -534,13 +556,20 @@ func (x *KillRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use KillRequest.ProtoReflect.Descriptor instead.
-func (*KillRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{6}
+type KillRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 KillRequest_builder) Build() *KillRequest {
+	m0 := &KillRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
 }
 
 type KillResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -570,16 +599,23 @@ func (x *KillResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use KillResponse.ProtoReflect.Descriptor instead.
-func (*KillResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{7}
+type KillResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 KillResponse_builder) Build() *KillResponse {
+	m0 := &KillResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
 }
 
 type SetHomeRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	NewHome       *v1.GlobalPosition     `protobuf:"bytes,1,opt,name=new_home,json=newHome,proto3" json:"new_home,omitempty"` // new home location
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_NewHome *v1.GlobalPosition     `protobuf:"bytes,1,opt,name=new_home,json=newHome,proto3"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *SetHomeRequest) Reset() {
@@ -607,20 +643,44 @@ func (x *SetHomeRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SetHomeRequest.ProtoReflect.Descriptor instead.
-func (*SetHomeRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{8}
-}
-
 func (x *SetHomeRequest) GetNewHome() *v1.GlobalPosition {
 	if x != nil {
-		return x.NewHome
+		return x.xxx_hidden_NewHome
 	}
 	return nil
 }
 
+func (x *SetHomeRequest) SetNewHome(v *v1.GlobalPosition) {
+	x.xxx_hidden_NewHome = v
+}
+
+func (x *SetHomeRequest) HasNewHome() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_NewHome != nil
+}
+
+func (x *SetHomeRequest) ClearNewHome() {
+	x.xxx_hidden_NewHome = nil
+}
+
+type SetHomeRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	NewHome *v1.GlobalPosition
+}
+
+func (b0 SetHomeRequest_builder) Build() *SetHomeRequest {
+	m0 := &SetHomeRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_NewHome = b.NewHome
+	return m0
+}
+
 type SetHomeResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -650,21 +710,25 @@ func (x *SetHomeResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SetHomeResponse.ProtoReflect.Descriptor instead.
-func (*SetHomeResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{9}
+type SetHomeResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 SetHomeResponse_builder) Build() *SetHomeResponse {
+	m0 := &SetHomeResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
 }
 
 type ReturnToHomeRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// what the vehicle should do after returning home
-	EndBehavior ReturnToHomeEndBehavior `protobuf:"varint,1,opt,name=end_behavior,json=endBehavior,proto3,enum=steeleagle_protocol.v1.services.driver.control.ReturnToHomeEndBehavior" json:"end_behavior,omitempty"`
-	// minimum altitude that the vehicle should move at while reurning home
-	MinReturnAltitude uint32 `protobuf:"varint,2,opt,name=min_return_altitude,json=minReturnAltitude,proto3" json:"min_return_altitude,omitempty"`
-	// altitude that the vehicle should hover AGL (above ground level), for hover end behavior
-	FinalAltitude uint32 `protobuf:"varint,3,opt,name=final_altitude,json=finalAltitude,proto3" json:"final_altitude,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                        protoimpl.MessageState  `protogen:"opaque.v1"`
+	xxx_hidden_EndBehavior       ReturnToHomeEndBehavior `protobuf:"varint,1,opt,name=end_behavior,json=endBehavior,proto3,enum=steeleagle_protocol.v1.services.driver.control.ReturnToHomeEndBehavior"`
+	xxx_hidden_MinReturnAltitude uint32                  `protobuf:"varint,2,opt,name=min_return_altitude,json=minReturnAltitude,proto3"`
+	xxx_hidden_FinalAltitude     uint32                  `protobuf:"varint,3,opt,name=final_altitude,json=finalAltitude,proto3"`
+	unknownFields                protoimpl.UnknownFields
+	sizeCache                    protoimpl.SizeCache
 }
 
 func (x *ReturnToHomeRequest) Reset() {
@@ -692,34 +756,62 @@ func (x *ReturnToHomeRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ReturnToHomeRequest.ProtoReflect.Descriptor instead.
-func (*ReturnToHomeRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{10}
-}
-
 func (x *ReturnToHomeRequest) GetEndBehavior() ReturnToHomeEndBehavior {
 	if x != nil {
-		return x.EndBehavior
+		return x.xxx_hidden_EndBehavior
 	}
 	return ReturnToHomeEndBehavior_RETURN_TO_HOME_END_BEHAVIOR_UNSPECIFIED
 }
 
 func (x *ReturnToHomeRequest) GetMinReturnAltitude() uint32 {
 	if x != nil {
-		return x.MinReturnAltitude
+		return x.xxx_hidden_MinReturnAltitude
 	}
 	return 0
 }
 
 func (x *ReturnToHomeRequest) GetFinalAltitude() uint32 {
 	if x != nil {
-		return x.FinalAltitude
+		return x.xxx_hidden_FinalAltitude
 	}
 	return 0
 }
 
+func (x *ReturnToHomeRequest) SetEndBehavior(v ReturnToHomeEndBehavior) {
+	x.xxx_hidden_EndBehavior = v
+}
+
+func (x *ReturnToHomeRequest) SetMinReturnAltitude(v uint32) {
+	x.xxx_hidden_MinReturnAltitude = v
+}
+
+func (x *ReturnToHomeRequest) SetFinalAltitude(v uint32) {
+	x.xxx_hidden_FinalAltitude = v
+}
+
+type ReturnToHomeRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// what the vehicle should do after returning home
+	EndBehavior ReturnToHomeEndBehavior
+	// minimum altitude that the vehicle should move at while reurning home
+	MinReturnAltitude uint32
+	// altitude that the vehicle should hover AGL (above ground level), for hover end behavior
+	FinalAltitude uint32
+}
+
+func (b0 ReturnToHomeRequest_builder) Build() *ReturnToHomeRequest {
+	m0 := &ReturnToHomeRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_EndBehavior = b.EndBehavior
+	x.xxx_hidden_MinReturnAltitude = b.MinReturnAltitude
+	x.xxx_hidden_FinalAltitude = b.FinalAltitude
+	return m0
+}
+
 type ReturnToHomeResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -749,24 +841,29 @@ func (x *ReturnToHomeResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ReturnToHomeResponse.ProtoReflect.Descriptor instead.
-func (*ReturnToHomeResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{11}
+type ReturnToHomeResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 ReturnToHomeResponse_builder) Build() *ReturnToHomeResponse {
+	m0 := &ReturnToHomeResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
 }
 
 type GoToGlobalPositionRequest struct {
-	state    protoimpl.MessageState `protogen:"open.v1"`
-	Position *v1.GlobalPosition     `protobuf:"bytes,1,opt,name=position,proto3" json:"position,omitempty"` // target global position
-	// determines how the vehicle will orient during transit (default: `TO_TARGET`)
-	HeadingMode *HeadingMode `protobuf:"varint,2,opt,name=heading_mode,json=headingMode,proto3,enum=steeleagle_protocol.v1.services.driver.control.HeadingMode,oneof" json:"heading_mode,omitempty"`
-	// determines how the vehicle will interpret altitude (default: `ABSOLUTE`)
-	AltitudeMode *AltitudeMode `protobuf:"varint,3,opt,name=altitude_mode,json=altitudeMode,proto3,enum=steeleagle_protocol.v1.services.driver.control.AltitudeMode,oneof" json:"altitude_mode,omitempty"`
-	// speed during transit
-	Speed *float32 `protobuf:"fixed32,4,opt,name=speed,proto3,oneof" json:"speed,omitempty"`
-	// angular speed during transit
-	AngularSpeed  *float32 `protobuf:"fixed32,5,opt,name=angular_speed,json=angularSpeed,proto3,oneof" json:"angular_speed,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Position     *v1.GlobalPosition     `protobuf:"bytes,1,opt,name=position,proto3"`
+	xxx_hidden_HeadingMode  HeadingMode            `protobuf:"varint,2,opt,name=heading_mode,json=headingMode,proto3,enum=steeleagle_protocol.v1.services.driver.control.HeadingMode,oneof"`
+	xxx_hidden_AltitudeMode AltitudeMode           `protobuf:"varint,3,opt,name=altitude_mode,json=altitudeMode,proto3,enum=steeleagle_protocol.v1.services.driver.control.AltitudeMode,oneof"`
+	xxx_hidden_Speed        float32                `protobuf:"fixed32,4,opt,name=speed,proto3,oneof"`
+	xxx_hidden_AngularSpeed float32                `protobuf:"fixed32,5,opt,name=angular_speed,json=angularSpeed,proto3,oneof"`
+	XXX_raceDetectHookData  protoimpl.RaceDetectHookData
+	XXX_presence            [1]uint32
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *GoToGlobalPositionRequest) Reset() {
@@ -794,48 +891,168 @@ func (x *GoToGlobalPositionRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GoToGlobalPositionRequest.ProtoReflect.Descriptor instead.
-func (*GoToGlobalPositionRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{12}
-}
-
 func (x *GoToGlobalPositionRequest) GetPosition() *v1.GlobalPosition {
 	if x != nil {
-		return x.Position
+		return x.xxx_hidden_Position
 	}
 	return nil
 }
 
 func (x *GoToGlobalPositionRequest) GetHeadingMode() HeadingMode {
-	if x != nil && x.HeadingMode != nil {
-		return *x.HeadingMode
+	if x != nil {
+		if protoimpl.X.Present(&(x.XXX_presence[0]), 1) {
+			return x.xxx_hidden_HeadingMode
+		}
 	}
 	return HeadingMode_HEADING_MODE_UNSPECIFIED
 }
 
 func (x *GoToGlobalPositionRequest) GetAltitudeMode() AltitudeMode {
-	if x != nil && x.AltitudeMode != nil {
-		return *x.AltitudeMode
+	if x != nil {
+		if protoimpl.X.Present(&(x.XXX_presence[0]), 2) {
+			return x.xxx_hidden_AltitudeMode
+		}
 	}
 	return AltitudeMode_ALTITUDE_MODE_UNSPECIFIED
 }
 
 func (x *GoToGlobalPositionRequest) GetSpeed() float32 {
-	if x != nil && x.Speed != nil {
-		return *x.Speed
+	if x != nil {
+		return x.xxx_hidden_Speed
 	}
 	return 0
 }
 
 func (x *GoToGlobalPositionRequest) GetAngularSpeed() float32 {
-	if x != nil && x.AngularSpeed != nil {
-		return *x.AngularSpeed
+	if x != nil {
+		return x.xxx_hidden_AngularSpeed
 	}
 	return 0
 }
 
+func (x *GoToGlobalPositionRequest) SetPosition(v *v1.GlobalPosition) {
+	x.xxx_hidden_Position = v
+}
+
+func (x *GoToGlobalPositionRequest) SetHeadingMode(v HeadingMode) {
+	x.xxx_hidden_HeadingMode = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 5)
+}
+
+func (x *GoToGlobalPositionRequest) SetAltitudeMode(v AltitudeMode) {
+	x.xxx_hidden_AltitudeMode = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 5)
+}
+
+func (x *GoToGlobalPositionRequest) SetSpeed(v float32) {
+	x.xxx_hidden_Speed = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 5)
+}
+
+func (x *GoToGlobalPositionRequest) SetAngularSpeed(v float32) {
+	x.xxx_hidden_AngularSpeed = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 5)
+}
+
+func (x *GoToGlobalPositionRequest) HasPosition() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Position != nil
+}
+
+func (x *GoToGlobalPositionRequest) HasHeadingMode() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *GoToGlobalPositionRequest) HasAltitudeMode() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *GoToGlobalPositionRequest) HasSpeed() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *GoToGlobalPositionRequest) HasAngularSpeed() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
+func (x *GoToGlobalPositionRequest) ClearPosition() {
+	x.xxx_hidden_Position = nil
+}
+
+func (x *GoToGlobalPositionRequest) ClearHeadingMode() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_HeadingMode = HeadingMode_HEADING_MODE_UNSPECIFIED
+}
+
+func (x *GoToGlobalPositionRequest) ClearAltitudeMode() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_AltitudeMode = AltitudeMode_ALTITUDE_MODE_UNSPECIFIED
+}
+
+func (x *GoToGlobalPositionRequest) ClearSpeed() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_Speed = 0
+}
+
+func (x *GoToGlobalPositionRequest) ClearAngularSpeed() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_AngularSpeed = 0
+}
+
+type GoToGlobalPositionRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Position *v1.GlobalPosition
+	// determines how the vehicle will orient during transit (default: `TO_TARGET`)
+	HeadingMode *HeadingMode
+	// determines how the vehicle will interpret altitude (default: `ABSOLUTE`)
+	AltitudeMode *AltitudeMode
+	// speed during transit
+	Speed *float32
+	// angular speed during transit
+	AngularSpeed *float32
+}
+
+func (b0 GoToGlobalPositionRequest_builder) Build() *GoToGlobalPositionRequest {
+	m0 := &GoToGlobalPositionRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Position = b.Position
+	if b.HeadingMode != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 5)
+		x.xxx_hidden_HeadingMode = *b.HeadingMode
+	}
+	if b.AltitudeMode != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 5)
+		x.xxx_hidden_AltitudeMode = *b.AltitudeMode
+	}
+	if b.Speed != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 5)
+		x.xxx_hidden_Speed = *b.Speed
+	}
+	if b.AngularSpeed != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 5)
+		x.xxx_hidden_AngularSpeed = *b.AngularSpeed
+	}
+	return m0
+}
+
 type GoToGlobalPositionResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -865,23 +1082,28 @@ func (x *GoToGlobalPositionResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GoToGlobalPositionResponse.ProtoReflect.Descriptor instead.
-func (*GoToGlobalPositionResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{13}
+type GoToGlobalPositionResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 GoToGlobalPositionResponse_builder) Build() *GoToGlobalPositionResponse {
+	m0 := &GoToGlobalPositionResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
 }
 
 type GoToRelativePositionRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// target relative position
-	Position *v1.RelativePosition `protobuf:"bytes,1,opt,name=position,proto3" json:"position,omitempty"`
-	// speed during transit
-	Speed *float32 `protobuf:"fixed32,2,opt,name=speed,proto3,oneof" json:"speed,omitempty"`
-	// angular speed during transit
-	AngularSpeed *float32 `protobuf:"fixed32,3,opt,name=angular_speed,json=angularSpeed,proto3,oneof" json:"angular_speed,omitempty"`
-	// frame of reference
-	Frame         *ReferenceFrame `protobuf:"varint,4,opt,name=frame,proto3,enum=steeleagle_protocol.v1.services.driver.control.ReferenceFrame,oneof" json:"frame,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Position     *v1.RelativePosition   `protobuf:"bytes,1,opt,name=position,proto3"`
+	xxx_hidden_Speed        float32                `protobuf:"fixed32,2,opt,name=speed,proto3,oneof"`
+	xxx_hidden_AngularSpeed float32                `protobuf:"fixed32,3,opt,name=angular_speed,json=angularSpeed,proto3,oneof"`
+	xxx_hidden_Frame        ReferenceFrame         `protobuf:"varint,4,opt,name=frame,proto3,enum=steeleagle_protocol.v1.services.driver.control.ReferenceFrame,oneof"`
+	XXX_raceDetectHookData  protoimpl.RaceDetectHookData
+	XXX_presence            [1]uint32
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *GoToRelativePositionRequest) Reset() {
@@ -909,41 +1131,137 @@ func (x *GoToRelativePositionRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GoToRelativePositionRequest.ProtoReflect.Descriptor instead.
-func (*GoToRelativePositionRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{14}
-}
-
 func (x *GoToRelativePositionRequest) GetPosition() *v1.RelativePosition {
 	if x != nil {
-		return x.Position
+		return x.xxx_hidden_Position
 	}
 	return nil
 }
 
 func (x *GoToRelativePositionRequest) GetSpeed() float32 {
-	if x != nil && x.Speed != nil {
-		return *x.Speed
+	if x != nil {
+		return x.xxx_hidden_Speed
 	}
 	return 0
 }
 
 func (x *GoToRelativePositionRequest) GetAngularSpeed() float32 {
-	if x != nil && x.AngularSpeed != nil {
-		return *x.AngularSpeed
+	if x != nil {
+		return x.xxx_hidden_AngularSpeed
 	}
 	return 0
 }
 
 func (x *GoToRelativePositionRequest) GetFrame() ReferenceFrame {
-	if x != nil && x.Frame != nil {
-		return *x.Frame
+	if x != nil {
+		if protoimpl.X.Present(&(x.XXX_presence[0]), 3) {
+			return x.xxx_hidden_Frame
+		}
 	}
 	return ReferenceFrame_REFERENCE_FRAME_UNSPECIFIED
 }
 
+func (x *GoToRelativePositionRequest) SetPosition(v *v1.RelativePosition) {
+	x.xxx_hidden_Position = v
+}
+
+func (x *GoToRelativePositionRequest) SetSpeed(v float32) {
+	x.xxx_hidden_Speed = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 4)
+}
+
+func (x *GoToRelativePositionRequest) SetAngularSpeed(v float32) {
+	x.xxx_hidden_AngularSpeed = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
+}
+
+func (x *GoToRelativePositionRequest) SetFrame(v ReferenceFrame) {
+	x.xxx_hidden_Frame = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
+}
+
+func (x *GoToRelativePositionRequest) HasPosition() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Position != nil
+}
+
+func (x *GoToRelativePositionRequest) HasSpeed() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *GoToRelativePositionRequest) HasAngularSpeed() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *GoToRelativePositionRequest) HasFrame() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *GoToRelativePositionRequest) ClearPosition() {
+	x.xxx_hidden_Position = nil
+}
+
+func (x *GoToRelativePositionRequest) ClearSpeed() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Speed = 0
+}
+
+func (x *GoToRelativePositionRequest) ClearAngularSpeed() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_AngularSpeed = 0
+}
+
+func (x *GoToRelativePositionRequest) ClearFrame() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_Frame = ReferenceFrame_REFERENCE_FRAME_UNSPECIFIED
+}
+
+type GoToRelativePositionRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// target relative position
+	Position *v1.RelativePosition
+	// speed during transit
+	Speed *float32
+	// angular speed during transit
+	AngularSpeed *float32
+	// frame of reference
+	Frame *ReferenceFrame
+}
+
+func (b0 GoToRelativePositionRequest_builder) Build() *GoToRelativePositionRequest {
+	m0 := &GoToRelativePositionRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Position = b.Position
+	if b.Speed != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 4)
+		x.xxx_hidden_Speed = *b.Speed
+	}
+	if b.AngularSpeed != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
+		x.xxx_hidden_AngularSpeed = *b.AngularSpeed
+	}
+	if b.Frame != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
+		x.xxx_hidden_Frame = *b.Frame
+	}
+	return m0
+}
+
 type GoToRelativePositionResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -973,19 +1291,26 @@ func (x *GoToRelativePositionResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GoToRelativePositionResponse.ProtoReflect.Descriptor instead.
-func (*GoToRelativePositionResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{15}
+type GoToRelativePositionResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 GoToRelativePositionResponse_builder) Build() *GoToRelativePositionResponse {
+	m0 := &GoToRelativePositionResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
 }
 
 type SetVelocityRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// target velocity
-	Velocity *v1.Velocity `protobuf:"bytes,1,opt,name=velocity,proto3" json:"velocity,omitempty"`
-	// frame of reference
-	Frame         *ReferenceFrame `protobuf:"varint,2,opt,name=frame,proto3,enum=steeleagle_protocol.v1.services.driver.control.ReferenceFrame,oneof" json:"frame,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Velocity    *v1.Velocity           `protobuf:"bytes,1,opt,name=velocity,proto3"`
+	xxx_hidden_Frame       ReferenceFrame         `protobuf:"varint,2,opt,name=frame,proto3,enum=steeleagle_protocol.v1.services.driver.control.ReferenceFrame,oneof"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *SetVelocityRequest) Reset() {
@@ -1013,27 +1338,77 @@ func (x *SetVelocityRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SetVelocityRequest.ProtoReflect.Descriptor instead.
-func (*SetVelocityRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{16}
-}
-
 func (x *SetVelocityRequest) GetVelocity() *v1.Velocity {
 	if x != nil {
-		return x.Velocity
+		return x.xxx_hidden_Velocity
 	}
 	return nil
 }
 
 func (x *SetVelocityRequest) GetFrame() ReferenceFrame {
-	if x != nil && x.Frame != nil {
-		return *x.Frame
+	if x != nil {
+		if protoimpl.X.Present(&(x.XXX_presence[0]), 1) {
+			return x.xxx_hidden_Frame
+		}
 	}
 	return ReferenceFrame_REFERENCE_FRAME_UNSPECIFIED
 }
 
+func (x *SetVelocityRequest) SetVelocity(v *v1.Velocity) {
+	x.xxx_hidden_Velocity = v
+}
+
+func (x *SetVelocityRequest) SetFrame(v ReferenceFrame) {
+	x.xxx_hidden_Frame = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 2)
+}
+
+func (x *SetVelocityRequest) HasVelocity() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Velocity != nil
+}
+
+func (x *SetVelocityRequest) HasFrame() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *SetVelocityRequest) ClearVelocity() {
+	x.xxx_hidden_Velocity = nil
+}
+
+func (x *SetVelocityRequest) ClearFrame() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Frame = ReferenceFrame_REFERENCE_FRAME_UNSPECIFIED
+}
+
+type SetVelocityRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// target velocity
+	Velocity *v1.Velocity
+	// frame of reference
+	Frame *ReferenceFrame
+}
+
+func (b0 SetVelocityRequest_builder) Build() *SetVelocityRequest {
+	m0 := &SetVelocityRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Velocity = b.Velocity
+	if b.Frame != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 2)
+		x.xxx_hidden_Frame = *b.Frame
+	}
+	return m0
+}
+
 type SetVelocityResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1063,18 +1438,27 @@ func (x *SetVelocityResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SetVelocityResponse.ProtoReflect.Descriptor instead.
-func (*SetVelocityResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{17}
+type SetVelocityResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 SetVelocityResponse_builder) Build() *SetVelocityResponse {
+	m0 := &SetVelocityResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
 }
 
 type SetGimbalPoseRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	GimbalId      uint32                 `protobuf:"varint,1,opt,name=gimbal_id,json=gimbalId,proto3" json:"gimbal_id,omitempty"`                                                                    // ID of the target gimbal
-	Pose          *v1.Pose               `protobuf:"bytes,2,opt,name=pose,proto3" json:"pose,omitempty"`                                                                                             // target pose
-	PoseMode      *PoseMode              `protobuf:"varint,3,opt,name=pose_mode,json=poseMode,proto3,enum=steeleagle_protocol.v1.services.driver.control.PoseMode,oneof" json:"pose_mode,omitempty"` // specifies how to interpret the target pose
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_GimbalId    uint32                 `protobuf:"varint,1,opt,name=gimbal_id,json=gimbalId,proto3"`
+	xxx_hidden_Pose        *v1.Pose               `protobuf:"bytes,2,opt,name=pose,proto3"`
+	xxx_hidden_PoseMode    PoseMode               `protobuf:"varint,3,opt,name=pose_mode,json=poseMode,proto3,enum=steeleagle_protocol.v1.services.driver.control.PoseMode,oneof"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *SetGimbalPoseRequest) Reset() {
@@ -1102,34 +1486,88 @@ func (x *SetGimbalPoseRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SetGimbalPoseRequest.ProtoReflect.Descriptor instead.
-func (*SetGimbalPoseRequest) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{18}
-}
-
 func (x *SetGimbalPoseRequest) GetGimbalId() uint32 {
 	if x != nil {
-		return x.GimbalId
+		return x.xxx_hidden_GimbalId
 	}
 	return 0
 }
 
 func (x *SetGimbalPoseRequest) GetPose() *v1.Pose {
 	if x != nil {
-		return x.Pose
+		return x.xxx_hidden_Pose
 	}
 	return nil
 }
 
 func (x *SetGimbalPoseRequest) GetPoseMode() PoseMode {
-	if x != nil && x.PoseMode != nil {
-		return *x.PoseMode
+	if x != nil {
+		if protoimpl.X.Present(&(x.XXX_presence[0]), 2) {
+			return x.xxx_hidden_PoseMode
+		}
 	}
 	return PoseMode_POSE_MODE_UNSPECIFIED
 }
 
+func (x *SetGimbalPoseRequest) SetGimbalId(v uint32) {
+	x.xxx_hidden_GimbalId = v
+}
+
+func (x *SetGimbalPoseRequest) SetPose(v *v1.Pose) {
+	x.xxx_hidden_Pose = v
+}
+
+func (x *SetGimbalPoseRequest) SetPoseMode(v PoseMode) {
+	x.xxx_hidden_PoseMode = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
+}
+
+func (x *SetGimbalPoseRequest) HasPose() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Pose != nil
+}
+
+func (x *SetGimbalPoseRequest) HasPoseMode() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *SetGimbalPoseRequest) ClearPose() {
+	x.xxx_hidden_Pose = nil
+}
+
+func (x *SetGimbalPoseRequest) ClearPoseMode() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_PoseMode = PoseMode_POSE_MODE_UNSPECIFIED
+}
+
+type SetGimbalPoseRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	GimbalId uint32
+	Pose     *v1.Pose
+	PoseMode *PoseMode
+}
+
+func (b0 SetGimbalPoseRequest_builder) Build() *SetGimbalPoseRequest {
+	m0 := &SetGimbalPoseRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_GimbalId = b.GimbalId
+	x.xxx_hidden_Pose = b.Pose
+	if b.PoseMode != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 3)
+		x.xxx_hidden_PoseMode = *b.PoseMode
+	}
+	return m0
+}
+
 type SetGimbalPoseResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1159,18 +1597,25 @@ func (x *SetGimbalPoseResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SetGimbalPoseResponse.ProtoReflect.Descriptor instead.
-func (*SetGimbalPoseResponse) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP(), []int{19}
+type SetGimbalPoseResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 SetGimbalPoseResponse_builder) Build() *SetGimbalPoseResponse {
+	m0 := &SetGimbalPoseResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
 }
 
 var File_steeleagle_protocol_v1_services_driver_control_proto protoreflect.FileDescriptor
 
 const file_steeleagle_protocol_v1_services_driver_control_proto_rawDesc = "" +
 	"\n" +
-	"4steeleagle_protocol/v1/services/driver/control.proto\x12.steeleagle_protocol.v1.services.driver.control\x1a#steeleagle_protocol/v1/common.proto\"<\n" +
-	"\x0eTakeOffRequest\x12*\n" +
-	"\x11take_off_altitude\x18\x01 \x01(\x02R\x0ftakeOffAltitude\"\x11\n" +
+	"4steeleagle_protocol/v1/services/driver/control.proto\x12.steeleagle_protocol.v1.services.driver.control\x1a#steeleagle_protocol/v1/common.proto\",\n" +
+	"\x0eTakeOffRequest\x12\x1a\n" +
+	"\baltitude\x18\x01 \x01(\x02R\baltitude\"\x11\n" +
 	"\x0fTakeOffResponse\"\r\n" +
 	"\vLandRequest\"\x0e\n" +
 	"\fLandResponse\"\r\n" +
@@ -1251,18 +1696,6 @@ const file_steeleagle_protocol_v1_services_driver_control_proto_rawDesc = "" +
 	"\vSetVelocity\x12B.steeleagle_protocol.v1.services.driver.control.SetVelocityRequest\x1aC.steeleagle_protocol.v1.services.driver.control.SetVelocityResponse\"\x00\x12\x9e\x01\n" +
 	"\rSetGimbalPose\x12D.steeleagle_protocol.v1.services.driver.control.SetGimbalPoseRequest\x1aE.steeleagle_protocol.v1.services.driver.control.SetGimbalPoseResponse\"\x00B\xed\x02\n" +
 	"2com.steeleagle_protocol.v1.services.driver.controlB\fControlProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\xa2\x02\x05SVSDC\xaa\x02-SteeleagleProtocol.V1.Services.Driver.Control\xca\x02-SteeleagleProtocol\\V1\\Services\\Driver\\Control\xe2\x029SteeleagleProtocol\\V1\\Services\\Driver\\Control\\GPBMetadata\xea\x021SteeleagleProtocol::V1::Services::Driver::Controlb\x06proto3"
-
-var (
-	file_steeleagle_protocol_v1_services_driver_control_proto_rawDescOnce sync.Once
-	file_steeleagle_protocol_v1_services_driver_control_proto_rawDescData []byte
-)
-
-func file_steeleagle_protocol_v1_services_driver_control_proto_rawDescGZIP() []byte {
-	file_steeleagle_protocol_v1_services_driver_control_proto_rawDescOnce.Do(func() {
-		file_steeleagle_protocol_v1_services_driver_control_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_services_driver_control_proto_rawDesc), len(file_steeleagle_protocol_v1_services_driver_control_proto_rawDesc)))
-	})
-	return file_steeleagle_protocol_v1_services_driver_control_proto_rawDescData
-}
 
 var file_steeleagle_protocol_v1_services_driver_control_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
 var file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
