@@ -91,7 +91,7 @@ class Vehicle:
         async for msg in run_streaming(self.control.Kill, req):
             yield msg
 
-    async def set_home(self, location: Location) -> AsyncIterator[Response]:
+    async def set_home(self, location: Location) -> Response:
         req = control_proto.SetHomeRequest()
         ParseDict(location.model_dump(), req.location)
         return await run_unary(self.control.SetHome, req)
