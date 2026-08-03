@@ -56,8 +56,8 @@ export function mockAssistantReply(userText) {
     if (wantsMission) {
         return {
             content:
-                'Here is a draft mission based on your request. Replies are still a ' +
-                'local mock, but you can already apply this draft to load it into ' +
+                'Here is a draft mission based on your request. ' +
+                'You can apply this draft to load it into ' +
                 'the FSM Builder canvas.',
             artifacts: [
                 {
