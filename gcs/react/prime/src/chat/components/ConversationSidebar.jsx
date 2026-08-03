@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
+import { IconField } from 'primereact/iconfield';
+import { InputIcon } from 'primereact/inputicon';
 import { Dialog } from 'primereact/dialog';
 import { confirmDialog, ConfirmDialog } from 'primereact/confirmdialog';
 import { classNames } from 'primereact/utils';
@@ -65,15 +67,15 @@ function ConversationSidebar({
                     size="small"
                     onClick={onNew}
                 />
-                <span className="p-input-icon-left w-full mt-2">
-                    <i className="pi pi-search" />
+                <IconField iconPosition="left" className="w-full mt-2">
+                    <InputIcon className="pi pi-search" />
                     <InputText
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         placeholder="Search conversations"
                         className="w-full p-inputtext-sm"
                     />
-                </span>
+                </IconField>
             </div>
 
             <div className="se-chat-sidebar__list">
