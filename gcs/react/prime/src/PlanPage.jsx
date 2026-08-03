@@ -19,6 +19,7 @@ import FsmPalette from './FsmPalette.jsx';
 import ConnectModal from './ConnectModal.jsx';
 import { getApiUrl } from './App.jsx';
 import { runValidation } from './validation.js';
+import ChatPage from './chat/ChatPage.jsx';
 
 const nodeTypes = { taskNode: TaskNode };
 const edgeTypes = { selfLoop: SelfLoopEdge };
@@ -372,6 +373,7 @@ function PlanPage({ vehicles, squadList, theme }) {
     const fileInputRef = useRef(null);
     const toast = useRef(null);
     const [validationIssues, setValidationIssues] = useState({});
+    const [activeTab, setActiveTab] = useState(0);
 
     // Undo / redo history
     const pastRef = useRef([]);
@@ -683,6 +685,38 @@ function PlanPage({ vehicles, squadList, theme }) {
         URL.revokeObjectURL(url);
     }
 
+    // Apply an assistant-produced artifact from the Chat tab. For a mission
+    // draft targeting the FSM builder we reuse the same loader as "Load DSL",
+    // then switch to the FSM Builder tab so the result is visible immediately.
+    // This is entirely frontend today; no backend/MCP call is involved yet.
+    function handleApplyArtifact(target, artifact) {
+        if (target !== 'fsm-builder' || !artifact?.payload) {
+            toast.current?.show({
+                severity: 'info',
+                summary: 'Nothing to apply',
+                detail: 'This message has no FSM draft attached.',
+            });
+            return;
+        }
+        const p = artifact.payload;
+        loadFromParsed({
+            nodes: (p.nodes ?? []).map(n => ({
+                instance_id: n.instance_id,
+                type_name: n.type_name,
+                params: n.params ?? {},
+            })),
+            events: p.events ?? [],
+            edges: p.edges ?? [],
+            start_id: p.start_id ?? (p.nodes?.[0]?.instance_id ?? null),
+        });
+        setActiveTab(0);
+        toast.current?.show({
+            severity: 'success',
+            summary: 'Applied to FSM Builder',
+            detail: `Loaded ${(p.nodes ?? []).length} actions into the canvas.`,
+        });
+    }
+
     const liveDsl = nodes.length > 0 ? generateDsl(nodes, edges, eventInstances, startNodeId, schema) : '# Add nodes to see DSL preview';
 
     const nodesWithWarnings = useMemo(
@@ -701,7 +735,7 @@ function PlanPage({ vehicles, squadList, theme }) {
     return (
         <>
             <Toast ref={toast} />
-            <TabView renderActiveOnly={false}>
+            <TabView activeIndex={activeTab} onTabChange={(e) => setActiveTab(e.index)} renderActiveOnly={false}>
                 <TabPanel header="FSM Builder" leftIcon="pi pi-share-alt mr-2" headerClassName="mr-2">
                     <div className="flex flex-column" style={{ height: 'calc(100vh - 180px)' }}>
                         {/* Hidden file input — outside toolbar div */}
@@ -888,6 +922,10 @@ function PlanPage({ vehicles, squadList, theme }) {
                             value={liveDsl}
                         />
                     </div>
+                </TabPanel>
+
+                <TabPanel header="Chat" leftIcon="pi pi-comments mr-2" headerClassName="mr-2">
+                    <ChatPage onApplyArtifact={handleApplyArtifact} />
                 </TabPanel>
             </TabView>
         </>
