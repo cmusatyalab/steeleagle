@@ -41,7 +41,7 @@ function MessageBubble({ message, onApply }) {
         <div className={classNames('se-chat-row', { 'se-chat-row--user': isUser })}>
             {!isUser && (
                 <Avatar
-                    icon="pi pi-android"
+                    image="/logo-color-beige.png"
                     shape="circle"
                     className="se-chat-avatar se-chat-avatar--assistant"
                 />

@@ -197,9 +197,16 @@
     flex-shrink: 0;
 }
 
+/* The SteelEagle logo is already a circular image so fill the avatar circle direclty. */
 .se-chat-avatar--assistant {
-    background: var(--primary-color);
-    color: var(--primary-color-text);
+    background: transparent;
+}
+
+.se-chat-avatar--assistant img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
 }
 
 .se-chat-avatar--user {
