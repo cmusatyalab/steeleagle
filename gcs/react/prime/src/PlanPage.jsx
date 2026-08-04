@@ -895,6 +895,10 @@ function PlanPage({ vehicles, squadList, theme }) {
                     </div>
                 </TabPanel>
 
+                <TabPanel header="Chat" leftIcon="pi pi-comments mr-2" headerClassName="mr-2">
+                    <ChatPage onApplyArtifact={handleApplyArtifact} />
+                </TabPanel>
+
                 <TabPanel header="DSL Preview" leftIcon="pi pi-code mr-2" headerClassName="mr-2">
                     <div className="flex flex-column" style={{ height: 'calc(100vh - 180px)' }}>
                         <div className="flex gap-2 align-items-center p-2" style={{ borderBottom: '1px solid #2a3a4a', flexShrink: 0 }}>
@@ -922,10 +926,6 @@ function PlanPage({ vehicles, squadList, theme }) {
                             value={liveDsl}
                         />
                     </div>
-                </TabPanel>
-
-                <TabPanel header="Chat" leftIcon="pi pi-comments mr-2" headerClassName="mr-2">
-                    <ChatPage onApplyArtifact={handleApplyArtifact} />
                 </TabPanel>
             </TabView>
         </>
