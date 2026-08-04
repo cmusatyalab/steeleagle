@@ -3,17 +3,13 @@
 # Licensed under the Apache License, Version 2.0 (the "License").
 """SwiftMap cognitive engine: forwards Gabriel telemetry.Frame (image + paired GPS)
 to a running SwiftMap mapping server over TCP.
-
-To avoid overfilling the server, frames are *distance-gated*: only one frame+GPS
-pair is forwarded per ``send_distance`` meters of drone travel (haversine on the
-GPS). The server still does its own keyframe selection on what it receives."""
+"""
 
 import logging
 import math
 import socket
 import struct
 import time
-
 import cv2
 import numpy as np
 from gabriel_protocol import gabriel_pb2
@@ -22,8 +18,8 @@ from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
 
 logger = logging.getLogger(__name__)
 
+# Helper Func for gps to meter conversion
 _EARTH_RADIUS_M = 6_371_000.0
-
 
 def _haversine_m(a, b) -> float:
     """Great-circle distance in meters between two (lat, lon, alt) points."""
@@ -35,8 +31,6 @@ def _haversine_m(a, b) -> float:
 
 # Wire: client sends [BE uint32 size][JPEG][24-byte GPS]; server replies with 3
 # float64 (status, keyframe_count, total).
-# TODO: mirror of swift_map's swiftmap/core/protocol.py; import it once swift_map
-# ships an installable lib (keep in sync until then).
 DEFAULT_PORT = 43322
 SIZE_FMT = "!I"    # image-size header
 GPS_FMT = "!3d"    # lat, lon, alt (NaN triple = no GPS)
@@ -68,8 +62,9 @@ class SwiftMapClient:
         self.connected = False
 
     def connect(self, max_retries=None):
-        """(Re)connect. max_retries=None retries forever; a finite value tries that
-        many times then returns False (fast best-effort reconnect)."""
+        """
+        Connect with retries.
+        """ 
         attempt = 0
         while max_retries is None or attempt < max_retries:
             attempt += 1
@@ -102,18 +97,27 @@ class SwiftMapClient:
     def process_frame(self, image_data, gps):
         """Forward one frame + paired GPS; return its status string. On a dead socket,
         reconnects and retries once, else drops the frame ("error")."""
-        # A decode failure is a bad frame, not a connection problem: don't retry.
+        # Try decoding to test the frame validity
         img = cv2.imdecode(np.frombuffer(image_data, np.uint8), cv2.IMREAD_COLOR)
         if img is None:
             logger.error("Failed to decode incoming image")
             return "error"
+        
+        # Encode the frame
         img_bytes = cv2.imencode(".jpg", img)[1].tobytes()
-        lat, lon, alt = gps if gps is not None else (float("nan"),) * 3
+
+        # Recv the gps
+        lat, lon, alt = 0
+        if gps is not None:
+            lat, lon, alt = gps
+        else:
+            logger.error("Failed to receive gps")
+            return "error"
+       
         payload = (struct.pack(SIZE_FMT, len(img_bytes)) + img_bytes
                    + struct.pack(GPS_FMT, lat, lon, alt))
 
-        # Send; if the socket is dead, reconnect once and resend (frames are
-        # length-prefixed, so a resend on a fresh socket is clean).
+        # Send; if the socket is dead, reconnect once and resend. 
         for attempt in range(2):
             if not self.connected and not self.connect(max_retries=1):
                 return "error"
@@ -141,13 +145,14 @@ class SwiftMapEngine(cognitive_engine.Engine):
 
     def __init__(self, args):
         self.client = SwiftMapClient(args.server, args.server_port)
-        # Best-effort only: don't block startup on the mapping server. The engine
-        # registers with Gabriel and reconnects per-frame in process_frame.
+
+        # The engine registers with Gabriel and reconnects per-frame in process_frame.
         if not self.client.connect(max_retries=1):
             logger.warning("SwiftMap server at %s:%s not reachable yet; engine is up "
                            "and will connect on the first frame.",
                            args.server, args.server_port)
-        # Forward at most one pair per this many meters of travel (0 = every frame).
+
+        # Forward at most one pair per gps lapse.
         self.send_distance = float(getattr(args, "send_distance", 5.0))
         self._last_sent_gps = None
         self.count = 0        # frames received
@@ -169,10 +174,20 @@ class SwiftMapEngine(cognitive_engine.Engine):
             return None
         return None
 
+    def _log_stats(self):
+        """Log average fps once per STATS_INTERVAL."""
+        self.count += 1
+        elapsed = time.time() - self.last_stats
+        if elapsed > self.STATS_INTERVAL:
+            fps = (self.count - self.last_count) / elapsed
+            logger.info("swiftmap engine avg fps: %.2f (received: %d, forwarded: %d)",
+                        fps, self.count, self.sent)
+            self.last_count = self.count
+            self.last_stats += elapsed
+
     def handle(self, input_frame):
         status = gabriel_pb2.Status()
 
-        # Only IMAGE frames carry a telemetry.Frame (image bytes + paired GPS).
         if input_frame.payload_type != gabriel_pb2.PayloadType.IMAGE:
             status.code = gabriel_pb2.StatusCode.WRONG_INPUT_FORMAT
             status.message = f"Ignoring non-image payload: {input_frame.payload_type}"
@@ -186,17 +201,15 @@ class SwiftMapEngine(cognitive_engine.Engine):
         frame = telemetry.Frame()
         input_frame.any_payload.Unpack(frame)
         self._log_stats()
-
         gps = self._extract_gps(frame)
 
-        # Distance gate: forward at most one pair per send_distance meters. With
-        # gating on, a frame must carry GPS (the pair is what the server maps from).
+        # Distance gate
         if self.send_distance > 0:
             if gps is None:
-                return cognitive_engine.Result(status, "skipped")  # no GPS -> can't pair
+                return cognitive_engine.Result(status, "skipped")
             if (self._last_sent_gps is not None
                     and _haversine_m(self._last_sent_gps, gps) < self.send_distance):
-                return cognitive_engine.Result(status, "skipped")  # too close -> drop
+                return cognitive_engine.Result(status, "skipped")
 
         send_status = self.client.process_frame(frame.data, gps)
         if send_status == "error":
@@ -204,18 +217,6 @@ class SwiftMapEngine(cognitive_engine.Engine):
             return cognitive_engine.Result(status, b"")
 
         self._log_stats()
-        # Only advance the reference once the pair is actually on its way.
         self._last_sent_gps = gps
         self.sent += 1
         return cognitive_engine.Result(status, send_status.encode())
-
-    def _log_stats(self):
-        """Log average fps once per STATS_INTERVAL."""
-        self.count += 1
-        elapsed = time.time() - self.last_stats
-        if elapsed > self.STATS_INTERVAL:
-            fps = (self.count - self.last_count) / elapsed
-            logger.info("swiftmap engine avg fps: %.2f (received: %d, forwarded: %d)",
-                        fps, self.count, self.sent)
-            self.last_count = self.count
-            self.last_stats += elapsed
