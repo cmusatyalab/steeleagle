@@ -14,7 +14,9 @@ import cv2
 import numpy as np
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine
+from google.protobuf.any_pb2 import Any
 from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
+from steeleagle_sdk.protocol.messages import result_pb2
 
 logger = logging.getLogger(__name__)
 
@@ -30,12 +32,15 @@ def _haversine_m(a, b) -> float:
     return 2 * _EARTH_RADIUS_M * math.asin(min(1.0, math.sqrt(h)))
 
 # Wire: client sends [BE uint32 size][JPEG][24-byte GPS]; server replies with 3
-# float64 (status, keyframe_count, total).
+# float64 (status, keyframe_count, total) followed by a big-endian uint32 length and
+# an optional trailing payload (an NFN area KML; length 0 for an ordinary ack).
 DEFAULT_PORT = 43322
 SIZE_FMT = "!I"    # image-size header
 GPS_FMT = "!3d"    # lat, lon, alt (NaN triple = no GPS)
 REPLY_FMT = "3d"   # status, keyframe_count, total_frames
 REPLY_NBYTES = struct.calcsize(REPLY_FMT)
+PAYLOAD_LEN_FMT = "!I"   # 4-byte big-endian length of the trailing reply payload
+PAYLOAD_LEN_NBYTES = struct.calcsize(PAYLOAD_LEN_FMT)
 STATUS_KEYFRAME = 1.0
 
 RETRY_INTERVAL = 5   # seconds between blocking reconnect attempts
@@ -84,55 +89,68 @@ class SwiftMapClient:
                 time.sleep(RETRY_INTERVAL)
         return False
 
-    def _recv_reply(self):
-        """Read the fixed-size status reply, or None if the peer closes early."""
+    def _recv_exact(self, n):
+        """Read exactly ``n`` bytes, or None if the peer closes early."""
         buf = b""
-        while len(buf) < REPLY_NBYTES:
-            chunk = self.sock.recv(REPLY_NBYTES - len(buf))
+        while len(buf) < n:
+            chunk = self.sock.recv(n - len(buf))
             if not chunk:
                 return None
             buf += chunk
         return buf
 
+    def _recv_reply(self):
+        """Read the status reply plus any length-prefixed trailing payload."""
+        head = self._recv_exact(REPLY_NBYTES)
+        if head is None:
+            return None
+        status, _kf, _total = struct.unpack(REPLY_FMT, head)
+        len_buf = self._recv_exact(PAYLOAD_LEN_NBYTES)
+        if len_buf is None:
+            return None
+        n = struct.unpack(PAYLOAD_LEN_FMT, len_buf)[0]
+        payload = b""
+        if n:
+            payload = self._recv_exact(n)
+            if payload is None:
+                return None
+        return status, payload
+
     def process_frame(self, image_data, gps):
-        """Forward one frame + paired GPS; return its status string. On a dead socket,
-        reconnects and retries once, else drops the frame ("error")."""
+        """Forward one frame + paired GPS"""
         # Try decoding to test the frame validity
         img = cv2.imdecode(np.frombuffer(image_data, np.uint8), cv2.IMREAD_COLOR)
         if img is None:
             logger.error("Failed to decode incoming image")
-            return "error"
-        
+            return "error", b""
+
         # Encode the frame
         img_bytes = cv2.imencode(".jpg", img)[1].tobytes()
 
-        # Recv the gps
-        lat, lon, alt = 0
-        if gps is not None:
-            lat, lon, alt = gps
-        else:
+        if gps is None:
             logger.error("Failed to receive gps")
-            return "error"
-       
+            return "error", b""
+        lat, lon, alt = gps
+
         payload = (struct.pack(SIZE_FMT, len(img_bytes)) + img_bytes
                    + struct.pack(GPS_FMT, lat, lon, alt))
 
-        # Send; if the socket is dead, reconnect once and resend. 
+        # Send; if the socket is dead, reconnect once and resend.
         for attempt in range(2):
             if not self.connected and not self.connect(max_retries=1):
-                return "error"
+                return "error", b""
             try:
                 self.sock.sendall(payload)
                 reply = self._recv_reply()
                 if reply is None:
                     raise ConnectionError("server closed the connection")
-                status, _kf, _total = struct.unpack(REPLY_FMT, reply)
-                return "keyframe" if status == STATUS_KEYFRAME else "skipped"
+                status, back = reply
+                return ("keyframe" if status == STATUS_KEYFRAME else "skipped"), back
             except OSError as e:
                 retrying = " and retrying frame" if attempt == 0 else ""
                 logger.warning("SwiftMap connection lost (%s); reconnecting%s", e, retrying)
                 self._close()
-        return "error"
+        return "error", b""
 
     def close(self):
         self._close()
@@ -185,18 +203,31 @@ class SwiftMapEngine(cognitive_engine.Engine):
             self.last_count = self.count
             self.last_stats += elapsed
 
+    def _navigation_result(self, kml_bytes):
+        """Pack the NFN area KML into a FrameResult(NavigationResult) Any for Gabriel."""
+        compute = result_pb2.ComputeResult()
+        compute.engine_name = self.ENGINE_NAME
+        compute.navigation_result.area_kml = kml_bytes.decode("utf-8", "replace")
+        frame_result = result_pb2.FrameResult()
+        frame_result.type = "swiftmap-navigation"
+        frame_result.result.append(compute)
+        frame_result.timestamp.GetCurrentTime()
+        any_payload = Any()
+        any_payload.Pack(frame_result)
+        return any_payload
+
     def handle(self, input_frame):
         status = gabriel_pb2.Status()
 
         if input_frame.payload_type != gabriel_pb2.PayloadType.IMAGE:
             status.code = gabriel_pb2.StatusCode.WRONG_INPUT_FORMAT
             status.message = f"Ignoring non-image payload: {input_frame.payload_type}"
-            return cognitive_engine.Result(status, b"")
+            return cognitive_engine.Result(status, None)
         if (input_frame.WhichOneof("payload") != "any_payload"
                 or not input_frame.any_payload.Is(telemetry.Frame.DESCRIPTOR)):
             status.code = gabriel_pb2.StatusCode.WRONG_INPUT_FORMAT
             status.message = "Expected an any_payload telemetry.Frame"
-            return cognitive_engine.Result(status, b"")
+            return cognitive_engine.Result(status, None)
 
         frame = telemetry.Frame()
         input_frame.any_payload.Unpack(frame)
@@ -206,17 +237,24 @@ class SwiftMapEngine(cognitive_engine.Engine):
         # Distance gate
         if self.send_distance > 0:
             if gps is None:
-                return cognitive_engine.Result(status, "skipped")
+                return cognitive_engine.Result(status, None)
             if (self._last_sent_gps is not None
                     and _haversine_m(self._last_sent_gps, gps) < self.send_distance):
-                return cognitive_engine.Result(status, "skipped")
+                return cognitive_engine.Result(status, None)
 
-        send_status = self.client.process_frame(frame.data, gps)
+        send_status, nfn_kml = self.client.process_frame(frame.data, gps)
         if send_status == "error":
             logger.warning("SwiftMap server unreachable; frame dropped")
-            return cognitive_engine.Result(status, b"")
+            return cognitive_engine.Result(status, None)
 
         self._log_stats()
         self._last_sent_gps = gps
         self.sent += 1
-        return cognitive_engine.Result(status, send_status.encode())
+
+        # Only publish a result when the server hands back a next-flight plan; ordinary
+        # per-frame acks carry no payload so they don't overwrite the latest plan.
+        if nfn_kml:
+            logger.info("Received NFN area KML from SwiftMap server (%d bytes); "
+                        "returning it to the Gabriel client", len(nfn_kml))
+            return cognitive_engine.Result(status, self._navigation_result(nfn_kml))
+        return cognitive_engine.Result(status, None)

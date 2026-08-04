@@ -91,6 +91,13 @@ class SLAMResult(Datatype):
 
 
 @register_data
+class NavigationResult(Datatype):
+    """Next-flight navigation result."""
+
+    area_kml: str | None = Field(default=None, description="KML polygon of the next-flight area.")
+
+
+@register_data
 class ComputeResult(Datatype):
     """Compute result from a compute server."""
 
@@ -100,6 +107,7 @@ class ComputeResult(Datatype):
     avoidance_result: AvoidanceResult | None = Field(default=None, description="Avoidance directive result.")
     slam_result: SLAMResult | None = Field(default=None, description="SLAM position estimate result.")
     generic_result: str | None = Field(default=None, description="Generic JSON result string.")
+    navigation_result: NavigationResult | None = Field(default=None, description="Next-flight navigation result.")
 
 
 @register_data
