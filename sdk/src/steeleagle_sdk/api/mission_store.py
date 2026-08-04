@@ -137,7 +137,7 @@ class MissionStore:
                     preserving_proto_field_name=True,
                     use_integers_for_enums=True,
                 )
-                if len(data) == 0:
+                if len(data) == 0 or not data.get("result"):
                     return None, None
                 return FrameResult.model_validate(data), msg.target_engine_id
         except Exception:

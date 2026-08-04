@@ -203,14 +203,18 @@ class SwiftMapEngine(cognitive_engine.Engine):
             self.last_count = self.count
             self.last_stats += elapsed
 
-    def _navigation_result(self, kml_bytes):
-        """Pack the NFN area KML into a FrameResult(NavigationResult) Any for Gabriel."""
-        compute = result_pb2.ComputeResult()
-        compute.engine_name = self.ENGINE_NAME
-        compute.navigation_result.area_kml = kml_bytes.decode("utf-8", "replace")
+    def _frame_result_any(self, nav_kml=None):
+        """Pack a FrameResult as a Gabriel Any: empty, or carrying the NFN area KML.
+
+        The mission store ignores empty (no-result) FrameResults, so ordinary
+        per-frame acks don't overwrite the latest plan; only a KML frame stores one.
+        """
         frame_result = result_pb2.FrameResult()
         frame_result.type = "swiftmap-navigation"
-        frame_result.result.append(compute)
+        if nav_kml is not None:
+            compute = frame_result.result.add()
+            compute.engine_name = self.ENGINE_NAME
+            compute.navigation_result.area_kml = nav_kml.decode("utf-8", "replace")
         frame_result.timestamp.GetCurrentTime()
         any_payload = Any()
         any_payload.Pack(frame_result)
@@ -234,16 +238,18 @@ class SwiftMapEngine(cognitive_engine.Engine):
         self._log_stats()
         gps = self._extract_gps(frame)
 
-        # Distance gate
+        # Distance gate: not forwarded, but still a handled frame (empty result).
         if self.send_distance > 0:
             if gps is None:
-                return cognitive_engine.Result(status, None)
+                return cognitive_engine.Result(status, self._frame_result_any())
             if (self._last_sent_gps is not None
                     and _haversine_m(self._last_sent_gps, gps) < self.send_distance):
-                return cognitive_engine.Result(status, None)
+                return cognitive_engine.Result(status, self._frame_result_any())
 
         send_status, nfn_kml = self.client.process_frame(frame.data, gps)
         if send_status == "error":
+            status.code = gabriel_pb2.StatusCode.ENGINE_ERROR
+            status.message = "SwiftMap server unreachable; frame dropped"
             logger.warning("SwiftMap server unreachable; frame dropped")
             return cognitive_engine.Result(status, None)
 
@@ -251,10 +257,9 @@ class SwiftMapEngine(cognitive_engine.Engine):
         self._last_sent_gps = gps
         self.sent += 1
 
-        # Only publish a result when the server hands back a next-flight plan; ordinary
-        # per-frame acks carry no payload so they don't overwrite the latest plan.
+        # A KML means the server just planned a next flight; otherwise an empty result.
         if nfn_kml:
             logger.info("Received NFN area KML from SwiftMap server (%d bytes); "
                         "returning it to the Gabriel client", len(nfn_kml))
-            return cognitive_engine.Result(status, self._navigation_result(nfn_kml))
-        return cognitive_engine.Result(status, None)
+            return cognitive_engine.Result(status, self._frame_result_any(nfn_kml))
+        return cognitive_engine.Result(status, self._frame_result_any())
