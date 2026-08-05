@@ -66,11 +66,11 @@ func TestGetResultUnavailable(t *testing.T) {
 	svc := newTestDataService(t)
 	client := newTestDataServiceClient(t, svc)
 
-	resp, err := client.GetResult(t.Context(), &vehiclepb.GetResultRequest{Name: "producer"})
+	resp, err := client.GetResult(t.Context(), vehiclepb.GetResultRequest_builder{Name: "producer"}.Build())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if resp.Result != nil {
+	if resp.GetResult() != nil {
 		t.Fatal("expected result to be nil")
 	}
 }
@@ -78,15 +78,15 @@ func TestGetResultUnavailable(t *testing.T) {
 func TestGetResult(t *testing.T) {
 	svc := newTestDataService(t)
 	client := newTestDataServiceClient(t, svc)
-	res := &resultpb.ComputeResult{Timestamp: timestamppb.Now()}
+	res := resultpb.ComputeResult_builder{Timestamp: timestamppb.Now()}.Build()
 	svc.store.addResult("producer", res)
 
-	resp, err := client.GetResult(t.Context(), &vehiclepb.GetResultRequest{Name: "producer"})
+	resp, err := client.GetResult(t.Context(), vehiclepb.GetResultRequest_builder{Name: "producer"}.Build())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !proto.Equal(resp.Result, res) {
-		t.Fatalf("expected %v, got %v", res, resp.Result)
+	if !proto.Equal(resp.GetResult(), res) {
+		t.Fatalf("expected %v, got %v", res, resp.GetResult())
 	}
 }
 
@@ -98,7 +98,7 @@ func TestGetTelemetryUnavailable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if resp.Telemetry != nil {
+	if resp.GetTelemetry() != nil {
 		t.Fatal("expected result to be nil")
 	}
 }
@@ -106,15 +106,15 @@ func TestGetTelemetryUnavailable(t *testing.T) {
 func TestGetTelemetry(t *testing.T) {
 	svc := newTestDataService(t)
 	client := newTestDataServiceClient(t, svc)
-	tel := &telemetrypb.Telemetry{Timestamp: timestamppb.Now()}
+	tel := telemetrypb.Telemetry_builder{Timestamp: timestamppb.Now()}.Build()
 	svc.store.addTelemetry(tel)
 
 	resp, err := client.GetTelemetry(t.Context(), &vehiclepb.GetTelemetryRequest{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !proto.Equal(resp.Telemetry, tel) {
-		t.Fatalf("expected %v, got %v", tel, resp.Telemetry)
+	if !proto.Equal(resp.GetTelemetry(), tel) {
+		t.Fatalf("expected %v, got %v", tel, resp.GetTelemetry())
 	}
 }
 
@@ -126,7 +126,7 @@ func TestGetFrameUnavailable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if resp.Frame != nil {
+	if resp.GetFrame() != nil {
 		t.Fatal("expected result to be nil")
 	}
 }
@@ -134,15 +134,15 @@ func TestGetFrameUnavailable(t *testing.T) {
 func TestGetFrame(t *testing.T) {
 	svc := newTestDataService(t)
 	client := newTestDataServiceClient(t, svc)
-	frame := &telemetrypb.EncodedFrame{Id: 1}
+	frame := telemetrypb.EncodedFrame_builder{Id: 1}.Build()
 	svc.store.addFrame(frame)
 
 	resp, err := client.GetFrame(t.Context(), &vehiclepb.GetFrameRequest{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !proto.Equal(resp.Frame, frame) {
-		t.Fatalf("expected %v, got %v", frame, resp.Frame)
+	if !proto.Equal(resp.GetFrame(), frame) {
+		t.Fatalf("expected %v, got %v", frame, resp.GetFrame())
 	}
 }
 
@@ -172,7 +172,7 @@ func TestStreamVideoFrames(t *testing.T) {
 
 	// The server subscribes asynchronously after the RPC arrives, so retry
 	// adding a frame until it's received.
-	frame := &telemetrypb.EncodedFrame{Id: 1}
+	frame := telemetrypb.EncodedFrame_builder{Id: 1}.Build()
 	deadline := time.After(streamWaitTimeout)
 	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()
@@ -180,8 +180,8 @@ waitForFrame:
 	for {
 		select {
 		case resp := <-recvCh:
-			if !proto.Equal(resp.Frame, frame) {
-				t.Fatalf("expected %v, got %v", frame, resp.Frame)
+			if !proto.Equal(resp.GetFrame(), frame) {
+				t.Fatalf("expected %v, got %v", frame, resp.GetFrame())
 			}
 			break waitForFrame
 		case err := <-errCh:
@@ -235,7 +235,7 @@ func TestStreamTelemetry(t *testing.T) {
 
 	// The server subscribes asynchronously after the RPC arrives, so retry
 	// adding telemetry until it's received.
-	tel := &telemetrypb.Telemetry{Timestamp: timestamppb.Now()}
+	tel := telemetrypb.Telemetry_builder{Timestamp: timestamppb.Now()}.Build()
 	deadline := time.After(streamWaitTimeout)
 	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()
@@ -243,8 +243,8 @@ waitForTelemetry:
 	for {
 		select {
 		case resp := <-recvCh:
-			if !proto.Equal(resp.Telemetry, tel) {
-				t.Fatalf("expected %v, got %v", tel, resp.Telemetry)
+			if !proto.Equal(resp.GetTelemetry(), tel) {
+				t.Fatalf("expected %v, got %v", tel, resp.GetTelemetry())
 			}
 			break waitForTelemetry
 		case err := <-errCh:

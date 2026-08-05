@@ -22,7 +22,7 @@ type hasEndBehavior interface {
 
 func WithEndBehavior[T hasEndBehavior](endBehavior types.ReturnToHomeEndBehavior) func(T) {
 	return func(t T) {
-		t.SetEndBehavior(int32(endBehavior))
+		t.SetEndBehavior(endBehavior)
 	}
 }
 
@@ -52,7 +52,7 @@ type hasHeadingMode interface {
 
 func WithHeadingMode[T hasHeadingMode](mode types.HeadingMode) func(T) {
 	return func(t T) {
-		t.SetHeadingMode(int32(mode))
+		t.SetHeadingMode(mode)
 	}
 }
 
@@ -62,7 +62,7 @@ type hasAltitudeMode interface {
 
 func WithAltitudeMode[T hasAltitudeMode](mode types.AltitudeMode) func(T) {
 	return func(t T) {
-		t.SetAltitudeMode(int32(mode))
+		t.SetAltitudeMode(mode)
 	}
 }
 
@@ -92,7 +92,7 @@ type hasReferenceFrame interface {
 
 func WithReferenceFrame[T hasReferenceFrame](frame types.ReferenceFrame) func(T) {
 	return func(t T) {
-		t.SetReferenceFrame(int32(frame))
+		t.SetReferenceFrame(frame)
 	}
 }
 
@@ -102,6 +102,6 @@ type hasPoseMode interface {
 
 func WithPoseMode[T hasPoseMode](mode types.PoseMode) func(T) {
 	return func(t T) {
-		t.SetPoseMode(int32(mode))
+		t.SetPoseMode(mode)
 	}
 }

@@ -11,9 +11,9 @@ import (
 )
 
 func TestACLIP(t *testing.T) {
-	base, err := net.Listen("tcp", "127.0.0.1:8080")
+	base, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		t.Errorf("couldn't listen on localhost port 8080")
+		t.Fatalf("couldn't listen on localhost: %v", err)
 	}
 	defer base.Close()
 
@@ -72,9 +72,11 @@ func TestACLIP(t *testing.T) {
 }
 
 func TestACLPID(t *testing.T) {
-	base, err := net.Listen("unix", "/tmp/listener.sock")
+	const sockPath = "/tmp/listener.sock"
+	os.Remove(sockPath)
+	base, err := net.Listen("unix", sockPath)
 	if err != nil {
-		t.Errorf("couldn't listen on /tmp/listener.sock")
+		t.Fatalf("couldn't listen on %s: %v", sockPath, err)
 	}
 	defer base.Close()
 

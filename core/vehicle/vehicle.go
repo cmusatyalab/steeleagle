@@ -101,7 +101,7 @@ func NewVehicle(
 	return vehicle, nil
 }
 
-// Starts the vehicle but does not wait for it to stop. After a succesful
+// Starts the vehicle but does not wait for it to stop. After a successful
 // call to Start, the vehicle will keep running until it encounters a fatal
 // error or the provided context is canceled.
 func (v *Vehicle) Start(ctx context.Context) error {

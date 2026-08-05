@@ -102,7 +102,7 @@ func (s *dataStore) storeTelemetryWorker(ctx context.Context) {
 			b := tx.Bucket([]byte(telemetryBucket))
 
 			for _, tel := range batch {
-				key := itob(uint64(tel.Timestamp.AsTime().UnixNano()))
+				key := itob(uint64(tel.GetTimestamp().AsTime().UnixNano()))
 
 				telBytes, err := proto.Marshal(tel)
 				if err != nil {

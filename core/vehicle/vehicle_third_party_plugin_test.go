@@ -71,7 +71,8 @@ func TestVehicleThirdPartyPlugin(t *testing.T) {
 	defer conn.Close()
 
 	controlSvcClient := driverpb.NewControlServiceClient(conn)
-	ctx, _ := context.WithTimeout(t.Context(), time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+	t.Cleanup(cancel)
 	// Try to issue a take off request. External-tagged callers aren't
 	// authorized by the default policy, so the request is expected to be
 	// rejected.
@@ -80,7 +81,8 @@ func TestVehicleThirdPartyPlugin(t *testing.T) {
 		t.Errorf("expected PermissionDenied routing TakeOff through third-party plugin listener, got: %v", err)
 	}
 	dataSvcClient := vehiclepb.NewDataServiceClient(conn)
-	ctx, _ = context.WithTimeout(t.Context(), time.Second)
+	ctx, cancel = context.WithTimeout(t.Context(), time.Second)
+	t.Cleanup(cancel)
 	// Try to fetch telemetry. External-tagged callers should be authorized to
 	// get this data from the vehicle.
 	_, err = dataSvcClient.GetTelemetry(ctx, &vehiclepb.GetTelemetryRequest{})
@@ -89,7 +91,8 @@ func TestVehicleThirdPartyPlugin(t *testing.T) {
 
 	}
 	streamSvcClient := driverpb.NewStreamServiceClient(conn)
-	ctx, _ = context.WithTimeout(t.Context(), time.Second)
+	ctx, cancel = context.WithTimeout(t.Context(), time.Second)
+	t.Cleanup(cancel)
 	// Try to get the video stream URL. External-tagged callers should not be
 	// authorized by the default policy, so the request is expected to be
 	// rejected.

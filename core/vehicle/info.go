@@ -13,5 +13,5 @@ func (v *Vehicle) getDriverModel(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return resp.Model, nil
+	return resp.GetModel(), nil
 }
