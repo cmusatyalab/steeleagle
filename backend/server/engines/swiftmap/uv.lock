@@ -648,7 +648,7 @@ wheels = [
 
 [[package]]
 name = "steeleagle-sdk"
-version = "3.1.0"
+version = "3.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiosqlite" },
@@ -664,9 +664,9 @@ dependencies = [
     { name = "scipy" },
     { name = "shapely" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8c/c9/a4bcbc8df4eabf2609633c69c292dfaf786b4046fe04f3509053695c6daa/steeleagle_sdk-3.1.0.tar.gz", hash = "sha256:0a132f8fe57ba183564343c6df3bdc61c24681bdbffc5189ddeb3e110d5b53ea", size = 73117, upload-time = "2026-04-24T16:42:33.538Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/91/53/7a97a4aa5575a5164fedf8ccf7a4b645a889ecd934cbfdf82a4b58559afa/steeleagle_sdk-3.2.0.tar.gz", hash = "sha256:d1c9dc63d8fcbf8a69672182f84f9cd5f300cf2c343af716e4bb081941e2ca39", size = 75236, upload-time = "2026-08-04T21:11:44.191Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ca/0f/ffeefeef50f3a20d08187d74887655a1dabb98df13e628b89c5c28c3601b/steeleagle_sdk-3.1.0-py3-none-any.whl", hash = "sha256:7ace2e277bd06227bb900f513887dfec784e544a3ee3edd93f9f63b403cf74e0", size = 101912, upload-time = "2026-04-24T16:42:34.826Z" },
+    { url = "https://files.pythonhosted.org/packages/fb/06/dad87215edf4b1574859aeef8212cac53bbd6cf793e053eff160e0dd42ee/steeleagle_sdk-3.2.0-py3-none-any.whl", hash = "sha256:91b60f01a21b5306cfaa2877d9a75627731d5d0d41e532855b048e0e5aa14e32", size = 104272, upload-time = "2026-08-04T21:11:45.142Z" },
 ]
 
 [[package]]
@@ -685,7 +685,7 @@ requires-dist = [
     { name = "gabriel-server", specifier = ">=4.1.2" },
     { name = "numpy" },
     { name = "opencv-python-headless" },
-    { name = "steeleagle-sdk", specifier = ">=1.0.16" },
+    { name = "steeleagle-sdk", specifier = ">=3.2.0" },
 ]
 
 [[package]]

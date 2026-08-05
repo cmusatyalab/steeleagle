@@ -1,6 +1,6 @@
 [project]
 name = "steeleagle-sdk"
-version = "3.1.0"
+version = "3.2.0"
 description = "SDK for interacting with SteelEagle vehicles."
 readme = "README.md"
 requires-python = ">=3.11"
