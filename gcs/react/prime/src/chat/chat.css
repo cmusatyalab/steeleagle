@@ -382,6 +382,11 @@
     flex-shrink: 0;
 }
 
+/* Adjust send-plane-icon alignment */
+.se-chat-composer__btn .pi-send {
+    transform: translateX(-1px);
+}
+
 .se-chat-composer__mic {
     flex-shrink: 0;
     align-self: flex-end;
