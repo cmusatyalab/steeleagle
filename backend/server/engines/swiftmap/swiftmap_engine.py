@@ -160,6 +160,7 @@ class SwiftMapClient:
 class SwiftMapEngine(cognitive_engine.Engine):
     ENGINE_NAME = "swiftmap"
     STATS_INTERVAL = 5  # seconds between fps log lines
+    NAV_HOLD_S = 3.0    # re-emit a new plan for this long so it survives the CONFLATE results channel
 
     def __init__(self, args):
         self.client = SwiftMapClient(args.server, args.server_port)
@@ -173,6 +174,8 @@ class SwiftMapEngine(cognitive_engine.Engine):
         # Forward at most one pair per gps lapse.
         self.send_distance = float(getattr(args, "send_distance", 5.0))
         self._last_sent_gps = None
+        self._nav_kml = None       # current NFN plan KML, re-emitted during its hold window
+        self._nav_until = 0.0      # wall-clock deadline for re-emitting the current plan
         self.count = 0        # frames received
         self.sent = 0         # frames forwarded to the server
         self.last_count = 0
@@ -207,7 +210,7 @@ class SwiftMapEngine(cognitive_engine.Engine):
         """Pack a FrameResult as a Gabriel Any: empty, or carrying the NFN area KML.
 
         The mission store ignores empty (no-result) FrameResults, so ordinary
-        per-frame acks don't overwrite the latest plan; only a KML frame stores one.
+        per-frame acks don't overwrite the latest plan.
         """
         frame_result = result_pb2.FrameResult()
         frame_result.type = "swiftmap-navigation"
@@ -238,28 +241,31 @@ class SwiftMapEngine(cognitive_engine.Engine):
         self._log_stats()
         gps = self._extract_gps(frame)
 
-        # Distance gate: not forwarded, but still a handled frame (empty result).
-        if self.send_distance > 0:
-            if gps is None:
-                return cognitive_engine.Result(status, self._frame_result_any())
-            if (self._last_sent_gps is not None
-                    and _haversine_m(self._last_sent_gps, gps) < self.send_distance):
-                return cognitive_engine.Result(status, self._frame_result_any())
+        # Distance gate: forward at most one pair per send_distance of travel.
+        gated = self.send_distance > 0 and (
+            gps is None
+            or (self._last_sent_gps is not None
+                and _haversine_m(self._last_sent_gps, gps) < self.send_distance))
 
-        send_status, nfn_kml = self.client.process_frame(frame.data, gps)
-        if send_status == "error":
-            status.code = gabriel_pb2.StatusCode.ENGINE_ERROR
-            status.message = "SwiftMap server unreachable; frame dropped"
-            logger.warning("SwiftMap server unreachable; frame dropped")
-            return cognitive_engine.Result(status, None)
+        if not gated:
+            send_status, nfn_kml = self.client.process_frame(frame.data, gps)
+            if send_status == "error":
+                status.code = gabriel_pb2.StatusCode.ENGINE_ERROR
+                status.message = "SwiftMap server unreachable; frame dropped"
+                logger.warning("SwiftMap server unreachable; frame dropped")
+                return cognitive_engine.Result(status, None)
+            self._log_stats()
+            self._last_sent_gps = gps
+            self.sent += 1
+            if nfn_kml:
+                self._nav_kml = nfn_kml
+                self._nav_until = time.time() + self.NAV_HOLD_S
+                logger.info("Received NFN area KML from SwiftMap server (%d bytes); "
+                            "holding it as the current plan for %.1fs",
+                            len(nfn_kml), self.NAV_HOLD_S)
 
-        self._log_stats()
-        self._last_sent_gps = gps
-        self.sent += 1
-
-        # A KML means the server just planned a next flight; otherwise an empty result.
-        if nfn_kml:
-            logger.info("Received NFN area KML from SwiftMap server (%d bytes); "
-                        "returning it to the Gabriel client", len(nfn_kml))
-            return cognitive_engine.Result(status, self._frame_result_any(nfn_kml))
+        # Re-emit the current plan on every frame within its hold window so it survives
+        # the CONFLATE results channel (both ends keep only the latest message).
+        if self._nav_kml is not None and time.time() < self._nav_until:
+            return cognitive_engine.Result(status, self._frame_result_any(self._nav_kml))
         return cognitive_engine.Result(status, self._frame_result_any())
