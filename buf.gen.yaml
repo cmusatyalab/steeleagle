@@ -1,5 +1,4 @@
 version: v2
-clean: true
 managed:
   enabled: true
   override:
@@ -12,7 +11,8 @@ plugins:
       - paths=source_relative
       - default_api_level=API_OPAQUE
   - local: [go, run, ./cmd/protoc]
-    out: sdk/types
+    out: sdk/
+    strategy: all
     opt: 
       - paths=source_relative
       - default_api_level=API_OPAQUE
