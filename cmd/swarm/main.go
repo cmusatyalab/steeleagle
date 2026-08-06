@@ -26,16 +26,11 @@ type TailscaleConfig struct {
 
 // Config models the top-level document.
 type Config struct {
-	ListenPort int `toml:"listen-port"` // SwarmService, GCS-facing (tailnet)
-	// GCSPlainListen, if true, additionally binds SwarmService on ListenPort
-	// as plain TCP outside tsnet -- e.g. the same Docker network as a GCS
-	// backend that isn't itself tailnet-joined. The two listeners don't
-	// collide despite sharing a port number: tsnet's is on its own virtual
-	// network stack, not the host/container's real interface.
-	GCSPlainListen bool            `toml:"gcs-plain-listen,omitempty"`
-	VehiclePort    int             `toml:"vehicle-port"` // RegistryService, eagled-facing (tailnet)
-	CallTimeout    string          `toml:"call-timeout,omitempty"`
-	Tailscale      TailscaleConfig `toml:"tailscale"`
+	ListenPort     int             `toml:"listen-port"`                // SwarmService, GCS-facing (tailnet)
+	GCSPlainListen bool            `toml:"gcs-plain-listen,omitempty"` // whether to bind SwarmService on ListenPort as plain TCP outside tsnet
+	VehiclePort    int             `toml:"vehicle-port"`               // RegistryService, eagled-facing (tailnet)
+	CallTimeout    string          `toml:"call-timeout,omitempty"`     // Vehicle RPC timeout
+	Tailscale      TailscaleConfig `toml:"tailscale"`                  // Tailscale config
 }
 
 func main() {
@@ -77,6 +72,7 @@ func main() {
 		log.Fatal().Msgf("starting tailscale: %v", err)
 	}
 	defer ts.Close()
+	opts = append(opts, swarm.WithDialer(ts.Dial))
 
 	registry := swarm.NewRegistry()
 	registryServer := swarm.NewRegistryServer(registry)

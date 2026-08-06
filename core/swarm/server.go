@@ -14,8 +14,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// defaultCallTimeout bounds each per-vehicle proxied call, absent an explicit
-// WithCallTimeout option.
+// defaultCallTimeout bounds each per-vehicle proxied call.
 const defaultCallTimeout = 5 * time.Second
 
 // Server implements swarmpb.SwarmServiceServer, proxying each request to the
@@ -301,3 +300,5 @@ func (s *Server) SwarmStopMission(
 		},
 	)
 }
+
+var _ vehicleDialer = (*Server)(nil)

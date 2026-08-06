@@ -31,17 +31,14 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
 // Used by per-host daemons (eagled) to announce a single vehicle they host to
-// the swarm controller. This service is hosted by the swarm controller module.
+// the swarm controller. This service is hosted by the swarm controller.
 type RegistryServiceClient interface {
-	// Register one vehicle with the swarm controller.
+	// Register a vehicle with the swarm controller.
 	//
-	// eagled calls this once per vehicle, at the moment that vehicle starts,
-	// since eagled's hosted vehicles come and go independently over its own
-	// long-running lifetime. The returned stream is a liveness signal, not a
-	// data channel: eagled holds this call open for exactly as long as that
-	// vehicle is running. When the stream closes (vehicle stopped by eagled,
-	// eagled shutdown/crash, network partition), the controller evicts that one
-	// vehicle only.
+	// eagled calls this once per vehicle, at the moment that vehicle starts. The
+	// returned stream is a liveness signal, not a data channel. eagled holds
+	// this call open for exactly as long as that vehicle is running. When the
+	// stream closes, the controller evicts that vehicle.
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[RegisterResponse], error)
 }
 
@@ -77,17 +74,14 @@ type RegistryService_RegisterClient = grpc.ServerStreamingClient[RegisterRespons
 // for forward compatibility.
 //
 // Used by per-host daemons (eagled) to announce a single vehicle they host to
-// the swarm controller. This service is hosted by the swarm controller module.
+// the swarm controller. This service is hosted by the swarm controller.
 type RegistryServiceServer interface {
-	// Register one vehicle with the swarm controller.
+	// Register a vehicle with the swarm controller.
 	//
-	// eagled calls this once per vehicle, at the moment that vehicle starts,
-	// since eagled's hosted vehicles come and go independently over its own
-	// long-running lifetime. The returned stream is a liveness signal, not a
-	// data channel: eagled holds this call open for exactly as long as that
-	// vehicle is running. When the stream closes (vehicle stopped by eagled,
-	// eagled shutdown/crash, network partition), the controller evicts that one
-	// vehicle only.
+	// eagled calls this once per vehicle, at the moment that vehicle starts. The
+	// returned stream is a liveness signal, not a data channel. eagled holds
+	// this call open for exactly as long as that vehicle is running. When the
+	// stream closes, the controller evicts that vehicle.
 	Register(*RegisterRequest, grpc.ServerStreamingServer[RegisterResponse]) error
 	mustEmbedUnimplementedRegistryServiceServer()
 }

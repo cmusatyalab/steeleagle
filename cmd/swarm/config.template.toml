@@ -1,9 +1,7 @@
 # SwarmService, GCS-facing, over the tailnet
 listen-port = 5004
 # If true, also bind SwarmService on listen-port as plain TCP outside the
-# tailnet (e.g. same Docker network as a GCS backend that isn't itself
-# tailnet-joined). The two listeners don't collide despite sharing a port
-# number: tsnet's is on its own virtual network stack.
+# tailnet.
 gcs-plain-listen = false
 # RegistryService, eagled-facing
 vehicle-port = 5003

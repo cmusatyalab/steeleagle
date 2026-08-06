@@ -16,12 +16,10 @@ type Server struct {
 }
 
 // NewServer starts a tsnet node under the given hostname. If authKey is
-// non-empty it's used to join the tailnet non-interactively; otherwise tsnet
+// non-empty it's used to join the tailnet non-interactively. Otherwise, tsnet
 // falls back to its interactive login flow. tags, if non-empty (e.g.
-// "tag:eagled", "tag:vehicle"), are advertised to control so the node comes
-// up tagged rather than as an untagged personal device -- this only takes
-// effect if the tailnet's ACL grants whoever's requesting them ownership of
-// those tags; otherwise control silently ignores the request.
+// "tag:eagled", "tag:vehicle"), are advertised to control so the node comes up
+// tagged.
 func NewServer(hostname, authKey string, tags ...string) (*Server, error) {
 	server := new(tsnet.Server)
 	server.Hostname = hostname

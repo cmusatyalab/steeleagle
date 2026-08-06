@@ -20,10 +20,6 @@ FROM gcr.io/distroless/static-debian12
 LABEL org.opencontainers.image.vendor="CMU Satyalab" \
       org.opencontainers.image.authors=satya-group@lists.andrew.cmu.edu
 
-# tsnet's default state directory is derived from $HOME (via
-# os.UserConfigDir); fixing it here makes that state land somewhere a
-# volume can be mounted over, so the node's tailnet identity survives a
-# container recreate instead of re-registering every time.
 ENV HOME=/steeleagle
 WORKDIR /steeleagle
 COPY --from=build /swarm /steeleagle/swarm

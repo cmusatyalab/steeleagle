@@ -7,8 +7,8 @@ import (
 )
 
 // Registry is an in-memory table mapping vehicle names to the socket address
-// of their ControlService/MissionService gRPC server, built and maintained
-// from live RegistryService.Register calls.
+// of their gRPC server, built and maintained from live
+// RegistryService.Register calls.
 type Registry struct {
 	mu      sync.RWMutex             // table mutex
 	table   map[string]registryEntry // map from vehicle name to its socket address

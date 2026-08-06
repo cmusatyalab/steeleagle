@@ -206,11 +206,7 @@ services:
       - ./models/swiftmap-cache:/root/.cache
 
   # Swarm Controller
-  # Fans out control-plane commands to vehicles over Tailscale (5003, vehicle
-  # registration; 5004, GCS commands). 5004 is also served as plain TCP on
-  # this compose's own network (gcs-plain-listen in swarm-config.toml), since
-  # http-server/GCS here aren't themselves tailnet-joined; 5003 is
-  # tailnet-only, not published, since vehicles reach it via Tailscale.
+  # Fans out control-plane commands to vehicles over Tailscale.
   swarm-controller:
     image: cmusatyalab/steeleagle-swarm-controller:${SC_IMAGE_TAG}
     container_name: swarm-controller

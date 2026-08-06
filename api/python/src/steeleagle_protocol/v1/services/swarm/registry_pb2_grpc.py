@@ -8,7 +8,7 @@ from steeleagle_protocol.v1.services.swarm import registry_pb2 as steeleagle__pr
 class RegistryServiceStub:
     """
     Used by per-host daemons (eagled) to announce a single vehicle they host to
-    the swarm controller. This service is hosted by the swarm controller module.
+    the swarm controller. This service is hosted by the swarm controller.
     """
 
     def __init__(self, channel):
@@ -27,20 +27,17 @@ class RegistryServiceStub:
 class RegistryServiceServicer:
     """
     Used by per-host daemons (eagled) to announce a single vehicle they host to
-    the swarm controller. This service is hosted by the swarm controller module.
+    the swarm controller. This service is hosted by the swarm controller.
     """
 
     def Register(self, request, context):
         """
-        Register one vehicle with the swarm controller.
+        Register a vehicle with the swarm controller.
 
-        eagled calls this once per vehicle, at the moment that vehicle starts,
-        since eagled's hosted vehicles come and go independently over its own
-        long-running lifetime. The returned stream is a liveness signal, not a
-        data channel: eagled holds this call open for exactly as long as that
-        vehicle is running. When the stream closes (vehicle stopped by eagled,
-        eagled shutdown/crash, network partition), the controller evicts that one
-        vehicle only.
+        eagled calls this once per vehicle, at the moment that vehicle starts. The
+        returned stream is a liveness signal, not a data channel. eagled holds
+        this call open for exactly as long as that vehicle is running. When the
+        stream closes, the controller evicts that vehicle.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -65,7 +62,7 @@ def add_RegistryServiceServicer_to_server(servicer, server):
 class RegistryService:
     """
     Used by per-host daemons (eagled) to announce a single vehicle they host to
-    the swarm controller. This service is hosted by the swarm controller module.
+    the swarm controller. This service is hosted by the swarm controller.
     """
 
     @staticmethod
