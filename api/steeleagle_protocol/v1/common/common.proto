@@ -9,9 +9,9 @@ option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protoco
 
 // Angular offsets or poses in 3 dimensions.
 message Pose {
-  optional double pitch = 1; // pitch [degrees]
-  optional double roll = 2; // roll [degrees]
-  optional double yaw = 3; // yaw [degrees]
+  optional float pitch = 1; // pitch [degrees]
+  optional float roll = 2; // roll [degrees]
+  optional float yaw = 3; // yaw [degrees]
 }
 
 // Representation of velocity in 3-dimensions.
@@ -20,18 +20,18 @@ message Pose {
 // - `y_vel`: right/eastward velocity
 // - `z_vel`: up velocity
 message Velocity {
-  optional double x_vel = 1; // forward/north velocity [meters/s]
-  optional double y_vel = 2; // right/east velocity [meters/s]
-  optional double z_vel = 3; // up velocity [meters/s]
-  optional double angular_vel = 4; // angular velocity [degrees/s]
+  optional float x_vel = 1; // forward/north velocity [meters/s]
+  optional float y_vel = 2; // right/east velocity [meters/s]
+  optional float z_vel = 3; // up velocity [meters/s]
+  optional float angular_vel = 4; // angular velocity [degrees/s]
 }
 
 // Representation of global position.
 message GlobalPosition {
   optional double latitude = 1;
   optional double longitude = 2;
-  optional double altitude = 3;
-  optional double heading = 4;
+  optional float altitude = 3;
+  optional float heading = 4;
 }
 
 // Representation of relative position in 3-dimensions.
@@ -42,10 +42,10 @@ message GlobalPosition {
 // - `y`: right offset/east offset
 // - `z``: up offset
 message RelativePosition {
-  optional double x = 1; // forward offset/north offset [meters]
-  optional double y = 2; // right offset/east offset [meters]
-  optional double z = 3; // up offset [meters]
-  optional double angle = 4; // angular offset [degrees]
+  optional float x = 1; // forward offset/north offset [meters]
+  optional float y = 2; // right offset/east offset [meters]
+  optional float z = 3; // up offset [meters]
+  optional float angle = 4; // angular offset [degrees]
 }
 
 // Identifies a vehicle registering as a Gabriel client, made available to

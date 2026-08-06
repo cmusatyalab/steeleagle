@@ -40,10 +40,10 @@ func (v *Vehicle) streamEncodedVideoFrames(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		if f.Frame == nil {
+		if f.GetFrame() == nil {
 			v.log.Debug().Msgf("got nil frame from driver")
 		}
-		v.store.addFrame(f.Frame)
+		v.store.addFrame(f.GetFrame())
 	}
 }
 
@@ -53,9 +53,9 @@ func (v *Vehicle) streamRTSPVideo(ctx context.Context) error {
 	v.log.Info().Msg("starting RTSP video stream")
 
 	client := driverpb.NewStreamServiceClient(v.driver)
-	req := &driverpb.GetVideoStreamURLRequest{
+	req := driverpb.GetVideoStreamURLRequest_builder{
 		Resolution: driverpb.GetVideoStreamURLRequest_Resolution(v.videoCfg.Resolution),
-	}
+	}.Build()
 
 	// Send request to driver to get video stream URL
 	resp, err := client.GetVideoStreamURL(ctx, req)
@@ -63,7 +63,7 @@ func (v *Vehicle) streamRTSPVideo(ctx context.Context) error {
 		return err
 	}
 	cmd := exec.CommandContext(
-		ctx, "ffmpeg", getFFmpegArgs(resp.StreamUrl, v.videoCfg)...)
+		ctx, "ffmpeg", getFFmpegArgs(resp.GetStreamUrl(), v.videoCfg)...)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -187,11 +187,11 @@ func (v *Vehicle) consumeFrames(ctx context.Context, frameCh chan []byte) error 
 				return fmt.Errorf("frame channel closed")
 			}
 			count++
-			f := &telemetrypb.EncodedFrame{
+			f := telemetrypb.EncodedFrame_builder{
 				Id:          uint64(count),
 				Timestamp:   timestamppb.Now(),
 				EncodedData: frame,
-			}
+			}.Build()
 			v.store.addFrame(f)
 			if count%30 == 0 {
 				v.log.Debug().Msgf("processed frame %d (%d bytes)\n", count, len(frame))

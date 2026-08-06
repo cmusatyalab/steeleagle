@@ -7,7 +7,7 @@ managed:
 plugins:
   - remote: buf.build/protocolbuffers/go
     out: api/go
-    opt: 
+    opt:
       - paths=source_relative
       - default_api_level=API_OPAQUE
   - local: [go, run, ./cmd/protoc]

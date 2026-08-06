@@ -18,9 +18,9 @@ type DataService struct {
 func (s *DataService) GetResult(
 	ctx context.Context,
 	req *vehiclepb.GetResultRequest) (*vehiclepb.GetResultResponse, error) {
-	producer_name := req.Name
+	producer_name := req.GetName()
 	res := s.store.getLatestResult(producer_name)
-	resp := &vehiclepb.GetResultResponse{Result: res}
+	resp := vehiclepb.GetResultResponse_builder{Result: res}.Build()
 	return resp, nil
 }
 
@@ -30,7 +30,7 @@ func (s *DataService) GetTelemetry(
 	ctx context.Context,
 	req *vehiclepb.GetTelemetryRequest) (*vehiclepb.GetTelemetryResponse, error) {
 	tel := s.store.getLatestTelemetry()
-	resp := &vehiclepb.GetTelemetryResponse{Telemetry: tel}
+	resp := vehiclepb.GetTelemetryResponse_builder{Telemetry: tel}.Build()
 	return resp, nil
 }
 
@@ -40,7 +40,7 @@ func (s *DataService) GetFrame(
 	ctx context.Context,
 	req *vehiclepb.GetFrameRequest) (*vehiclepb.GetFrameResponse, error) {
 	frame := s.store.getLatestFrame()
-	resp := &vehiclepb.GetFrameResponse{Frame: frame}
+	resp := vehiclepb.GetFrameResponse_builder{Frame: frame}.Build()
 	return resp, nil
 }
 
@@ -55,7 +55,7 @@ func (s *DataService) StreamVideoFrames(
 		case <-stream.Context().Done():
 			return stream.Context().Err()
 		case frame := <-ch:
-			resp := &vehiclepb.StreamVideoFramesResponse{Frame: frame}
+			resp := vehiclepb.StreamVideoFramesResponse_builder{Frame: frame}.Build()
 			stream.Send(resp)
 		}
 	}
@@ -72,7 +72,7 @@ func (s *DataService) StreamTelemetry(
 		case <-stream.Context().Done():
 			return stream.Context().Err()
 		case tel := <-ch:
-			resp := &vehiclepb.StreamTelemetryResponse{Telemetry: tel}
+			resp := vehiclepb.StreamTelemetryResponse_builder{Telemetry: tel}.Build()
 			stream.Send(resp)
 		}
 	}

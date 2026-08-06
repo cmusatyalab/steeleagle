@@ -42,7 +42,7 @@ class CalibrateServiceServicer:
 
         Streams back instructions on how to calibrate a sensor. Keeps sending
         back instructions until either the calibration fails or succeeds.
-        This function should only be called by the OS or a remote server, 
+        This function should only be called by the OS or a remote server,
         and not by any plugins.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)

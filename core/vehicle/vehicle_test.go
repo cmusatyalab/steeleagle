@@ -99,7 +99,8 @@ func TestCommandAccessPolicy(t *testing.T) {
 	serverMissionClient := missionpb.NewMissionServiceClient(sClient)
 
 	// Server TakeOff call (REMOTE laws)
-	ctx, _ := context.WithTimeout(t.Context(), time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+	t.Cleanup(cancel)
 	_, err = serverControlClient.TakeOff(ctx, &driverpb.TakeOffRequest{})
 	if err != nil {
 		t.Errorf("got error with server TakeOff rpc: %v", err)
@@ -114,7 +115,8 @@ func TestCommandAccessPolicy(t *testing.T) {
 	}
 
 	// Local Land call which should NOT be allowed in REMOTE laws
-	ctx, _ = context.WithTimeout(t.Context(), time.Second)
+	ctx, cancel = context.WithTimeout(t.Context(), time.Second)
+	t.Cleanup(cancel)
 	_, err = missionControlClient.Land(ctx, &driverpb.LandRequest{})
 	if err == nil {
 		t.Errorf("expected error with server Land rpc, got none")
@@ -122,7 +124,8 @@ func TestCommandAccessPolicy(t *testing.T) {
 
 	// Server StartMission call which should transit to LOCAL laws (mission
 	// control requests should now be allowed)
-	ctx, _ = context.WithTimeout(t.Context(), time.Second)
+	ctx, cancel = context.WithTimeout(t.Context(), time.Second)
+	t.Cleanup(cancel)
 	_, err = serverMissionClient.StartMission(ctx, &missionpb.StartMissionRequest{})
 	if err != nil {
 		t.Errorf("got error with server StartMission rpc: %v", err)
@@ -137,7 +140,8 @@ func TestCommandAccessPolicy(t *testing.T) {
 	}
 
 	// Local Land call which should be allowed
-	ctx, _ = context.WithTimeout(t.Context(), time.Second)
+	ctx, cancel = context.WithTimeout(t.Context(), time.Second)
+	t.Cleanup(cancel)
 	_, err = missionControlClient.Land(ctx, &driverpb.LandRequest{})
 	if err != nil {
 		t.Errorf("got error with mission Land rpc: %v", err)
@@ -152,7 +156,8 @@ func TestCommandAccessPolicy(t *testing.T) {
 	}
 
 	// Server TakeOff call should reset to REMOTE laws
-	ctx, _ = context.WithTimeout(t.Context(), time.Second)
+	ctx, cancel = context.WithTimeout(t.Context(), time.Second)
+	t.Cleanup(cancel)
 	_, err = serverControlClient.TakeOff(ctx, &driverpb.TakeOffRequest{})
 	if err != nil {
 		t.Errorf("got error with server TakeOff rpc: %v", err)
@@ -167,7 +172,8 @@ func TestCommandAccessPolicy(t *testing.T) {
 	}
 
 	// Local Land call which should NOT be allowed in REMOTE laws
-	ctx, _ = context.WithTimeout(t.Context(), time.Second)
+	ctx, cancel = context.WithTimeout(t.Context(), time.Second)
+	t.Cleanup(cancel)
 	_, err = missionControlClient.Land(ctx, &driverpb.LandRequest{})
 	if err == nil {
 		t.Errorf("expected error with server Land rpc, got none")

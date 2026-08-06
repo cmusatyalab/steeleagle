@@ -75,9 +75,9 @@ func (v *Vehicle) createGabrielClient() error {
 		v.gabrielCfg.VideoFramesTargetEngines)
 
 	consumer := func(res *gabrielpb.Result) {
-		cmpRes := &resultpb.ComputeResult{
+		cmpRes := resultpb.ComputeResult_builder{
 			Timestamp: timestamppb.Now(),
-		}
+		}.Build()
 		v.store.addResult(res.TargetEngineId, cmpRes)
 	}
 
@@ -85,10 +85,10 @@ func (v *Vehicle) createGabrielClient() error {
 		v.gabrielCfg.ServerEndpoint,
 		[]*gabrielclient.InputProducer{telProducer, frameProducer},
 		consumer,
-		gabrielclient.WithClientInfo(&commonpb.VehicleInfo{
+		gabrielclient.WithClientInfo(commonpb.VehicleInfo_builder{
 			VehicleId: v.Name,
 			Model:     v.Model,
-		}))
+		}.Build()))
 	if err != nil {
 		return err
 	}

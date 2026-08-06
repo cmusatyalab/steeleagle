@@ -30,7 +30,7 @@ func TestGetLatestTelemetryEmpty(t *testing.T) {
 
 func TestAddAndGetLatestTelemetry(t *testing.T) {
 	store := newTestDataStore(t)
-	tel := &telemetrypb.Telemetry{Timestamp: timestamppb.Now()}
+	tel := telemetrypb.Telemetry_builder{Timestamp: timestamppb.Now()}.Build()
 	store.addTelemetry(tel)
 
 	if got := store.getLatestTelemetry(); got != tel {
@@ -47,7 +47,7 @@ func TestGetLatestFrameEmpty(t *testing.T) {
 
 func TestAddAndGetLatestFrame(t *testing.T) {
 	store := newTestDataStore(t)
-	frame := &telemetrypb.EncodedFrame{Id: 42}
+	frame := telemetrypb.EncodedFrame_builder{Id: 42}.Build()
 	store.addFrame(frame)
 
 	if got := store.getLatestFrame(); got != frame {
@@ -64,7 +64,7 @@ func TestGetLatestResultEmpty(t *testing.T) {
 
 func TestAddAndGetLatestResult(t *testing.T) {
 	store := newTestDataStore(t)
-	res := &resultpb.ComputeResult{Timestamp: timestamppb.Now()}
+	res := resultpb.ComputeResult_builder{Timestamp: timestamppb.Now()}.Build()
 	store.addResult("producer", res)
 
 	if got := store.getLatestResult("producer"); got != res {
@@ -79,7 +79,7 @@ func TestSubscribeToTelemetry(t *testing.T) {
 	store := newTestDataStore(t)
 	ch := store.subscribeToTelemetry()
 
-	tel := &telemetrypb.Telemetry{Timestamp: timestamppb.Now()}
+	tel := telemetrypb.Telemetry_builder{Timestamp: timestamppb.Now()}.Build()
 	store.addTelemetry(tel)
 
 	select {
@@ -96,7 +96,7 @@ func TestSubscribeToFrames(t *testing.T) {
 	store := newTestDataStore(t)
 	ch := store.subscribeToFrames()
 
-	frame := &telemetrypb.EncodedFrame{Id: 7}
+	frame := telemetrypb.EncodedFrame_builder{Id: 7}.Build()
 	store.addFrame(frame)
 
 	select {

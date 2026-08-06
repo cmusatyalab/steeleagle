@@ -27,9 +27,9 @@ const (
 // Angular offsets or poses in 3 dimensions.
 type Pose struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Pitch       float64                `protobuf:"fixed64,1,opt,name=pitch,proto3,oneof"`
-	xxx_hidden_Roll        float64                `protobuf:"fixed64,2,opt,name=roll,proto3,oneof"`
-	xxx_hidden_Yaw         float64                `protobuf:"fixed64,3,opt,name=yaw,proto3,oneof"`
+	xxx_hidden_Pitch       float32                `protobuf:"fixed32,1,opt,name=pitch,proto3,oneof"`
+	xxx_hidden_Roll        float32                `protobuf:"fixed32,2,opt,name=roll,proto3,oneof"`
+	xxx_hidden_Yaw         float32                `protobuf:"fixed32,3,opt,name=yaw,proto3,oneof"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -61,38 +61,38 @@ func (x *Pose) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *Pose) GetPitch() float64 {
+func (x *Pose) GetPitch() float32 {
 	if x != nil {
 		return x.xxx_hidden_Pitch
 	}
 	return 0
 }
 
-func (x *Pose) GetRoll() float64 {
+func (x *Pose) GetRoll() float32 {
 	if x != nil {
 		return x.xxx_hidden_Roll
 	}
 	return 0
 }
 
-func (x *Pose) GetYaw() float64 {
+func (x *Pose) GetYaw() float32 {
 	if x != nil {
 		return x.xxx_hidden_Yaw
 	}
 	return 0
 }
 
-func (x *Pose) SetPitch(v float64) {
+func (x *Pose) SetPitch(v float32) {
 	x.xxx_hidden_Pitch = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 3)
 }
 
-func (x *Pose) SetRoll(v float64) {
+func (x *Pose) SetRoll(v float32) {
 	x.xxx_hidden_Roll = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 3)
 }
 
-func (x *Pose) SetYaw(v float64) {
+func (x *Pose) SetYaw(v float32) {
 	x.xxx_hidden_Yaw = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
 }
@@ -136,9 +136,9 @@ func (x *Pose) ClearYaw() {
 type Pose_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Pitch *float64
-	Roll  *float64
-	Yaw   *float64
+	Pitch *float32
+	Roll  *float32
+	Yaw   *float32
 }
 
 func (b0 Pose_builder) Build() *Pose {
@@ -167,10 +167,10 @@ func (b0 Pose_builder) Build() *Pose {
 // - `z_vel`: up velocity
 type Velocity struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_XVel        float64                `protobuf:"fixed64,1,opt,name=x_vel,json=xVel,proto3,oneof"`
-	xxx_hidden_YVel        float64                `protobuf:"fixed64,2,opt,name=y_vel,json=yVel,proto3,oneof"`
-	xxx_hidden_ZVel        float64                `protobuf:"fixed64,3,opt,name=z_vel,json=zVel,proto3,oneof"`
-	xxx_hidden_AngularVel  float64                `protobuf:"fixed64,4,opt,name=angular_vel,json=angularVel,proto3,oneof"`
+	xxx_hidden_XVel        float32                `protobuf:"fixed32,1,opt,name=x_vel,json=xVel,proto3,oneof"`
+	xxx_hidden_YVel        float32                `protobuf:"fixed32,2,opt,name=y_vel,json=yVel,proto3,oneof"`
+	xxx_hidden_ZVel        float32                `protobuf:"fixed32,3,opt,name=z_vel,json=zVel,proto3,oneof"`
+	xxx_hidden_AngularVel  float32                `protobuf:"fixed32,4,opt,name=angular_vel,json=angularVel,proto3,oneof"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -202,50 +202,50 @@ func (x *Velocity) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *Velocity) GetXVel() float64 {
+func (x *Velocity) GetXVel() float32 {
 	if x != nil {
 		return x.xxx_hidden_XVel
 	}
 	return 0
 }
 
-func (x *Velocity) GetYVel() float64 {
+func (x *Velocity) GetYVel() float32 {
 	if x != nil {
 		return x.xxx_hidden_YVel
 	}
 	return 0
 }
 
-func (x *Velocity) GetZVel() float64 {
+func (x *Velocity) GetZVel() float32 {
 	if x != nil {
 		return x.xxx_hidden_ZVel
 	}
 	return 0
 }
 
-func (x *Velocity) GetAngularVel() float64 {
+func (x *Velocity) GetAngularVel() float32 {
 	if x != nil {
 		return x.xxx_hidden_AngularVel
 	}
 	return 0
 }
 
-func (x *Velocity) SetXVel(v float64) {
+func (x *Velocity) SetXVel(v float32) {
 	x.xxx_hidden_XVel = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 4)
 }
 
-func (x *Velocity) SetYVel(v float64) {
+func (x *Velocity) SetYVel(v float32) {
 	x.xxx_hidden_YVel = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 4)
 }
 
-func (x *Velocity) SetZVel(v float64) {
+func (x *Velocity) SetZVel(v float32) {
 	x.xxx_hidden_ZVel = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
 }
 
-func (x *Velocity) SetAngularVel(v float64) {
+func (x *Velocity) SetAngularVel(v float32) {
 	x.xxx_hidden_AngularVel = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
 }
@@ -301,10 +301,10 @@ func (x *Velocity) ClearAngularVel() {
 type Velocity_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	XVel       *float64
-	YVel       *float64
-	ZVel       *float64
-	AngularVel *float64
+	XVel       *float32
+	YVel       *float32
+	ZVel       *float32
+	AngularVel *float32
 }
 
 func (b0 Velocity_builder) Build() *Velocity {
@@ -335,8 +335,8 @@ type GlobalPosition struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Latitude    float64                `protobuf:"fixed64,1,opt,name=latitude,proto3,oneof"`
 	xxx_hidden_Longitude   float64                `protobuf:"fixed64,2,opt,name=longitude,proto3,oneof"`
-	xxx_hidden_Altitude    float64                `protobuf:"fixed64,3,opt,name=altitude,proto3,oneof"`
-	xxx_hidden_Heading     float64                `protobuf:"fixed64,4,opt,name=heading,proto3,oneof"`
+	xxx_hidden_Altitude    float32                `protobuf:"fixed32,3,opt,name=altitude,proto3,oneof"`
+	xxx_hidden_Heading     float32                `protobuf:"fixed32,4,opt,name=heading,proto3,oneof"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -382,14 +382,14 @@ func (x *GlobalPosition) GetLongitude() float64 {
 	return 0
 }
 
-func (x *GlobalPosition) GetAltitude() float64 {
+func (x *GlobalPosition) GetAltitude() float32 {
 	if x != nil {
 		return x.xxx_hidden_Altitude
 	}
 	return 0
 }
 
-func (x *GlobalPosition) GetHeading() float64 {
+func (x *GlobalPosition) GetHeading() float32 {
 	if x != nil {
 		return x.xxx_hidden_Heading
 	}
@@ -406,12 +406,12 @@ func (x *GlobalPosition) SetLongitude(v float64) {
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 4)
 }
 
-func (x *GlobalPosition) SetAltitude(v float64) {
+func (x *GlobalPosition) SetAltitude(v float32) {
 	x.xxx_hidden_Altitude = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
 }
 
-func (x *GlobalPosition) SetHeading(v float64) {
+func (x *GlobalPosition) SetHeading(v float32) {
 	x.xxx_hidden_Heading = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
 }
@@ -469,8 +469,8 @@ type GlobalPosition_builder struct {
 
 	Latitude  *float64
 	Longitude *float64
-	Altitude  *float64
-	Heading   *float64
+	Altitude  *float32
+	Heading   *float32
 }
 
 func (b0 GlobalPosition_builder) Build() *GlobalPosition {
@@ -505,10 +505,10 @@ func (b0 GlobalPosition_builder) Build() *GlobalPosition {
 // - `z“: up offset
 type RelativePosition struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_X           float64                `protobuf:"fixed64,1,opt,name=x,proto3,oneof"`
-	xxx_hidden_Y           float64                `protobuf:"fixed64,2,opt,name=y,proto3,oneof"`
-	xxx_hidden_Z           float64                `protobuf:"fixed64,3,opt,name=z,proto3,oneof"`
-	xxx_hidden_Angle       float64                `protobuf:"fixed64,4,opt,name=angle,proto3,oneof"`
+	xxx_hidden_X           float32                `protobuf:"fixed32,1,opt,name=x,proto3,oneof"`
+	xxx_hidden_Y           float32                `protobuf:"fixed32,2,opt,name=y,proto3,oneof"`
+	xxx_hidden_Z           float32                `protobuf:"fixed32,3,opt,name=z,proto3,oneof"`
+	xxx_hidden_Angle       float32                `protobuf:"fixed32,4,opt,name=angle,proto3,oneof"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -540,50 +540,50 @@ func (x *RelativePosition) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *RelativePosition) GetX() float64 {
+func (x *RelativePosition) GetX() float32 {
 	if x != nil {
 		return x.xxx_hidden_X
 	}
 	return 0
 }
 
-func (x *RelativePosition) GetY() float64 {
+func (x *RelativePosition) GetY() float32 {
 	if x != nil {
 		return x.xxx_hidden_Y
 	}
 	return 0
 }
 
-func (x *RelativePosition) GetZ() float64 {
+func (x *RelativePosition) GetZ() float32 {
 	if x != nil {
 		return x.xxx_hidden_Z
 	}
 	return 0
 }
 
-func (x *RelativePosition) GetAngle() float64 {
+func (x *RelativePosition) GetAngle() float32 {
 	if x != nil {
 		return x.xxx_hidden_Angle
 	}
 	return 0
 }
 
-func (x *RelativePosition) SetX(v float64) {
+func (x *RelativePosition) SetX(v float32) {
 	x.xxx_hidden_X = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 4)
 }
 
-func (x *RelativePosition) SetY(v float64) {
+func (x *RelativePosition) SetY(v float32) {
 	x.xxx_hidden_Y = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 4)
 }
 
-func (x *RelativePosition) SetZ(v float64) {
+func (x *RelativePosition) SetZ(v float32) {
 	x.xxx_hidden_Z = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
 }
 
-func (x *RelativePosition) SetAngle(v float64) {
+func (x *RelativePosition) SetAngle(v float32) {
 	x.xxx_hidden_Angle = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
 }
@@ -639,10 +639,10 @@ func (x *RelativePosition) ClearAngle() {
 type RelativePosition_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	X     *float64
-	Y     *float64
-	Z     *float64
-	Angle *float64
+	X     *float32
+	Y     *float32
+	Z     *float32
+	Angle *float32
 }
 
 func (b0 RelativePosition_builder) Build() *RelativePosition {
@@ -747,17 +747,17 @@ const file_steeleagle_protocol_v1_common_common_proto_rawDesc = "" +
 	"\n" +
 	"*steeleagle_protocol/v1/common/common.proto\x12\x1dsteeleagle_protocol.v1.common\"l\n" +
 	"\x04Pose\x12\x19\n" +
-	"\x05pitch\x18\x01 \x01(\x01H\x00R\x05pitch\x88\x01\x01\x12\x17\n" +
-	"\x04roll\x18\x02 \x01(\x01H\x01R\x04roll\x88\x01\x01\x12\x15\n" +
-	"\x03yaw\x18\x03 \x01(\x01H\x02R\x03yaw\x88\x01\x01B\b\n" +
+	"\x05pitch\x18\x01 \x01(\x02H\x00R\x05pitch\x88\x01\x01\x12\x17\n" +
+	"\x04roll\x18\x02 \x01(\x02H\x01R\x04roll\x88\x01\x01\x12\x15\n" +
+	"\x03yaw\x18\x03 \x01(\x02H\x02R\x03yaw\x88\x01\x01B\b\n" +
 	"\x06_pitchB\a\n" +
 	"\x05_rollB\x06\n" +
 	"\x04_yaw\"\xac\x01\n" +
 	"\bVelocity\x12\x18\n" +
-	"\x05x_vel\x18\x01 \x01(\x01H\x00R\x04xVel\x88\x01\x01\x12\x18\n" +
-	"\x05y_vel\x18\x02 \x01(\x01H\x01R\x04yVel\x88\x01\x01\x12\x18\n" +
-	"\x05z_vel\x18\x03 \x01(\x01H\x02R\x04zVel\x88\x01\x01\x12$\n" +
-	"\vangular_vel\x18\x04 \x01(\x01H\x03R\n" +
+	"\x05x_vel\x18\x01 \x01(\x02H\x00R\x04xVel\x88\x01\x01\x12\x18\n" +
+	"\x05y_vel\x18\x02 \x01(\x02H\x01R\x04yVel\x88\x01\x01\x12\x18\n" +
+	"\x05z_vel\x18\x03 \x01(\x02H\x02R\x04zVel\x88\x01\x01\x12$\n" +
+	"\vangular_vel\x18\x04 \x01(\x02H\x03R\n" +
 	"angularVel\x88\x01\x01B\b\n" +
 	"\x06_x_velB\b\n" +
 	"\x06_y_velB\b\n" +
@@ -766,8 +766,8 @@ const file_steeleagle_protocol_v1_common_common_proto_rawDesc = "" +
 	"\x0eGlobalPosition\x12\x1f\n" +
 	"\blatitude\x18\x01 \x01(\x01H\x00R\blatitude\x88\x01\x01\x12!\n" +
 	"\tlongitude\x18\x02 \x01(\x01H\x01R\tlongitude\x88\x01\x01\x12\x1f\n" +
-	"\baltitude\x18\x03 \x01(\x01H\x02R\baltitude\x88\x01\x01\x12\x1d\n" +
-	"\aheading\x18\x04 \x01(\x01H\x03R\aheading\x88\x01\x01B\v\n" +
+	"\baltitude\x18\x03 \x01(\x02H\x02R\baltitude\x88\x01\x01\x12\x1d\n" +
+	"\aheading\x18\x04 \x01(\x02H\x03R\aheading\x88\x01\x01B\v\n" +
 	"\t_latitudeB\f\n" +
 	"\n" +
 	"_longitudeB\v\n" +
@@ -775,10 +775,10 @@ const file_steeleagle_protocol_v1_common_common_proto_rawDesc = "" +
 	"\n" +
 	"\b_heading\"\x82\x01\n" +
 	"\x10RelativePosition\x12\x11\n" +
-	"\x01x\x18\x01 \x01(\x01H\x00R\x01x\x88\x01\x01\x12\x11\n" +
-	"\x01y\x18\x02 \x01(\x01H\x01R\x01y\x88\x01\x01\x12\x11\n" +
-	"\x01z\x18\x03 \x01(\x01H\x02R\x01z\x88\x01\x01\x12\x19\n" +
-	"\x05angle\x18\x04 \x01(\x01H\x03R\x05angle\x88\x01\x01B\x04\n" +
+	"\x01x\x18\x01 \x01(\x02H\x00R\x01x\x88\x01\x01\x12\x11\n" +
+	"\x01y\x18\x02 \x01(\x02H\x01R\x01y\x88\x01\x01\x12\x11\n" +
+	"\x01z\x18\x03 \x01(\x02H\x02R\x01z\x88\x01\x01\x12\x19\n" +
+	"\x05angle\x18\x04 \x01(\x02H\x03R\x05angle\x88\x01\x01B\x04\n" +
 	"\x02_xB\x04\n" +
 	"\x02_yB\x04\n" +
 	"\x02_zB\b\n" +

@@ -71,7 +71,7 @@ type StreamService struct {
 func (s *StreamService) GetVideoStreamURL(
 	ctx context.Context,
 	req *driverpb.GetVideoStreamURLRequest) (*driverpb.GetVideoStreamURLResponse, error) {
-	return &driverpb.GetVideoStreamURLResponse{StreamUrl: s.url}, nil
+	return driverpb.GetVideoStreamURLResponse_builder{StreamUrl: s.url}.Build(), nil
 }
 
 // StreamTelemetry mocks and logs a StreamTelemetry request. Like
@@ -81,9 +81,9 @@ func (s *StreamService) StreamTelemetry(
 	req *driverpb.StreamTelemetryRequest,
 	stream driverpb.StreamService_StreamTelemetryServer) error {
 	for {
-		err := stream.Send(&driverpb.StreamTelemetryResponse{
+		err := stream.Send(driverpb.StreamTelemetryResponse_builder{
 			Telemetry: &telemetrypb.Telemetry{},
-		})
+		}.Build())
 		if err != nil {
 			return err
 		}
@@ -97,15 +97,15 @@ func (s *StreamService) StreamVideoFrames(
 	frameId := 1
 	for {
 		data := make([]byte, 10)
-		frame := &telemetrypb.EncodedFrame{
+		frame := telemetrypb.EncodedFrame_builder{
 			Timestamp:   timestamppb.Now(),
 			Id:          uint64(frameId),
 			EncodedData: data,
-		}
+		}.Build()
 		frameId += 1
-		err := stream.Send(&driverpb.StreamVideoFramesResponse{
+		err := stream.Send(driverpb.StreamVideoFramesResponse_builder{
 			Frame: frame,
-		})
+		}.Build())
 		if err != nil {
 			return err
 		}

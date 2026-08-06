@@ -9,7 +9,7 @@ import (
 // and if so, whether its content is equal to want.
 func anyMatches(a *anypb.Any, want proto.Message) (bool, error) {
 	// Compares a.TypeUrl's message name against want's
-	// descriptor, without unmarshaling the payload
+	// descriptor, without unmarshalling the payload
 	if !a.MessageIs(want) {
 		return false, nil
 	}

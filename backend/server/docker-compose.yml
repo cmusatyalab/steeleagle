@@ -202,28 +202,28 @@ services:
       - SAM3_CHECKPOINT=${SAM3_CHECKPOINT}
     volumes:
       - ./steeleagle-vol/swiftmap:/app/output
-      - ./models:/app/checkpoints          
+      - ./models:/app/checkpoints
       - ./models/swiftmap-cache:/root/.cache
 
   # Swarm Controller
-  # Centralized processing of control plane for all vehicles
+  # Fans out control-plane commands to vehicles over Tailscale (5003, vehicle
+  # registration; 5004, GCS commands). 5004 is also served as plain TCP on
+  # this compose's own network (gcs-plain-listen in swarm-config.toml), since
+  # http-server/GCS here aren't themselves tailnet-joined; 5003 is
+  # tailnet-only, not published, since vehicles reach it via Tailscale.
   swarm-controller:
     image: cmusatyalab/steeleagle-swarm-controller:${SC_IMAGE_TAG}
     container_name: swarm-controller
     restart: unless-stopped
     ports:
-      - "5003:5003"
       - "5004:5004"
-      - "6001:6001"
-    privileged: true
-    entrypoint: [ "uv", "run", "./swarm_controller.py", "-a", "${REDIS_AUTH}"]
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
     volumes:
-      - ./steeleagle-vol/compiler/:/compiler
-      - ./steeleagle-vol/scripts/:/scripts
-      - ./steeleagle-dsl:/dsl
+      - ./swarm-config.toml:/steeleagle/config.toml:ro
+      - ./steeleagle-vol/swarm-controller-state:/steeleagle/.config
     networks:
       - steeleagle-net
-      - redis
     logging:
       driver: "json-file"
       options:

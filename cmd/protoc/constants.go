@@ -1,5 +1,19 @@
 package main
 
+import "google.golang.org/protobuf/compiler/protogen"
+
+// sdkImportPath is the Go import path for core_iface.pb.go and core_msg.pb.go.
+const sdkImportPath protogen.GoImportPath = "github.com/cmusatyalab/steeleagle/sdk"
+
+// enumsImportPath is the Go import path for the generated core_enums.pb.go file.
+const enumsImportPath protogen.GoImportPath = "github.com/cmusatyalab/steeleagle/sdk/enums"
+
+// commonPackage is the package that holds SteelEagle protocol common types.
+const commonPackage = "steeleagle_protocol.v1.common"
+
+// fieldNotPresentError is the name of the error returned when a field is not set.
+const fieldNotPresentError = "ErrFieldNotPresent"
+
 // wantedPackages are the subset of the SteelEagle API available to SteelEagle
 // SDK user code.
 var wantedPackages = []string{
@@ -12,6 +26,7 @@ var wantedPackages = []string{
 // hiddenMessages are messages within the wantedPackages that we don't want to
 // generate user bindings for.
 var hiddenMessages = []string{
+	"steeleagle_protocol.v1.services.driver.*Request",
 	"steeleagle_protocol.v1.services.driver.Calibrate*",
 	"steeleagle_protocol.v1.services.driver.Stream*",
 	"steeleagle_protocol.v1.services.driver.GetVideo*",

@@ -26,21 +26,24 @@ repos:
         args: [ --fix ]
       - id: ruff-format
 
-  - repo: https://github.com/crate-ci/typos
-    rev: v1.33.1
-    hooks:
-      - id: typos
-
   - repo: https://github.com/dnephin/pre-commit-golang
     rev: v0.5.1
     hooks:
       - id: go-fmt
-      - id: go-vet
       - id: go-build
+        require_serial: true
       - id: go-unit-tests
+        require_serial: true
 
   - repo: local
     hooks:
+      - id: go-vet
+        name: go vet
+        entry: go vet ./...
+        language: system
+        types: [go]
+        pass_filenames: false
+        require_serial: true
       - id: eslint-gcs
         name: eslint (gcs/react/prime)
         entry: bash -c 'cd gcs/react/prime && npx --no-install eslint --no-warn-ignored "${@#gcs/react/prime/}"' --

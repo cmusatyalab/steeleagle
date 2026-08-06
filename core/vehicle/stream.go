@@ -32,7 +32,7 @@ func (v *Vehicle) streamTelemetry(ctx context.Context) error {
 			v.log.Error().Msg("received nil telemetry from driver")
 			continue
 		}
-		v.store.addTelemetry(tel.Telemetry)
+		v.store.addTelemetry(tel.GetTelemetry())
 	}
 }
 
