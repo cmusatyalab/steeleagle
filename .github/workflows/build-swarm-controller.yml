@@ -2,17 +2,23 @@ name: Build and push swarm controller
 
 on:
   push:
-    branches: [ "main", "dev" ]
+    branches: [ "v4.0-beta" ]
     tags: [ "v*" ]
     paths:
       - '.github/workflows/build-swarm-controller.yml'
-      - 'backend/server/swarm_controller/**'
+      - 'cmd/swarm/**'
+      - 'core/swarm/**'
+      - 'internal/tailscale/**'
+      - 'api/steeleagle_protocol/v1/services/swarm/**'
+      - 'api/go/steeleagle_protocol/v1/services/swarm/**'
+      - 'go.mod'
+      - 'go.sum'
 
 jobs:
   build-and-push:
     uses: ./.github/workflows/deploy-docker-img.yml
     with:
       name: steeleagle-swarm-controller
-      dockerfile: backend/server/swarm_controller/Dockerfile
-      ctx: backend/server/swarm_controller/
+      dockerfile: cmd/swarm/Dockerfile
+      ctx: .
     secrets: inherit

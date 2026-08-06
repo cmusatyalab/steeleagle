@@ -1,0 +1,9 @@
+# Used by cmd/swarm/Dockerfile (built with the repo root as context, since a
+# Go build needs the whole module tree). Keeps the build context small by
+# excluding everything that isn't part of that build.
+.git
+gcs/
+docs/
+backend/
+sdk/
+*.md

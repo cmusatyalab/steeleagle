@@ -1,0 +1,15 @@
+# Config for the swarm-controller service in docker-compose.yml. See
+# cmd/swarm/config.template.toml for what each field means.
+
+listen-port = 5004
+# GCS (this compose's http-server/backend) isn't itself tailnet-joined, so
+# also serve SwarmService as plain TCP on the same Docker network.
+gcs-plain-listen = true
+vehicle-port = 5003
+
+[tailscale]
+hostname = "swarmcontroller"
+# Name of the environment variable holding the tsnet auth key, set via
+# TS_AUTHKEY in .env (see template.env). Leave blank to fall back to tsnet's
+# interactive login flow -- not useful for a container, so set TS_AUTHKEY.
+authkey-env = "TS_AUTHKEY"

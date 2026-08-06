@@ -1,0 +1,36 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - LivingEdgeLab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+package steeleagle_protocol.v1.services.swarm;
+
+option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/swarm;swarm";
+
+/*
+ * Used by per-host daemons (eagled) to announce a single vehicle they host to
+ * the swarm controller. This service is hosted by the swarm controller module.
+ */
+service RegistryService {
+  /*
+   * Register one vehicle with the swarm controller.
+   *
+   * eagled calls this once per vehicle, at the moment that vehicle starts,
+   * since eagled's hosted vehicles come and go independently over its own
+   * long-running lifetime. The returned stream is a liveness signal, not a
+   * data channel: eagled holds this call open for exactly as long as that
+   * vehicle is running. When the stream closes (vehicle stopped by eagled,
+   * eagled shutdown/crash, network partition), the controller evicts that one
+   * vehicle only.
+   */
+  rpc Register (RegisterRequest)
+    returns (stream RegisterResponse) {}
+}
+
+message RegisterRequest {
+  string daemon_name = 1; // which eagled instance this vehicle belongs to, for logging
+  string name = 2;        // vehicle name, matches the name used in SwarmService requests
+  uint32 port = 3;        // port this vehicle's ControlService/MissionService is bound to
+}
+
+message RegisterResponse {} // empty; the call's open stream is the liveness signal

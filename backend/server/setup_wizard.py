@@ -678,6 +678,15 @@ def main():
         style=GLOBAL_STYLE,
     ).run()
 
+    CONTEXT["ts_authkey"] = input_dialog(
+        title="Swarm Controller - Tailscale Auth Key",
+        text="Enter a Tailscale auth key for the swarm controller's tailnet node "
+        "(leave blank to fall back to tsnet's interactive login flow on first start):",
+        default="",
+        password=True,
+        style=GLOBAL_STYLE,
+    ).run()
+
     txt = FormattedText(
         [
             (
