@@ -1,10 +1,13 @@
-# SwarmService, GCS-facing, over the tailnet
+# SwarmService port
 listen-port = 5004
-# If true, also bind SwarmService on listen-port as plain TCP outside the
-# tailnet.
-gcs-plain-listen = false
-# RegistryService, eagled-facing
+# How SwarmService (client-facing) is bound: "tailnet" (default), "plain",
+# or "both" (bind both)
+swarm-listen = "tailnet"
+# RegistryService port
 vehicle-port = 5003
+# How RegistryService (vehicle-facing) is bound: "tailnet" (default) or
+# "plain"
+registry-listen = "tailnet"
 # Bound on each per-vehicle proxied call. Leave blank to use the built-in
 # default.
 call-timeout = "5s"

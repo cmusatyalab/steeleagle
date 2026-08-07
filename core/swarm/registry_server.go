@@ -33,6 +33,9 @@ func (s *RegistryServer) Register(
 	if req.GetPort() == 0 || req.GetPort() > 65535 {
 		return status.Errorf(codes.InvalidArgument, "port %d out of range", req.GetPort())
 	}
+	if req.GetDaemonName() == "" {
+		return status.Error(codes.InvalidArgument, "daemon name must not be empty")
+	}
 
 	p, ok := peer.FromContext(stream.Context())
 	if !ok {
@@ -46,6 +49,10 @@ func (s *RegistryServer) Register(
 
 	unregister := s.registry.Register(req.GetName(), addr)
 	defer unregister()
+
+	if err := stream.Send(swarmpb.RegisterResponse_builder{}.Build()); err != nil {
+		return err
+	}
 
 	<-stream.Context().Done()
 	return nil

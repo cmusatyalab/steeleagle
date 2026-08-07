@@ -17,9 +17,9 @@ import (
 // defaultCallTimeout bounds each per-vehicle proxied call.
 const defaultCallTimeout = 5 * time.Second
 
-// Server implements swarmpb.SwarmServiceServer, proxying each request to the
+// SwarmServer implements swarmpb.SwarmServiceServer, proxying each request to the
 // targeted vehicles' driver/mission services.
-type Server struct {
+type SwarmServer struct {
 	swarmpb.UnimplementedSwarmServiceServer
 	resolver VehicleResolver // resolves vehicle names to addresses
 	pool     *connPool       // pooled client connections, keyed by vehicle name
@@ -27,10 +27,10 @@ type Server struct {
 	log      zerolog.Logger  // logger object
 }
 
-// NewServer creates a new swarm server that reaches vehicles through the given
+// NewSwarmServer creates a new swarm server that reaches vehicles through the given
 // VehicleResolver.
-func NewServer(resolver VehicleResolver, options ...Option) *Server {
-	s := &Server{
+func NewSwarmServer(resolver VehicleResolver, options ...Option) *SwarmServer {
+	s := &SwarmServer{
 		resolver: resolver,
 		pool:     newConnPool(),
 		timeout:  defaultCallTimeout,
@@ -43,7 +43,7 @@ func NewServer(resolver VehicleResolver, options ...Option) *Server {
 }
 
 // clientConn resolves the named vehicle and returns a pooled connection to it.
-func (s *Server) clientConn(name string) (*grpc.ClientConn, error) {
+func (s *SwarmServer) clientConn(name string) (*grpc.ClientConn, error) {
 	addr, ok := s.resolver.Resolve(name)
 	if !ok {
 		return nil, status.Errorf(codes.NotFound, "unknown vehicle %q", name)
@@ -52,16 +52,16 @@ func (s *Server) clientConn(name string) (*grpc.ClientConn, error) {
 }
 
 // callTimeout bounds each per-vehicle proxied call.
-func (s *Server) callTimeout() time.Duration {
+func (s *SwarmServer) callTimeout() time.Duration {
 	return s.timeout
 }
 
 // Close closes every pooled connection to a vehicle.
-func (s *Server) Close() {
+func (s *SwarmServer) Close() {
 	s.pool.close()
 }
 
-func (s *Server) SwarmTakeOff(
+func (s *SwarmServer) SwarmTakeOff(
 	req *swarmpb.SwarmTakeOffRequest,
 	stream grpc.ServerStreamingServer[swarmpb.SwarmTakeOffResponse],
 ) error {
@@ -85,7 +85,7 @@ func (s *Server) SwarmTakeOff(
 	)
 }
 
-func (s *Server) SwarmLand(
+func (s *SwarmServer) SwarmLand(
 	req *swarmpb.SwarmLandRequest,
 	stream grpc.ServerStreamingServer[swarmpb.SwarmLandResponse],
 ) error {
@@ -109,7 +109,7 @@ func (s *Server) SwarmLand(
 	)
 }
 
-func (s *Server) SwarmHold(
+func (s *SwarmServer) SwarmHold(
 	req *swarmpb.SwarmHoldRequest,
 	stream grpc.ServerStreamingServer[swarmpb.SwarmHoldResponse],
 ) error {
@@ -133,7 +133,7 @@ func (s *Server) SwarmHold(
 	)
 }
 
-func (s *Server) SwarmKill(
+func (s *SwarmServer) SwarmKill(
 	req *swarmpb.SwarmKillRequest,
 	stream grpc.ServerStreamingServer[swarmpb.SwarmKillResponse],
 ) error {
@@ -157,7 +157,7 @@ func (s *Server) SwarmKill(
 	)
 }
 
-func (s *Server) SwarmReturnToHome(
+func (s *SwarmServer) SwarmReturnToHome(
 	req *swarmpb.SwarmReturnToHomeRequest,
 	stream grpc.ServerStreamingServer[swarmpb.SwarmReturnToHomeResponse],
 ) error {
@@ -181,7 +181,7 @@ func (s *Server) SwarmReturnToHome(
 	)
 }
 
-func (s *Server) SwarmSetVelocity(
+func (s *SwarmServer) SwarmSetVelocity(
 	req *swarmpb.SwarmSetVelocityRequest,
 	stream grpc.ServerStreamingServer[swarmpb.SwarmSetVelocityResponse],
 ) error {
@@ -205,7 +205,7 @@ func (s *Server) SwarmSetVelocity(
 	)
 }
 
-func (s *Server) SwarmSetGimbalPose(
+func (s *SwarmServer) SwarmSetGimbalPose(
 	req *swarmpb.SwarmSetGimbalPoseRequest,
 	stream grpc.ServerStreamingServer[swarmpb.SwarmSetGimbalPoseResponse],
 ) error {
@@ -229,7 +229,7 @@ func (s *Server) SwarmSetGimbalPose(
 	)
 }
 
-func (s *Server) SwarmStartMission(
+func (s *SwarmServer) SwarmStartMission(
 	req *swarmpb.SwarmStartMissionRequest,
 	stream grpc.ServerStreamingServer[swarmpb.SwarmStartMissionResponse],
 ) error {
@@ -253,7 +253,7 @@ func (s *Server) SwarmStartMission(
 	)
 }
 
-func (s *Server) SwarmUploadMission(
+func (s *SwarmServer) SwarmUploadMission(
 	req *swarmpb.SwarmUploadMissionRequest,
 	stream grpc.ServerStreamingServer[swarmpb.SwarmUploadMissionResponse],
 ) error {
@@ -277,7 +277,7 @@ func (s *Server) SwarmUploadMission(
 	)
 }
 
-func (s *Server) SwarmStopMission(
+func (s *SwarmServer) SwarmStopMission(
 	req *swarmpb.SwarmStopMissionRequest,
 	stream grpc.ServerStreamingServer[swarmpb.SwarmStopMissionResponse],
 ) error {
@@ -301,4 +301,4 @@ func (s *Server) SwarmStopMission(
 	)
 }
 
-var _ vehicleDialer = (*Server)(nil)
+var _ vehicleDialer = (*SwarmServer)(nil)

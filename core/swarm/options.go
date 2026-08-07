@@ -8,18 +8,18 @@ import (
 	"github.com/rs/zerolog"
 )
 
-type Option func(*Server)
+type Option func(*SwarmServer)
 
-// WithLogger overrides the Server's default logger.
+// WithLogger overrides the SwarmServer's default logger.
 func WithLogger(logger zerolog.Logger) Option {
-	return func(s *Server) {
+	return func(s *SwarmServer) {
 		s.log = logger
 	}
 }
 
 // WithCallTimeout overrides the bound placed on each per-vehicle proxied call.
 func WithCallTimeout(timeout time.Duration) Option {
-	return func(s *Server) {
+	return func(s *SwarmServer) {
 		s.timeout = timeout
 	}
 }
@@ -29,7 +29,7 @@ func WithCallTimeout(timeout time.Duration) Option {
 // from the swarm controller's own tailnet identity and can actually reach
 // tailnet-only vehicle addresses.
 func WithDialer(dialer func(ctx context.Context, network, addr string) (net.Conn, error)) Option {
-	return func(s *Server) {
+	return func(s *SwarmServer) {
 		s.pool.dialer = dialer
 	}
 }
