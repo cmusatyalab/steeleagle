@@ -22,6 +22,9 @@ import (
 type TailscaleConfig struct {
 	Hostname   string `toml:"hostname"`
 	AuthKeyEnv string `toml:"authkey-env,omitempty"`
+	// Ephemeral option keeps no tsnet state on disk, so a restart always
+	// re-registers fresh.
+	Ephemeral bool `toml:"ephemeral,omitempty"`
 }
 
 // Config models the top-level document.
@@ -46,7 +49,7 @@ const (
 
 // swarmControllerTailscaleTag is advertised by the swarm controller's own
 // tsnet node so it's identifiable on the tailnet.
-const swarmControllerTailscaleTag = "tag:swarmcontroller"
+const swarmControllerTailscaleTag = "tag:swarm-controller"
 
 func main() {
 	path := flag.String("config", "config.toml", "path to the TOML config file")
@@ -100,7 +103,7 @@ func main() {
 		if cfg.Tailscale.AuthKeyEnv != "" {
 			authKey = os.Getenv(cfg.Tailscale.AuthKeyEnv)
 		}
-		ts, err = tailscale.NewServer(cfg.Tailscale.Hostname, authKey, swarmControllerTailscaleTag)
+		ts, err = tailscale.NewServer(cfg.Tailscale.Hostname, authKey, cfg.Tailscale.Ephemeral, swarmControllerTailscaleTag)
 		if err != nil {
 			log.Fatal().Msgf("starting tailscale: %v", err)
 		}

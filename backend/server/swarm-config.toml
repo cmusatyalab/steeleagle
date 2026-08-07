@@ -16,3 +16,6 @@ hostname = "swarmcontroller"
 # Name of the environment variable holding the tsnet auth key (not the key
 # itself). Leave blank to fall back to tsnet's interactive login flow.
 authkey-env = "TS_AUTHKEY"
+# Register as an ephemeral node and keep no tsnet state on disk, so a restart
+# always re-registers fresh.
+ephemeral = true

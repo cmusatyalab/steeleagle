@@ -1,5 +1,3 @@
-// Package tailscale wraps tsnet so cmd/ binaries can join the tailnet under
-// their own node identity without each duplicating the setup.
 package tailscale
 
 import (
@@ -8,6 +6,7 @@ import (
 	"net"
 
 	"tailscale.com/ipn"
+	"tailscale.com/ipn/store/mem"
 	"tailscale.com/tsnet"
 )
 
@@ -19,11 +18,16 @@ type Server struct {
 // non-empty it's used to join the tailnet non-interactively. Otherwise, tsnet
 // falls back to its interactive login flow. tags, if non-empty (e.g.
 // "tag:eagled", "tag:vehicle"), are advertised to control so the node comes up
-// tagged.
-func NewServer(hostname, authKey string, tags ...string) (*Server, error) {
+// tagged. If ephemeral is true, the node keeps no state on disk, every call to
+// NewServer re-registers from scratch.
+func NewServer(hostname, authKey string, ephemeral bool, tags ...string) (*Server, error) {
 	server := new(tsnet.Server)
 	server.Hostname = hostname
 	server.AuthKey = authKey
+	server.Ephemeral = ephemeral
+	if ephemeral {
+		server.Store = new(mem.Store)
+	}
 
 	// Start the Tailscale server
 	if err := server.Start(); err != nil {
