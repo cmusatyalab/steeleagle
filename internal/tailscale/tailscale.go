@@ -16,10 +16,9 @@ type Server struct {
 
 // NewServer starts a tsnet node under the given hostname. If authKey is
 // non-empty it's used to join the tailnet non-interactively. Otherwise, tsnet
-// falls back to its interactive login flow. tags, if non-empty (e.g.
-// "tag:eagled", "tag:vehicle"), are advertised to control so the node comes up
-// tagged. If ephemeral is true, the node keeps no state on disk, every call to
-// NewServer re-registers from scratch.
+// falls back to its interactive login flow. tags, if non-empty, are advertised
+// to control so the node comes up tagged. If ephemeral is true, the node keeps
+// no state on disk, every call to NewServer re-registers from scratch.
 func NewServer(hostname, authKey string, ephemeral bool, tags ...string) (*Server, error) {
 	server := new(tsnet.Server)
 	server.Hostname = hostname
