@@ -1,0 +1,62 @@
+---
+# SPDX-FileCopyrightText: 2026 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+- name: Include Go toolchain tasks
+  ansible.builtin.include_tasks:
+    file: go.yml
+    apply:
+      tags: [go]
+  tags: [go]
+
+- name: Include base package tasks
+  ansible.builtin.include_tasks:
+    file: packages.yml
+    apply:
+      tags: [packages]
+  tags: [packages]
+
+- name: Include Node.js tasks
+  ansible.builtin.include_tasks:
+    file: nodejs.yml
+    apply:
+      tags: [nodejs]
+  tags: [nodejs]
+
+- name: Include buf tasks
+  ansible.builtin.include_tasks:
+    file: buf.yml
+    apply:
+      tags: [buf]
+  tags: [buf]
+
+- name: Include repository clone tasks
+  ansible.builtin.include_tasks:
+    file: repo.yml
+    apply:
+      tags: [repo]
+  tags: [repo]
+
+- name: Include pre-commit tasks
+  ansible.builtin.include_tasks:
+    file: precommit.yml
+    apply:
+      tags: [precommit]
+  tags: [precommit]
+
+- name: Include Docker tasks
+  ansible.builtin.include_tasks:
+    file: docker.yml
+    apply:
+      tags: [docker]
+  tags: [docker]
+  when: dev_install_docker | bool
+
+- name: Include NVIDIA Container Toolkit tasks
+  ansible.builtin.include_tasks:
+    file: nvidia-container-toolkit.yml
+    apply:
+      tags: [nvidia]
+  tags: [nvidia]
+  when: dev_install_docker | bool and dev_install_nvidia_container_toolkit | bool

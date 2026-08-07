@@ -1,0 +1,26 @@
+---
+# SPDX-FileCopyrightText: 2026 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+# This lives in its own file (rather than at the end of templates.yml) purely
+# for ordering: Debian.yml includes it LAST, after the binary-provisioning
+# includes. Managing service state before the binary exists would mean that
+# the moment someone sets eagled_service_enabled: true, `state: started`
+# runs against a unit whose ExecStart binary is not installed yet -- systemd
+# fails with a missing-executable error, the play aborts, and the binary is
+# never installed. Every retry would then fail identically.
+
+- name: Manage the eagled service state
+  # daemon_reload is kept here in addition to the "Reload eagled systemd
+  # unit" handler notified by templates.yml: the handler covers unit-file-only
+  # changes (e.g. a `--tags templates` run, where this task never executes),
+  # while this inline daemon_reload covers full runs, where this task always
+  # executes right after the unit may have been rewritten.
+  ansible.builtin.systemd_service:
+    name: eagled
+    daemon_reload: true
+    enabled: "{{ eagled_service_enabled }}"
+    state: "{{ 'started' if eagled_service_enabled else 'stopped' }}"
+  become: "{{ eagled_use_become }}"
+  tags: [service]

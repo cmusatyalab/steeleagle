@@ -1,0 +1,8 @@
+---
+# SPDX-FileCopyrightText: 2026 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+bootstrap_python_package: python3
+bootstrap_extra_packages:
+  - python3-apt

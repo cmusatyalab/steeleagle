@@ -1,0 +1,17 @@
+---
+# SPDX-FileCopyrightText: 2026 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+- name: Fail on unsupported OS family
+  ansible.builtin.fail:
+    msg: >-
+      dev_environment only supports Debian-family targets (Debian/Ubuntu).
+      Detected OS family: {{ ansible_os_family }}.
+  when: ansible_os_family != 'Debian'
+  tags: always
+
+- name: Include Debian-family tasks
+  ansible.builtin.include_tasks: Debian.yml
+  when: ansible_os_family == 'Debian'
+  tags: always

@@ -1,0 +1,40 @@
+---
+# SPDX-FileCopyrightText: 2026 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+- name: Determine Go architecture for this host
+  ansible.builtin.set_fact:
+    dev_go_arch: "{{ dev_arch_map[ansible_architecture] | default('') }}"  # noqa: var-naming[no-role-prefix]
+
+- name: Fail on unsupported architecture for Go
+  ansible.builtin.fail:
+    msg: >-
+      No Go architecture mapping for {{ ansible_architecture }}. Add it to
+      dev_arch_map to support this host.
+  when: dev_go_arch == ''
+
+- name: Download the Go toolchain archive
+  ansible.builtin.get_url:
+    url: "https://go.dev/dl/go{{ dev_go_version }}.linux-{{ dev_go_arch }}.tar.gz"
+    dest: "/tmp/go{{ dev_go_version }}.linux-{{ dev_go_arch }}.tar.gz"
+    mode: '0644'
+  become: true
+
+- name: Extract the Go toolchain to /usr/local
+  ansible.builtin.unarchive:
+    src: "/tmp/go{{ dev_go_version }}.linux-{{ dev_go_arch }}.tar.gz"
+    dest: /usr/local
+    remote_src: true
+    creates: "{{ dev_go_install_dir }}/bin/go"
+  become: true
+
+- name: Add Go to PATH for all users
+  ansible.builtin.copy:
+    dest: /etc/profile.d/go.sh
+    content: |
+      export PATH="{{ dev_go_install_dir }}/bin:$PATH"
+    owner: root
+    group: root
+    mode: '0644'
+  become: true

@@ -1,0 +1,11 @@
+---
+# SPDX-FileCopyrightText: 2026 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+- name: Install buf
+  ansible.builtin.get_url:
+    url: "https://github.com/bufbuild/buf/releases/download/v{{ dev_buf_version }}/buf-Linux-{{ ansible_architecture }}"
+    dest: /usr/local/bin/buf
+    mode: '0755'
+  become: true

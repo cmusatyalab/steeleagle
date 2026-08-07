@@ -1,0 +1,43 @@
+# Managed by Ansible (roles/eagled_vehicle). Do not edit by hand -- changes
+# will be overwritten on the next provisioning run.
+#
+# NOTE: options 'vpn' and 'port-base' can only be changed via file edit
+# before daemon startup. These fields are inaccessible from the REST API.
+
+vpn = {{ eagled_vpn | lower }}
+port-base = {{ eagled_port_base }}
+
+[log]
+mcap = {{ eagled_log_mcap | lower }}
+filename = "{{ eagled_log_filename }}"
+mask = {{ eagled_log_mask }}
+level = "{{ eagled_log_level }}"
+
+[errors]
+failfast = {{ eagled_errors_failfast | lower }}
+
+[backend]
+[backend.gcs]
+[backend.swarm-controller]
+{% for engine in eagled_backend_engines %}
+[[backend.engines]]
+id = "{{ engine.id }}"
+isolation = "{{ engine.isolation | default(eagled_isolation_mode) }}"
+[backend.engines.kwargs]
+{% for key, value in (engine.kwargs | default({})).items() %}
+{{ key }} = "{{ value }}"
+{% endfor %}
+{% endfor %}
+
+[vehicle]
+vpn = {{ eagled_vehicle_vpn | lower }}
+isolation = "{{ eagled_isolation_mode }}"
+{% for device in eagled_vehicle_devices %}
+[[vehicle.devices]]
+name = "{{ device.name }}"
+id = "{{ device.id }}"
+[vehicle.devices.kwargs]
+{% for key, value in (device.kwargs | default({})).items() %}
+{{ key }} = "{{ value }}"
+{% endfor %}
+{% endfor %}

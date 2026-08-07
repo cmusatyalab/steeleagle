@@ -1,0 +1,71 @@
+---
+# SPDX-FileCopyrightText: 2026 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+# Every task here is tagged `always`, matching both roles' tasks/main.yml
+# dispatchers. Without it, ANY `--tags X` filter silently excludes the whole
+# bootstrap play (0 tasks run) -- the same class of bug fixed elsewhere in
+# this tree, which never got applied to bootstrap because bootstrap predates
+# that discovery. Bootstrap is a precondition for every other role, so it
+# should never be tag-filtered out.
+#
+# The three read-only `raw` probes carry `check_mode: false`. ansible.builtin.raw
+# declares `check_mode: support: none`, so under `--check` it is skipped and
+# registers a result with changed/failed/skipped keys but NO `rc` key -- which
+# made `ansible-playbook --check` crash on the very first conditional with
+# "'dict object' has no attribute 'rc'". These probes are pure reads
+# (`command -v ...` / `dpkg -s ...`), so executing them for real even under
+# `--check` is safe and gives the conditionals a truthful answer. The
+# `| default(1)` filters on the consuming conditions are belt-and-braces for
+# the (now theoretical) case where `rc` is absent -- defaulting to a non-zero
+# rc means "not present", i.e. the conservative branch.
+
+- name: Check whether Python 3 is present
+  ansible.builtin.raw: command -v python3
+  register: bootstrap_python_check
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: always
+
+- name: Install Python 3 (Debian/Ubuntu)
+  ansible.builtin.raw: apt-get update && apt-get install -y {{ bootstrap_python_package }}
+  when: bootstrap_python_check.rc | default(1) != 0
+  become: true
+  register: bootstrap_python_install
+  changed_when: true
+  tags: always
+
+- name: Check whether python3-apt is present
+  ansible.builtin.raw: dpkg -s python3-apt
+  register: bootstrap_apt_pkg_check
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: always
+
+- name: Install apt support packages (Debian/Ubuntu)
+  ansible.builtin.raw: apt-get update && apt-get install -y {{ bootstrap_extra_packages | join(' ') }}
+  when: bootstrap_apt_pkg_check.rc | default(1) != 0
+  become: true
+  register: bootstrap_extra_install
+  changed_when: true
+  tags: always
+
+- name: Check whether sudo is present
+  ansible.builtin.raw: command -v sudo
+  register: bootstrap_sudo_check
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: always
+
+- name: Warn if sudo is not present
+  ansible.builtin.debug:
+    msg: >-
+      sudo was not found on this host. Privilege-escalated tasks in later
+      roles will fail unless become is configured another way (e.g. running
+      as root directly).
+  when: bootstrap_sudo_check.rc | default(1) != 0
+  tags: always

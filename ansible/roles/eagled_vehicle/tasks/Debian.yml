@@ -1,0 +1,77 @@
+---
+# SPDX-FileCopyrightText: 2026 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+- name: Include config and service templating tasks
+  # NOTE: templates.yml's own tasks already carry their own distinct tags
+  # (templates / service / service-user). Using `apply:` here would
+  # additively merge ALL of those tags onto EVERY task in the file
+  # (Ansible's documented apply behavior is a union with each task's
+  # existing tags, not a fallback for untagged tasks), which would defeat
+  # the separation between file templating and user/group creation. This
+  # include is therefore tagged `always` (a plain dispatch step, like
+  # tasks/main.yml's "Include Debian-family tasks"), so it is never
+  # silently excluded by a --tags filter (Task 6 fix #1), while letting
+  # each inner task's own tag decide whether it actually runs.
+  ansible.builtin.include_tasks: templates.yml
+  tags: always
+
+- name: Include isolation runtime dependency tasks
+  # NOTE: isolation.yml's own tasks are uniformly untagged internally (a
+  # single "isolation" topic gated only by eagled_isolation_mode `when`
+  # conditions, not by individually-selectable sub-tags). This matches
+  # dev_environment/tasks/Debian.yml's pattern, so `apply:` is used here
+  # to propagate the outer `isolation` tag down to every task in the
+  # file (unlike templates.yml above, whose tasks already carry their
+  # own distinct tags and would be broken by `apply:`'s union behavior).
+  ansible.builtin.include_tasks:
+    file: isolation.yml
+    apply:
+      tags: [isolation]
+  tags: [isolation]
+
+- name: Build and install eagled via cross-compilation
+  # NOTE: build-cross-compile.yml's own tasks are uniformly untagged
+  # internally (a single "build"/"cross_compile" topic gated only by the
+  # `when: eagled_install_mode == 'cross_compile'` condition on this
+  # include, not by individually-selectable sub-tags), matching
+  # isolation.yml's pattern above rather than templates.yml's. So
+  # `apply:` is used here to propagate the outer tags down to every task
+  # in the file.
+  ansible.builtin.include_tasks:
+    file: build-cross-compile.yml
+    apply:
+      tags: [build, cross_compile]
+  when: eagled_install_mode == 'cross_compile'
+  tags: [build, cross_compile]
+
+- name: Build and install eagled on-device
+  # NOTE: build-on-device.yml's own tasks are uniformly untagged internally
+  # (a single "build"/"build_on_device" topic gated only by the
+  # `when: eagled_install_mode == 'build_on_device'` condition on this
+  # include, not by individually-selectable sub-tags), matching
+  # build-cross-compile.yml's pattern above. So `apply:` is used here to
+  # propagate the outer tags down to every task in the file.
+  ansible.builtin.include_tasks:
+    file: build-on-device.yml
+    apply:
+      tags: [build, build_on_device]
+  when: eagled_install_mode == 'build_on_device'
+  tags: [build, build_on_device]
+
+# MUST stay last: service.yml manages systemd state, and doing that before
+# the binary-provisioning includes above would start a unit whose ExecStart
+# binary does not exist yet (see the comment at the top of service.yml).
+- name: Include eagled service state management tasks
+  # NOTE: service.yml holds a single, uniformly-tagged task, so `apply:` is
+  # the right form here -- same as isolation.yml / build-*.yml above, and
+  # unlike templates.yml (whose tasks carry distinct internal tags that
+  # `apply:`'s union behavior would flatten). The redundant `tags: [service]`
+  # inside service.yml itself is deliberate: it keeps the task correctly
+  # scoped if this include is ever switched to `tags: always`.
+  ansible.builtin.include_tasks:
+    file: service.yml
+    apply:
+      tags: [service]
+  tags: [service]
