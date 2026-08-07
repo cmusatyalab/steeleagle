@@ -14,7 +14,7 @@ from ...datatypes import common as common
 from ...datatypes.control import AltitudeMode, HeadingMode, PoseMode
 from ...datatypes.result import BoundingBox, Detection, FrameResult
 from ...datatypes.waypoint import Waypoints
-from ...utils import fetch_results, fetch_telemetry
+from ...utils import fetch_results, fetch_results_range, fetch_telemetry
 from ..primitives.vehicle import (
     Hold,
     Joystick,
@@ -781,27 +781,54 @@ class AvoidTask(Action):
 
 # @register_action
 class Map(Action):
-    # TODO: Revise the following draft for map task
-    pass
+    """Fly an area, then iteratively re-fly the next-flight area returned by the mapping engine."""
+
     # Fields
     gimbal_pitch: float = Field(45, ge=0.0, description="Gimbal pitch degree")
     compute_stream: str = Field(
         "swiftmap-engine",
         description="Name of compute stream to pull next flight navigation points from",
     )
-    first_waypoints: Waypoints = Field(description="Waypoints definition (area, alt, algo, spacing, angle_degrees, trigger_distance).")
+    first_waypoints: Waypoints = Field(
+        description="Waypoints definition for the first flight (area, alt, algo, spacing, angle_degrees, trigger_distance)."
+    )
+    next_waypoints: Waypoints = Field(
+        description="Waypoints definition for follow-up flights; its area is replaced by the KML from each navigation result."
+    )
     num_trials: int = Field(3, gt=0, description="Number of trials for iterative flights")
+
+    @staticmethod
+    def _latest_area_kml(results: list[tuple[float, FrameResult]]) -> str | None:
+        for _ts, res in reversed(results):
+            if not res or not res.result:
+                continue
+            for compute in res.result:
+                if compute.navigation_result and compute.navigation_result.area_kml:
+                    return compute.navigation_result.area_kml
+        return None
+
     # Main logic
     async def execute(self):
-        first_wps = self.first_waypoints.calculate()
-        first_flight = Patrol(waypoints=first_wps)
-        await first_flight.execute()
-        for trial in range(num_trials):
-            res = await types.COMPUTE.find_results(
-            compute_stream=self.compute_stream, data_key=self.data_key)
-            if res and res.result and hasattr(res.result,'navigation_result'):
-                new_wps = res.result.navigation_result
-                next_flight = Patrol(waypoints=new_wps)
-        await next_flight.execute()
+        wps = self.first_waypoints
+
+        for trial in range(self.num_trials):
+            t0 = time.time()
+            await Patrol(waypoints=wps).execute()
+
+            results = await fetch_results_range(self.compute_stream, t0, time.time())
+            area_kml = self._latest_area_kml(results)
+            if not area_kml:
+                logger.info(
+                    "[Map] No navigation result on %s during trial %d; stopping.",
+                    self.compute_stream,
+                    trial,
+                )
+                return
+
+            wps = self.next_waypoints.model_copy(
+                update={"kml": area_kml, "area": None}
+            )
+
+        await Patrol(waypoints=wps).execute()
 
 

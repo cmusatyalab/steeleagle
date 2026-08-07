@@ -24,8 +24,13 @@ class RelativeWaypoints(Datatype):
 class Waypoints(Datatype):
     """A list of geolocation waypoints with a slicing algorithm for coverage patterns."""
 
-    area: str | list[Location] = Field(
-        description="KML area name (string) or list of Location points defining the area."
+    area: str | list[Location] | None = Field(
+        default=None,
+        description="KML area name (string) or list of Location points defining the area. If omitted, every area in the KML is used.",
+    )
+    kml: str | None = Field(
+        default=None,
+        description="KML document to slice, overriding the mission map. Use for KMLs received at runtime (e.g. a navigation result).",
     )
     alt: float = Field(
         description="Altitude at which waypoints are visited [meters]. Altitudes in Location objects are ignored."
@@ -74,44 +79,56 @@ class Waypoints(Datatype):
                 )
         return self
 
-    def calculate(self) -> dict[str, list[dict[str, float]]]:
-        raw = None  # Raw geopoints
+    def _resolve_areas(self, kml: str | None = None) -> dict[str, GeoPoints]:
+        """Resolve the target area(s) to raw geopoints.
 
-        # Check to see if a KML map has been sent or if Locations have been provided
-        if types.MAP is None and isinstance(self.area, str):
-            raise ValueError(
-                "MAP is not set. Set map_mod.MAP to a fastkml.kml.KML before calling calculate()."
-            )
-        elif types.MAP:
-            raw_map: dict[str, GeoPoints] = parse_kml_file(types.MAP)
-            if not raw_map:
-                logger.warning("No valid areas found in mission map (KML).")
-                return {}
-
-            if self.area not in raw_map:
-                available = ", ".join(sorted(raw_map.keys()))
-                raise ValueError(
-                    f"Area '{self.area}' not found in mission map. Available areas: {available}"
+        KML source precedence: the `kml` argument, then the `kml` field, then the
+        mission map (`types.MAP`). Inline Location lists bypass KML entirely.
+        """
+        # Check to see if Locations have been provided instead of a KML area
+        if isinstance(self.area, list):
+            return {
+                "inline_area": GeoPoints(
+                    [(p.longitude, p.latitude) for p in self.area]
                 )
+            }
 
-            raw = raw_map[self.area]
-            if len(raw) < 3:
-                logger.warning("Area %s has < 3 points; skipping.", self.area)
-                return {}
-        else:
-            raw = GeoPoints([(p.longitude, p.latitude) for p in self.area])
+        source = kml or self.kml or types.MAP
+        if source is None:
+            raise ValueError(
+                "No KML available. Pass calculate(kml=...), set the 'kml' field, "
+                "or set types.MAP to a KML string before calling calculate()."
+            )
 
-        # Choose partitioner (validation already done by @model_validator)
+        raw_map: dict[str, GeoPoints] = parse_kml_file(source)
+        if not raw_map:
+            logger.warning("No valid areas found in KML.")
+            return {}
+
+        # No area named: slice every placemark in the document. Runtime KMLs
+        # (e.g. navigation results) use names the mission did not choose.
+        if self.area is None:
+            return raw_map
+
+        if self.area not in raw_map:
+            available = ", ".join(sorted(raw_map.keys()))
+            raise ValueError(
+                f"Area '{self.area}' not found in KML. Available areas: {available}"
+            )
+        return {self.area: raw_map[self.area]}
+
+    def _make_partition(self):
+        """Choose partitioner (validation already done by @model_validator)."""
         if self.algo == "edge":
-            partition = EdgePartition()
+            return EdgePartition()
         elif self.algo == "survey":
-            partition = SurveyPartition(
+            return SurveyPartition(
                 spacing=self.spacing,
                 angle_degrees=self.angle_degrees,
                 trigger_distance=self.trigger_distance,
             )
         elif self.algo == "corridor":
-            partition = CorridorPartition(
+            return CorridorPartition(
                 spacing=self.spacing,
                 angle_degrees=self.angle_degrees,
             )
@@ -120,27 +137,38 @@ class Waypoints(Datatype):
             msg = f"Unknown algo '{self.algo}'. Expected one of: 'edge', 'survey', 'corridor'."
             raise ValueError(msg)
 
-        origin_wgs = raw.centroid()
-        projected = raw.convert_to_projected()
-        poly = projected.to_polygon()
+    def calculate(self, kml: str | None = None) -> dict[str, list[dict[str, float]]]:
+        areas = self._resolve_areas(kml)
+        partition = self._make_partition()
 
-        parts_m = partition.generate_partitioned_geopoints(poly)
-        parts_wgs = [GeoPoints(p).inverse_project_from(origin_wgs) for p in parts_m]
+        result: dict[str, list[dict[str, float]]] = {}
+        for name, raw in areas.items():
+            if len(raw) < 3:
+                logger.warning("Area %s has < 3 points; skipping.", name)
+                continue
 
-        # Flatten segments to per-point waypoints
-        waypoints: list[dict[str, float]] = []
-        for gp in parts_wgs:
-            for lon, lat in gp:
-                waypoints.append(
-                    {"lat": float(lat), "lon": float(lon), "alt": float(self.alt)}
-                )
+            origin_wgs = raw.centroid()
+            projected = raw.convert_to_projected()
+            poly = projected.to_polygon()
 
-        logger.info(
-            "Partitioned '%s' with %s: %d segment(s), %d point(s)",
-            self.area,
-            self.algo,
-            len(parts_wgs),
-            len(waypoints),
-        )
-        key = self.area if isinstance(self.area, str) else "inline_area"
-        return {key: waypoints}
+            parts_m = partition.generate_partitioned_geopoints(poly)
+            parts_wgs = [GeoPoints(p).inverse_project_from(origin_wgs) for p in parts_m]
+
+            # Flatten segments to per-point waypoints
+            waypoints: list[dict[str, float]] = []
+            for gp in parts_wgs:
+                for lon, lat in gp:
+                    waypoints.append(
+                        {"lat": float(lat), "lon": float(lon), "alt": float(self.alt)}
+                    )
+
+            logger.info(
+                "Partitioned '%s' with %s: %d segment(s), %d point(s)",
+                name,
+                self.algo,
+                len(parts_wgs),
+                len(waypoints),
+            )
+            result[name] = waypoints
+
+        return result

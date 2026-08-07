@@ -22,6 +22,18 @@ class Compute:
         source = "results"
         return await self.mission_store.get_latest(source, topic)
 
+    async def get_results_range(self, topic, t0: float, t1: float):
+        """Every result recorded on `topic` between `t0` and `t1` (unix seconds).
+
+        Unlike `get_result`, this reads the event log rather than the latest
+        snapshot, so results are not subject to `get_latest`'s freshness window.
+        Use it for results that arrive sporadically during a long-running action.
+        Returns `[(ts, FrameResult), ...]` oldest first, bounded by the store's
+        event retention.
+        """
+        source = "results"
+        return await self.mission_store.get_range(source, topic, t0, t1)
+
     async def add_datasinks(self, datasinks: list[DatasinkInfo]) -> Response:
         req = compute_proto.AddDatasinksRequest()
         for d in datasinks:
