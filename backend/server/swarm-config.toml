@@ -14,7 +14,9 @@ registry-listen = "tailnet"
 [tailscale]
 hostname = "swarmcontroller"
 # Name of the environment variable holding the tsnet auth key (not the key
-# itself). Leave blank to fall back to tsnet's interactive login flow.
+# itself). Leave blank to fall back to tsnet's interactive login flow. Create
+# the key with any tags already attached in the admin console, so the node
+# registers already-tagged instead of being retagged after the fact.
 authkey-env = "TS_AUTHKEY"
 # Register as an ephemeral node and keep no tsnet state on disk, so a restart
 # always re-registers fresh.

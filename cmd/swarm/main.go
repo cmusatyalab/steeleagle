@@ -47,10 +47,6 @@ const (
 	listenBoth    = "both"
 )
 
-// swarmControllerTailscaleTag is advertised by the swarm controller's own
-// tsnet node so it's identifiable on the tailnet.
-const swarmControllerTailscaleTag = "tag:swarm-controller"
-
 func main() {
 	path := flag.String("config", "config.toml", "path to the TOML config file")
 	flag.Parse()
@@ -103,7 +99,7 @@ func main() {
 		if cfg.Tailscale.AuthKeyEnv != "" {
 			authKey = os.Getenv(cfg.Tailscale.AuthKeyEnv)
 		}
-		ts, err = tailscale.NewServer(cfg.Tailscale.Hostname, authKey, cfg.Tailscale.Ephemeral, swarmControllerTailscaleTag)
+		ts, err = tailscale.NewServer(cfg.Tailscale.Hostname, authKey, cfg.Tailscale.Ephemeral)
 		if err != nil {
 			log.Fatal().Msgf("starting tailscale: %v", err)
 		}
