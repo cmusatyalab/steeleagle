@@ -1,0 +1,189 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - LivingEdgeLab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+package steeleagle_protocol.v1.services.eagled;
+
+option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/eagled;eagled";
+
+/*
+ * DaemonService is eagled's own control-plane API. It is used to provide a
+ * configuration at runtime. Once applied, the resulting configuration is
+ * persisted, so a restarted eagled comes back up with the same vehicles
+ * running without another Configure call.
+ */
+service DaemonService {
+  /*
+   * Load a TOML configuration document (the same shape as eagled's
+   * config.toml) and start the vehicles it describes.
+   *
+   * The first call configures the daemon itself (tailscale, gabriel,
+   * swarm-controller settings) in addition to starting its vehicles. Later
+   * calls reuse that daemon-wide configuration and only start the vehicles
+   * newly listed. A vehicle name already running is reported as a per-vehicle
+   * failure rather than aborting the whole call.
+   */
+  rpc Configure (ConfigureRequest) returns (ConfigureResponse) {}
+
+  /*
+   * Stop one or more currently-running vehicles by name. Unlike
+   * ForgetVehicles, the daemon still knows about them afterward: they can
+   * be brought back with RestartVehicles, and they come back on a
+   * subsequent eagled restart too, same as any other configured vehicle. A
+   * name that isn't currently running is reported as a per-vehicle failure
+   * rather than aborting the whole call.
+   */
+  rpc StopVehicles (StopVehiclesRequest) returns (StopVehiclesResponse) {}
+
+  /*
+   * Restart one or more vehicles by name, using the configuration they were
+   * last configured with. A name that isn't known to this daemon is reported
+   * as a per-vehicle failure rather than aborting the whole call.
+   */
+  rpc RestartVehicles (RestartVehiclesRequest) returns (RestartVehiclesResponse) {}
+
+  /*
+   * Stop one or more currently-running vehicles by name (if running) and
+   * forget them. They will not come back on RestartVehicles or a subsequent
+   * eagled restart unless reconfigured. A name that isn't known to this daemon
+   * is reported as a per-vehicle failure rather than aborting the whole call.
+   */
+  rpc ForgetVehicles (ForgetVehiclesRequest) returns (ForgetVehiclesResponse) {}
+
+  /*
+   * Fetch a driver plugin from a git repository at a pinned commit and install
+   * it under this name, running the driver's own install.sh and only replacing
+   * whatever was previously installed under this name if it exits zero.
+   * Separate from starting a vehicle, so a driver can be staged ahead of time
+   * and StartVehicle/Configure never has to wait on a network fetch.
+   */
+  rpc InstallDriver (InstallDriverRequest) returns (InstallDriverResponse) {}
+
+  /*
+   * List every driver name this daemon has installed and the ref it was last
+   * installed at.
+   */
+  rpc GetInstalledDrivers (GetInstalledDriversRequest) returns (GetInstalledDriversResponse) {}
+
+  /*
+   * Delete the persisted config and terminate the daemon process, relying on
+   * systemd to bring it back up unconfigured, as if freshly installed. Every
+   * currently-running vehicle is torn down as part of that shutdown. This is
+   * the only way to change daemon-wide settings (tailscale, gabriel,
+   * swarm-controller): they're only ever established from the first Configure
+   * call after a process starts.
+   */
+  rpc ResetConfig (ResetConfigRequest) returns (ResetConfigResponse) {}
+
+  /*
+   * Restart the daemon process without touching persisted state, relying on
+   * systemd to bring it back up with the existing configuration.
+   */
+  rpc RestartDaemon (RestartDaemonRequest) returns (RestartDaemonResponse) {}
+
+  /*
+   * Report the daemon's current configuration and the state of every vehicle
+   * it knows about.
+   */
+  rpc GetStatus (GetStatusRequest) returns (GetStatusResponse) {}
+}
+
+message ConfigureRequest {
+  string config_toml = 1; // raw TOML document, same shape as config.toml
+}
+
+message ConfigureResponse {
+  repeated VehicleResult vehicles = 1;
+}
+
+message StopVehiclesRequest {
+  repeated string names = 1;
+}
+
+message StopVehiclesResponse {
+  repeated VehicleResult vehicles = 1;
+}
+
+message RestartVehiclesRequest {
+  repeated string names = 1;
+}
+
+message RestartVehiclesResponse {
+  repeated VehicleResult vehicles = 1;
+}
+
+message ForgetVehiclesRequest {
+  repeated string names = 1;
+}
+
+message ForgetVehiclesResponse {
+  repeated VehicleResult vehicles = 1;
+}
+
+message VehicleResult {
+  string name = 1;
+  bool ok = 2;
+  string error = 3; // populated iff !ok
+}
+
+message InstallDriverRequest {
+  string name = 1;    // driver identifier, matches VehicleConfig.driver
+  string repo = 2;    // git URL
+  string ref = 3;     // commit SHA, branch, or tag to check out
+  string subpath = 4; // subfolder containing install.sh/run.sh; empty means repo root
+}
+
+message InstallDriverResponse {
+  bool ok = 1;
+  string error = 2; // populated iff !ok; install.sh's captured output on a nonzero exit
+}
+
+message GetInstalledDriversRequest {}
+
+message GetInstalledDriversResponse {
+  repeated InstalledDriver drivers = 1;
+}
+
+message InstalledDriver {
+  string name = 1;
+  string ref = 2;
+}
+
+message ResetConfigRequest {}
+
+message ResetConfigResponse {}
+
+message RestartDaemonRequest {}
+
+message RestartDaemonResponse {}
+
+message GetStatusRequest {}
+
+message GetStatusResponse {
+  bool configured = 1;
+  DaemonConfig config = 2; // populated iff configured
+  repeated VehicleStatus vehicles = 3;
+}
+
+// DaemonConfig reports the daemon-wide settings established by the first
+// Configure call. Secrets stay out of it: authkey_env names the env var
+// holding the tsnet auth key, never the resolved key itself.
+message DaemonConfig {
+  bool vpn = 1;
+  bool vehicle_vpn = 2;
+  int32 port_base = 3;
+  string plugin_dir = 4;
+  string tailscale_hostname = 5;
+  string tailscale_authkey_env = 6;
+  string swarm_controller_address = 7;
+  string daemon_name = 8;
+  string gabriel_server_endpoint = 9; // empty if Gabriel is not in use
+}
+
+message VehicleStatus {
+  string name = 1;
+  string driver = 2;
+  bool running = 3;
+  int32 port = 4; // its ControlService/MissionService port; 0 if not running
+}
