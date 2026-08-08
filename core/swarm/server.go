@@ -35,12 +35,14 @@ func NewSwarmServer(resolver VehicleResolver, options ...Option) *SwarmServer {
 		timeout:  defaultCallTimeout,
 		log:      zerolog.New(os.Stderr).With().Timestamp().Logger(),
 	}
+	// Built before options run: WithDialer writes into s.pool directly, so
+	// it must already exist.
+	s.pool = newConnPool(s.log)
 	for _, option := range options {
 		option(s)
 	}
-	// Built after options are applied so the pool picks up a WithLogger
-	// override instead of always using the default.
-	s.pool = newConnPool(s.log)
+	// Re-synced after options run in case WithLogger overrode s.log above.
+	s.pool.log = s.log
 	return s
 }
 
