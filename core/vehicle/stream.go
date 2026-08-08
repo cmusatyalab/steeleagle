@@ -3,6 +3,7 @@ package vehicle
 import (
 	"context"
 	"io"
+	"time"
 
 	driverpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver"
 )
@@ -48,6 +49,17 @@ func (v *Vehicle) streamVideo(ctx context.Context) error {
 	return nil
 }
 
+// retryAfterDelay waits streamRetryDelay before the caller retries a broken
+// stream, returning early (false) if ctx is canceled first.
+func retryAfterDelay(ctx context.Context) bool {
+	select {
+	case <-ctx.Done():
+		return false
+	case <-time.After(streamRetryDelay):
+		return true
+	}
+}
+
 // Start streaming video frames and telemetry from the driver, updating the
 // vehicle data store.
 func (v *Vehicle) startDriverStreaming(ctx context.Context) {
@@ -58,6 +70,9 @@ func (v *Vehicle) startDriverStreaming(ctx context.Context) {
 				return
 			}
 			v.log.Err(err).Msg("error streaming telemetry, restarting stream")
+			if !retryAfterDelay(ctx) {
+				return
+			}
 		}
 	}()
 	go func() {
@@ -67,6 +82,9 @@ func (v *Vehicle) startDriverStreaming(ctx context.Context) {
 				return
 			}
 			v.log.Err(err).Msg("error streaming frames, restarting stream")
+			if !retryAfterDelay(ctx) {
+				return
+			}
 		}
 	}()
 }

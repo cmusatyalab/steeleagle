@@ -31,9 +31,12 @@ func (c AuthCode) String() string {
 }
 
 // Directories where the runtime files live
-const runtimeDir string = "steeleagle"
+const projectDir string = "steeleagle"
 const vehicleDir string = "vehicles"
 const pluginDir string = "plugins"
+
+// Directory where installed drivers live
+const driverDir string = "drivers"
 
 // The run hook that processes are started from within containers
 const bindDir string = "steeleagle"

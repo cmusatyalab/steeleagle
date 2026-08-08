@@ -13,8 +13,14 @@ import (
 func (v *Vehicle) getProxyDirector() proxy.StreamDirector {
 	return func(ctx context.Context, method string) (context.Context, grpc.ClientConnInterface, error) {
 		if strings.Contains(method, ".ControlService/") || strings.Contains(method, ".StreamService/") {
+			if v.driver == nil {
+				return nil, nil, status.Errorf(codes.Unavailable, "no driver plugin configured for this vehicle")
+			}
 			return ctx, v.driver, nil
 		} else if strings.Contains(method, ".MissionService/") {
+			if v.mission == nil {
+				return nil, nil, status.Errorf(codes.Unimplemented, "no mission plugin configured for this vehicle")
+			}
 			return ctx, v.mission, nil
 		}
 		return nil, nil, status.Errorf(codes.Unimplemented, "Unknown method")
