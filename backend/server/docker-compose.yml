@@ -136,6 +136,7 @@ services:
     restart: unless-stopped
     ports:
       - "5004:5004"
+      - "5003:5003"
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
     volumes:
