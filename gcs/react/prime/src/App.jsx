@@ -290,87 +290,74 @@ function App() {
     };
   }, [bindKeyDown, bindKeyUp, unbindKeyDown, unbindKeyUp, selectedMenu]);
 
+  // postToApi posts body to path and returns the parsed JSON response, or null
+  // on any failure. Every failure path surfaces an error toast instead of
+  // failing silently.
+  const postToApi = useCallback(async (path, body, errorSummary) => {
+    let response;
+    try {
+      response = await fetch(getApiUrl(path), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+    } catch (err) {
+      toast.current.show({ severity: 'error', summary: errorSummary, detail: `request failed: ${err.message}` });
+      return null;
+    }
+
+    let result;
+    try {
+      result = await response.json();
+    } catch {
+      toast.current.show({ severity: 'error', summary: errorSummary, detail: `server returned a non-JSON response (status ${response.status})` });
+      return null;
+    }
+
+    if (!response.ok) {
+      toast.current.show({ severity: 'error', summary: errorSummary, detail: `HTTP error! status: ${result.detail ?? response.status}` });
+      return null;
+    }
+    return result;
+  }, []);
+
   const onJoystick = useCallback(async (body) => {
     body.vehicles = squadList;
     if (squadList == null || squadList.length == 0) {
       toast.current.show({ severity: 'warn', summary: 'No Vehicles in Squad', detail: `Please select at least one vehicle to control.` });
       return;
-    } else {
-      //toast.current.show({severity: 'info', summary: 'Joystick Sent', detail: `${JSON.stringify(body)}`});
-      const requestOptions = {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      };
-      const response = await fetch(getApiUrl('/api/joystick'), requestOptions);
-      if (!response.ok) {
-        const result = await response.json();
-        toast.current.show({ severity: 'error', summary: 'Joystick Error', detail: `HTTP error! status: ${result.detail}` });
-      }
-      else {
-        await response.json();
-        // toast.current.show({severity: 'success', summary: 'Joystick Success', detail: `${result}`});
-
-      }
     }
-  }, [squadList, basePlanarVelocity, baseAngularVelocity]);
+    await postToApi('/api/joystick', body, 'Joystick Error');
+  }, [squadList, basePlanarVelocity, baseAngularVelocity, postToApi]);
 
   const onCommand = useCallback(async (body) => {
     body.vehicles = squadList;
     if (squadList == null || squadList.length == 0) {
       toast.current.show({ severity: 'warn', summary: 'No Vehicles in Squad', detail: `Please select at least one vehicle to control.` });
       return;
-    } else {
-      if (!body.hold) {
-        setManualControl(false);
-      }
+    }
+    if (!body.hold) {
+      setManualControl(false);
+    }
 
-      toast.current.show({ severity: 'info', summary: 'Command Sent', detail: `${JSON.stringify(body)}` });
-      const requestOptions = {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      };
-
-      const response = await fetch(getApiUrl('/api/command'), requestOptions);
-      if (!response.ok) {
-        const result = await response.json();
-        toast.current.show({ severity: 'error', summary: 'Command Error', detail: `HTTP error! status: ${result.detail}` });
-      }
-      else {
-        const result = await response.json();
-        toast.current.show({ severity: 'success', summary: 'Command Success', detail: `${result}` });
-      }
+    toast.current.show({ severity: 'info', summary: 'Command Sent', detail: `${JSON.stringify(body)}` });
+    const result = await postToApi('/api/command', body, 'Command Error');
+    if (result !== null) {
+      toast.current.show({ severity: 'success', summary: 'Command Success', detail: `${JSON.stringify(result)}` });
       if (body.hold) {
         setManualControl(true);
       }
     }
-
-  }, [squadList, takeOffAltitude]);
+  }, [squadList, takeOffAltitude, postToApi]);
 
   const onGimbal = useCallback(async (body) => {
     body.vehicles = squadList;
     if (squadList == null || squadList.length == 0) {
       toast.current.show({ severity: 'warn', summary: 'No Vehicles in Squad', detail: `Please select at least one vehicle to control.` });
       return;
-    } else {
-      const requestOptions = {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      };
-
-      const response = await fetch(getApiUrl('/api/gimbal'), requestOptions);
-      if (!response.ok) {
-        const result = await response.json();
-        toast.current.show({ severity: 'error', summary: 'Command Error', detail: `HTTP error! status: ${result.detail}` });
-      }
-      else {
-        await response.json();
-      }
     }
-
-  }, [squadList]);
+    await postToApi('/api/gimbal', body, 'Command Error');
+  }, [squadList, postToApi]);
 
   const items = useMemo(() => [
     {
