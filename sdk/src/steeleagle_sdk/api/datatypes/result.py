@@ -94,10 +94,10 @@ class NavigationResult(Datatype):
     """Next-flight navigation result.
 
     Attributes:
-        area_kml (str): KML polygon of the next-flight area
+        area (common.Area): boundary of the next-flight area
     """
 
-    area_kml: str | None = None
+    area: common.Area | None = None
 
 
 class ComputeResult(Datatype):
