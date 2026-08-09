@@ -5,6 +5,7 @@ import logging
 
 import grpc
 from steeleagle_sdk.api.compute import Compute
+from steeleagle_sdk.api.datatypes.map import Map
 from steeleagle_sdk.api.mission_store import MissionStore
 from steeleagle_sdk.api.vehicle import Vehicle
 from steeleagle_sdk.dsl import types
@@ -36,7 +37,7 @@ async def init(
     vehicle_address: str,
     telemetry_address: str,
     result_address: str,
-    map_obj,
+    map_obj: Map | None,
 ) -> bool:
     """
     Initialize runtime singletons and start the MissionFSM loop.

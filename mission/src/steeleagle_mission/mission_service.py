@@ -2,6 +2,7 @@ import json
 import logging
 
 from dacite import from_dict
+from steeleagle_sdk.api.datatypes.map import Map
 from steeleagle_sdk.dsl.compiler.ir import MissionIR
 from steeleagle_sdk.protocol.rpc_helpers import generate_response
 from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionServicer
@@ -17,14 +18,17 @@ class MissionService(MissionServicer):
     def __init__(self, name, address: dict):
         logger.info("Mission Service initialized")
         self.mission: MissionIR = None
-        self.mission_map = None
+        self.mission_map: Map | None = None
         self.address = address
         self.name = name
 
-    def _load(self, mission_content):
+    def _load(self, mission_content, kml_bytes: bytes):
         json_data = json.loads(mission_content)
         mission_ir = from_dict(MissionIR, json_data)
-        return mission_ir
+        mission_map = Map()
+        if kml_bytes:
+            mission_map = Map.from_kml(kml_bytes.decode("utf-8"))
+        return mission_ir, mission_map
 
     async def Upload(self, request, context):
         """Upload a mission for execution.
@@ -36,8 +40,7 @@ class MissionService(MissionServicer):
             logger.info(msg)
             return generate_response(3, msg)
         mission_content = request.mission.content
-        self.mission = self._load(mission_content)
-        self.mission_map = request.mission.map
+        self.mission, self.mission_map = self._load(mission_content, request.mission.map)
         logger.info("Loaded mission and map")
         return generate_response(2, "Mission uploaded")
 

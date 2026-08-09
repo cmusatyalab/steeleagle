@@ -15,6 +15,9 @@ import numpy as np
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine
 from google.protobuf.any_pb2 import Any
+from google.protobuf.json_format import ParseDict
+from steeleagle_sdk.api.datatypes.common import Area
+from steeleagle_sdk.api.datatypes.map import Map
 from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
 from steeleagle_sdk.protocol.messages import result_pb2
 
@@ -207,7 +210,7 @@ class SwiftMapEngine(cognitive_engine.Engine):
             self.last_stats += elapsed
 
     def _frame_result_any(self, nav_kml=None):
-        """Pack a FrameResult as a Gabriel Any: empty, or carrying the NFN area KML.
+        """Pack a FrameResult as a Gabriel Any: empty, or carrying the NFN area.
 
         The mission store ignores empty (no-result) FrameResults, so ordinary
         per-frame acks don't overwrite the latest plan.
@@ -215,13 +218,36 @@ class SwiftMapEngine(cognitive_engine.Engine):
         frame_result = result_pb2.FrameResult()
         frame_result.type = "swiftmap-navigation"
         if nav_kml is not None:
-            compute = frame_result.result.add()
-            compute.engine_name = self.ENGINE_NAME
-            compute.navigation_result.area_kml = nav_kml.decode("utf-8", "replace")
+            area = self._parse_area(nav_kml)
+            if area is not None:
+                compute = frame_result.result.add()
+                compute.engine_name = self.ENGINE_NAME
+                ParseDict(
+                    area.model_dump(mode="json", exclude_none=True),
+                    compute.navigation_result.area,
+                )
         frame_result.timestamp.GetCurrentTime()
         any_payload = Any()
         any_payload.Pack(frame_result)
         return any_payload
+
+    @staticmethod
+    def _parse_area(nav_kml: bytes) -> Area | None:
+        """Parse the mapping server's raw KML plan into an `Area` via the
+        SteelEagle SDK, so it goes out as a structured NavigationResult.area
+        instead of opaque KML text.
+        """
+        try:
+            parsed = Map.from_kml(nav_kml.decode("utf-8", "replace"))
+        except Exception:
+            logger.warning("Failed to parse NFN KML via steeleagle_sdk", exc_info=True)
+            return None
+        if not parsed.areas:
+            logger.warning("NFN KML had no areas")
+            return None
+        if len(parsed.areas) > 1:
+            logger.warning("NFN KML had multiple areas; using the first one")
+        return next(iter(parsed.areas.values()))
 
     def handle(self, input_frame):
         status = gabriel_pb2.Status()
