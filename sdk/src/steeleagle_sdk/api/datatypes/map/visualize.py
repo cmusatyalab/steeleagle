@@ -29,7 +29,7 @@ def visualize(raw_map, geopoints_map, out_file="map.html"):
 
     # Draw raw areas (blue)
     for area, raw in raw_map.items():
-        # raw is GeoPoints of (lon, lat); convert to (lat, lon)
+        # raw is an Area of (lon, lat); convert to (lat, lon)
         coords_latlon = [(lat, lon) for lon, lat in raw]
         all_latlons.extend(coords_latlon)
 
