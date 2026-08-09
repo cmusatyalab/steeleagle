@@ -3,9 +3,9 @@
 #####################################################################
 from pydantic import Field
 
-from ...compiler.registry import register_data
-from ..base import Datatype
-from ..datatypes import common as common
+from ....compiler.registry import register_data
+from ...base import Datatype
+from . import common as common
 from .timestamp import Timestamp
 
 
@@ -94,7 +94,7 @@ class SLAMResult(Datatype):
 class NavigationResult(Datatype):
     """Next-flight navigation result."""
 
-    area_kml: str | None = Field(default=None, description="KML polygon of the next-flight area.")
+    area: common.Area | None = Field(default=None, description="Boundary of the next-flight area.")
 
 
 @register_data

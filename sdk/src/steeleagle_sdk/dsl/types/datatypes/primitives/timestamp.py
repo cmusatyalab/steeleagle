@@ -3,8 +3,8 @@
 #####################################################################
 from pydantic import Field
 
-from ...compiler.registry import register_data
-from ..base import Datatype
+from ....compiler.registry import register_data
+from ...base import Datatype
 
 
 @register_data

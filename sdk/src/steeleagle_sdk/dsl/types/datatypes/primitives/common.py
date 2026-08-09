@@ -5,8 +5,8 @@ from enum import Enum
 
 from pydantic import Field
 
-from ...compiler.registry import register_data
-from ..base import Datatype
+from ....compiler.registry import register_data
+from ...base import Datatype
 from .timestamp import Timestamp
 
 
@@ -112,3 +112,16 @@ class Location(Datatype):
     longitude: float | None = Field(default=None, description="Global longitude [degrees].")
     altitude: float | None = Field(default=None, description="Altitude above MSL or takeoff [meters].")
     heading: float | None = Field(default=None, description="Global heading [degrees].")
+
+
+@register_data
+class Area(Datatype):
+    """A named boundary polygon in global coordinates.
+
+    Attributes:
+        name (Optional[str]): Area/placemark name.
+        points (Optional[List[Location]]): Boundary vertices, in order.
+    """
+
+    name: str | None = Field(default=None, description="Area/placemark name.")
+    points: list[Location] | None = Field(default=None, description="Boundary vertices, in order.")

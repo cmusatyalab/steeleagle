@@ -5,9 +5,9 @@ from enum import Enum
 
 from pydantic import Field
 
-from ...compiler.registry import register_data
-from ..base import Datatype
-from ..datatypes import common as common
+from ....compiler.registry import register_data
+from ...base import Datatype
+from . import common as common
 from .timestamp import Timestamp
 
 
