@@ -28,15 +28,16 @@ func GetDataDir() (string, error) {
 	return dataPath, nil
 }
 
-// GetDriverDir returns the persistent directory installed driver plugins are
-// stored in.
-func GetDriverDir() (string, error) {
-	driverPath := filepath.Join(GetDataHome(), projectDir, driverDir)
-	err := os.MkdirAll(driverPath, 0755)
+// GetInstalledPluginDir returns the persistent directory installed plugins of
+// the given category (e.g. "driver", "mission", "extra") are stored in, kept
+// separate per category so the same name can't collide across categories.
+func GetInstalledPluginDir(category string) (string, error) {
+	dir := filepath.Join(GetDataHome(), projectDir, installedPluginDir, category)
+	err := os.MkdirAll(dir, 0755)
 	if err != nil {
 		return "", err
 	}
-	return driverPath, nil
+	return dir, nil
 }
 
 // GetPluginDir returns the runtime directory for all plugins.

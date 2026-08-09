@@ -35,11 +35,6 @@ func TestShimPlugin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't start command: %v", err)
 	}
-	// Wait, not just the context cancellation on return, blocks until the
-	// process exits *and* the goroutines Start spun up to copy its
-	// stdout/stderr into logger have finished -- without it, one of those
-	// goroutines can still call t.Log after this test function has already
-	// returned, which panics ("Log in goroutine after Test has completed").
 	defer cmd.Wait()
 	acl.AddPID(cmd.Process.Pid)
 	ln, conn, err := plugin.Start(t.Context())

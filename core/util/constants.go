@@ -35,8 +35,9 @@ const projectDir string = "steeleagle"
 const vehicleDir string = "vehicles"
 const pluginDir string = "plugins"
 
-// Directory where installed drivers live
-const driverDir string = "drivers"
+// Directory where installed plugins live, one subdirectory per category
+// (e.g. "driver", "mission", "extra")
+const installedPluginDir string = "plugins"
 
 // The run hook that processes are started from within containers
 const bindDir string = "steeleagle"
