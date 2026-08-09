@@ -10,10 +10,11 @@ from scipy.spatial.transform import Rotation as R
 
 from ....compiler.registry import register_action
 from ...base import Action
-from ...datatypes import common as common
-from ...datatypes.control import AltitudeMode, HeadingMode, PoseMode
-from ...datatypes.result import BoundingBox, Detection, FrameResult
-from ...datatypes.waypoint import Waypoints
+from ...datatypes.primitives import common as common
+from ...datatypes.primitives.vehicle import AltitudeMode, HeadingMode, PoseMode
+from ...datatypes.primitives.result import BoundingBox, Detection, FrameResult
+from ...datatypes.advanced.route_plan import RoutePlan
+from ...datatypes.primitives.map import Map as MissionMap
 from ...utils import fetch_results, fetch_results_range, fetch_telemetry
 from ..primitives.vehicle import (
     Hold,
@@ -26,7 +27,36 @@ from ..primitives.vehicle import (
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_HOVER_TIME = 1.0
+DEFAULT_MAX_VELOCITY = common.Velocity(x_vel=3.0, y_vel=3.0, z_vel=3.0, angular_vel=120.0)
 
+
+# private helper method to fly through a list of locations with hover time and max velocity
+async def _fly(
+    locations: list[common.Location],
+    alt: float,
+    hover_time: float,
+    max_velocity: common.Velocity,
+):
+    logger.info("waypoints_num=%d", len(locations))
+    for loc in locations:
+        logger.info("goto (%.6f, %.6f)", loc.latitude, loc.longitude)
+        goto = SetGlobalPosition(
+            location=common.Location(
+                latitude=loc.latitude,
+                longitude=loc.longitude,
+                altitude=alt,
+                heading=None,
+            ),
+            altitude_mode=AltitudeMode.RELATIVE,
+            heading_mode=HeadingMode.TO_TARGET,
+            max_velocity=max_velocity,
+        )
+        await goto.execute()
+
+        if hover_time > 0:
+            await asyncio.sleep(hover_time)
+            
 @register_action
 class ElevateToAltitude(Action):
     """Climb to a target altitude by setting vertical velocity until reached."""
@@ -91,40 +121,23 @@ class PrePatrolSequence(Action):
 
 @register_action
 class Patrol(Action):
-    """Fly through a sequence of waypoints generated from an area and slicing algorithm."""
+    """Fly through a sequence of waypoints generated from a mission-map area and slicing algorithm."""
 
     hover_time: float = Field(
-        1.0, ge=0.0, description="seconds to hover after each move"
+        DEFAULT_HOVER_TIME, ge=0.0, description="seconds to hover after each move"
     )
-    waypoints: Waypoints = Field(
-        description="Waypoints definition (area, alt, algo, spacing, angle_degrees, trigger_distance)."
+    plan: RoutePlan = Field(
+        description="Route plan (area, alt, algo, spacing, angle_degrees, trigger_distance)."
     )
     max_velocity: common.Velocity = Field(
-        common.Velocity(x_vel=3.0, y_vel=3.0, z_vel=3.0, angular_vel=120.0),
+        DEFAULT_MAX_VELOCITY,
         description="Maximum velocity to use while transiting between waypoints.",
     )
 
     async def execute(self):
-        map = self.waypoints.calculate()
-        for area_name, points in map.items():
-            logger.info("Patrol: area=%s, waypoints_num=%d", area_name, len(points))
-            for p in points:
-                logger.info(f"Patrol: goto {p}")
-                goto = SetGlobalPosition(
-                    location=common.Location(
-                        latitude=float(p["lat"]),
-                        longitude=float(p["lon"]),
-                        altitude=float(p["alt"]),
-                        heading=None,
-                    ),
-                    altitude_mode=AltitudeMode.RELATIVE,
-                    heading_mode=HeadingMode.TO_TARGET,
-                    max_velocity=self.max_velocity,
-                )
-                await goto.execute()
-
-                if self.hover_time > 0:
-                    await asyncio.sleep(self.hover_time)
+        mission_map = MissionMap() # init the map object without the area parameter will spawn the mission map
+        locations = self.plan.apply(mission_map)
+        await _fly(locations, self.plan.alt, self.hover_time, self.max_velocity)
 
 
 @register_action
@@ -785,39 +798,62 @@ class Map(Action):
 
     # Fields
     gimbal_pitch: float = Field(45, ge=0.0, description="Gimbal pitch degree")
+    hover_time: float = Field(
+        DEFAULT_HOVER_TIME, ge=0.0, description="seconds to hover after each move"
+    )
+    max_velocity: common.Velocity = Field(
+        DEFAULT_MAX_VELOCITY,
+        description="Maximum velocity to use while transiting between waypoints.",
+    )
     compute_stream: str = Field(
         "swiftmap-engine",
         description="Name of compute stream to pull next flight navigation points from",
     )
-    first_waypoints: Waypoints = Field(
-        description="Waypoints definition for the first flight (area, alt, algo, spacing, angle_degrees, trigger_distance)."
+    initial_plan: RoutePlan = Field(
+        description=(
+            "Route plan for the first flight (area, alt, algo, spacing, "
+            "angle_degrees, trigger_distance). Its algo/spacing/angle_degrees/"
+            "trigger_distance/alt are reused to slice every subsequent flight's area."
+        )
     )
-    next_waypoints: Waypoints = Field(
-        description="Waypoints definition for follow-up flights; its area is replaced by the KML from each navigation result."
+    iterative_plan: RoutePlan = Field(
+        description=(
+            "Route plan for subsequent flights (area, alt, algo, spacing, "
+            "angle_degrees, trigger_distance). Its algo/spacing/angle_degrees/"
+            "trigger_distance/alt are reused to slice every subsequent flight's area."
+        )
     )
-    num_trials: int = Field(3, gt=0, description="Number of trials for iterative flights")
+    num_trials: int = Field(1, gt=0, description="Number of trials for iterative flights")
 
     @staticmethod
-    def _latest_area_kml(results: list[tuple[float, FrameResult]]) -> str | None:
+    def _latest_area(results: list[tuple[float, FrameResult]]):
+        """Return the raw next-flight area from the latest navigation result, if any.
+
+        Left unconverted (proto or the already-deserialized pydantic mirror,
+        whichever `results` carries) -- `MissionMap(area=...)` is what turns it
+        into something usable.
+        """
         for _ts, res in reversed(results):
             if not res or not res.result:
                 continue
             for compute in res.result:
-                if compute.navigation_result and compute.navigation_result.area_kml:
-                    return compute.navigation_result.area_kml
+                nav = compute.navigation_result
+                if nav and nav.area and nav.area.points:
+                    return nav.area
         return None
 
     # Main logic
     async def execute(self):
-        wps = self.first_waypoints
 
-        for trial in range(self.num_trials):
+        current_map = MissionMap()  # init the map object without the area parameter will spawn the mission map
+        first_trial_locations = self.initial_plan.apply(current_map)
+        await _fly(first_trial_locations, self.initial_plan.alt, self.hover_time, self.max_velocity)
+        
+        for trial in range(self.num_trials - 1):
             t0 = time.time()
-            await Patrol(waypoints=wps).execute()
-
             results = await fetch_results_range(self.compute_stream, t0, time.time())
-            area_kml = self._latest_area_kml(results)
-            if not area_kml:
+            next_area = self._latest_area(results)
+            if next_area is None:
                 logger.info(
                     "[Map] No navigation result on %s during trial %d; stopping.",
                     self.compute_stream,
@@ -825,10 +861,17 @@ class Map(Action):
                 )
                 return
 
-            wps = self.next_waypoints.model_copy(
-                update={"kml": area_kml, "area": None}
-            )
+            try:
+                current_map = current_map.merge(MissionMap(area=next_area))
+                next_trial_locations = self.iterative_plan.apply(current_map)
+            except ValueError:
+                logger.warning(
+                    "[Map] Navigation result on %s during trial %d had no area name; stopping.",
+                    self.compute_stream,
+                    trial,
+                )
+                return
 
-        await Patrol(waypoints=wps).execute()
+            await _fly(next_trial_locations, self.iterative_plan.alt, self.hover_time, self.max_velocity)
 
 
