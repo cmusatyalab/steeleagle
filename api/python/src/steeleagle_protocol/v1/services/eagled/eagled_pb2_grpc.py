@@ -39,15 +39,15 @@ class DaemonServiceStub:
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ForgetVehiclesRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ForgetVehiclesResponse.FromString,
                 _registered_method=True)
-        self.InstallDriver = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.eagled.DaemonService/InstallDriver',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.InstallDriverRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.InstallDriverResponse.FromString,
+        self.InstallPlugin = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.eagled.DaemonService/InstallPlugin',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.InstallPluginRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.InstallPluginResponse.FromString,
                 _registered_method=True)
-        self.GetInstalledDrivers = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.eagled.DaemonService/GetInstalledDrivers',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetInstalledDriversRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetInstalledDriversResponse.FromString,
+        self.GetInstalledPlugins = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.eagled.DaemonService/GetInstalledPlugins',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetInstalledPluginsRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetInstalledPluginsResponse.FromString,
                 _registered_method=True)
         self.ResetConfig = channel.unary_unary(
                 '/steeleagle_protocol.v1.services.eagled.DaemonService/ResetConfig',
@@ -123,22 +123,22 @@ class DaemonServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def InstallDriver(self, request, context):
+    def InstallPlugin(self, request, context):
         """
-        Fetch a driver plugin from a git repository at a pinned commit and install
-        it under this name, running the driver's own install.sh and only replacing
+        Fetch a plugin from a git repository at a pinned commit and install it
+        under this name, running the plugin's own install.sh and only replacing
         whatever was previously installed under this name if it exits zero.
-        Separate from starting a vehicle, so a driver can be staged ahead of time
+        Separate from starting a vehicle, so a plugin can be staged ahead of time
         and StartVehicle/Configure never has to wait on a network fetch.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetInstalledDrivers(self, request, context):
+    def GetInstalledPlugins(self, request, context):
         """
-        List every driver name this daemon has installed and the ref it was last
-        installed at.
+        List every plugin this daemon has installed, the ref it was last installed
+        at, and its category.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -198,15 +198,15 @@ def add_DaemonServiceServicer_to_server(servicer, server):
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ForgetVehiclesRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ForgetVehiclesResponse.SerializeToString,
             ),
-            'InstallDriver': grpc.unary_unary_rpc_method_handler(
-                    servicer.InstallDriver,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.InstallDriverRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.InstallDriverResponse.SerializeToString,
+            'InstallPlugin': grpc.unary_unary_rpc_method_handler(
+                    servicer.InstallPlugin,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.InstallPluginRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.InstallPluginResponse.SerializeToString,
             ),
-            'GetInstalledDrivers': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetInstalledDrivers,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetInstalledDriversRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetInstalledDriversResponse.SerializeToString,
+            'GetInstalledPlugins': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetInstalledPlugins,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetInstalledPluginsRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetInstalledPluginsResponse.SerializeToString,
             ),
             'ResetConfig': grpc.unary_unary_rpc_method_handler(
                     servicer.ResetConfig,
@@ -348,7 +348,7 @@ class DaemonService:
             _registered_method=True)
 
     @staticmethod
-    def InstallDriver(request,
+    def InstallPlugin(request,
             target,
             options=(),
             channel_credentials=None,
@@ -361,9 +361,9 @@ class DaemonService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.eagled.DaemonService/InstallDriver',
-            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.InstallDriverRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.InstallDriverResponse.FromString,
+            '/steeleagle_protocol.v1.services.eagled.DaemonService/InstallPlugin',
+            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.InstallPluginRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.InstallPluginResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -375,7 +375,7 @@ class DaemonService:
             _registered_method=True)
 
     @staticmethod
-    def GetInstalledDrivers(request,
+    def GetInstalledPlugins(request,
             target,
             options=(),
             channel_credentials=None,
@@ -388,9 +388,9 @@ class DaemonService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.eagled.DaemonService/GetInstalledDrivers',
-            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetInstalledDriversRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetInstalledDriversResponse.FromString,
+            '/steeleagle_protocol.v1.services.eagled.DaemonService/GetInstalledPlugins',
+            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetInstalledPluginsRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetInstalledPluginsResponse.FromString,
             options,
             channel_credentials,
             insecure,
