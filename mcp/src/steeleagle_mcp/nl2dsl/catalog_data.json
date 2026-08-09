@@ -117,7 +117,7 @@
     {
       "name": "Patrol",
       "kind": "action",
-      "description": "Fly through a sequence of waypoints generated from an area and slicing algorithm.",
+      "description": "Fly through a sequence of waypoints generated from a mission-map area and slicing algorithm.",
       "params": [
         {
           "name": "hover_time",
@@ -129,12 +129,12 @@
           "default": 1.0
         },
         {
-          "name": "waypoints",
+          "name": "plan",
           "type": "ref",
           "required": true,
-          "description": "Waypoints definition (area, alt, algo, spacing, angle_degrees, trigger_distance).",
+          "description": "Route plan (area, alt, algo, spacing, angle_degrees, trigger_distance).",
           "enum": null,
-          "ref_kind": "Waypoints",
+          "ref_kind": "RoutePlan",
           "default": null
         },
         {
@@ -2345,15 +2345,15 @@
       ]
     },
     {
-      "name": "Waypoints",
+      "name": "RoutePlan",
       "kind": "data",
-      "description": "A list of geolocation waypoints with a slicing algorithm for coverage patterns.",
+      "description": "Configuration for partitioning a mission-map area into flight waypoints.",
       "params": [
         {
           "name": "area",
           "type": "str",
           "required": true,
-          "description": "KML area name (string) or list of Location points defining the area.",
+          "description": "Name of an area in `map` (or the mission map, if unset).",
           "enum": null,
           "ref_kind": null,
           "default": null
@@ -2417,6 +2417,6 @@
     "Pose",
     "Position",
     "Velocity",
-    "Waypoints"
+    "RoutePlan"
   ]
 }

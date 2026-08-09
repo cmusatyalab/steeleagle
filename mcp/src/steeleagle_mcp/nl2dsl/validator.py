@@ -537,7 +537,7 @@ def _check_declaration_against_catalog(
                 decl.line_no,
                 f"`{decl.class_name}` missing required parameter `{p.name}`"))
 
-    # Conditional-required params (e.g. Waypoints `algo = survey` needs
+    # Conditional-required params (e.g. RoutePlan `algo = survey` needs
     # spacing/angle_degrees/trigger_distance). These come from the
     # hand-maintained overlay, not the field schema.
     for rule in catalog.conditional_rules(decl.class_name):

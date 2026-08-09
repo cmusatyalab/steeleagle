@@ -16,8 +16,8 @@ Key real-grammar facts (from dsl/grammar/dronedsl.lark):
 Two things are NOT generated and live here by hand because they are not
 introspectable from the Pydantic field schema:
 - CONDITIONAL_REQUIRED: parameters that become required depending on another
-  parameter's value (enforced by imperative `@model_validator`s in the SDK,
-  e.g. Waypoints `algo = survey`).
+  parameter's value (enforced imperatively in the SDK at calculate() time,
+  e.g. RoutePlan `algo = survey`).
 """
 
 from __future__ import annotations
@@ -100,7 +100,7 @@ class ConditionalRule:
 
 
 CONDITIONAL_REQUIRED: dict[str, list[ConditionalRule]] = {
-    "Waypoints": [
+    "RoutePlan": [
         ConditionalRule(when={"algo": "survey"},
                         require=["spacing", "angle_degrees", "trigger_distance"]),
         ConditionalRule(when={"algo": "corridor"},

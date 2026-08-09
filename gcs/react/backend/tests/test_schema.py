@@ -18,7 +18,7 @@ def test_schema_action_has_fields():
     assert "fields" in patrol
     field_names = [f["name"] for f in patrol["fields"]]
     assert "hover_time" in field_names
-    assert "waypoints" in field_names
+    assert "plan" in field_names
 
 
 def test_schema_field_has_required_keys():
@@ -32,11 +32,11 @@ def test_schema_field_has_required_keys():
             )
 
 
-def test_schema_waypoints_field_has_object_type():
+def test_schema_plan_field_has_object_type():
     schema = build_schema_response()
     patrol_fields = {f["name"]: f for f in schema["actions"]["Patrol"]["fields"]}
-    assert patrol_fields["waypoints"]["type"] == "object"
-    assert patrol_fields["waypoints"].get("object_type") == "Waypoints"
+    assert patrol_fields["plan"]["type"] == "object"
+    assert patrol_fields["plan"].get("object_type") == "RoutePlan"
 
 
 def test_schema_event_detectionfound():
@@ -48,12 +48,12 @@ def test_schema_event_detectionfound():
     assert "target" in field_names
 
 
-def test_schema_waypoints_field_has_nested_fields():
+def test_schema_plan_field_has_nested_fields():
     schema = build_schema_response()
     patrol_fields = {f["name"]: f for f in schema["actions"]["Patrol"]["fields"]}
-    waypoints = patrol_fields["waypoints"]
-    assert "nested_fields" in waypoints, "Waypoints field should have nested_fields"
-    nested_names = [nf["name"] for nf in waypoints["nested_fields"]]
+    plan = patrol_fields["plan"]
+    assert "nested_fields" in plan, "RoutePlan field should have nested_fields"
+    nested_names = [nf["name"] for nf in plan["nested_fields"]]
     assert "area" in nested_names
     assert "alt" in nested_names
     assert "algo" in nested_names
@@ -62,7 +62,7 @@ def test_schema_waypoints_field_has_nested_fields():
 def test_schema_nested_field_types():
     schema = build_schema_response()
     patrol_fields = {f["name"]: f for f in schema["actions"]["Patrol"]["fields"]}
-    nested = {nf["name"]: nf for nf in patrol_fields["waypoints"]["nested_fields"]}
+    nested = {nf["name"]: nf for nf in patrol_fields["plan"]["nested_fields"]}
     assert nested["alt"]["type"] in ("number", "integer")
     assert nested["area"]["type"] == "string"
 
