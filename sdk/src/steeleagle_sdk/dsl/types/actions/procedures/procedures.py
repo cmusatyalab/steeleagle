@@ -830,8 +830,8 @@ class Map(Action):
         """Return the raw next-flight area from the latest navigation result, if any.
 
         Left unconverted (proto or the already-deserialized pydantic mirror,
-        whichever `results` carries) -- `MissionMap(area=...)` is what turns it
-        into something usable.
+        whichever `results` carries) -- `Map.update()` is what turns it into
+        something usable.
         """
         for _ts, res in reversed(results):
             if not res or not res.result:
@@ -862,7 +862,7 @@ class Map(Action):
                 return
 
             try:
-                current_map = current_map.merge(MissionMap(area=next_area))
+                current_map.update(next_area)
                 next_trial_locations = self.iterative_plan.apply(current_map)
             except ValueError:
                 logger.warning(

@@ -8,5 +8,5 @@ dependencies = [
    "opencv-python-headless",
    "numpy",
    "gabriel-server>=4.1.2",
-   "steeleagle-sdk>=3.2.0",
+   "steeleagle-sdk>=3.3.0",
 ]

@@ -31,6 +31,11 @@ class Map(Datatype):
             raise ValueError("Cannot add an unnamed area to a map")
         self.areas[area.name] = area
 
+    def update_area(self, area: Area) -> None:
+        if not area.name:
+            raise ValueError("Cannot update with an unnamed area")
+        self.areas[area.name] = area
+
     def get_all_areas(self) -> list[Area]:
         return list(self.areas.values())
 
