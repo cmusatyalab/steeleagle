@@ -196,22 +196,22 @@ func (s *SwarmServer) SwarmReturnToHome(
 	)
 }
 
-func (s *SwarmServer) SwarmSetVelocity(
-	req *swarmpb.SwarmSetVelocityRequest,
-	stream grpc.ServerStreamingServer[swarmpb.SwarmSetVelocityResponse],
+func (s *SwarmServer) SwarmSetVelocityTarget(
+	req *swarmpb.SwarmSetVelocityTargetRequest,
+	stream grpc.ServerStreamingServer[swarmpb.SwarmSetVelocityTargetResponse],
 ) error {
 	return dispatch(
 		s,
-		"SwarmSetVelocity",
+		"SwarmSetVelocityTarget",
 		req.GetVehicles(),
 		stream,
 		req.GetRequest(),
-		func(ctx context.Context, conn *grpc.ClientConn, r *driverpb.SetVelocityRequest) (*driverpb.SetVelocityResponse, error) {
-			return driverpb.NewControlServiceClient(conn).SetVelocity(ctx, r)
+		func(ctx context.Context, conn *grpc.ClientConn, r *driverpb.SetVelocityTargetRequest) (*driverpb.SetVelocityTargetResponse, error) {
+			return driverpb.NewControlServiceClient(conn).SetVelocityTarget(ctx, r)
 		},
-		func(vehicle string, resp *driverpb.SetVelocityResponse, err error) *swarmpb.SwarmSetVelocityResponse {
+		func(vehicle string, resp *driverpb.SetVelocityTargetResponse, err error) *swarmpb.SwarmSetVelocityTargetResponse {
 			code, details := statusOf(err)
-			return swarmpb.SwarmSetVelocityResponse_builder{
+			return swarmpb.SwarmSetVelocityTargetResponse_builder{
 				Vehicle:  vehicle,
 				Response: resp,
 				Code:     code,
@@ -221,22 +221,22 @@ func (s *SwarmServer) SwarmSetVelocity(
 	)
 }
 
-func (s *SwarmServer) SwarmSetGimbalPose(
-	req *swarmpb.SwarmSetGimbalPoseRequest,
-	stream grpc.ServerStreamingServer[swarmpb.SwarmSetGimbalPoseResponse],
+func (s *SwarmServer) SwarmSetGimbalAngleTarget(
+	req *swarmpb.SwarmSetGimbalAngleTargetRequest,
+	stream grpc.ServerStreamingServer[swarmpb.SwarmSetGimbalAngleTargetResponse],
 ) error {
 	return dispatch(
 		s,
-		"SwarmSetGimbalPose",
+		"SwarmSetGimbalAngleTarget",
 		req.GetVehicles(),
 		stream,
 		req.GetRequest(),
-		func(ctx context.Context, conn *grpc.ClientConn, r *driverpb.SetGimbalPoseRequest) (*driverpb.SetGimbalPoseResponse, error) {
-			return driverpb.NewControlServiceClient(conn).SetGimbalPose(ctx, r)
+		func(ctx context.Context, conn *grpc.ClientConn, r *driverpb.SetGimbalAngleTargetRequest) (*driverpb.SetGimbalAngleTargetResponse, error) {
+			return driverpb.NewControlServiceClient(conn).SetGimbalAngleTarget(ctx, r)
 		},
-		func(vehicle string, resp *driverpb.SetGimbalPoseResponse, err error) *swarmpb.SwarmSetGimbalPoseResponse {
+		func(vehicle string, resp *driverpb.SetGimbalAngleTargetResponse, err error) *swarmpb.SwarmSetGimbalAngleTargetResponse {
 			code, details := statusOf(err)
-			return swarmpb.SwarmSetGimbalPoseResponse_builder{
+			return swarmpb.SwarmSetGimbalAngleTargetResponse_builder{
 				Vehicle:  vehicle,
 				Response: resp,
 				Code:     code,
