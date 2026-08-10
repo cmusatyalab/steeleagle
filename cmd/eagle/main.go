@@ -16,7 +16,7 @@ import (
 )
 
 // DefaultCallTimeout bounds how long eagle waits for eagled to respond.
-const DefaultCallTimeout = 30 * time.Second
+const DefaultCallTimeout = 5 * time.Minute
 
 // DefaultDaemonAddr matches eagled's own DefaultControlPort.
 const DefaultDaemonAddr = "localhost:9090"
