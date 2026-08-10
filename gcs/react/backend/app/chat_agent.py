@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import sys
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
@@ -275,11 +276,64 @@ def _artifact_from_compiled(
 
 
 def _extract_last_compile(tool_results: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """Return the latest successful compile_mission_dsl payload, if any."""
     for payload in reversed(tool_results):
         if not isinstance(payload, dict):
             continue
-        if "normalized_dsl" in payload and "compile_id" in payload:
+        if (
+            payload.get("ok")
+            and payload.get("normalized_dsl")
+            and "compile_id" in payload
+        ):
             return payload
+    return None
+
+
+def _extract_dsl_fence(content: str | None) -> str | None:
+    """Pull the last fenced dsl / mission block from assistant text."""
+    if not content:
+        return None
+    patterns = [
+        r"```(?:dsl|mission\.dsl|mission)\s*\n(.*?)```",
+        r"```\s*\n(Actions:.*?)```",
+    ]
+    for pattern in patterns:
+        matches = re.findall(pattern, content, flags=re.DOTALL | re.IGNORECASE)
+        if matches:
+            dsl = matches[-1].strip()
+            if dsl:
+                return dsl
+    return None
+
+
+def _compile_dsl_text(dsl: str) -> dict[str, Any] | None:
+    if not dsl or not dsl.strip():
+        return None
+    compiled = compile_mission_dsl_payload(dsl.strip())
+    if compiled.get("ok") and compiled.get("normalized_dsl"):
+        return compiled
+    logger.info(
+        "fallback compile failed errors=%s",
+        compiled.get("errors"),
+    )
+    return None
+
+
+def _resolve_compiled_draft(
+    tool_results: list[dict[str, Any]],
+    content: str | None,
+) -> dict[str, Any] | None:
+    """
+    Prefer a successful compile tool result; otherwise extract DSL from the
+    assistant reply and compile it server-side so Apply artifacts still appear
+    when the model skips tools.
+    """
+    compiled = _extract_last_compile(tool_results)
+    if compiled:
+        return compiled
+    fenced = _extract_dsl_fence(content)
+    if fenced:
+        return _compile_dsl_text(fenced)
     return None
 
 
@@ -351,16 +405,22 @@ async def run_chat_turn(
             settings, working_messages, system, tool_payloads, status
         )
 
-    compiled = _extract_last_compile(tool_payloads)
+    compiled = _resolve_compiled_draft(tool_payloads, content)
     artifacts: list[dict[str, Any]] = []
     draft: dict[str, str] | None = None
-    if compiled and compiled.get("ok") and compiled.get("normalized_dsl"):
+    if compiled and compiled.get("normalized_dsl"):
         normalized = compiled["normalized_dsl"]
         draft = {"normalized_dsl": normalized}
         art = _artifact_from_compiled(normalized, _last_user_text(messages))
         if art:
             artifacts.append(art)
+        elif get_dsl_parser() is None:
+            logger.warning("Compiled DSL but parser missing; Apply card omitted")
+        else:
+            logger.warning("Compiled DSL but graph extract failed; Apply card omitted")
     elif draft_dsl and draft_dsl.strip():
+        # Keep prior draft for the next turn, but do not re-offer Apply for an
+        # unchanged draft when this turn produced no new compilable DSL.
         draft = {"normalized_dsl": draft_dsl.strip()}
 
     if not (content or "").strip():

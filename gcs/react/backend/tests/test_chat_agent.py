@@ -4,6 +4,7 @@ import pytest
 
 from app.chat_agent import (
     dispatch_tool,
+    _extract_dsl_fence,
     load_client_settings,
     resolve_api_key,
     run_chat_turn,
@@ -110,3 +111,41 @@ async def test_run_chat_turn_builds_artifact(monkeypatch):
     assert art["target"] == "fsm-builder"
     assert art["payload"]["start_id"] == "take_off"
     assert len(art["payload"]["nodes"]) == 2
+
+
+def test_extract_dsl_fence():
+    text = f"Updated draft:\n```dsl\n{MINIMAL_DSL}\n```\nYou can apply it."
+    assert "TakeOff" in (_extract_dsl_fence(text) or "")
+
+
+@pytest.mark.asyncio
+async def test_run_chat_turn_builds_artifact_from_fenced_dsl_without_tools(monkeypatch):
+    """When the model skips compile_mission_dsl, still produce Apply from ```dsl."""
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+
+    async def fake_openai(settings, messages, system, tool_payloads, status):
+        assert tool_payloads == []
+        return (
+            "I'll update the mission.\n"
+            f"```dsl\n{MINIMAL_DSL}\n```\n"
+            "You can apply this to the FSM Builder."
+        )
+
+    with patch("app.chat_agent._run_openai", fake_openai):
+        with patch(
+            "app.chat_agent.load_client_settings",
+            return_value={
+                "config_path": "mcp/config.toml",
+                "provider": "openai",
+                "model": "gpt-4o",
+                "base_url": "",
+                "api_key": "sk-test",
+            },
+        ):
+            result = await run_chat_turn(
+                [{"role": "user", "content": "change battery to 30 percent"}]
+            )
+
+    assert len(result["artifacts"]) == 1
+    assert result["artifacts"][0]["label"] == "Apply draft to FSM Builder"
+    assert result["draft"]["normalized_dsl"]
