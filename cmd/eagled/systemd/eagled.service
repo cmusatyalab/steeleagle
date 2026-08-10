@@ -1,0 +1,33 @@
+[Unit]
+Description=SteelEagle vehicle daemon (eagled)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/eagled
+User=eagled
+Group=eagled
+WorkingDirectory=/var/lib/eagled
+# GetDataHome() (persisted config/state) falls back to $HOME/.local/share
+# when $XDG_DATA_HOME is unset.
+Environment=HOME=/var/lib/eagled
+# GetPluginDir() eeds $XDG_RUNTIME_DIR, which systemd doesn't set for system
+# services. RuntimeDirectory creates /run/eagled with the right ownership.
+RuntimeDirectory=eagled
+RuntimeDirectoryPreserve=restart
+Environment=XDG_RUNTIME_DIR=/run/eagled
+EnvironmentFile=-/etc/eagled/eagled.env
+# always, not on-failure: ResetConfig exits 0 on purpose to relaunch
+# unconfigured.
+Restart=always
+RestartSec=5s
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/eagled
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

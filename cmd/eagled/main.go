@@ -1,72 +1,60 @@
 package main
 
-//	type daemonContext struct {
-//		channel  chan<- core.LogMessage
-//		mu       sync.Mutex
-//		vehicles map[string]*vehicle.Vehicle
-//		vpn      TailscaleServer
-//		// Context related attributes
-//		ctx    context.Context
-//		cancel context.CancelFunc
-//	}
-//
-//	func (i *daemonContext) start(w http.ResponseWriter, r *http.Request) {
-//		i.mu.Lock()
-//		defer i.mu.Unlock()
-//		defer r.Body.Close()
-//
-//		var config RunConfig
-//
-//		if r.Body == nil {
-//			http.Error(w, "Please send a valid run configuration in the request body", http.StatusBadRequest)
-//			return
-//		}
-//
-//		// Unmarshal run configuration from the JSON body
-//		err := json.NewDecoder(r.Body).Decode(&config)
-//		if err != nil {
-//			http.Error(w, err.Error(), http.StatusBadRequest)
-//			return
-//		}
-//
-//		// Create a reader socket that will read from the vehicles dataOut
-//
-//		// Start vehicles, tying them to the global context
-//	}
-//
-//	func (i *daemonContext) stop(w http.ResponseWriter, r *http.Request) {
-//		i.mu.Lock()
-//		defer i.mu.Unlock()
-//
-//		// TODO: Cancel the global context
-//	}
-//
-//	func (i *daemonContext) cleanup() {
-//		i.mu.Lock()
-//		defer i.mu.Unlock()
-//
-//		i.cancel()
-//	}
-//
-// var logger zerolog.Logger
+import (
+	"context"
+	"flag"
+	"fmt"
+	"net"
+	"os/signal"
+	"syscall"
+
+	eagledpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/eagled"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc"
+)
+
 func main() {
-	//// Create the log channel
-	//channel := make(chan<- core.LogMessage, 1000)
+	controlPort := flag.Int("control-port", DefaultControlPort, "port DaemonService listens on")
+	logLevel := flag.String("log-level", zerolog.InfoLevel.String(), "log level: trace, debug, info, warn, error, fatal, panic, or disabled")
+	flag.Parse()
 
-	//// Set up the logger
-	//logger = core.NewChannelLogger(core.LogConfig{
-	//	Name:    "daemon",
-	//	Level:   "info",
-	//	Channel: channel,
-	//})
+	level, err := zerolog.ParseLevel(*logLevel)
+	if err != nil {
+		log.Fatal().Msgf("parsing -log-level: %v", err)
+	}
+	zerolog.SetGlobalLevel(level)
 
-	//// Create daemon context
-	//daemon := daemonContext{
-	//	channel: channel,
-	//}
-	//defer daemon.cleanup()
+	sigCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 
-	//// Set up HTTP listeners
-	//http.HandleFunc("/start", daemon.start)
-	//http.HandleFunc("/stop", daemon.stop)
+	ctx, cancel := context.WithCancel(sigCtx)
+	defer cancel()
+
+	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", *controlPort))
+	if err != nil {
+		log.Fatal().Msgf("listening on control port %d: %v", *controlPort, err)
+	}
+
+	d := newDaemon(ctx, cancel)
+	if err := d.loadPersistedInstalled(); err != nil {
+		log.Error().Err(err).Msg("could not reload persisted plugin refs")
+	}
+	if err := d.loadPersisted(); err != nil {
+		log.Error().Err(err).Msg("could not reload persisted config")
+	}
+
+	grpcServer := grpc.NewServer()
+	eagledpb.RegisterDaemonServiceServer(grpcServer, d)
+
+	go func() {
+		log.Info().Int("port", *controlPort).Msgf("DaemonService listening on port %d", *controlPort)
+		if err := grpcServer.Serve(ln); err != nil {
+			log.Error().Err(err).Msg("DaemonService exited")
+		}
+	}()
+
+	<-ctx.Done()
+	log.Info().Msg("shutting down")
+	grpcServer.GracefulStop()
 }
