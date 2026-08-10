@@ -35,6 +35,7 @@ from steeleagle_mcp.mission_tools import (  # noqa: E402
 )
 from steeleagle_mcp.providers.anthropic import AnthropicProvider  # noqa: E402
 from steeleagle_mcp.providers.openai import OpenAIProvider  # noqa: E402
+from steeleagle_sdk.dsl.compiler.registry import _ACTIONS, _EVENTS  # noqa: E402
 
 from app.dsl_graph import get_dsl_parser, parse_dsl_to_graph  # noqa: E402
 
@@ -46,6 +47,17 @@ _API_KEY_FIELDS = {"anthropic": "anthropic_api_key", "openai": "openai_api_key"}
 _ENV_VARS = {"anthropic": "ANTHROPIC_API_KEY", "openai": "OPENAI_API_KEY"}
 
 StatusCallback = Callable[[str, str], Awaitable[None]]
+
+# Chat-side rewrite of translate_with_dsl_reference.recommended_workflow.
+# Keeps MCP package payloads intact for other clients; strips save_mission_files.
+CHAT_RECOMMENDED_WORKFLOW = [
+    "Use the instruction plus this reference to write a complete mission.dsl.",
+    "Call compile_mission_dsl with the DSL.",
+    "If compile_mission_dsl returns errors, revise the DSL and call it again.",
+    "After compile succeeds, present the mission in chat for review and tell the "
+    "user they can Apply it to the FSM Builder.",
+    "Do not save files, upload, or start the mission.",
+]
 
 MISSION_TOOLS: list[dict[str, Any]] = [
     {
@@ -181,11 +193,11 @@ edit from that instead of starting from scratch unless the user asks for a brand
 
 ## Data Formats
 
-- **Location**: `{latitude, longitude, altitude, heading}` — degrees, meters
-- **Position**: `{x, y, z, angle}` — meters (x=north, y=east, z=up), degrees
-- **Velocity**: `{x_vel, y_vel, z_vel, angular_vel}` — m/s, deg/s
-- **Pose**: `{pitch, roll, yaw}` — degrees
-- **Detection**: `{class_name, score, bbox}` — name, confidence, bounding box
+- **Location**: `{{latitude, longitude, altitude, heading}}` — degrees, meters
+- **Position**: `{{x, y, z, angle}}` — meters (x=north, y=east, z=up), degrees
+- **Velocity**: `{{x_vel, y_vel, z_vel, angular_vel}}` — m/s, deg/s
+- **Pose**: `{{pitch, roll, yaw}}` — degrees
+- **Detection**: `{{class_name, score, bbox}}` — name, confidence, bounding box
 - **HeadingMode**: 0=TO_TARGET, 1=HEADING_START
 - **AltitudeMode**: 0=ABSOLUTE (MSL), 1=RELATIVE (above takeoff)
 - **ReferenceFrame**: 0=BODY (drone-relative), 1=NEU (North/East/Up)
@@ -194,7 +206,74 @@ edit from that instead of starting from scratch unless the user asks for a brand
 
 - Never instruct or pretend to execute vehicle control (takeoff, land, upload, start).
 - Chat only produces reviewable mission drafts for the FSM Builder Apply action.
+
+{catalog_section}
 """
+
+
+def _one_line_doc(cls: type, fallback: str) -> str:
+    doc = (cls.__doc__ or "").strip()
+    if not doc:
+        return fallback
+    return doc.split("\n", 1)[0].strip()
+
+
+def build_catalog_section(
+    actions: dict[str, type] | None = None,
+    events: dict[str, type] | None = None,
+) -> str:
+    """
+    Compact action/event encyclopedia for Q&A and mission drafting.
+    Descriptions only — these are NOT callable tools in Chat.
+    """
+    action_map = actions if actions is not None else _ACTIONS
+    event_map = events if events is not None else _EVENTS
+
+    action_lines: list[str] = []
+    for _key, cls in sorted(action_map.items(), key=lambda kv: kv[1].__name__):
+        name = cls.__name__
+        action_lines.append(f"- **{name}**: {_one_line_doc(cls, f'DSL action {name}')}")
+
+    event_lines: list[str] = []
+    for _key, cls in sorted(event_map.items(), key=lambda kv: kv[1].__name__):
+        name = cls.__name__
+        event_lines.append(
+            f"- **{name}**: {_one_line_doc(cls, f'DSL event {name}')}"
+        )
+
+    if not action_lines and not event_lines:
+        return (
+            "## DSL catalog\n\n"
+            "Catalog not loaded yet. Call translate_with_dsl_reference for schema details."
+        )
+
+    return (
+        "## DSL catalog (reference only — not callable tools)\n\n"
+        "Use these names when answering questions or writing mission DSL. "
+        "Do NOT attempt to invoke them as live tools; only "
+        "translate_with_dsl_reference and compile_mission_dsl are callable.\n\n"
+        f"### Actions ({len(action_lines)} available)\n"
+        f"{chr(10).join(action_lines)}\n\n"
+        f"### Events ({len(event_lines)} available)\n"
+        f"{chr(10).join(event_lines)}\n"
+    )
+
+
+def build_system_prompt(
+    actions: dict[str, type] | None = None,
+    events: dict[str, type] | None = None,
+) -> str:
+    return SYSTEM_PROMPT.format(catalog_section=build_catalog_section(actions, events))
+
+
+def sanitize_translate_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    """Rewrite Chat-facing translate payload so it never recommends save_mission_files."""
+    if not isinstance(payload, dict):
+        return payload
+    out = dict(payload)
+    if "recommended_workflow" in out:
+        out["recommended_workflow"] = list(CHAT_RECOMMENDED_WORKFLOW)
+    return out
 
 
 def default_mcp_config_path() -> Path:
@@ -235,7 +314,10 @@ def load_client_settings(config_path: Path | None = None) -> dict[str, Any]:
 
 def dispatch_tool(name: str, args: dict[str, Any]) -> dict[str, Any]:
     if name == "translate_with_dsl_reference":
-        return translate_with_dsl_reference_payload(**args)
+        # Strip/replace MCP's save_mission_files workflow on the Chat side only.
+        return sanitize_translate_payload(
+            translate_with_dsl_reference_payload(**args)
+        )
     if name == "compile_mission_dsl":
         return compile_mission_dsl_payload(**args)
     return {
@@ -393,7 +475,7 @@ async def run_chat_turn(
             },
         )
 
-    system = SYSTEM_PROMPT
+    system = build_system_prompt()
     tool_payloads: list[dict[str, Any]] = []
 
     if provider_name == "openai":

@@ -3,11 +3,14 @@ from unittest.mock import patch
 import pytest
 
 from app.chat_agent import (
+    CHAT_RECOMMENDED_WORKFLOW,
+    build_system_prompt,
     dispatch_tool,
     _extract_dsl_fence,
     load_client_settings,
     resolve_api_key,
     run_chat_turn,
+    sanitize_translate_payload,
 )
 from app.dsl_graph import init_dsl_parser, parse_dsl_to_graph
 
@@ -39,6 +42,30 @@ def test_resolve_api_key_prefers_config_then_env(monkeypatch):
 def test_dispatch_unknown_tool():
     result = dispatch_tool("takeoff", {})
     assert result["ok"] is False
+
+
+def test_sanitize_translate_payload_strips_save_workflow():
+    payload = {
+        "ok": True,
+        "recommended_workflow": [
+            "Call compile_mission_dsl with the DSL.",
+            "After compile succeeds, call save_mission_files with the compile_id.",
+        ],
+    }
+    cleaned = sanitize_translate_payload(payload)
+    assert cleaned["recommended_workflow"] == CHAT_RECOMMENDED_WORKFLOW
+    assert all("save_mission_files" not in step for step in cleaned["recommended_workflow"])
+    # Original payload left unchanged.
+    assert "save_mission_files" in payload["recommended_workflow"][1]
+
+
+def test_build_system_prompt_includes_catalog():
+    prompt = build_system_prompt()
+    assert "SteelEagle GCS mission-planning assistant" in prompt
+    assert "DSL catalog (reference only" in prompt
+    assert "TakeOff" in prompt or "takeoff" in prompt.lower()
+    assert "{latitude, longitude, altitude, heading}" in prompt
+    assert "{catalog_section}" not in prompt
 
 
 def test_parse_dsl_to_graph_minimal():
