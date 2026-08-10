@@ -1,0 +1,90 @@
+# Example config for `eagle configure`. eagled keeps no config file on disk
+# itself. This config gets pushed to a running instance over its control-plane
+# API, which starts the vehicles it describes. The daemon-wide settings
+# (everything above [[vehicles]]) only take effect on the first call to a given
+# eagled instance.
+
+# Switch for using Tailscale VPN for the daemon (highly recommended).
+vpn = true
+# Switch for using Tailscale VPN for vehicles (highly recommended). Applies
+# to every vehicle this daemon hosts. Each still joins under its own name,
+# as its own separate tsnet node.
+vehicle-vpn = true
+# Vehicle ports are assigned in ascending order from this base port. Does not
+# affect what port the daemon's own control-plane API listens on (that's the
+# eagled binary's -control-port flag).
+port-base = 9000
+
+[tailscale]
+# Reusable Tailscale auth key, issued offline and provisioned onto this host
+# ahead of time, used to join eagled's own tsnet node non-interactively. If
+# left blank, the node falls back to tsnet's interactive login flow instead.
+# Vehicles join under vehicle-authkey-env below, not this one, unless that's
+# left blank too.
+authkey-env = "TS_AUTHKEY"
+# Env var holding the auth key every vehicle's tsnet node joins with. Since
+# a tag is baked into the key itself at issuance (in the admin console),
+# giving vehicles a different key than authkey-env above lets them register
+# under a different tag than eagled itself -- e.g. tag:eagled for the daemon,
+# tag:vehicle for every vehicle it hosts. Defaults to authkey-env if left
+# blank, i.e. eagled and every vehicle share one key/tag.
+vehicle-authkey-env = "TS_VEHICLE_AUTHKEY"
+# Hostname eagled's own tsnet node joins the tailnet as. Each vehicle joins
+# separately under its own name (see [[vehicles]] below), so this only
+# identifies the daemon process itself.
+hostname = "eagled"
+
+[gabriel]
+# If left blank, vehicles will not connect to Gabriel.
+server-endpoint = "cloudlet033.elijah.cs.cmu.edu:9099"
+telemetry-target-engines = ["telemetry"]
+video-frames-target-engines = ["telemetry"]
+
+[backend.swarm-controller]
+# host:port of the swarm controller's RegistryService (its vehicle-port).
+# Once this daemon and the controller are both joined to the tailnet, this
+# is the controller's tailnet MagicDNS name and vehicle-port, e.g.
+# "swarmcontroller:5003". Required: eagled refuses to start without it.
+address = "cloudlet033-swarm-controller:5003"
+# Reported to the controller for logging, to identify which eagled instance
+# a vehicle belongs to. Defaults to this host's hostname if left blank.
+daemon-name = ""
+
+[aviary]
+# Only consulted the first time this Configure call (or a later one) lists a
+# vehicle with simulate = true below. Command is the command line eagled
+# runs to launch the shared aviary simulator; defaults to
+# ["uv", "run", "steeleagle-aviary"], matching how aviary is normally run
+# from its own project checkout. Dir is the working directory that command
+# runs in -- required for `uv run` to find aviary's pyproject.toml/venv.
+command = ["uv", "run", "steeleagle-aviary"]
+dir = "/home/achanana/lab-work/steeleagle_plugins/aviary"
+
+# Vehicles this daemon hosts. One eagled instance can host any number of
+# vehicles; each gets its own port (ascending from port-base, in list order),
+# its own tailnet identity if vehicle-vpn is on, and its own registration
+# with the swarm controller.
+[[vehicles]]
+# Name of the vehicle.
+name = "harpy"
+# Name of the driver plugin to run for this vehicle. Ignored if simulate is
+# true.
+driver = "parrot_anafi"
+# If true, this vehicle connects to the shared aviary simulator (see
+# [aviary] above) instead of spawning driver. Optional lat/lon/alt (origin)
+# and interface (aviary driver interface module, defaults to
+# steeleagle_aviary.interfaces.steeleagle) may also be set here.
+simulate = true
+# Origin point, only used when simulate is true. Matches the default vehicle
+# origin in steeleagle_plugins/aviary's own config.toml (CMU's campus).
+lat = 40.413664
+lon = -79.949285
+alt = 0
+
+# Optional per-vehicle video stream override. If omitted entirely, simulated
+# vehicles default to stream-type "frames" (aviary has no RTSP source to
+# forward) and every other vehicle defaults to "rtsp".
+# [vehicles.video]
+# stream-type = "rtsp" # "rtsp" or "frames"
+# resolution = "720p"  # "480p", "720p" (default), "1080p", or "4k"
+# codec = ""           # FFmpeg hardware decode codec, e.g. "h264_cuvid"; blank for software decoding
