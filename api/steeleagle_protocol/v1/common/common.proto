@@ -14,6 +14,13 @@ message Pose {
   optional float yaw = 3; // yaw [degrees]
 }
 
+// Angular pose velocity in 3 dimensions.
+message PoseVelocity {
+  optional float pitch_vel = 1; // pitch [degrees/s]
+  optional float roll_vel = 2; // roll [degrees/s]
+  optional float yaw_vel = 3; // yaw [degrees/s]
+}
+
 // Representation of velocity in 3-dimensions.
 // Axes are organized as:
 // - `x_vel`: forward/northward velocity

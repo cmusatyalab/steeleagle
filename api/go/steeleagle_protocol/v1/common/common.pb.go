@@ -160,6 +160,142 @@ func (b0 Pose_builder) Build() *Pose {
 	return m0
 }
 
+// Angular pose velocity in 3 dimensions.
+type PoseVelocity struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_PitchVel    float32                `protobuf:"fixed32,1,opt,name=pitch_vel,json=pitchVel,proto3,oneof"`
+	xxx_hidden_RollVel     float32                `protobuf:"fixed32,2,opt,name=roll_vel,json=rollVel,proto3,oneof"`
+	xxx_hidden_YawVel      float32                `protobuf:"fixed32,3,opt,name=yaw_vel,json=yawVel,proto3,oneof"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *PoseVelocity) Reset() {
+	*x = PoseVelocity{}
+	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PoseVelocity) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PoseVelocity) ProtoMessage() {}
+
+func (x *PoseVelocity) ProtoReflect() protoreflect.Message {
+	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *PoseVelocity) GetPitchVel() float32 {
+	if x != nil {
+		return x.xxx_hidden_PitchVel
+	}
+	return 0
+}
+
+func (x *PoseVelocity) GetRollVel() float32 {
+	if x != nil {
+		return x.xxx_hidden_RollVel
+	}
+	return 0
+}
+
+func (x *PoseVelocity) GetYawVel() float32 {
+	if x != nil {
+		return x.xxx_hidden_YawVel
+	}
+	return 0
+}
+
+func (x *PoseVelocity) SetPitchVel(v float32) {
+	x.xxx_hidden_PitchVel = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 3)
+}
+
+func (x *PoseVelocity) SetRollVel(v float32) {
+	x.xxx_hidden_RollVel = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 3)
+}
+
+func (x *PoseVelocity) SetYawVel(v float32) {
+	x.xxx_hidden_YawVel = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
+}
+
+func (x *PoseVelocity) HasPitchVel() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *PoseVelocity) HasRollVel() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *PoseVelocity) HasYawVel() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *PoseVelocity) ClearPitchVel() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_PitchVel = 0
+}
+
+func (x *PoseVelocity) ClearRollVel() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_RollVel = 0
+}
+
+func (x *PoseVelocity) ClearYawVel() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_YawVel = 0
+}
+
+type PoseVelocity_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	PitchVel *float32
+	RollVel  *float32
+	YawVel   *float32
+}
+
+func (b0 PoseVelocity_builder) Build() *PoseVelocity {
+	m0 := &PoseVelocity{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.PitchVel != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 3)
+		x.xxx_hidden_PitchVel = *b.PitchVel
+	}
+	if b.RollVel != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 3)
+		x.xxx_hidden_RollVel = *b.RollVel
+	}
+	if b.YawVel != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 3)
+		x.xxx_hidden_YawVel = *b.YawVel
+	}
+	return m0
+}
+
 // Representation of velocity in 3-dimensions.
 // Axes are organized as:
 // - `x_vel`: forward/northward velocity
@@ -179,7 +315,7 @@ type Velocity struct {
 
 func (x *Velocity) Reset() {
 	*x = Velocity{}
-	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[1]
+	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -191,7 +327,7 @@ func (x *Velocity) String() string {
 func (*Velocity) ProtoMessage() {}
 
 func (x *Velocity) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[1]
+	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -345,7 +481,7 @@ type GlobalPosition struct {
 
 func (x *GlobalPosition) Reset() {
 	*x = GlobalPosition{}
-	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[2]
+	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -357,7 +493,7 @@ func (x *GlobalPosition) String() string {
 func (*GlobalPosition) ProtoMessage() {}
 
 func (x *GlobalPosition) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[2]
+	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -517,7 +653,7 @@ type RelativePosition struct {
 
 func (x *RelativePosition) Reset() {
 	*x = RelativePosition{}
-	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[3]
+	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -529,7 +665,7 @@ func (x *RelativePosition) String() string {
 func (*RelativePosition) ProtoMessage() {}
 
 func (x *RelativePosition) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[3]
+	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -680,7 +816,7 @@ type VehicleInfo struct {
 
 func (x *VehicleInfo) Reset() {
 	*x = VehicleInfo{}
-	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[4]
+	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -692,7 +828,7 @@ func (x *VehicleInfo) String() string {
 func (*VehicleInfo) ProtoMessage() {}
 
 func (x *VehicleInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[4]
+	mi := &file_steeleagle_protocol_v1_common_common_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -752,7 +888,16 @@ const file_steeleagle_protocol_v1_common_common_proto_rawDesc = "" +
 	"\x03yaw\x18\x03 \x01(\x02H\x02R\x03yaw\x88\x01\x01B\b\n" +
 	"\x06_pitchB\a\n" +
 	"\x05_rollB\x06\n" +
-	"\x04_yaw\"\xac\x01\n" +
+	"\x04_yaw\"\x95\x01\n" +
+	"\fPoseVelocity\x12 \n" +
+	"\tpitch_vel\x18\x01 \x01(\x02H\x00R\bpitchVel\x88\x01\x01\x12\x1e\n" +
+	"\broll_vel\x18\x02 \x01(\x02H\x01R\arollVel\x88\x01\x01\x12\x1c\n" +
+	"\ayaw_vel\x18\x03 \x01(\x02H\x02R\x06yawVel\x88\x01\x01B\f\n" +
+	"\n" +
+	"_pitch_velB\v\n" +
+	"\t_roll_velB\n" +
+	"\n" +
+	"\b_yaw_vel\"\xac\x01\n" +
 	"\bVelocity\x12\x18\n" +
 	"\x05x_vel\x18\x01 \x01(\x02H\x00R\x04xVel\x88\x01\x01\x12\x18\n" +
 	"\x05y_vel\x18\x02 \x01(\x02H\x01R\x04yVel\x88\x01\x01\x12\x18\n" +
@@ -789,13 +934,14 @@ const file_steeleagle_protocol_v1_common_common_proto_rawDesc = "" +
 	"\x05model\x18\x02 \x01(\tR\x05modelB\x8a\x02\n" +
 	"!com.steeleagle_protocol.v1.commonB\vCommonProtoP\x01ZFgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/common\xa2\x02\x03SVC\xaa\x02\x1cSteeleagleProtocol.V1.Common\xca\x02\x1cSteeleagleProtocol\\V1\\Common\xe2\x02(SteeleagleProtocol\\V1\\Common\\GPBMetadata\xea\x02\x1eSteeleagleProtocol::V1::Commonb\x06proto3"
 
-var file_steeleagle_protocol_v1_common_common_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_steeleagle_protocol_v1_common_common_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_steeleagle_protocol_v1_common_common_proto_goTypes = []any{
 	(*Pose)(nil),             // 0: steeleagle_protocol.v1.common.Pose
-	(*Velocity)(nil),         // 1: steeleagle_protocol.v1.common.Velocity
-	(*GlobalPosition)(nil),   // 2: steeleagle_protocol.v1.common.GlobalPosition
-	(*RelativePosition)(nil), // 3: steeleagle_protocol.v1.common.RelativePosition
-	(*VehicleInfo)(nil),      // 4: steeleagle_protocol.v1.common.VehicleInfo
+	(*PoseVelocity)(nil),     // 1: steeleagle_protocol.v1.common.PoseVelocity
+	(*Velocity)(nil),         // 2: steeleagle_protocol.v1.common.Velocity
+	(*GlobalPosition)(nil),   // 3: steeleagle_protocol.v1.common.GlobalPosition
+	(*RelativePosition)(nil), // 4: steeleagle_protocol.v1.common.RelativePosition
+	(*VehicleInfo)(nil),      // 5: steeleagle_protocol.v1.common.VehicleInfo
 }
 var file_steeleagle_protocol_v1_common_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -814,13 +960,14 @@ func file_steeleagle_protocol_v1_common_common_proto_init() {
 	file_steeleagle_protocol_v1_common_common_proto_msgTypes[1].OneofWrappers = []any{}
 	file_steeleagle_protocol_v1_common_common_proto_msgTypes[2].OneofWrappers = []any{}
 	file_steeleagle_protocol_v1_common_common_proto_msgTypes[3].OneofWrappers = []any{}
+	file_steeleagle_protocol_v1_common_common_proto_msgTypes[4].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_common_common_proto_rawDesc), len(file_steeleagle_protocol_v1_common_common_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

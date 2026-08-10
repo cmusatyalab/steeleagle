@@ -2,13 +2,24 @@
 
 package enums
 
-type PositionInfo_MotionStatus int32
+type Mode int32
 
 const (
-	PositionInfo_MotionStatusUnspecified PositionInfo_MotionStatus = 0
-	PositionInfo_MotionStatusHolding     PositionInfo_MotionStatus = 1
-	PositionInfo_MotionStatusInTransit   PositionInfo_MotionStatus = 2
-	PositionInfo_MotionStatusStopped     PositionInfo_MotionStatus = 3
+	ModeUnspecified Mode = 0
+	ModeTakeoff     Mode = 1
+	ModeLand        Mode = 2
+	ModeHold        Mode = 3
+	ModeGuided      Mode = 4
+	ModeEmergency   Mode = 5
+)
+
+type MotionStatus int32
+
+const (
+	MotionStatusUnspecified MotionStatus = 0
+	MotionStatusHolding     MotionStatus = 1
+	MotionStatusInTransit   MotionStatus = 2
+	MotionStatusStopped     MotionStatus = 3
 )
 
 type AlertInfo_BatteryWarning int32
@@ -82,11 +93,10 @@ const (
 	ReferenceFrameNeu         ReferenceFrame = 2
 )
 
-type PoseMode int32
+type AngleMode int32
 
 const (
-	PoseModeUnspecified PoseMode = 0
-	PoseModeAngle       PoseMode = 1
-	PoseModeOffset      PoseMode = 2
-	PoseModeVelocity    PoseMode = 3
+	AngleModeUnspecified AngleMode = 0
+	AngleModeAbsolute    AngleMode = 1
+	AngleModeOffset      AngleMode = 2
 )

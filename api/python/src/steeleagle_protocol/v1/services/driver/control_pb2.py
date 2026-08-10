@@ -23,9 +23,10 @@ _sym_db = _symbol_database.Default()
 
 
 from steeleagle_protocol.v1.common import common_pb2 as steeleagle__protocol_dot_v1_dot_common_dot_common__pb2
+from steeleagle_protocol.v1.messages.telemetry import telemetry_pb2 as steeleagle__protocol_dot_v1_dot_messages_dot_telemetry_dot_telemetry__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n4steeleagle_protocol/v1/services/driver/control.proto\x12&steeleagle_protocol.v1.services.driver\x1a*steeleagle_protocol/v1/common/common.proto\">\n\x0eTakeOffRequest\x12\x1f\n\x08\x61ltitude\x18\x01 \x01(\x02H\x00R\x08\x61ltitude\x88\x01\x01\x42\x0b\n\t_altitude\"\x11\n\x0fTakeOffResponse\"\r\n\x0bLandRequest\"\x0e\n\x0cLandResponse\"\r\n\x0bHoldRequest\"\x0e\n\x0cHoldResponse\"\r\n\x0bKillRequest\"\x0e\n\x0cKillResponse\"Z\n\x0eSetHomeRequest\x12H\n\x08new_home\x18\x01 \x01(\x0b\x32-.steeleagle_protocol.v1.common.GlobalPositionR\x07newHome\"\x11\n\x0fSetHomeResponse\"\xd0\x01\n\x13ReturnToHomeRequest\x12\x62\n\x0c\x65nd_behavior\x18\x01 \x01(\x0e\x32?.steeleagle_protocol.v1.services.driver.ReturnToHomeEndBehaviorR\x0b\x65ndBehavior\x12.\n\x13min_return_altitude\x18\x02 \x01(\x02R\x11minReturnAltitude\x12%\n\x0e\x66inal_altitude\x18\x03 \x01(\x02R\rfinalAltitude\"\x16\n\x14ReturnToHomeResponse\"\xa7\x03\n\x19GoToGlobalPositionRequest\x12I\n\x08position\x18\x01 \x01(\x0b\x32-.steeleagle_protocol.v1.common.GlobalPositionR\x08position\x12[\n\x0cheading_mode\x18\x02 \x01(\x0e\x32\x33.steeleagle_protocol.v1.services.driver.HeadingModeH\x00R\x0bheadingMode\x88\x01\x01\x12^\n\raltitude_mode\x18\x03 \x01(\x0e\x32\x34.steeleagle_protocol.v1.services.driver.AltitudeModeH\x01R\x0c\x61ltitudeMode\x88\x01\x01\x12\x19\n\x05speed\x18\x04 \x01(\x02H\x02R\x05speed\x88\x01\x01\x12(\n\rangular_speed\x18\x05 \x01(\x02H\x03R\x0c\x61ngularSpeed\x88\x01\x01\x42\x0f\n\r_heading_modeB\x10\n\x0e_altitude_modeB\x08\n\x06_speedB\x10\n\x0e_angular_speed\"\x1c\n\x1aGoToGlobalPositionResponse\"\xa8\x02\n\x1bGoToRelativePositionRequest\x12K\n\x08position\x18\x01 \x01(\x0b\x32/.steeleagle_protocol.v1.common.RelativePositionR\x08position\x12\x19\n\x05speed\x18\x02 \x01(\x02H\x00R\x05speed\x88\x01\x01\x12(\n\rangular_speed\x18\x03 \x01(\x02H\x01R\x0c\x61ngularSpeed\x88\x01\x01\x12Q\n\x05\x66rame\x18\x04 \x01(\x0e\x32\x36.steeleagle_protocol.v1.services.driver.ReferenceFrameH\x02R\x05\x66rame\x88\x01\x01\x42\x08\n\x06_speedB\x10\n\x0e_angular_speedB\x08\n\x06_frame\"\x1e\n\x1cGoToRelativePositionResponse\"\xb6\x01\n\x12SetVelocityRequest\x12\x43\n\x08velocity\x18\x01 \x01(\x0b\x32\'.steeleagle_protocol.v1.common.VelocityR\x08velocity\x12Q\n\x05\x66rame\x18\x02 \x01(\x0e\x32\x36.steeleagle_protocol.v1.services.driver.ReferenceFrameH\x00R\x05\x66rame\x88\x01\x01\x42\x08\n\x06_frame\"\x15\n\x13SetVelocityResponse\"\xab\x02\n\x14SetGimbalPoseRequest\x12\x1b\n\tgimbal_id\x18\x01 \x01(\rR\x08gimbalId\x12\x37\n\x04pose\x18\x02 \x01(\x0b\x32#.steeleagle_protocol.v1.common.PoseR\x04pose\x12R\n\tpose_mode\x18\x03 \x01(\x0e\x32\x30.steeleagle_protocol.v1.services.driver.PoseModeH\x00R\x08poseMode\x88\x01\x01\x12Q\n\x05\x66rame\x18\x04 \x01(\x0e\x32\x36.steeleagle_protocol.v1.services.driver.ReferenceFrameH\x01R\x05\x66rame\x88\x01\x01\x42\x0c\n\n_pose_modeB\x08\n\x06_frame\"\x17\n\x15SetGimbalPoseResponse*\x93\x01\n\x17ReturnToHomeEndBehavior\x12+\n\'RETURN_TO_HOME_END_BEHAVIOR_UNSPECIFIED\x10\x00\x12%\n!RETURN_TO_HOME_END_BEHAVIOR_HOVER\x10\x01\x12$\n RETURN_TO_HOME_END_BEHAVIOR_LAND\x10\x02*e\n\x0c\x41ltitudeMode\x12\x1d\n\x19\x41LTITUDE_MODE_UNSPECIFIED\x10\x00\x12\x1a\n\x16\x41LTITUDE_MODE_RELATIVE\x10\x01\x12\x1a\n\x16\x41LTITUDE_MODE_ABSOLUTE\x10\x02*_\n\x0bHeadingMode\x12\x1c\n\x18HEADING_MODE_UNSPECIFIED\x10\x00\x12\x1a\n\x16HEADING_MODE_TO_TARGET\x10\x01\x12\x16\n\x12HEADING_MODE_START\x10\x02*d\n\x0eReferenceFrame\x12\x1f\n\x1bREFERENCE_FRAME_UNSPECIFIED\x10\x00\x12\x18\n\x14REFERENCE_FRAME_BODY\x10\x01\x12\x17\n\x13REFERENCE_FRAME_NEU\x10\x02*h\n\x08PoseMode\x12\x19\n\x15POSE_MODE_UNSPECIFIED\x10\x00\x12\x13\n\x0fPOSE_MODE_ANGLE\x10\x01\x12\x14\n\x10POSE_MODE_OFFSET\x10\x02\x12\x16\n\x12POSE_MODE_VELOCITY\x10\x03\x32\xdb\n\n\x0e\x43ontrolService\x12|\n\x07TakeOff\x12\x36.steeleagle_protocol.v1.services.driver.TakeOffRequest\x1a\x37.steeleagle_protocol.v1.services.driver.TakeOffResponse\"\x00\x12s\n\x04Land\x12\x33.steeleagle_protocol.v1.services.driver.LandRequest\x1a\x34.steeleagle_protocol.v1.services.driver.LandResponse\"\x00\x12s\n\x04Hold\x12\x33.steeleagle_protocol.v1.services.driver.HoldRequest\x1a\x34.steeleagle_protocol.v1.services.driver.HoldResponse\"\x00\x12s\n\x04Kill\x12\x33.steeleagle_protocol.v1.services.driver.KillRequest\x1a\x34.steeleagle_protocol.v1.services.driver.KillResponse\"\x00\x12|\n\x07SetHome\x12\x36.steeleagle_protocol.v1.services.driver.SetHomeRequest\x1a\x37.steeleagle_protocol.v1.services.driver.SetHomeResponse\"\x00\x12\x8b\x01\n\x0cReturnToHome\x12;.steeleagle_protocol.v1.services.driver.ReturnToHomeRequest\x1a<.steeleagle_protocol.v1.services.driver.ReturnToHomeResponse\"\x00\x12\x9d\x01\n\x12GoToGlobalPosition\x12\x41.steeleagle_protocol.v1.services.driver.GoToGlobalPositionRequest\x1a\x42.steeleagle_protocol.v1.services.driver.GoToGlobalPositionResponse\"\x00\x12\xa3\x01\n\x14GoToRelativePosition\x12\x43.steeleagle_protocol.v1.services.driver.GoToRelativePositionRequest\x1a\x44.steeleagle_protocol.v1.services.driver.GoToRelativePositionResponse\"\x00\x12\x88\x01\n\x0bSetVelocity\x12:.steeleagle_protocol.v1.services.driver.SetVelocityRequest\x1a;.steeleagle_protocol.v1.services.driver.SetVelocityResponse\"\x00\x12\x8e\x01\n\rSetGimbalPose\x12<.steeleagle_protocol.v1.services.driver.SetGimbalPoseRequest\x1a=.steeleagle_protocol.v1.services.driver.SetGimbalPoseResponse\"\x00\x42\xc3\x02\n*com.steeleagle_protocol.v1.services.driverB\x0c\x43ontrolProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\xa2\x02\x04SVSD\xaa\x02%SteeleagleProtocol.V1.Services.Driver\xca\x02%SteeleagleProtocol\\V1\\Services\\Driver\xe2\x02\x31SteeleagleProtocol\\V1\\Services\\Driver\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Services::Driverb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n4steeleagle_protocol/v1/services/driver/control.proto\x12&steeleagle_protocol.v1.services.driver\x1a*steeleagle_protocol/v1/common/common.proto\x1a\x39steeleagle_protocol/v1/messages/telemetry/telemetry.proto\">\n\x0eTakeOffRequest\x12\x1f\n\x08\x61ltitude\x18\x01 \x01(\x02H\x00R\x08\x61ltitude\x88\x01\x01\x42\x0b\n\t_altitude\"\xc9\x01\n\x0fTakeOffResponse\x12T\n\rexpected_mode\x18\x01 \x01(\x0e\x32/.steeleagle_protocol.v1.messages.telemetry.ModeR\x0c\x65xpectedMode\x12`\n\x0f\x65xpected_status\x18\x02 \x01(\x0e\x32\x37.steeleagle_protocol.v1.messages.telemetry.MotionStatusR\x0e\x65xpectedStatus\"\r\n\x0bLandRequest\"\xc6\x01\n\x0cLandResponse\x12T\n\rexpected_mode\x18\x01 \x01(\x0e\x32/.steeleagle_protocol.v1.messages.telemetry.ModeR\x0c\x65xpectedMode\x12`\n\x0f\x65xpected_status\x18\x02 \x01(\x0e\x32\x37.steeleagle_protocol.v1.messages.telemetry.MotionStatusR\x0e\x65xpectedStatus\"\r\n\x0bHoldRequest\"\xc6\x01\n\x0cHoldResponse\x12T\n\rexpected_mode\x18\x01 \x01(\x0e\x32/.steeleagle_protocol.v1.messages.telemetry.ModeR\x0c\x65xpectedMode\x12`\n\x0f\x65xpected_status\x18\x02 \x01(\x0e\x32\x37.steeleagle_protocol.v1.messages.telemetry.MotionStatusR\x0e\x65xpectedStatus\"\r\n\x0bKillRequest\"\xc6\x01\n\x0cKillResponse\x12T\n\rexpected_mode\x18\x01 \x01(\x0e\x32/.steeleagle_protocol.v1.messages.telemetry.ModeR\x0c\x65xpectedMode\x12`\n\x0f\x65xpected_status\x18\x02 \x01(\x0e\x32\x37.steeleagle_protocol.v1.messages.telemetry.MotionStatusR\x0e\x65xpectedStatus\"\xd0\x01\n\x13ReturnToHomeRequest\x12\x62\n\x0c\x65nd_behavior\x18\x01 \x01(\x0e\x32?.steeleagle_protocol.v1.services.driver.ReturnToHomeEndBehaviorR\x0b\x65ndBehavior\x12.\n\x13min_return_altitude\x18\x02 \x01(\x02R\x11minReturnAltitude\x12%\n\x0e\x66inal_altitude\x18\x03 \x01(\x02R\rfinalAltitude\"\xce\x01\n\x14ReturnToHomeResponse\x12T\n\rexpected_mode\x18\x01 \x01(\x0e\x32/.steeleagle_protocol.v1.messages.telemetry.ModeR\x0c\x65xpectedMode\x12`\n\x0f\x65xpected_status\x18\x02 \x01(\x0e\x32\x37.steeleagle_protocol.v1.messages.telemetry.MotionStatusR\x0e\x65xpectedStatus\"\xac\x03\n\x1eSetGlobalPositionTargetRequest\x12I\n\x08position\x18\x01 \x01(\x0b\x32-.steeleagle_protocol.v1.common.GlobalPositionR\x08position\x12[\n\x0cheading_mode\x18\x02 \x01(\x0e\x32\x33.steeleagle_protocol.v1.services.driver.HeadingModeH\x00R\x0bheadingMode\x88\x01\x01\x12^\n\raltitude_mode\x18\x03 \x01(\x0e\x32\x34.steeleagle_protocol.v1.services.driver.AltitudeModeH\x01R\x0c\x61ltitudeMode\x88\x01\x01\x12\x19\n\x05speed\x18\x04 \x01(\x02H\x02R\x05speed\x88\x01\x01\x12(\n\rangular_speed\x18\x05 \x01(\x02H\x03R\x0c\x61ngularSpeed\x88\x01\x01\x42\x0f\n\r_heading_modeB\x10\n\x0e_altitude_modeB\x08\n\x06_speedB\x10\n\x0e_angular_speed\"\xce\x01\n\x1fSetGlobalPositionTargetResponse\x12I\n\x08setpoint\x18\x01 \x01(\x0b\x32-.steeleagle_protocol.v1.common.GlobalPositionR\x08setpoint\x12`\n\x0f\x65xpected_status\x18\x02 \x01(\x0e\x32\x37.steeleagle_protocol.v1.messages.telemetry.MotionStatusR\x0e\x65xpectedStatus\"\xad\x02\n SetRelativePositionTargetRequest\x12K\n\x08position\x18\x01 \x01(\x0b\x32/.steeleagle_protocol.v1.common.RelativePositionR\x08position\x12\x19\n\x05speed\x18\x02 \x01(\x02H\x00R\x05speed\x88\x01\x01\x12(\n\rangular_speed\x18\x03 \x01(\x02H\x01R\x0c\x61ngularSpeed\x88\x01\x01\x12Q\n\x05\x66rame\x18\x04 \x01(\x0e\x32\x36.steeleagle_protocol.v1.services.driver.ReferenceFrameH\x02R\x05\x66rame\x88\x01\x01\x42\x08\n\x06_speedB\x10\n\x0e_angular_speedB\x08\n\x06_frame\"\xd2\x01\n!SetRelativePositionTargetResponse\x12K\n\x08setpoint\x18\x01 \x01(\x0b\x32/.steeleagle_protocol.v1.common.RelativePositionR\x08setpoint\x12`\n\x0f\x65xpected_status\x18\x02 \x01(\x0e\x32\x37.steeleagle_protocol.v1.messages.telemetry.MotionStatusR\x0e\x65xpectedStatus\"\xbc\x01\n\x18SetVelocityTargetRequest\x12\x43\n\x08velocity\x18\x01 \x01(\x0b\x32\'.steeleagle_protocol.v1.common.VelocityR\x08velocity\x12Q\n\x05\x66rame\x18\x02 \x01(\x0e\x32\x36.steeleagle_protocol.v1.services.driver.ReferenceFrameH\x00R\x05\x66rame\x88\x01\x01\x42\x08\n\x06_frame\"\xc2\x01\n\x19SetVelocityTargetResponse\x12\x43\n\x08setpoint\x18\x01 \x01(\x0b\x32\'.steeleagle_protocol.v1.common.VelocityR\x08setpoint\x12`\n\x0f\x65xpected_status\x18\x02 \x01(\x0e\x32\x37.steeleagle_protocol.v1.messages.telemetry.MotionStatusR\x0e\x65xpectedStatus\"\x96\x02\n\x1bSetGimbalAngleTargetRequest\x12\x37\n\x04pose\x18\x01 \x01(\x0b\x32#.steeleagle_protocol.v1.common.PoseR\x04pose\x12S\n\tpose_mode\x18\x02 \x01(\x0e\x32\x31.steeleagle_protocol.v1.services.driver.AngleModeH\x00R\x08poseMode\x88\x01\x01\x12Q\n\x05\x66rame\x18\x03 \x01(\x0e\x32\x36.steeleagle_protocol.v1.services.driver.ReferenceFrameH\x01R\x05\x66rame\x88\x01\x01\x42\x0c\n\n_pose_modeB\x08\n\x06_frame\"_\n\x1cSetGimbalAngleTargetResponse\x12?\n\x08setpoint\x18\x01 \x01(\x0b\x32#.steeleagle_protocol.v1.common.PoseR\x08setpoint\"\xb2\x02\n\x1eSetGimbalVelocityTargetRequest\x12P\n\rpose_velocity\x18\x01 \x01(\x0b\x32+.steeleagle_protocol.v1.common.PoseVelocityR\x0cposeVelocity\x12S\n\tpose_mode\x18\x02 \x01(\x0e\x32\x31.steeleagle_protocol.v1.services.driver.AngleModeH\x00R\x08poseMode\x88\x01\x01\x12Q\n\x05\x66rame\x18\x03 \x01(\x0e\x32\x36.steeleagle_protocol.v1.services.driver.ReferenceFrameH\x01R\x05\x66rame\x88\x01\x01\x42\x0c\n\n_pose_modeB\x08\n\x06_frame\"j\n\x1fSetGimbalVelocityTargetResponse\x12G\n\x08setpoint\x18\x01 \x01(\x0b\x32+.steeleagle_protocol.v1.common.PoseVelocityR\x08setpoint*\x93\x01\n\x17ReturnToHomeEndBehavior\x12+\n\'RETURN_TO_HOME_END_BEHAVIOR_UNSPECIFIED\x10\x00\x12%\n!RETURN_TO_HOME_END_BEHAVIOR_HOVER\x10\x01\x12$\n RETURN_TO_HOME_END_BEHAVIOR_LAND\x10\x02*e\n\x0c\x41ltitudeMode\x12\x1d\n\x19\x41LTITUDE_MODE_UNSPECIFIED\x10\x00\x12\x1a\n\x16\x41LTITUDE_MODE_RELATIVE\x10\x01\x12\x1a\n\x16\x41LTITUDE_MODE_ABSOLUTE\x10\x02*_\n\x0bHeadingMode\x12\x1c\n\x18HEADING_MODE_UNSPECIFIED\x10\x00\x12\x1a\n\x16HEADING_MODE_TO_TARGET\x10\x01\x12\x16\n\x12HEADING_MODE_START\x10\x02*d\n\x0eReferenceFrame\x12\x1f\n\x1bREFERENCE_FRAME_UNSPECIFIED\x10\x00\x12\x18\n\x14REFERENCE_FRAME_BODY\x10\x01\x12\x17\n\x13REFERENCE_FRAME_NEU\x10\x02*W\n\tAngleMode\x12\x1a\n\x16\x41NGLE_MODE_UNSPECIFIED\x10\x00\x12\x17\n\x13\x41NGLE_MODE_ABSOLUTE\x10\x01\x12\x15\n\x11\x41NGLE_MODE_OFFSET\x10\x02\x32\xd2\x0b\n\x0fGuidanceService\x12|\n\x07TakeOff\x12\x36.steeleagle_protocol.v1.services.driver.TakeOffRequest\x1a\x37.steeleagle_protocol.v1.services.driver.TakeOffResponse\"\x00\x12s\n\x04Land\x12\x33.steeleagle_protocol.v1.services.driver.LandRequest\x1a\x34.steeleagle_protocol.v1.services.driver.LandResponse\"\x00\x12s\n\x04Hold\x12\x33.steeleagle_protocol.v1.services.driver.HoldRequest\x1a\x34.steeleagle_protocol.v1.services.driver.HoldResponse\"\x00\x12s\n\x04Kill\x12\x33.steeleagle_protocol.v1.services.driver.KillRequest\x1a\x34.steeleagle_protocol.v1.services.driver.KillResponse\"\x00\x12\x8b\x01\n\x0cReturnToHome\x12;.steeleagle_protocol.v1.services.driver.ReturnToHomeRequest\x1a<.steeleagle_protocol.v1.services.driver.ReturnToHomeResponse\"\x00\x12\xac\x01\n\x17SetGlobalPositionTarget\x12\x46.steeleagle_protocol.v1.services.driver.SetGlobalPositionTargetRequest\x1aG.steeleagle_protocol.v1.services.driver.SetGlobalPositionTargetResponse\"\x00\x12\xb2\x01\n\x19SetRelativePositionTarget\x12H.steeleagle_protocol.v1.services.driver.SetRelativePositionTargetRequest\x1aI.steeleagle_protocol.v1.services.driver.SetRelativePositionTargetResponse\"\x00\x12\x9a\x01\n\x11SetVelocityTarget\x12@.steeleagle_protocol.v1.services.driver.SetVelocityTargetRequest\x1a\x41.steeleagle_protocol.v1.services.driver.SetVelocityTargetResponse\"\x00\x12\xa3\x01\n\x14SetGimbalAngleTarget\x12\x43.steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetRequest\x1a\x44.steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetResponse\"\x00\x12\xac\x01\n\x17SetGimbalVelocityTarget\x12\x46.steeleagle_protocol.v1.services.driver.SetGimbalVelocityTargetRequest\x1aG.steeleagle_protocol.v1.services.driver.SetGimbalVelocityTargetResponse\"\x00\x42\xc3\x02\n*com.steeleagle_protocol.v1.services.driverB\x0c\x43ontrolProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\xa2\x02\x04SVSD\xaa\x02%SteeleagleProtocol.V1.Services.Driver\xca\x02%SteeleagleProtocol\\V1\\Services\\Driver\xe2\x02\x31SteeleagleProtocol\\V1\\Services\\Driver\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Services::Driverb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,56 +34,56 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'steeleagle_protocol.v1.serv
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'\n*com.steeleagle_protocol.v1.services.driverB\014ControlProtoP\001ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\242\002\004SVSD\252\002%SteeleagleProtocol.V1.Services.Driver\312\002%SteeleagleProtocol\\V1\\Services\\Driver\342\0021SteeleagleProtocol\\V1\\Services\\Driver\\GPBMetadata\352\002(SteeleagleProtocol::V1::Services::Driver'
-  _globals['_RETURNTOHOMEENDBEHAVIOR']._serialized_start=1985
-  _globals['_RETURNTOHOMEENDBEHAVIOR']._serialized_end=2132
-  _globals['_ALTITUDEMODE']._serialized_start=2134
-  _globals['_ALTITUDEMODE']._serialized_end=2235
-  _globals['_HEADINGMODE']._serialized_start=2237
-  _globals['_HEADINGMODE']._serialized_end=2332
-  _globals['_REFERENCEFRAME']._serialized_start=2334
-  _globals['_REFERENCEFRAME']._serialized_end=2434
-  _globals['_POSEMODE']._serialized_start=2436
-  _globals['_POSEMODE']._serialized_end=2540
-  _globals['_TAKEOFFREQUEST']._serialized_start=140
-  _globals['_TAKEOFFREQUEST']._serialized_end=202
-  _globals['_TAKEOFFRESPONSE']._serialized_start=204
-  _globals['_TAKEOFFRESPONSE']._serialized_end=221
-  _globals['_LANDREQUEST']._serialized_start=223
-  _globals['_LANDREQUEST']._serialized_end=236
-  _globals['_LANDRESPONSE']._serialized_start=238
-  _globals['_LANDRESPONSE']._serialized_end=252
-  _globals['_HOLDREQUEST']._serialized_start=254
-  _globals['_HOLDREQUEST']._serialized_end=267
-  _globals['_HOLDRESPONSE']._serialized_start=269
-  _globals['_HOLDRESPONSE']._serialized_end=283
-  _globals['_KILLREQUEST']._serialized_start=285
-  _globals['_KILLREQUEST']._serialized_end=298
-  _globals['_KILLRESPONSE']._serialized_start=300
-  _globals['_KILLRESPONSE']._serialized_end=314
-  _globals['_SETHOMEREQUEST']._serialized_start=316
-  _globals['_SETHOMEREQUEST']._serialized_end=406
-  _globals['_SETHOMERESPONSE']._serialized_start=408
-  _globals['_SETHOMERESPONSE']._serialized_end=425
-  _globals['_RETURNTOHOMEREQUEST']._serialized_start=428
-  _globals['_RETURNTOHOMEREQUEST']._serialized_end=636
-  _globals['_RETURNTOHOMERESPONSE']._serialized_start=638
-  _globals['_RETURNTOHOMERESPONSE']._serialized_end=660
-  _globals['_GOTOGLOBALPOSITIONREQUEST']._serialized_start=663
-  _globals['_GOTOGLOBALPOSITIONREQUEST']._serialized_end=1086
-  _globals['_GOTOGLOBALPOSITIONRESPONSE']._serialized_start=1088
-  _globals['_GOTOGLOBALPOSITIONRESPONSE']._serialized_end=1116
-  _globals['_GOTORELATIVEPOSITIONREQUEST']._serialized_start=1119
-  _globals['_GOTORELATIVEPOSITIONREQUEST']._serialized_end=1415
-  _globals['_GOTORELATIVEPOSITIONRESPONSE']._serialized_start=1417
-  _globals['_GOTORELATIVEPOSITIONRESPONSE']._serialized_end=1447
-  _globals['_SETVELOCITYREQUEST']._serialized_start=1450
-  _globals['_SETVELOCITYREQUEST']._serialized_end=1632
-  _globals['_SETVELOCITYRESPONSE']._serialized_start=1634
-  _globals['_SETVELOCITYRESPONSE']._serialized_end=1655
-  _globals['_SETGIMBALPOSEREQUEST']._serialized_start=1658
-  _globals['_SETGIMBALPOSEREQUEST']._serialized_end=1957
-  _globals['_SETGIMBALPOSERESPONSE']._serialized_start=1959
-  _globals['_SETGIMBALPOSERESPONSE']._serialized_end=1982
-  _globals['_CONTROLSERVICE']._serialized_start=2543
-  _globals['_CONTROLSERVICE']._serialized_end=3914
+  _globals['_RETURNTOHOMEENDBEHAVIOR']._serialized_start=3876
+  _globals['_RETURNTOHOMEENDBEHAVIOR']._serialized_end=4023
+  _globals['_ALTITUDEMODE']._serialized_start=4025
+  _globals['_ALTITUDEMODE']._serialized_end=4126
+  _globals['_HEADINGMODE']._serialized_start=4128
+  _globals['_HEADINGMODE']._serialized_end=4223
+  _globals['_REFERENCEFRAME']._serialized_start=4225
+  _globals['_REFERENCEFRAME']._serialized_end=4325
+  _globals['_ANGLEMODE']._serialized_start=4327
+  _globals['_ANGLEMODE']._serialized_end=4414
+  _globals['_TAKEOFFREQUEST']._serialized_start=199
+  _globals['_TAKEOFFREQUEST']._serialized_end=261
+  _globals['_TAKEOFFRESPONSE']._serialized_start=264
+  _globals['_TAKEOFFRESPONSE']._serialized_end=465
+  _globals['_LANDREQUEST']._serialized_start=467
+  _globals['_LANDREQUEST']._serialized_end=480
+  _globals['_LANDRESPONSE']._serialized_start=483
+  _globals['_LANDRESPONSE']._serialized_end=681
+  _globals['_HOLDREQUEST']._serialized_start=683
+  _globals['_HOLDREQUEST']._serialized_end=696
+  _globals['_HOLDRESPONSE']._serialized_start=699
+  _globals['_HOLDRESPONSE']._serialized_end=897
+  _globals['_KILLREQUEST']._serialized_start=899
+  _globals['_KILLREQUEST']._serialized_end=912
+  _globals['_KILLRESPONSE']._serialized_start=915
+  _globals['_KILLRESPONSE']._serialized_end=1113
+  _globals['_RETURNTOHOMEREQUEST']._serialized_start=1116
+  _globals['_RETURNTOHOMEREQUEST']._serialized_end=1324
+  _globals['_RETURNTOHOMERESPONSE']._serialized_start=1327
+  _globals['_RETURNTOHOMERESPONSE']._serialized_end=1533
+  _globals['_SETGLOBALPOSITIONTARGETREQUEST']._serialized_start=1536
+  _globals['_SETGLOBALPOSITIONTARGETREQUEST']._serialized_end=1964
+  _globals['_SETGLOBALPOSITIONTARGETRESPONSE']._serialized_start=1967
+  _globals['_SETGLOBALPOSITIONTARGETRESPONSE']._serialized_end=2173
+  _globals['_SETRELATIVEPOSITIONTARGETREQUEST']._serialized_start=2176
+  _globals['_SETRELATIVEPOSITIONTARGETREQUEST']._serialized_end=2477
+  _globals['_SETRELATIVEPOSITIONTARGETRESPONSE']._serialized_start=2480
+  _globals['_SETRELATIVEPOSITIONTARGETRESPONSE']._serialized_end=2690
+  _globals['_SETVELOCITYTARGETREQUEST']._serialized_start=2693
+  _globals['_SETVELOCITYTARGETREQUEST']._serialized_end=2881
+  _globals['_SETVELOCITYTARGETRESPONSE']._serialized_start=2884
+  _globals['_SETVELOCITYTARGETRESPONSE']._serialized_end=3078
+  _globals['_SETGIMBALANGLETARGETREQUEST']._serialized_start=3081
+  _globals['_SETGIMBALANGLETARGETREQUEST']._serialized_end=3359
+  _globals['_SETGIMBALANGLETARGETRESPONSE']._serialized_start=3361
+  _globals['_SETGIMBALANGLETARGETRESPONSE']._serialized_end=3456
+  _globals['_SETGIMBALVELOCITYTARGETREQUEST']._serialized_start=3459
+  _globals['_SETGIMBALVELOCITYTARGETREQUEST']._serialized_end=3765
+  _globals['_SETGIMBALVELOCITYTARGETRESPONSE']._serialized_start=3767
+  _globals['_SETGIMBALVELOCITYTARGETRESPONSE']._serialized_end=3873
+  _globals['_GUIDANCESERVICE']._serialized_start=4417
+  _globals['_GUIDANCESERVICE']._serialized_end=5907
 # @@protoc_insertion_point(module_scope)

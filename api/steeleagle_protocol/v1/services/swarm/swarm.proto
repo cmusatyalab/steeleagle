@@ -74,29 +74,28 @@ service SwarmService {
   /*
    * Order multiple vehicles to accelerate to a velocity.
    *
-   * Causes vehicles to accelerate until they reache a provided velocity. Each
+   * Causes vehicles to accelerate until they reach a provided velocity. Each
    * vehicle will interpret the input velocity according to `frame` as follows:
    * - `BODY` -> (`x_vel`, `y_vel`, `z_vel`) = (forward velocity, right velocity, up velocity)
    * - `NEU` -> (`x_vel`, `y_vel`, `z_vel`) = (north velocity, east velocity, up velocity)
    */
-  rpc SwarmSetVelocity (SwarmSetVelocityRequest)
-	returns (stream SwarmSetVelocityResponse) {}
+  rpc SwarmSetVelocityTarget (SwarmSetVelocityTargetRequest)
+	returns (stream SwarmSetVelocityTargetResponse) {}
   /*
-   * Order multiple vehicles to set the pose of a gimbal.
+   * Order multiple vehicles to set the angle of a gimbal.
    *
    * Causes vehicles to actuate a gimbal to a new pose. Each vehicle
    * will interpret the new pose type from `pose_mode` as follows:
    * - `ABSOLUTE` -> absolute angle
    * - `RELATIVE` -> angle relative to current position
-   * - `VELOCITY` -> angular velocities
    *
    * Each vehicle will interpret the new pose angles according to `frame`
    * as follows:
    * - `BODY` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, body yaw)
    * - `NEU` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, global yaw)
    */
-  rpc SwarmSetGimbalPose (SwarmSetGimbalPoseRequest)
-	returns (stream SwarmSetGimbalPoseResponse) {}
+  rpc SwarmSetGimbalAngleTarget (SwarmSetGimbalAngleTargetRequest)
+	returns (stream SwarmSetGimbalAngleTargetResponse) {}
   /*
    * Order multiple vehicles to start a mission.
    *
@@ -184,26 +183,26 @@ message SwarmReturnToHomeResponse {
   string details = 4; // error details, if applicable
 }
 
-message SwarmSetVelocityRequest {
+message SwarmSetVelocityTargetRequest {
   repeated string vehicles = 1; // target vehicles
-  steeleagle_protocol.v1.services.driver.SetVelocityRequest request = 2; // proxied request object
+  steeleagle_protocol.v1.services.driver.SetVelocityTargetRequest request = 2; // proxied request object
 }
 
-message SwarmSetVelocityResponse {
+message SwarmSetVelocityTargetResponse {
   string vehicle = 1; // ID of vehicle
-  steeleagle_protocol.v1.services.driver.SetVelocityResponse response = 2; // proxied response object
+  steeleagle_protocol.v1.services.driver.SetVelocityTargetResponse response = 2; // proxied response object
   uint32 code = 3; // gRPC status code
   string details = 4; // error details, if applicable
 }
 
-message SwarmSetGimbalPoseRequest{
+message SwarmSetGimbalAngleTargetRequest{
   repeated string vehicles = 1; // target vehicles
-  steeleagle_protocol.v1.services.driver.SetGimbalPoseRequest request = 2; // proxied request object
+  steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetRequest request = 2; // proxied request object
 }
 
-message SwarmSetGimbalPoseResponse {
+message SwarmSetGimbalAngleTargetResponse {
   string vehicle = 1; // ID of vehicle
-  steeleagle_protocol.v1.services.driver.SetGimbalPoseResponse response = 2; // proxied response object
+  steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetResponse response = 2; // proxied response object
   uint32 code = 3; // gRPC status code
   string details = 4; // error details, if applicable
 }

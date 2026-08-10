@@ -52,6 +52,46 @@ func (w *poseWrapper) hasYaw() bool {
 	return w.inner.HasYaw()
 }
 
+type poseVelocityWrapper struct {
+	inner *common.PoseVelocity // generated concrete type
+}
+
+func (w *poseVelocityWrapper) GetPitchVel() (float32, error) {
+	if !w.hasPitchVel() {
+		var zero float32
+		return zero, ErrFieldNotPresent
+	}
+	return w.inner.GetPitchVel(), nil
+}
+
+func (w *poseVelocityWrapper) hasPitchVel() bool {
+	return w.inner.HasPitchVel()
+}
+
+func (w *poseVelocityWrapper) GetRollVel() (float32, error) {
+	if !w.hasRollVel() {
+		var zero float32
+		return zero, ErrFieldNotPresent
+	}
+	return w.inner.GetRollVel(), nil
+}
+
+func (w *poseVelocityWrapper) hasRollVel() bool {
+	return w.inner.HasRollVel()
+}
+
+func (w *poseVelocityWrapper) GetYawVel() (float32, error) {
+	if !w.hasYawVel() {
+		var zero float32
+		return zero, ErrFieldNotPresent
+	}
+	return w.inner.GetYawVel(), nil
+}
+
+func (w *poseVelocityWrapper) hasYawVel() bool {
+	return w.inner.HasYawVel()
+}
+
 type velocityWrapper struct {
 	inner *common.Velocity // generated concrete type
 }
@@ -280,7 +320,7 @@ type guidanceResultWrapper struct {
 	inner *result.GuidanceResult // generated concrete type
 }
 
-func (w *guidanceResultWrapper) GetTrajectory() (GuidanceResult_GetTrajectory_Velocity, error) {
+func (w *guidanceResultWrapper) GetTrajectory() (GuidanceResult_Trajectory, error) {
 	if !w.hasTrajectory() {
 		return nil, ErrFieldNotPresent
 	}
@@ -295,7 +335,7 @@ type slamResultWrapper struct {
 	inner *result.SlamResult // generated concrete type
 }
 
-func (w *slamResultWrapper) GetRelativePosition() (SlamResult_GetRelativePosition_RelativePosition, error) {
+func (w *slamResultWrapper) GetRelativePosition() (SlamResult_RelativePosition, error) {
 	if !w.hasRelativePosition() {
 		return nil, ErrFieldNotPresent
 	}
@@ -306,7 +346,7 @@ func (w *slamResultWrapper) hasRelativePosition() bool {
 	return w.inner.HasRelativePosition()
 }
 
-func (w *slamResultWrapper) GetGlobalPosition() (SlamResult_GetGlobalPosition_GlobalPosition, error) {
+func (w *slamResultWrapper) GetGlobalPosition() (SlamResult_GlobalPosition, error) {
 	if !w.hasGlobalPosition() {
 		return nil, ErrFieldNotPresent
 	}
@@ -374,23 +414,39 @@ type batteryInfoWrapper struct {
 	inner *telemetry.BatteryInfo // generated concrete type
 }
 
-func (w *batteryInfoWrapper) GetPercentage() uint32 {
-	return w.inner.GetPercentage()
+func (w *batteryInfoWrapper) GetPercentage() (uint32, error) {
+	if !w.hasPercentage() {
+		var zero uint32
+		return zero, ErrFieldNotPresent
+	}
+	return w.inner.GetPercentage(), nil
+}
+
+func (w *batteryInfoWrapper) hasPercentage() bool {
+	return w.inner.HasPercentage()
 }
 
 type gpsInfoWrapper struct {
 	inner *telemetry.GpsInfo // generated concrete type
 }
 
-func (w *gpsInfoWrapper) GetSatellites() uint32 {
-	return w.inner.GetSatellites()
+func (w *gpsInfoWrapper) GetSatellites() (uint32, error) {
+	if !w.hasSatellites() {
+		var zero uint32
+		return zero, ErrFieldNotPresent
+	}
+	return w.inner.GetSatellites(), nil
+}
+
+func (w *gpsInfoWrapper) hasSatellites() bool {
+	return w.inner.HasSatellites()
 }
 
 type positionInfoWrapper struct {
 	inner *telemetry.PositionInfo // generated concrete type
 }
 
-func (w *positionInfoWrapper) GetHome() (PositionInfo_GetHome_GlobalPosition, error) {
+func (w *positionInfoWrapper) GetHome() (PositionInfo_Home, error) {
 	if !w.hasHome() {
 		return nil, ErrFieldNotPresent
 	}
@@ -401,7 +457,7 @@ func (w *positionInfoWrapper) hasHome() bool {
 	return w.inner.HasHome()
 }
 
-func (w *positionInfoWrapper) GetGlobalPosition() (PositionInfo_GetGlobalPosition_GlobalPosition, error) {
+func (w *positionInfoWrapper) GetGlobalPosition() (PositionInfo_GlobalPosition, error) {
 	if !w.hasGlobalPosition() {
 		return nil, ErrFieldNotPresent
 	}
@@ -412,7 +468,7 @@ func (w *positionInfoWrapper) hasGlobalPosition() bool {
 	return w.inner.HasGlobalPosition()
 }
 
-func (w *positionInfoWrapper) GetRelativePosition() (PositionInfo_GetRelativePosition_RelativePosition, error) {
+func (w *positionInfoWrapper) GetRelativePosition() (PositionInfo_RelativePosition, error) {
 	if !w.hasRelativePosition() {
 		return nil, ErrFieldNotPresent
 	}
@@ -423,7 +479,7 @@ func (w *positionInfoWrapper) hasRelativePosition() bool {
 	return w.inner.HasRelativePosition()
 }
 
-func (w *positionInfoWrapper) GetVelocityBody() (PositionInfo_GetVelocityBody_Velocity, error) {
+func (w *positionInfoWrapper) GetVelocityBody() (PositionInfo_VelocityBody, error) {
 	if !w.hasVelocityBody() {
 		return nil, ErrFieldNotPresent
 	}
@@ -434,7 +490,7 @@ func (w *positionInfoWrapper) hasVelocityBody() bool {
 	return w.inner.HasVelocityBody()
 }
 
-func (w *positionInfoWrapper) GetVelocityNeu() (PositionInfo_GetVelocityNeu_Velocity, error) {
+func (w *positionInfoWrapper) GetVelocityNeu() (PositionInfo_VelocityNeu, error) {
 	if !w.hasVelocityNeu() {
 		return nil, ErrFieldNotPresent
 	}
@@ -443,10 +499,6 @@ func (w *positionInfoWrapper) GetVelocityNeu() (PositionInfo_GetVelocityNeu_Velo
 
 func (w *positionInfoWrapper) hasVelocityNeu() bool {
 	return w.inner.HasVelocityNeu()
-}
-
-func (w *positionInfoWrapper) GetMotionStatus() enums.PositionInfo_MotionStatus {
-	return enums.PositionInfo_MotionStatus(w.inner.GetMotionStatus())
 }
 
 func (w *positionInfoWrapper) GetSetpoint() (*anypb.Any, error) {
@@ -461,69 +513,64 @@ func (w *positionInfoWrapper) hasSetpoint() bool {
 	return w.inner.HasSetpoint()
 }
 
-type gimbalStatusWrapper struct {
-	inner *telemetry.GimbalStatus // generated concrete type
+type gimbalInfoWrapper struct {
+	inner *telemetry.GimbalInfo // generated concrete type
 }
 
-func (w *gimbalStatusWrapper) GetId() uint32 {
-	return w.inner.GetId()
-}
-
-func (w *gimbalStatusWrapper) GetPoseBody() (GimbalStatus_GetPoseBody_Pose, error) {
+func (w *gimbalInfoWrapper) GetPoseBody() (GimbalInfo_PoseBody, error) {
 	if !w.hasPoseBody() {
 		return nil, ErrFieldNotPresent
 	}
 	return &poseWrapper{inner: w.inner.GetPoseBody()}, nil
 }
 
-func (w *gimbalStatusWrapper) hasPoseBody() bool {
+func (w *gimbalInfoWrapper) hasPoseBody() bool {
 	return w.inner.HasPoseBody()
 }
 
-func (w *gimbalStatusWrapper) GetPoseNeu() (GimbalStatus_GetPoseNeu_Pose, error) {
+func (w *gimbalInfoWrapper) GetPoseNeu() (GimbalInfo_PoseNeu, error) {
 	if !w.hasPoseNeu() {
 		return nil, ErrFieldNotPresent
 	}
 	return &poseWrapper{inner: w.inner.GetPoseNeu()}, nil
 }
 
-func (w *gimbalStatusWrapper) hasPoseNeu() bool {
+func (w *gimbalInfoWrapper) hasPoseNeu() bool {
 	return w.inner.HasPoseNeu()
 }
 
-func (w *gimbalStatusWrapper) GetAngularVelocityBody() (GimbalStatus_GetAngularVelocityBody_Pose, error) {
+func (w *gimbalInfoWrapper) GetAngularVelocityBody() (GimbalInfo_AngularVelocityBody, error) {
 	if !w.hasAngularVelocityBody() {
 		return nil, ErrFieldNotPresent
 	}
-	return &poseWrapper{inner: w.inner.GetAngularVelocityBody()}, nil
+	return &poseVelocityWrapper{inner: w.inner.GetAngularVelocityBody()}, nil
 }
 
-func (w *gimbalStatusWrapper) hasAngularVelocityBody() bool {
+func (w *gimbalInfoWrapper) hasAngularVelocityBody() bool {
 	return w.inner.HasAngularVelocityBody()
 }
 
-func (w *gimbalStatusWrapper) GetAngularVelocityNeu() (GimbalStatus_GetAngularVelocityNeu_Pose, error) {
+func (w *gimbalInfoWrapper) GetAngularVelocityNeu() (GimbalInfo_AngularVelocityNeu, error) {
 	if !w.hasAngularVelocityNeu() {
 		return nil, ErrFieldNotPresent
 	}
-	return &poseWrapper{inner: w.inner.GetAngularVelocityNeu()}, nil
+	return &poseVelocityWrapper{inner: w.inner.GetAngularVelocityNeu()}, nil
 }
 
-func (w *gimbalStatusWrapper) hasAngularVelocityNeu() bool {
+func (w *gimbalInfoWrapper) hasAngularVelocityNeu() bool {
 	return w.inner.HasAngularVelocityNeu()
 }
 
-type gimbalInfoWrapper struct {
-	inner *telemetry.GimbalInfo // generated concrete type
+func (w *gimbalInfoWrapper) GetGimbalSetpoint() (*anypb.Any, error) {
+	if !w.hasGimbalSetpoint() {
+		var zero *anypb.Any
+		return zero, ErrFieldNotPresent
+	}
+	return w.inner.GetGimbalSetpoint(), nil
 }
 
-func (w *gimbalInfoWrapper) GetGimbals() []GimbalStatus {
-	src := w.inner.GetGimbals()
-	out := make([]GimbalStatus, len(src))
-	for i, v := range src {
-		out[i] = &gimbalStatusWrapper{inner: v}
-	}
-	return out
+func (w *gimbalInfoWrapper) hasGimbalSetpoint() bool {
+	return w.inner.HasGimbalSetpoint()
 }
 
 type alertInfoWrapper struct {
@@ -621,44 +668,175 @@ func (w *telemetryWrapper) hasAlertInfo() bool {
 	return w.inner.HasAlertInfo()
 }
 
+func (w *telemetryWrapper) GetMode() (enums.Mode, error) {
+	if !w.hasMode() {
+		var zero enums.Mode
+		return zero, ErrFieldNotPresent
+	}
+	return enums.Mode(w.inner.GetMode()), nil
+}
+
+func (w *telemetryWrapper) hasMode() bool {
+	return w.inner.HasMode()
+}
+
+func (w *telemetryWrapper) GetMotionStatus() (enums.MotionStatus, error) {
+	if !w.hasMotionStatus() {
+		var zero enums.MotionStatus
+		return zero, ErrFieldNotPresent
+	}
+	return enums.MotionStatus(w.inner.GetMotionStatus()), nil
+}
+
+func (w *telemetryWrapper) hasMotionStatus() bool {
+	return w.inner.HasMotionStatus()
+}
+
 type takeOffResponseWrapper struct {
 	inner *driver.TakeOffResponse // generated concrete type
+}
+
+func (w *takeOffResponseWrapper) GetExpectedMode() enums.Mode {
+	return enums.Mode(w.inner.GetExpectedMode())
+}
+
+func (w *takeOffResponseWrapper) GetExpectedStatus() enums.MotionStatus {
+	return enums.MotionStatus(w.inner.GetExpectedStatus())
 }
 
 type landResponseWrapper struct {
 	inner *driver.LandResponse // generated concrete type
 }
 
+func (w *landResponseWrapper) GetExpectedMode() enums.Mode {
+	return enums.Mode(w.inner.GetExpectedMode())
+}
+
+func (w *landResponseWrapper) GetExpectedStatus() enums.MotionStatus {
+	return enums.MotionStatus(w.inner.GetExpectedStatus())
+}
+
 type holdResponseWrapper struct {
 	inner *driver.HoldResponse // generated concrete type
+}
+
+func (w *holdResponseWrapper) GetExpectedMode() enums.Mode {
+	return enums.Mode(w.inner.GetExpectedMode())
+}
+
+func (w *holdResponseWrapper) GetExpectedStatus() enums.MotionStatus {
+	return enums.MotionStatus(w.inner.GetExpectedStatus())
 }
 
 type killResponseWrapper struct {
 	inner *driver.KillResponse // generated concrete type
 }
 
-type setHomeResponseWrapper struct {
-	inner *driver.SetHomeResponse // generated concrete type
+func (w *killResponseWrapper) GetExpectedMode() enums.Mode {
+	return enums.Mode(w.inner.GetExpectedMode())
+}
+
+func (w *killResponseWrapper) GetExpectedStatus() enums.MotionStatus {
+	return enums.MotionStatus(w.inner.GetExpectedStatus())
 }
 
 type returnToHomeResponseWrapper struct {
 	inner *driver.ReturnToHomeResponse // generated concrete type
 }
 
-type goToGlobalPositionResponseWrapper struct {
-	inner *driver.GoToGlobalPositionResponse // generated concrete type
+func (w *returnToHomeResponseWrapper) GetExpectedMode() enums.Mode {
+	return enums.Mode(w.inner.GetExpectedMode())
 }
 
-type goToRelativePositionResponseWrapper struct {
-	inner *driver.GoToRelativePositionResponse // generated concrete type
+func (w *returnToHomeResponseWrapper) GetExpectedStatus() enums.MotionStatus {
+	return enums.MotionStatus(w.inner.GetExpectedStatus())
 }
 
-type setVelocityResponseWrapper struct {
-	inner *driver.SetVelocityResponse // generated concrete type
+type setGlobalPositionTargetResponseWrapper struct {
+	inner *driver.SetGlobalPositionTargetResponse // generated concrete type
 }
 
-type setGimbalPoseResponseWrapper struct {
-	inner *driver.SetGimbalPoseResponse // generated concrete type
+func (w *setGlobalPositionTargetResponseWrapper) GetSetpoint() (SetGlobalPositionTargetResponse_Setpoint, error) {
+	if !w.hasSetpoint() {
+		return nil, ErrFieldNotPresent
+	}
+	return &globalPositionWrapper{inner: w.inner.GetSetpoint()}, nil
+}
+
+func (w *setGlobalPositionTargetResponseWrapper) hasSetpoint() bool {
+	return w.inner.HasSetpoint()
+}
+
+func (w *setGlobalPositionTargetResponseWrapper) GetExpectedStatus() enums.MotionStatus {
+	return enums.MotionStatus(w.inner.GetExpectedStatus())
+}
+
+type setRelativePositionTargetResponseWrapper struct {
+	inner *driver.SetRelativePositionTargetResponse // generated concrete type
+}
+
+func (w *setRelativePositionTargetResponseWrapper) GetSetpoint() (SetRelativePositionTargetResponse_Setpoint, error) {
+	if !w.hasSetpoint() {
+		return nil, ErrFieldNotPresent
+	}
+	return &relativePositionWrapper{inner: w.inner.GetSetpoint()}, nil
+}
+
+func (w *setRelativePositionTargetResponseWrapper) hasSetpoint() bool {
+	return w.inner.HasSetpoint()
+}
+
+func (w *setRelativePositionTargetResponseWrapper) GetExpectedStatus() enums.MotionStatus {
+	return enums.MotionStatus(w.inner.GetExpectedStatus())
+}
+
+type setVelocityTargetResponseWrapper struct {
+	inner *driver.SetVelocityTargetResponse // generated concrete type
+}
+
+func (w *setVelocityTargetResponseWrapper) GetSetpoint() (SetVelocityTargetResponse_Setpoint, error) {
+	if !w.hasSetpoint() {
+		return nil, ErrFieldNotPresent
+	}
+	return &velocityWrapper{inner: w.inner.GetSetpoint()}, nil
+}
+
+func (w *setVelocityTargetResponseWrapper) hasSetpoint() bool {
+	return w.inner.HasSetpoint()
+}
+
+func (w *setVelocityTargetResponseWrapper) GetExpectedStatus() enums.MotionStatus {
+	return enums.MotionStatus(w.inner.GetExpectedStatus())
+}
+
+type setGimbalAngleTargetResponseWrapper struct {
+	inner *driver.SetGimbalAngleTargetResponse // generated concrete type
+}
+
+func (w *setGimbalAngleTargetResponseWrapper) GetSetpoint() (SetGimbalAngleTargetResponse_Setpoint, error) {
+	if !w.hasSetpoint() {
+		return nil, ErrFieldNotPresent
+	}
+	return &poseWrapper{inner: w.inner.GetSetpoint()}, nil
+}
+
+func (w *setGimbalAngleTargetResponseWrapper) hasSetpoint() bool {
+	return w.inner.HasSetpoint()
+}
+
+type setGimbalVelocityTargetResponseWrapper struct {
+	inner *driver.SetGimbalVelocityTargetResponse // generated concrete type
+}
+
+func (w *setGimbalVelocityTargetResponseWrapper) GetSetpoint() (SetGimbalVelocityTargetResponse_Setpoint, error) {
+	if !w.hasSetpoint() {
+		return nil, ErrFieldNotPresent
+	}
+	return &poseVelocityWrapper{inner: w.inner.GetSetpoint()}, nil
+}
+
+func (w *setGimbalVelocityTargetResponseWrapper) hasSetpoint() bool {
+	return w.inner.HasSetpoint()
 }
 
 type getVehicleInfoResponseWrapper struct {

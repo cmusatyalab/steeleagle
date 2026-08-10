@@ -20,29 +20,34 @@ type ReturnToHomeOption interface {
 	SetFinalAltitude(float32)
 }
 
-// GoToGlobalPositionOption represents an option for a GoToGlobalPosition RPC.
-type GoToGlobalPositionOption interface {
+// SetGlobalPositionTargetOption represents an option for a SetGlobalPositionTarget RPC.
+type SetGlobalPositionTargetOption interface {
 	SetHeadingMode(driverpb.HeadingMode)
 	SetAltitudeMode(driverpb.AltitudeMode)
 	SetSpeed(float32)
 	SetAngularSpeed(float32)
 }
 
-// GoToRelativePositionOption represents an option for a GoToRelativePosition RPC.
-type GoToRelativePositionOption interface {
+// SetRelativePositionTargetOption represents an option for a SetRelativePositionTarget RPC.
+type SetRelativePositionTargetOption interface {
 	SetSpeed(float32)
 	SetAngularSpeed(float32)
 	SetFrame(driverpb.ReferenceFrame)
 }
 
-// SetVelocityOption represents an option for a SetVelocity RPC.
-type SetVelocityOption interface {
+// SetVelocityTargetOption represents an option for a SetVelocityTarget RPC.
+type SetVelocityTargetOption interface {
 	SetFrame(driverpb.ReferenceFrame)
 }
 
-// SetGimbalPoseOption represents an option for a SetGimbalPose RPC.
-type SetGimbalPoseOption interface {
-	SetPoseMode(driverpb.PoseMode)
+// SetGimbalAngleTargetOption represents an option for a SetGimbalAngleTarget RPC.
+type SetGimbalAngleTargetOption interface {
+	SetAngleMode(driverpb.AngleMode)
+	SetFrame(driverpb.ReferenceFrame)
+}
+
+// SetGimbalVelocityTargetOption represents an option for a SetGimbalVelocityTarget RPC.
+type SetGimbalVelocityTargetOption interface {
 	SetFrame(driverpb.ReferenceFrame)
 }
 
@@ -155,14 +160,14 @@ func WithReferenceFrame[T hasReferenceFrame](frame enums.ReferenceFrame) func(T)
 	}
 }
 
-// hasPoseMode checks that the base interface supports an optional pose mode.
-type hasPoseMode interface {
-	SetPoseMode(driverpb.PoseMode)
+// hasAngleMode checks that the base interface supports an optional pose mode.
+type hasAngleMode interface {
+	SetAngleMode(driverpb.AngleMode)
 }
 
-// WithPoseMode sets the pose mode for a request that supports it.
-func WithPoseMode[T hasPoseMode](mode enums.PoseMode) func(T) {
+// WithAngleMode sets the pose mode for a request that supports it.
+func WithAngleMode[T hasAngleMode](mode enums.AngleMode) func(T) {
 	return func(t T) {
-		t.SetPoseMode(driverpb.PoseMode(mode))
+		t.SetAngleMode(driverpb.AngleMode(mode))
 	}
 }

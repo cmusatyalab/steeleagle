@@ -26,7 +26,7 @@ type DetectionResult interface {
 	GetDetections() []Detection
 }
 
-type GuidanceResult_GetTrajectory_Velocity interface {
+type GuidanceResult_Trajectory interface {
 	GetXVel() (float32, error)
 	GetYVel() (float32, error)
 	GetZVel() (float32, error)
@@ -34,18 +34,18 @@ type GuidanceResult_GetTrajectory_Velocity interface {
 }
 
 type GuidanceResult interface {
-	GetTrajectory() (GuidanceResult_GetTrajectory_Velocity, error)
+	GetTrajectory() (GuidanceResult_Trajectory, error)
 	hasTrajectory() bool
 }
 
-type SlamResult_GetRelativePosition_RelativePosition interface {
+type SlamResult_RelativePosition interface {
 	GetX() (float32, error)
 	GetY() (float32, error)
 	GetZ() (float32, error)
 	GetAngle() (float32, error)
 }
 
-type SlamResult_GetGlobalPosition_GlobalPosition interface {
+type SlamResult_GlobalPosition interface {
 	GetLatitude() (float64, error)
 	GetLongitude() (float64, error)
 	GetAltitude() (float32, error)
@@ -53,9 +53,9 @@ type SlamResult_GetGlobalPosition_GlobalPosition interface {
 }
 
 type SlamResult interface {
-	GetRelativePosition() (SlamResult_GetRelativePosition_RelativePosition, error)
+	GetRelativePosition() (SlamResult_RelativePosition, error)
 	hasRelativePosition() bool
-	GetGlobalPosition() (SlamResult_GetGlobalPosition_GlobalPosition, error)
+	GetGlobalPosition() (SlamResult_GlobalPosition, error)
 	hasGlobalPosition() bool
 }
 
@@ -72,42 +72,44 @@ type ComputeResult interface {
 }
 
 type BatteryInfo interface {
-	GetPercentage() uint32
+	GetPercentage() (uint32, error)
+	hasPercentage() bool
 }
 
 type GpsInfo interface {
-	GetSatellites() uint32
+	GetSatellites() (uint32, error)
+	hasSatellites() bool
 }
 
-type PositionInfo_GetHome_GlobalPosition interface {
+type PositionInfo_Home interface {
 	GetLatitude() (float64, error)
 	GetLongitude() (float64, error)
 	GetAltitude() (float32, error)
 	GetHeading() (float32, error)
 }
 
-type PositionInfo_GetGlobalPosition_GlobalPosition interface {
+type PositionInfo_GlobalPosition interface {
 	GetLatitude() (float64, error)
 	GetLongitude() (float64, error)
 	GetAltitude() (float32, error)
 	GetHeading() (float32, error)
 }
 
-type PositionInfo_GetRelativePosition_RelativePosition interface {
+type PositionInfo_RelativePosition interface {
 	GetX() (float32, error)
 	GetY() (float32, error)
 	GetZ() (float32, error)
 	GetAngle() (float32, error)
 }
 
-type PositionInfo_GetVelocityBody_Velocity interface {
+type PositionInfo_VelocityBody interface {
 	GetXVel() (float32, error)
 	GetYVel() (float32, error)
 	GetZVel() (float32, error)
 	GetAngularVel() (float32, error)
 }
 
-type PositionInfo_GetVelocityNeu_Velocity interface {
+type PositionInfo_VelocityNeu interface {
 	GetXVel() (float32, error)
 	GetYVel() (float32, error)
 	GetZVel() (float32, error)
@@ -115,59 +117,55 @@ type PositionInfo_GetVelocityNeu_Velocity interface {
 }
 
 type PositionInfo interface {
-	GetHome() (PositionInfo_GetHome_GlobalPosition, error)
+	GetHome() (PositionInfo_Home, error)
 	hasHome() bool
-	GetGlobalPosition() (PositionInfo_GetGlobalPosition_GlobalPosition, error)
+	GetGlobalPosition() (PositionInfo_GlobalPosition, error)
 	hasGlobalPosition() bool
-	GetRelativePosition() (PositionInfo_GetRelativePosition_RelativePosition, error)
+	GetRelativePosition() (PositionInfo_RelativePosition, error)
 	hasRelativePosition() bool
-	GetVelocityBody() (PositionInfo_GetVelocityBody_Velocity, error)
+	GetVelocityBody() (PositionInfo_VelocityBody, error)
 	hasVelocityBody() bool
-	GetVelocityNeu() (PositionInfo_GetVelocityNeu_Velocity, error)
+	GetVelocityNeu() (PositionInfo_VelocityNeu, error)
 	hasVelocityNeu() bool
-	GetMotionStatus() enums.PositionInfo_MotionStatus
 	GetSetpoint() (*anypb.Any, error)
 	hasSetpoint() bool
 }
 
-type GimbalStatus_GetPoseBody_Pose interface {
+type GimbalInfo_PoseBody interface {
 	GetPitch() (float32, error)
 	GetRoll() (float32, error)
 	GetYaw() (float32, error)
 }
 
-type GimbalStatus_GetPoseNeu_Pose interface {
+type GimbalInfo_PoseNeu interface {
 	GetPitch() (float32, error)
 	GetRoll() (float32, error)
 	GetYaw() (float32, error)
 }
 
-type GimbalStatus_GetAngularVelocityBody_Pose interface {
-	GetPitch() (float32, error)
-	GetRoll() (float32, error)
-	GetYaw() (float32, error)
+type GimbalInfo_AngularVelocityBody interface {
+	GetPitchVel() (float32, error)
+	GetRollVel() (float32, error)
+	GetYawVel() (float32, error)
 }
 
-type GimbalStatus_GetAngularVelocityNeu_Pose interface {
-	GetPitch() (float32, error)
-	GetRoll() (float32, error)
-	GetYaw() (float32, error)
-}
-
-type GimbalStatus interface {
-	GetId() uint32
-	GetPoseBody() (GimbalStatus_GetPoseBody_Pose, error)
-	hasPoseBody() bool
-	GetPoseNeu() (GimbalStatus_GetPoseNeu_Pose, error)
-	hasPoseNeu() bool
-	GetAngularVelocityBody() (GimbalStatus_GetAngularVelocityBody_Pose, error)
-	hasAngularVelocityBody() bool
-	GetAngularVelocityNeu() (GimbalStatus_GetAngularVelocityNeu_Pose, error)
-	hasAngularVelocityNeu() bool
+type GimbalInfo_AngularVelocityNeu interface {
+	GetPitchVel() (float32, error)
+	GetRollVel() (float32, error)
+	GetYawVel() (float32, error)
 }
 
 type GimbalInfo interface {
-	GetGimbals() []GimbalStatus
+	GetPoseBody() (GimbalInfo_PoseBody, error)
+	hasPoseBody() bool
+	GetPoseNeu() (GimbalInfo_PoseNeu, error)
+	hasPoseNeu() bool
+	GetAngularVelocityBody() (GimbalInfo_AngularVelocityBody, error)
+	hasAngularVelocityBody() bool
+	GetAngularVelocityNeu() (GimbalInfo_AngularVelocityNeu, error)
+	hasAngularVelocityNeu() bool
+	GetGimbalSetpoint() (*anypb.Any, error)
+	hasGimbalSetpoint() bool
 }
 
 type AlertInfo interface {
@@ -191,36 +189,96 @@ type Telemetry interface {
 	hasGimbalInfo() bool
 	GetAlertInfo() (AlertInfo, error)
 	hasAlertInfo() bool
+	GetMode() (enums.Mode, error)
+	hasMode() bool
+	GetMotionStatus() (enums.MotionStatus, error)
+	hasMotionStatus() bool
 }
 
 type TakeOffResponse interface {
+	GetExpectedMode() enums.Mode
+	GetExpectedStatus() enums.MotionStatus
 }
 
 type LandResponse interface {
+	GetExpectedMode() enums.Mode
+	GetExpectedStatus() enums.MotionStatus
 }
 
 type HoldResponse interface {
+	GetExpectedMode() enums.Mode
+	GetExpectedStatus() enums.MotionStatus
 }
 
 type KillResponse interface {
-}
-
-type SetHomeResponse interface {
+	GetExpectedMode() enums.Mode
+	GetExpectedStatus() enums.MotionStatus
 }
 
 type ReturnToHomeResponse interface {
+	GetExpectedMode() enums.Mode
+	GetExpectedStatus() enums.MotionStatus
 }
 
-type GoToGlobalPositionResponse interface {
+type SetGlobalPositionTargetResponse_Setpoint interface {
+	GetLatitude() (float64, error)
+	GetLongitude() (float64, error)
+	GetAltitude() (float32, error)
+	GetHeading() (float32, error)
 }
 
-type GoToRelativePositionResponse interface {
+type SetGlobalPositionTargetResponse interface {
+	GetSetpoint() (SetGlobalPositionTargetResponse_Setpoint, error)
+	hasSetpoint() bool
+	GetExpectedStatus() enums.MotionStatus
 }
 
-type SetVelocityResponse interface {
+type SetRelativePositionTargetResponse_Setpoint interface {
+	GetX() (float32, error)
+	GetY() (float32, error)
+	GetZ() (float32, error)
+	GetAngle() (float32, error)
 }
 
-type SetGimbalPoseResponse interface {
+type SetRelativePositionTargetResponse interface {
+	GetSetpoint() (SetRelativePositionTargetResponse_Setpoint, error)
+	hasSetpoint() bool
+	GetExpectedStatus() enums.MotionStatus
+}
+
+type SetVelocityTargetResponse_Setpoint interface {
+	GetXVel() (float32, error)
+	GetYVel() (float32, error)
+	GetZVel() (float32, error)
+	GetAngularVel() (float32, error)
+}
+
+type SetVelocityTargetResponse interface {
+	GetSetpoint() (SetVelocityTargetResponse_Setpoint, error)
+	hasSetpoint() bool
+	GetExpectedStatus() enums.MotionStatus
+}
+
+type SetGimbalAngleTargetResponse_Setpoint interface {
+	GetPitch() (float32, error)
+	GetRoll() (float32, error)
+	GetYaw() (float32, error)
+}
+
+type SetGimbalAngleTargetResponse interface {
+	GetSetpoint() (SetGimbalAngleTargetResponse_Setpoint, error)
+	hasSetpoint() bool
+}
+
+type SetGimbalVelocityTargetResponse_Setpoint interface {
+	GetPitchVel() (float32, error)
+	GetRollVel() (float32, error)
+	GetYawVel() (float32, error)
+}
+
+type SetGimbalVelocityTargetResponse interface {
+	GetSetpoint() (SetGimbalVelocityTargetResponse_Setpoint, error)
+	hasSetpoint() bool
 }
 
 type GetVehicleInfoResponse interface {

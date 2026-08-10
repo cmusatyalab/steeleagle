@@ -50,15 +50,15 @@ class SwarmServiceStub:
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmReturnToHomeRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmReturnToHomeResponse.FromString,
                 _registered_method=True)
-        self.SwarmSetVelocity = channel.unary_stream(
-                '/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmSetVelocity',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmSetVelocityRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmSetVelocityResponse.FromString,
+        self.SwarmSetVelocityTarget = channel.unary_stream(
+                '/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmSetVelocityTarget',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmSetVelocityTargetRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmSetVelocityTargetResponse.FromString,
                 _registered_method=True)
-        self.SwarmSetGimbalPose = channel.unary_stream(
-                '/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmSetGimbalPose',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmSetGimbalPoseRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmSetGimbalPoseResponse.FromString,
+        self.SwarmSetGimbalAngleTarget = channel.unary_stream(
+                '/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmSetGimbalAngleTarget',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmSetGimbalAngleTargetRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmSetGimbalAngleTargetResponse.FromString,
                 _registered_method=True)
         self.SwarmStartMission = channel.unary_stream(
                 '/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmStartMission',
@@ -153,11 +153,11 @@ class SwarmServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def SwarmSetVelocity(self, request, context):
+    def SwarmSetVelocityTarget(self, request, context):
         """
         Order multiple vehicles to accelerate to a velocity.
 
-        Causes vehicles to accelerate until they reache a provided velocity. Each
+        Causes vehicles to accelerate until they reach a provided velocity. Each
         vehicle will interpret the input velocity according to `frame` as follows:
         - `BODY` -> (`x_vel`, `y_vel`, `z_vel`) = (forward velocity, right velocity, up velocity)
         - `NEU` -> (`x_vel`, `y_vel`, `z_vel`) = (north velocity, east velocity, up velocity)
@@ -166,15 +166,14 @@ class SwarmServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def SwarmSetGimbalPose(self, request, context):
+    def SwarmSetGimbalAngleTarget(self, request, context):
         """
-        Order multiple vehicles to set the pose of a gimbal.
+        Order multiple vehicles to set the angle of a gimbal.
 
         Causes vehicles to actuate a gimbal to a new pose. Each vehicle
         will interpret the new pose type from `pose_mode` as follows:
         - `ABSOLUTE` -> absolute angle
         - `RELATIVE` -> angle relative to current position
-        - `VELOCITY` -> angular velocities
 
         Each vehicle will interpret the new pose angles according to `frame`
         as follows:
@@ -247,15 +246,15 @@ def add_SwarmServiceServicer_to_server(servicer, server):
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmReturnToHomeRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmReturnToHomeResponse.SerializeToString,
             ),
-            'SwarmSetVelocity': grpc.unary_stream_rpc_method_handler(
-                    servicer.SwarmSetVelocity,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmSetVelocityRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmSetVelocityResponse.SerializeToString,
+            'SwarmSetVelocityTarget': grpc.unary_stream_rpc_method_handler(
+                    servicer.SwarmSetVelocityTarget,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmSetVelocityTargetRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmSetVelocityTargetResponse.SerializeToString,
             ),
-            'SwarmSetGimbalPose': grpc.unary_stream_rpc_method_handler(
-                    servicer.SwarmSetGimbalPose,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmSetGimbalPoseRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmSetGimbalPoseResponse.SerializeToString,
+            'SwarmSetGimbalAngleTarget': grpc.unary_stream_rpc_method_handler(
+                    servicer.SwarmSetGimbalAngleTarget,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmSetGimbalAngleTargetRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmSetGimbalAngleTargetResponse.SerializeToString,
             ),
             'SwarmStartMission': grpc.unary_stream_rpc_method_handler(
                     servicer.SwarmStartMission,
@@ -430,7 +429,7 @@ class SwarmService:
             _registered_method=True)
 
     @staticmethod
-    def SwarmSetVelocity(request,
+    def SwarmSetVelocityTarget(request,
             target,
             options=(),
             channel_credentials=None,
@@ -443,9 +442,9 @@ class SwarmService:
         return grpc.experimental.unary_stream(
             request,
             target,
-            '/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmSetVelocity',
-            steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmSetVelocityRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmSetVelocityResponse.FromString,
+            '/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmSetVelocityTarget',
+            steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmSetVelocityTargetRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmSetVelocityTargetResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -457,7 +456,7 @@ class SwarmService:
             _registered_method=True)
 
     @staticmethod
-    def SwarmSetGimbalPose(request,
+    def SwarmSetGimbalAngleTarget(request,
             target,
             options=(),
             channel_credentials=None,
@@ -470,9 +469,9 @@ class SwarmService:
         return grpc.experimental.unary_stream(
             request,
             target,
-            '/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmSetGimbalPose',
-            steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmSetGimbalPoseRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmSetGimbalPoseResponse.FromString,
+            '/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmSetGimbalAngleTarget',
+            steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmSetGimbalAngleTargetRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmSetGimbalAngleTargetResponse.FromString,
             options,
             channel_credentials,
             insecure,

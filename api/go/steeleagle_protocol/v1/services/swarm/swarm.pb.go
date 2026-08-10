@@ -987,28 +987,28 @@ func (b0 SwarmReturnToHomeResponse_builder) Build() *SwarmReturnToHomeResponse {
 	return m0
 }
 
-type SwarmSetVelocityRequest struct {
-	state               protoimpl.MessageState     `protogen:"opaque.v1"`
-	xxx_hidden_Vehicles []string                   `protobuf:"bytes,1,rep,name=vehicles,proto3"`
-	xxx_hidden_Request  *driver.SetVelocityRequest `protobuf:"bytes,2,opt,name=request,proto3"`
+type SwarmSetVelocityTargetRequest struct {
+	state               protoimpl.MessageState           `protogen:"opaque.v1"`
+	xxx_hidden_Vehicles []string                         `protobuf:"bytes,1,rep,name=vehicles,proto3"`
+	xxx_hidden_Request  *driver.SetVelocityTargetRequest `protobuf:"bytes,2,opt,name=request,proto3"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
 
-func (x *SwarmSetVelocityRequest) Reset() {
-	*x = SwarmSetVelocityRequest{}
+func (x *SwarmSetVelocityTargetRequest) Reset() {
+	*x = SwarmSetVelocityTargetRequest{}
 	mi := &file_steeleagle_protocol_v1_services_swarm_swarm_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SwarmSetVelocityRequest) String() string {
+func (x *SwarmSetVelocityTargetRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SwarmSetVelocityRequest) ProtoMessage() {}
+func (*SwarmSetVelocityTargetRequest) ProtoMessage() {}
 
-func (x *SwarmSetVelocityRequest) ProtoReflect() protoreflect.Message {
+func (x *SwarmSetVelocityTargetRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_steeleagle_protocol_v1_services_swarm_swarm_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1020,48 +1020,48 @@ func (x *SwarmSetVelocityRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *SwarmSetVelocityRequest) GetVehicles() []string {
+func (x *SwarmSetVelocityTargetRequest) GetVehicles() []string {
 	if x != nil {
 		return x.xxx_hidden_Vehicles
 	}
 	return nil
 }
 
-func (x *SwarmSetVelocityRequest) GetRequest() *driver.SetVelocityRequest {
+func (x *SwarmSetVelocityTargetRequest) GetRequest() *driver.SetVelocityTargetRequest {
 	if x != nil {
 		return x.xxx_hidden_Request
 	}
 	return nil
 }
 
-func (x *SwarmSetVelocityRequest) SetVehicles(v []string) {
+func (x *SwarmSetVelocityTargetRequest) SetVehicles(v []string) {
 	x.xxx_hidden_Vehicles = v
 }
 
-func (x *SwarmSetVelocityRequest) SetRequest(v *driver.SetVelocityRequest) {
+func (x *SwarmSetVelocityTargetRequest) SetRequest(v *driver.SetVelocityTargetRequest) {
 	x.xxx_hidden_Request = v
 }
 
-func (x *SwarmSetVelocityRequest) HasRequest() bool {
+func (x *SwarmSetVelocityTargetRequest) HasRequest() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Request != nil
 }
 
-func (x *SwarmSetVelocityRequest) ClearRequest() {
+func (x *SwarmSetVelocityTargetRequest) ClearRequest() {
 	x.xxx_hidden_Request = nil
 }
 
-type SwarmSetVelocityRequest_builder struct {
+type SwarmSetVelocityTargetRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Vehicles []string
-	Request  *driver.SetVelocityRequest
+	Request  *driver.SetVelocityTargetRequest
 }
 
-func (b0 SwarmSetVelocityRequest_builder) Build() *SwarmSetVelocityRequest {
-	m0 := &SwarmSetVelocityRequest{}
+func (b0 SwarmSetVelocityTargetRequest_builder) Build() *SwarmSetVelocityTargetRequest {
+	m0 := &SwarmSetVelocityTargetRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Vehicles = b.Vehicles
@@ -1069,30 +1069,30 @@ func (b0 SwarmSetVelocityRequest_builder) Build() *SwarmSetVelocityRequest {
 	return m0
 }
 
-type SwarmSetVelocityResponse struct {
-	state               protoimpl.MessageState      `protogen:"opaque.v1"`
-	xxx_hidden_Vehicle  string                      `protobuf:"bytes,1,opt,name=vehicle,proto3"`
-	xxx_hidden_Response *driver.SetVelocityResponse `protobuf:"bytes,2,opt,name=response,proto3"`
-	xxx_hidden_Code     uint32                      `protobuf:"varint,3,opt,name=code,proto3"`
-	xxx_hidden_Details  string                      `protobuf:"bytes,4,opt,name=details,proto3"`
+type SwarmSetVelocityTargetResponse struct {
+	state               protoimpl.MessageState            `protogen:"opaque.v1"`
+	xxx_hidden_Vehicle  string                            `protobuf:"bytes,1,opt,name=vehicle,proto3"`
+	xxx_hidden_Response *driver.SetVelocityTargetResponse `protobuf:"bytes,2,opt,name=response,proto3"`
+	xxx_hidden_Code     uint32                            `protobuf:"varint,3,opt,name=code,proto3"`
+	xxx_hidden_Details  string                            `protobuf:"bytes,4,opt,name=details,proto3"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
 
-func (x *SwarmSetVelocityResponse) Reset() {
-	*x = SwarmSetVelocityResponse{}
+func (x *SwarmSetVelocityTargetResponse) Reset() {
+	*x = SwarmSetVelocityTargetResponse{}
 	mi := &file_steeleagle_protocol_v1_services_swarm_swarm_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SwarmSetVelocityResponse) String() string {
+func (x *SwarmSetVelocityTargetResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SwarmSetVelocityResponse) ProtoMessage() {}
+func (*SwarmSetVelocityTargetResponse) ProtoMessage() {}
 
-func (x *SwarmSetVelocityResponse) ProtoReflect() protoreflect.Message {
+func (x *SwarmSetVelocityTargetResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_steeleagle_protocol_v1_services_swarm_swarm_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1104,72 +1104,72 @@ func (x *SwarmSetVelocityResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *SwarmSetVelocityResponse) GetVehicle() string {
+func (x *SwarmSetVelocityTargetResponse) GetVehicle() string {
 	if x != nil {
 		return x.xxx_hidden_Vehicle
 	}
 	return ""
 }
 
-func (x *SwarmSetVelocityResponse) GetResponse() *driver.SetVelocityResponse {
+func (x *SwarmSetVelocityTargetResponse) GetResponse() *driver.SetVelocityTargetResponse {
 	if x != nil {
 		return x.xxx_hidden_Response
 	}
 	return nil
 }
 
-func (x *SwarmSetVelocityResponse) GetCode() uint32 {
+func (x *SwarmSetVelocityTargetResponse) GetCode() uint32 {
 	if x != nil {
 		return x.xxx_hidden_Code
 	}
 	return 0
 }
 
-func (x *SwarmSetVelocityResponse) GetDetails() string {
+func (x *SwarmSetVelocityTargetResponse) GetDetails() string {
 	if x != nil {
 		return x.xxx_hidden_Details
 	}
 	return ""
 }
 
-func (x *SwarmSetVelocityResponse) SetVehicle(v string) {
+func (x *SwarmSetVelocityTargetResponse) SetVehicle(v string) {
 	x.xxx_hidden_Vehicle = v
 }
 
-func (x *SwarmSetVelocityResponse) SetResponse(v *driver.SetVelocityResponse) {
+func (x *SwarmSetVelocityTargetResponse) SetResponse(v *driver.SetVelocityTargetResponse) {
 	x.xxx_hidden_Response = v
 }
 
-func (x *SwarmSetVelocityResponse) SetCode(v uint32) {
+func (x *SwarmSetVelocityTargetResponse) SetCode(v uint32) {
 	x.xxx_hidden_Code = v
 }
 
-func (x *SwarmSetVelocityResponse) SetDetails(v string) {
+func (x *SwarmSetVelocityTargetResponse) SetDetails(v string) {
 	x.xxx_hidden_Details = v
 }
 
-func (x *SwarmSetVelocityResponse) HasResponse() bool {
+func (x *SwarmSetVelocityTargetResponse) HasResponse() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Response != nil
 }
 
-func (x *SwarmSetVelocityResponse) ClearResponse() {
+func (x *SwarmSetVelocityTargetResponse) ClearResponse() {
 	x.xxx_hidden_Response = nil
 }
 
-type SwarmSetVelocityResponse_builder struct {
+type SwarmSetVelocityTargetResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Vehicle  string
-	Response *driver.SetVelocityResponse
+	Response *driver.SetVelocityTargetResponse
 	Code     uint32
 	Details  string
 }
 
-func (b0 SwarmSetVelocityResponse_builder) Build() *SwarmSetVelocityResponse {
-	m0 := &SwarmSetVelocityResponse{}
+func (b0 SwarmSetVelocityTargetResponse_builder) Build() *SwarmSetVelocityTargetResponse {
+	m0 := &SwarmSetVelocityTargetResponse{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Vehicle = b.Vehicle
@@ -1179,28 +1179,28 @@ func (b0 SwarmSetVelocityResponse_builder) Build() *SwarmSetVelocityResponse {
 	return m0
 }
 
-type SwarmSetGimbalPoseRequest struct {
-	state               protoimpl.MessageState       `protogen:"opaque.v1"`
-	xxx_hidden_Vehicles []string                     `protobuf:"bytes,1,rep,name=vehicles,proto3"`
-	xxx_hidden_Request  *driver.SetGimbalPoseRequest `protobuf:"bytes,2,opt,name=request,proto3"`
+type SwarmSetGimbalAngleTargetRequest struct {
+	state               protoimpl.MessageState              `protogen:"opaque.v1"`
+	xxx_hidden_Vehicles []string                            `protobuf:"bytes,1,rep,name=vehicles,proto3"`
+	xxx_hidden_Request  *driver.SetGimbalAngleTargetRequest `protobuf:"bytes,2,opt,name=request,proto3"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
 
-func (x *SwarmSetGimbalPoseRequest) Reset() {
-	*x = SwarmSetGimbalPoseRequest{}
+func (x *SwarmSetGimbalAngleTargetRequest) Reset() {
+	*x = SwarmSetGimbalAngleTargetRequest{}
 	mi := &file_steeleagle_protocol_v1_services_swarm_swarm_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SwarmSetGimbalPoseRequest) String() string {
+func (x *SwarmSetGimbalAngleTargetRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SwarmSetGimbalPoseRequest) ProtoMessage() {}
+func (*SwarmSetGimbalAngleTargetRequest) ProtoMessage() {}
 
-func (x *SwarmSetGimbalPoseRequest) ProtoReflect() protoreflect.Message {
+func (x *SwarmSetGimbalAngleTargetRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_steeleagle_protocol_v1_services_swarm_swarm_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1212,48 +1212,48 @@ func (x *SwarmSetGimbalPoseRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *SwarmSetGimbalPoseRequest) GetVehicles() []string {
+func (x *SwarmSetGimbalAngleTargetRequest) GetVehicles() []string {
 	if x != nil {
 		return x.xxx_hidden_Vehicles
 	}
 	return nil
 }
 
-func (x *SwarmSetGimbalPoseRequest) GetRequest() *driver.SetGimbalPoseRequest {
+func (x *SwarmSetGimbalAngleTargetRequest) GetRequest() *driver.SetGimbalAngleTargetRequest {
 	if x != nil {
 		return x.xxx_hidden_Request
 	}
 	return nil
 }
 
-func (x *SwarmSetGimbalPoseRequest) SetVehicles(v []string) {
+func (x *SwarmSetGimbalAngleTargetRequest) SetVehicles(v []string) {
 	x.xxx_hidden_Vehicles = v
 }
 
-func (x *SwarmSetGimbalPoseRequest) SetRequest(v *driver.SetGimbalPoseRequest) {
+func (x *SwarmSetGimbalAngleTargetRequest) SetRequest(v *driver.SetGimbalAngleTargetRequest) {
 	x.xxx_hidden_Request = v
 }
 
-func (x *SwarmSetGimbalPoseRequest) HasRequest() bool {
+func (x *SwarmSetGimbalAngleTargetRequest) HasRequest() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Request != nil
 }
 
-func (x *SwarmSetGimbalPoseRequest) ClearRequest() {
+func (x *SwarmSetGimbalAngleTargetRequest) ClearRequest() {
 	x.xxx_hidden_Request = nil
 }
 
-type SwarmSetGimbalPoseRequest_builder struct {
+type SwarmSetGimbalAngleTargetRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Vehicles []string
-	Request  *driver.SetGimbalPoseRequest
+	Request  *driver.SetGimbalAngleTargetRequest
 }
 
-func (b0 SwarmSetGimbalPoseRequest_builder) Build() *SwarmSetGimbalPoseRequest {
-	m0 := &SwarmSetGimbalPoseRequest{}
+func (b0 SwarmSetGimbalAngleTargetRequest_builder) Build() *SwarmSetGimbalAngleTargetRequest {
+	m0 := &SwarmSetGimbalAngleTargetRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Vehicles = b.Vehicles
@@ -1261,30 +1261,30 @@ func (b0 SwarmSetGimbalPoseRequest_builder) Build() *SwarmSetGimbalPoseRequest {
 	return m0
 }
 
-type SwarmSetGimbalPoseResponse struct {
-	state               protoimpl.MessageState        `protogen:"opaque.v1"`
-	xxx_hidden_Vehicle  string                        `protobuf:"bytes,1,opt,name=vehicle,proto3"`
-	xxx_hidden_Response *driver.SetGimbalPoseResponse `protobuf:"bytes,2,opt,name=response,proto3"`
-	xxx_hidden_Code     uint32                        `protobuf:"varint,3,opt,name=code,proto3"`
-	xxx_hidden_Details  string                        `protobuf:"bytes,4,opt,name=details,proto3"`
+type SwarmSetGimbalAngleTargetResponse struct {
+	state               protoimpl.MessageState               `protogen:"opaque.v1"`
+	xxx_hidden_Vehicle  string                               `protobuf:"bytes,1,opt,name=vehicle,proto3"`
+	xxx_hidden_Response *driver.SetGimbalAngleTargetResponse `protobuf:"bytes,2,opt,name=response,proto3"`
+	xxx_hidden_Code     uint32                               `protobuf:"varint,3,opt,name=code,proto3"`
+	xxx_hidden_Details  string                               `protobuf:"bytes,4,opt,name=details,proto3"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
 
-func (x *SwarmSetGimbalPoseResponse) Reset() {
-	*x = SwarmSetGimbalPoseResponse{}
+func (x *SwarmSetGimbalAngleTargetResponse) Reset() {
+	*x = SwarmSetGimbalAngleTargetResponse{}
 	mi := &file_steeleagle_protocol_v1_services_swarm_swarm_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SwarmSetGimbalPoseResponse) String() string {
+func (x *SwarmSetGimbalAngleTargetResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SwarmSetGimbalPoseResponse) ProtoMessage() {}
+func (*SwarmSetGimbalAngleTargetResponse) ProtoMessage() {}
 
-func (x *SwarmSetGimbalPoseResponse) ProtoReflect() protoreflect.Message {
+func (x *SwarmSetGimbalAngleTargetResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_steeleagle_protocol_v1_services_swarm_swarm_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1296,72 +1296,72 @@ func (x *SwarmSetGimbalPoseResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *SwarmSetGimbalPoseResponse) GetVehicle() string {
+func (x *SwarmSetGimbalAngleTargetResponse) GetVehicle() string {
 	if x != nil {
 		return x.xxx_hidden_Vehicle
 	}
 	return ""
 }
 
-func (x *SwarmSetGimbalPoseResponse) GetResponse() *driver.SetGimbalPoseResponse {
+func (x *SwarmSetGimbalAngleTargetResponse) GetResponse() *driver.SetGimbalAngleTargetResponse {
 	if x != nil {
 		return x.xxx_hidden_Response
 	}
 	return nil
 }
 
-func (x *SwarmSetGimbalPoseResponse) GetCode() uint32 {
+func (x *SwarmSetGimbalAngleTargetResponse) GetCode() uint32 {
 	if x != nil {
 		return x.xxx_hidden_Code
 	}
 	return 0
 }
 
-func (x *SwarmSetGimbalPoseResponse) GetDetails() string {
+func (x *SwarmSetGimbalAngleTargetResponse) GetDetails() string {
 	if x != nil {
 		return x.xxx_hidden_Details
 	}
 	return ""
 }
 
-func (x *SwarmSetGimbalPoseResponse) SetVehicle(v string) {
+func (x *SwarmSetGimbalAngleTargetResponse) SetVehicle(v string) {
 	x.xxx_hidden_Vehicle = v
 }
 
-func (x *SwarmSetGimbalPoseResponse) SetResponse(v *driver.SetGimbalPoseResponse) {
+func (x *SwarmSetGimbalAngleTargetResponse) SetResponse(v *driver.SetGimbalAngleTargetResponse) {
 	x.xxx_hidden_Response = v
 }
 
-func (x *SwarmSetGimbalPoseResponse) SetCode(v uint32) {
+func (x *SwarmSetGimbalAngleTargetResponse) SetCode(v uint32) {
 	x.xxx_hidden_Code = v
 }
 
-func (x *SwarmSetGimbalPoseResponse) SetDetails(v string) {
+func (x *SwarmSetGimbalAngleTargetResponse) SetDetails(v string) {
 	x.xxx_hidden_Details = v
 }
 
-func (x *SwarmSetGimbalPoseResponse) HasResponse() bool {
+func (x *SwarmSetGimbalAngleTargetResponse) HasResponse() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Response != nil
 }
 
-func (x *SwarmSetGimbalPoseResponse) ClearResponse() {
+func (x *SwarmSetGimbalAngleTargetResponse) ClearResponse() {
 	x.xxx_hidden_Response = nil
 }
 
-type SwarmSetGimbalPoseResponse_builder struct {
+type SwarmSetGimbalAngleTargetResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Vehicle  string
-	Response *driver.SetGimbalPoseResponse
+	Response *driver.SetGimbalAngleTargetResponse
 	Code     uint32
 	Details  string
 }
 
-func (b0 SwarmSetGimbalPoseResponse_builder) Build() *SwarmSetGimbalPoseResponse {
-	m0 := &SwarmSetGimbalPoseResponse{}
+func (b0 SwarmSetGimbalAngleTargetResponse_builder) Build() *SwarmSetGimbalAngleTargetResponse {
+	m0 := &SwarmSetGimbalAngleTargetResponse{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Vehicle = b.Vehicle
@@ -1991,21 +1991,21 @@ const file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDesc = "" +
 	"\avehicle\x18\x01 \x01(\tR\avehicle\x12X\n" +
 	"\bresponse\x18\x02 \x01(\v2<.steeleagle_protocol.v1.services.driver.ReturnToHomeResponseR\bresponse\x12\x12\n" +
 	"\x04code\x18\x03 \x01(\rR\x04code\x12\x18\n" +
-	"\adetails\x18\x04 \x01(\tR\adetails\"\x8b\x01\n" +
-	"\x17SwarmSetVelocityRequest\x12\x1a\n" +
-	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12T\n" +
-	"\arequest\x18\x02 \x01(\v2:.steeleagle_protocol.v1.services.driver.SetVelocityRequestR\arequest\"\xbb\x01\n" +
-	"\x18SwarmSetVelocityResponse\x12\x18\n" +
-	"\avehicle\x18\x01 \x01(\tR\avehicle\x12W\n" +
-	"\bresponse\x18\x02 \x01(\v2;.steeleagle_protocol.v1.services.driver.SetVelocityResponseR\bresponse\x12\x12\n" +
+	"\adetails\x18\x04 \x01(\tR\adetails\"\x97\x01\n" +
+	"\x1dSwarmSetVelocityTargetRequest\x12\x1a\n" +
+	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12Z\n" +
+	"\arequest\x18\x02 \x01(\v2@.steeleagle_protocol.v1.services.driver.SetVelocityTargetRequestR\arequest\"\xc7\x01\n" +
+	"\x1eSwarmSetVelocityTargetResponse\x12\x18\n" +
+	"\avehicle\x18\x01 \x01(\tR\avehicle\x12]\n" +
+	"\bresponse\x18\x02 \x01(\v2A.steeleagle_protocol.v1.services.driver.SetVelocityTargetResponseR\bresponse\x12\x12\n" +
 	"\x04code\x18\x03 \x01(\rR\x04code\x12\x18\n" +
-	"\adetails\x18\x04 \x01(\tR\adetails\"\x8f\x01\n" +
-	"\x19SwarmSetGimbalPoseRequest\x12\x1a\n" +
-	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12V\n" +
-	"\arequest\x18\x02 \x01(\v2<.steeleagle_protocol.v1.services.driver.SetGimbalPoseRequestR\arequest\"\xbf\x01\n" +
-	"\x1aSwarmSetGimbalPoseResponse\x12\x18\n" +
-	"\avehicle\x18\x01 \x01(\tR\avehicle\x12Y\n" +
-	"\bresponse\x18\x02 \x01(\v2=.steeleagle_protocol.v1.services.driver.SetGimbalPoseResponseR\bresponse\x12\x12\n" +
+	"\adetails\x18\x04 \x01(\tR\adetails\"\x9d\x01\n" +
+	" SwarmSetGimbalAngleTargetRequest\x12\x1a\n" +
+	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12]\n" +
+	"\arequest\x18\x02 \x01(\v2C.steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetRequestR\arequest\"\xcd\x01\n" +
+	"!SwarmSetGimbalAngleTargetResponse\x12\x18\n" +
+	"\avehicle\x18\x01 \x01(\tR\avehicle\x12`\n" +
+	"\bresponse\x18\x02 \x01(\v2D.steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetResponseR\bresponse\x12\x12\n" +
 	"\x04code\x18\x03 \x01(\rR\x04code\x12\x18\n" +
 	"\adetails\x18\x04 \x01(\tR\adetails\"\x90\x01\n" +
 	"\x19SwarmUploadMissionRequest\x12\x1a\n" +
@@ -2031,15 +2031,15 @@ const file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDesc = "" +
 	"\avehicle\x18\x01 \x01(\tR\avehicle\x12X\n" +
 	"\bresponse\x18\x02 \x01(\v2<.steeleagle_protocol.v1.services.mission.StopMissionResponseR\bresponse\x12\x12\n" +
 	"\x04code\x18\x03 \x01(\rR\x04code\x12\x18\n" +
-	"\adetails\x18\x04 \x01(\tR\adetails2\xd9\v\n" +
+	"\adetails\x18\x04 \x01(\tR\adetails2\x80\f\n" +
 	"\fSwarmService\x12\x8b\x01\n" +
 	"\fSwarmTakeOff\x12:.steeleagle_protocol.v1.services.swarm.SwarmTakeOffRequest\x1a;.steeleagle_protocol.v1.services.swarm.SwarmTakeOffResponse\"\x000\x01\x12\x82\x01\n" +
 	"\tSwarmLand\x127.steeleagle_protocol.v1.services.swarm.SwarmLandRequest\x1a8.steeleagle_protocol.v1.services.swarm.SwarmLandResponse\"\x000\x01\x12\x82\x01\n" +
 	"\tSwarmHold\x127.steeleagle_protocol.v1.services.swarm.SwarmHoldRequest\x1a8.steeleagle_protocol.v1.services.swarm.SwarmHoldResponse\"\x000\x01\x12\x82\x01\n" +
 	"\tSwarmKill\x127.steeleagle_protocol.v1.services.swarm.SwarmKillRequest\x1a8.steeleagle_protocol.v1.services.swarm.SwarmKillResponse\"\x000\x01\x12\x9a\x01\n" +
-	"\x11SwarmReturnToHome\x12?.steeleagle_protocol.v1.services.swarm.SwarmReturnToHomeRequest\x1a@.steeleagle_protocol.v1.services.swarm.SwarmReturnToHomeResponse\"\x000\x01\x12\x97\x01\n" +
-	"\x10SwarmSetVelocity\x12>.steeleagle_protocol.v1.services.swarm.SwarmSetVelocityRequest\x1a?.steeleagle_protocol.v1.services.swarm.SwarmSetVelocityResponse\"\x000\x01\x12\x9d\x01\n" +
-	"\x12SwarmSetGimbalPose\x12@.steeleagle_protocol.v1.services.swarm.SwarmSetGimbalPoseRequest\x1aA.steeleagle_protocol.v1.services.swarm.SwarmSetGimbalPoseResponse\"\x000\x01\x12\x9a\x01\n" +
+	"\x11SwarmReturnToHome\x12?.steeleagle_protocol.v1.services.swarm.SwarmReturnToHomeRequest\x1a@.steeleagle_protocol.v1.services.swarm.SwarmReturnToHomeResponse\"\x000\x01\x12\xa9\x01\n" +
+	"\x16SwarmSetVelocityTarget\x12D.steeleagle_protocol.v1.services.swarm.SwarmSetVelocityTargetRequest\x1aE.steeleagle_protocol.v1.services.swarm.SwarmSetVelocityTargetResponse\"\x000\x01\x12\xb2\x01\n" +
+	"\x19SwarmSetGimbalAngleTarget\x12G.steeleagle_protocol.v1.services.swarm.SwarmSetGimbalAngleTargetRequest\x1aH.steeleagle_protocol.v1.services.swarm.SwarmSetGimbalAngleTargetResponse\"\x000\x01\x12\x9a\x01\n" +
 	"\x11SwarmStartMission\x12?.steeleagle_protocol.v1.services.swarm.SwarmStartMissionRequest\x1a@.steeleagle_protocol.v1.services.swarm.SwarmStartMissionResponse\"\x000\x01\x12\x9d\x01\n" +
 	"\x12SwarmUploadMission\x12@.steeleagle_protocol.v1.services.swarm.SwarmUploadMissionRequest\x1aA.steeleagle_protocol.v1.services.swarm.SwarmUploadMissionResponse\"\x000\x01\x12\x97\x01\n" +
 	"\x10SwarmStopMission\x12>.steeleagle_protocol.v1.services.swarm.SwarmStopMissionRequest\x1a?.steeleagle_protocol.v1.services.swarm.SwarmStopMissionResponse\"\x000\x01B\xbb\x02\n" +
@@ -2048,46 +2048,46 @@ const file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDesc = "" +
 
 var file_steeleagle_protocol_v1_services_swarm_swarm_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_steeleagle_protocol_v1_services_swarm_swarm_proto_goTypes = []any{
-	(*SwarmTakeOffRequest)(nil),           // 0: steeleagle_protocol.v1.services.swarm.SwarmTakeOffRequest
-	(*SwarmTakeOffResponse)(nil),          // 1: steeleagle_protocol.v1.services.swarm.SwarmTakeOffResponse
-	(*SwarmLandRequest)(nil),              // 2: steeleagle_protocol.v1.services.swarm.SwarmLandRequest
-	(*SwarmLandResponse)(nil),             // 3: steeleagle_protocol.v1.services.swarm.SwarmLandResponse
-	(*SwarmHoldRequest)(nil),              // 4: steeleagle_protocol.v1.services.swarm.SwarmHoldRequest
-	(*SwarmHoldResponse)(nil),             // 5: steeleagle_protocol.v1.services.swarm.SwarmHoldResponse
-	(*SwarmKillRequest)(nil),              // 6: steeleagle_protocol.v1.services.swarm.SwarmKillRequest
-	(*SwarmKillResponse)(nil),             // 7: steeleagle_protocol.v1.services.swarm.SwarmKillResponse
-	(*SwarmReturnToHomeRequest)(nil),      // 8: steeleagle_protocol.v1.services.swarm.SwarmReturnToHomeRequest
-	(*SwarmReturnToHomeResponse)(nil),     // 9: steeleagle_protocol.v1.services.swarm.SwarmReturnToHomeResponse
-	(*SwarmSetVelocityRequest)(nil),       // 10: steeleagle_protocol.v1.services.swarm.SwarmSetVelocityRequest
-	(*SwarmSetVelocityResponse)(nil),      // 11: steeleagle_protocol.v1.services.swarm.SwarmSetVelocityResponse
-	(*SwarmSetGimbalPoseRequest)(nil),     // 12: steeleagle_protocol.v1.services.swarm.SwarmSetGimbalPoseRequest
-	(*SwarmSetGimbalPoseResponse)(nil),    // 13: steeleagle_protocol.v1.services.swarm.SwarmSetGimbalPoseResponse
-	(*SwarmUploadMissionRequest)(nil),     // 14: steeleagle_protocol.v1.services.swarm.SwarmUploadMissionRequest
-	(*SwarmUploadMissionResponse)(nil),    // 15: steeleagle_protocol.v1.services.swarm.SwarmUploadMissionResponse
-	(*SwarmStartMissionRequest)(nil),      // 16: steeleagle_protocol.v1.services.swarm.SwarmStartMissionRequest
-	(*SwarmStartMissionResponse)(nil),     // 17: steeleagle_protocol.v1.services.swarm.SwarmStartMissionResponse
-	(*SwarmStopMissionRequest)(nil),       // 18: steeleagle_protocol.v1.services.swarm.SwarmStopMissionRequest
-	(*SwarmStopMissionResponse)(nil),      // 19: steeleagle_protocol.v1.services.swarm.SwarmStopMissionResponse
-	(*driver.TakeOffRequest)(nil),         // 20: steeleagle_protocol.v1.services.driver.TakeOffRequest
-	(*driver.TakeOffResponse)(nil),        // 21: steeleagle_protocol.v1.services.driver.TakeOffResponse
-	(*driver.LandRequest)(nil),            // 22: steeleagle_protocol.v1.services.driver.LandRequest
-	(*driver.LandResponse)(nil),           // 23: steeleagle_protocol.v1.services.driver.LandResponse
-	(*driver.HoldRequest)(nil),            // 24: steeleagle_protocol.v1.services.driver.HoldRequest
-	(*driver.HoldResponse)(nil),           // 25: steeleagle_protocol.v1.services.driver.HoldResponse
-	(*driver.KillRequest)(nil),            // 26: steeleagle_protocol.v1.services.driver.KillRequest
-	(*driver.KillResponse)(nil),           // 27: steeleagle_protocol.v1.services.driver.KillResponse
-	(*driver.ReturnToHomeRequest)(nil),    // 28: steeleagle_protocol.v1.services.driver.ReturnToHomeRequest
-	(*driver.ReturnToHomeResponse)(nil),   // 29: steeleagle_protocol.v1.services.driver.ReturnToHomeResponse
-	(*driver.SetVelocityRequest)(nil),     // 30: steeleagle_protocol.v1.services.driver.SetVelocityRequest
-	(*driver.SetVelocityResponse)(nil),    // 31: steeleagle_protocol.v1.services.driver.SetVelocityResponse
-	(*driver.SetGimbalPoseRequest)(nil),   // 32: steeleagle_protocol.v1.services.driver.SetGimbalPoseRequest
-	(*driver.SetGimbalPoseResponse)(nil),  // 33: steeleagle_protocol.v1.services.driver.SetGimbalPoseResponse
-	(*mission.UploadMissionRequest)(nil),  // 34: steeleagle_protocol.v1.services.mission.UploadMissionRequest
-	(*mission.UploadMissionResponse)(nil), // 35: steeleagle_protocol.v1.services.mission.UploadMissionResponse
-	(*mission.StartMissionRequest)(nil),   // 36: steeleagle_protocol.v1.services.mission.StartMissionRequest
-	(*mission.StartMissionResponse)(nil),  // 37: steeleagle_protocol.v1.services.mission.StartMissionResponse
-	(*mission.StopMissionRequest)(nil),    // 38: steeleagle_protocol.v1.services.mission.StopMissionRequest
-	(*mission.StopMissionResponse)(nil),   // 39: steeleagle_protocol.v1.services.mission.StopMissionResponse
+	(*SwarmTakeOffRequest)(nil),                 // 0: steeleagle_protocol.v1.services.swarm.SwarmTakeOffRequest
+	(*SwarmTakeOffResponse)(nil),                // 1: steeleagle_protocol.v1.services.swarm.SwarmTakeOffResponse
+	(*SwarmLandRequest)(nil),                    // 2: steeleagle_protocol.v1.services.swarm.SwarmLandRequest
+	(*SwarmLandResponse)(nil),                   // 3: steeleagle_protocol.v1.services.swarm.SwarmLandResponse
+	(*SwarmHoldRequest)(nil),                    // 4: steeleagle_protocol.v1.services.swarm.SwarmHoldRequest
+	(*SwarmHoldResponse)(nil),                   // 5: steeleagle_protocol.v1.services.swarm.SwarmHoldResponse
+	(*SwarmKillRequest)(nil),                    // 6: steeleagle_protocol.v1.services.swarm.SwarmKillRequest
+	(*SwarmKillResponse)(nil),                   // 7: steeleagle_protocol.v1.services.swarm.SwarmKillResponse
+	(*SwarmReturnToHomeRequest)(nil),            // 8: steeleagle_protocol.v1.services.swarm.SwarmReturnToHomeRequest
+	(*SwarmReturnToHomeResponse)(nil),           // 9: steeleagle_protocol.v1.services.swarm.SwarmReturnToHomeResponse
+	(*SwarmSetVelocityTargetRequest)(nil),       // 10: steeleagle_protocol.v1.services.swarm.SwarmSetVelocityTargetRequest
+	(*SwarmSetVelocityTargetResponse)(nil),      // 11: steeleagle_protocol.v1.services.swarm.SwarmSetVelocityTargetResponse
+	(*SwarmSetGimbalAngleTargetRequest)(nil),    // 12: steeleagle_protocol.v1.services.swarm.SwarmSetGimbalAngleTargetRequest
+	(*SwarmSetGimbalAngleTargetResponse)(nil),   // 13: steeleagle_protocol.v1.services.swarm.SwarmSetGimbalAngleTargetResponse
+	(*SwarmUploadMissionRequest)(nil),           // 14: steeleagle_protocol.v1.services.swarm.SwarmUploadMissionRequest
+	(*SwarmUploadMissionResponse)(nil),          // 15: steeleagle_protocol.v1.services.swarm.SwarmUploadMissionResponse
+	(*SwarmStartMissionRequest)(nil),            // 16: steeleagle_protocol.v1.services.swarm.SwarmStartMissionRequest
+	(*SwarmStartMissionResponse)(nil),           // 17: steeleagle_protocol.v1.services.swarm.SwarmStartMissionResponse
+	(*SwarmStopMissionRequest)(nil),             // 18: steeleagle_protocol.v1.services.swarm.SwarmStopMissionRequest
+	(*SwarmStopMissionResponse)(nil),            // 19: steeleagle_protocol.v1.services.swarm.SwarmStopMissionResponse
+	(*driver.TakeOffRequest)(nil),               // 20: steeleagle_protocol.v1.services.driver.TakeOffRequest
+	(*driver.TakeOffResponse)(nil),              // 21: steeleagle_protocol.v1.services.driver.TakeOffResponse
+	(*driver.LandRequest)(nil),                  // 22: steeleagle_protocol.v1.services.driver.LandRequest
+	(*driver.LandResponse)(nil),                 // 23: steeleagle_protocol.v1.services.driver.LandResponse
+	(*driver.HoldRequest)(nil),                  // 24: steeleagle_protocol.v1.services.driver.HoldRequest
+	(*driver.HoldResponse)(nil),                 // 25: steeleagle_protocol.v1.services.driver.HoldResponse
+	(*driver.KillRequest)(nil),                  // 26: steeleagle_protocol.v1.services.driver.KillRequest
+	(*driver.KillResponse)(nil),                 // 27: steeleagle_protocol.v1.services.driver.KillResponse
+	(*driver.ReturnToHomeRequest)(nil),          // 28: steeleagle_protocol.v1.services.driver.ReturnToHomeRequest
+	(*driver.ReturnToHomeResponse)(nil),         // 29: steeleagle_protocol.v1.services.driver.ReturnToHomeResponse
+	(*driver.SetVelocityTargetRequest)(nil),     // 30: steeleagle_protocol.v1.services.driver.SetVelocityTargetRequest
+	(*driver.SetVelocityTargetResponse)(nil),    // 31: steeleagle_protocol.v1.services.driver.SetVelocityTargetResponse
+	(*driver.SetGimbalAngleTargetRequest)(nil),  // 32: steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetRequest
+	(*driver.SetGimbalAngleTargetResponse)(nil), // 33: steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetResponse
+	(*mission.UploadMissionRequest)(nil),        // 34: steeleagle_protocol.v1.services.mission.UploadMissionRequest
+	(*mission.UploadMissionResponse)(nil),       // 35: steeleagle_protocol.v1.services.mission.UploadMissionResponse
+	(*mission.StartMissionRequest)(nil),         // 36: steeleagle_protocol.v1.services.mission.StartMissionRequest
+	(*mission.StartMissionResponse)(nil),        // 37: steeleagle_protocol.v1.services.mission.StartMissionResponse
+	(*mission.StopMissionRequest)(nil),          // 38: steeleagle_protocol.v1.services.mission.StopMissionRequest
+	(*mission.StopMissionResponse)(nil),         // 39: steeleagle_protocol.v1.services.mission.StopMissionResponse
 }
 var file_steeleagle_protocol_v1_services_swarm_swarm_proto_depIdxs = []int32{
 	20, // 0: steeleagle_protocol.v1.services.swarm.SwarmTakeOffRequest.request:type_name -> steeleagle_protocol.v1.services.driver.TakeOffRequest
@@ -2100,10 +2100,10 @@ var file_steeleagle_protocol_v1_services_swarm_swarm_proto_depIdxs = []int32{
 	27, // 7: steeleagle_protocol.v1.services.swarm.SwarmKillResponse.response:type_name -> steeleagle_protocol.v1.services.driver.KillResponse
 	28, // 8: steeleagle_protocol.v1.services.swarm.SwarmReturnToHomeRequest.request:type_name -> steeleagle_protocol.v1.services.driver.ReturnToHomeRequest
 	29, // 9: steeleagle_protocol.v1.services.swarm.SwarmReturnToHomeResponse.response:type_name -> steeleagle_protocol.v1.services.driver.ReturnToHomeResponse
-	30, // 10: steeleagle_protocol.v1.services.swarm.SwarmSetVelocityRequest.request:type_name -> steeleagle_protocol.v1.services.driver.SetVelocityRequest
-	31, // 11: steeleagle_protocol.v1.services.swarm.SwarmSetVelocityResponse.response:type_name -> steeleagle_protocol.v1.services.driver.SetVelocityResponse
-	32, // 12: steeleagle_protocol.v1.services.swarm.SwarmSetGimbalPoseRequest.request:type_name -> steeleagle_protocol.v1.services.driver.SetGimbalPoseRequest
-	33, // 13: steeleagle_protocol.v1.services.swarm.SwarmSetGimbalPoseResponse.response:type_name -> steeleagle_protocol.v1.services.driver.SetGimbalPoseResponse
+	30, // 10: steeleagle_protocol.v1.services.swarm.SwarmSetVelocityTargetRequest.request:type_name -> steeleagle_protocol.v1.services.driver.SetVelocityTargetRequest
+	31, // 11: steeleagle_protocol.v1.services.swarm.SwarmSetVelocityTargetResponse.response:type_name -> steeleagle_protocol.v1.services.driver.SetVelocityTargetResponse
+	32, // 12: steeleagle_protocol.v1.services.swarm.SwarmSetGimbalAngleTargetRequest.request:type_name -> steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetRequest
+	33, // 13: steeleagle_protocol.v1.services.swarm.SwarmSetGimbalAngleTargetResponse.response:type_name -> steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetResponse
 	34, // 14: steeleagle_protocol.v1.services.swarm.SwarmUploadMissionRequest.request:type_name -> steeleagle_protocol.v1.services.mission.UploadMissionRequest
 	35, // 15: steeleagle_protocol.v1.services.swarm.SwarmUploadMissionResponse.response:type_name -> steeleagle_protocol.v1.services.mission.UploadMissionResponse
 	36, // 16: steeleagle_protocol.v1.services.swarm.SwarmStartMissionRequest.request:type_name -> steeleagle_protocol.v1.services.mission.StartMissionRequest
@@ -2115,8 +2115,8 @@ var file_steeleagle_protocol_v1_services_swarm_swarm_proto_depIdxs = []int32{
 	4,  // 22: steeleagle_protocol.v1.services.swarm.SwarmService.SwarmHold:input_type -> steeleagle_protocol.v1.services.swarm.SwarmHoldRequest
 	6,  // 23: steeleagle_protocol.v1.services.swarm.SwarmService.SwarmKill:input_type -> steeleagle_protocol.v1.services.swarm.SwarmKillRequest
 	8,  // 24: steeleagle_protocol.v1.services.swarm.SwarmService.SwarmReturnToHome:input_type -> steeleagle_protocol.v1.services.swarm.SwarmReturnToHomeRequest
-	10, // 25: steeleagle_protocol.v1.services.swarm.SwarmService.SwarmSetVelocity:input_type -> steeleagle_protocol.v1.services.swarm.SwarmSetVelocityRequest
-	12, // 26: steeleagle_protocol.v1.services.swarm.SwarmService.SwarmSetGimbalPose:input_type -> steeleagle_protocol.v1.services.swarm.SwarmSetGimbalPoseRequest
+	10, // 25: steeleagle_protocol.v1.services.swarm.SwarmService.SwarmSetVelocityTarget:input_type -> steeleagle_protocol.v1.services.swarm.SwarmSetVelocityTargetRequest
+	12, // 26: steeleagle_protocol.v1.services.swarm.SwarmService.SwarmSetGimbalAngleTarget:input_type -> steeleagle_protocol.v1.services.swarm.SwarmSetGimbalAngleTargetRequest
 	16, // 27: steeleagle_protocol.v1.services.swarm.SwarmService.SwarmStartMission:input_type -> steeleagle_protocol.v1.services.swarm.SwarmStartMissionRequest
 	14, // 28: steeleagle_protocol.v1.services.swarm.SwarmService.SwarmUploadMission:input_type -> steeleagle_protocol.v1.services.swarm.SwarmUploadMissionRequest
 	18, // 29: steeleagle_protocol.v1.services.swarm.SwarmService.SwarmStopMission:input_type -> steeleagle_protocol.v1.services.swarm.SwarmStopMissionRequest
@@ -2125,8 +2125,8 @@ var file_steeleagle_protocol_v1_services_swarm_swarm_proto_depIdxs = []int32{
 	5,  // 32: steeleagle_protocol.v1.services.swarm.SwarmService.SwarmHold:output_type -> steeleagle_protocol.v1.services.swarm.SwarmHoldResponse
 	7,  // 33: steeleagle_protocol.v1.services.swarm.SwarmService.SwarmKill:output_type -> steeleagle_protocol.v1.services.swarm.SwarmKillResponse
 	9,  // 34: steeleagle_protocol.v1.services.swarm.SwarmService.SwarmReturnToHome:output_type -> steeleagle_protocol.v1.services.swarm.SwarmReturnToHomeResponse
-	11, // 35: steeleagle_protocol.v1.services.swarm.SwarmService.SwarmSetVelocity:output_type -> steeleagle_protocol.v1.services.swarm.SwarmSetVelocityResponse
-	13, // 36: steeleagle_protocol.v1.services.swarm.SwarmService.SwarmSetGimbalPose:output_type -> steeleagle_protocol.v1.services.swarm.SwarmSetGimbalPoseResponse
+	11, // 35: steeleagle_protocol.v1.services.swarm.SwarmService.SwarmSetVelocityTarget:output_type -> steeleagle_protocol.v1.services.swarm.SwarmSetVelocityTargetResponse
+	13, // 36: steeleagle_protocol.v1.services.swarm.SwarmService.SwarmSetGimbalAngleTarget:output_type -> steeleagle_protocol.v1.services.swarm.SwarmSetGimbalAngleTargetResponse
 	17, // 37: steeleagle_protocol.v1.services.swarm.SwarmService.SwarmStartMission:output_type -> steeleagle_protocol.v1.services.swarm.SwarmStartMissionResponse
 	15, // 38: steeleagle_protocol.v1.services.swarm.SwarmService.SwarmUploadMission:output_type -> steeleagle_protocol.v1.services.swarm.SwarmUploadMissionResponse
 	19, // 39: steeleagle_protocol.v1.services.swarm.SwarmService.SwarmStopMission:output_type -> steeleagle_protocol.v1.services.swarm.SwarmStopMissionResponse

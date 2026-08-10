@@ -13,71 +13,52 @@ import "google/protobuf/any.proto";
 
 // Information about the vehicle battery.
 message BatteryInfo {
-  uint32 percentage = 1; // battery level [0-100]%
+  optional uint32 percentage = 1; // battery level [0-100]%
 }
 
 // Information about the vehicle GPS fix.
 message GpsInfo {
-  uint32 satellites = 1; // number of satellites used in GPS fix
+  optional uint32 satellites = 1; // number of satellites used in GPS fix
 }
 
 // Information about the vehicle position.
 message PositionInfo {
   // global position that will be used when returning home
-  common.GlobalPosition home = 1;
+  optional common.GlobalPosition home = 1;
   // current global position of the vehicle
-  common.GlobalPosition global_position = 2;
+  optional common.GlobalPosition global_position = 2;
   /*
    * current relative position of the vehicle in the global NEU
    * (North, East, Up) coordinate frame, relative to start
    * position
    */
-  common.RelativePosition relative_position = 3;
+  optional common.RelativePosition relative_position = 3;
   /*
    * current velocity of the vehicle in the body (forward, right, up)
    * coordinate frame
    */
-  common.Velocity velocity_body = 4;
+  optional common.Velocity velocity_body = 4;
   /*
    * current velocity of the vehicle in the global NEU (North, East, Up)
    * coordinate frame
    */
-  common.Velocity velocity_neu = 5;
-  // Motion status of the vehicle.
-  enum MotionStatus {
-      // the vehicle is not providing information on its motion status
-      MOTION_STATUS_UNSPECIFIED = 0;
-      // the vehicle is holding
-      MOTION_STATUS_HOLDING = 1;
-      // the vehicle is in transit
-      MOTION_STATUS_IN_TRANSIT = 2;
-      // the vehicle is stopped/disarmed
-      MOTION_STATUS_STOPPED = 3;
-  }
-  // current motion status of the vehicle
-  MotionStatus motion_status = 6;
-  // current setpoint of the vehicle
-  google.protobuf.Any setpoint = 7;
+  optional common.Velocity velocity_neu = 5;
+  // setpoint of the vehicle (for guidance commands)
+  google.protobuf.Any setpoint = 6;
 }
 
-// Status of a gimbal.
-message GimbalStatus {
-  // ID of the gimbal
-  uint32 id = 1;
-  // current pose in the body (forward, right, up) reference frame
-  common.Pose pose_body = 2;
-  // current pose in the NEU (North, East, Up) reference frame
-  common.Pose pose_neu = 3;
-  // angular velocity in the body (forward, right, up) reference frame
-  common.Pose angular_velocity_body = 4;
-  // angular velocity in the NEU (North, East, Up) reference frame
-  common.Pose angular_velocity_neu = 5;
-}
-
-// Info of all attached gimbals.
+// Information about the primary gimbal.
 message GimbalInfo {
-  // list of connected gimbals
-  repeated GimbalStatus gimbals = 1;
+  // current pose in the body (forward, right, up) reference frame
+  optional common.Pose pose_body = 1;
+  // current pose in the NEU (North, East, Up) reference frame
+  optional common.Pose pose_neu = 2;
+  // angular velocity in the body (forward, right, up) reference frame
+  optional common.PoseVelocity angular_velocity_body = 3;
+  // angular velocity in the NEU (North, East, Up) reference frame
+  optional common.PoseVelocity angular_velocity_neu = 4;
+  // setpoint for the gimbal
+  google.protobuf.Any gimbal_setpoint = 5;
 }
 
 // Information about all vehicle warning and alerts.
@@ -137,6 +118,34 @@ message AlertInfo {
   CompassWarning compass_warning = 5;
 }
 
+// Current flight mode of the vehicle.
+enum Mode {
+  // the vehicle is not providing mode information
+  MODE_UNSPECIFIED = 0;
+  // the vehicle is in takeoff mode
+  MODE_TAKEOFF = 1;
+  // the vehicle is in land mode
+  MODE_LAND = 2;
+  // the vehicle is in hold mode
+  MODE_HOLD = 3;
+  // the vehicle is in guided mode
+  MODE_GUIDED = 4;
+  // the vehicle is experiencing an emergency
+  MODE_EMERGENCY = 5;
+}
+
+// Motion status of the vehicle.
+enum MotionStatus {
+  // the vehicle is not providing information on its motion status
+  MOTION_STATUS_UNSPECIFIED = 0;
+  // the vehicle is holding
+  MOTION_STATUS_HOLDING = 1;
+  // the vehicle is in transit
+  MOTION_STATUS_IN_TRANSIT = 2;
+  // the vehicle is stopped/disarmed
+  MOTION_STATUS_STOPPED = 3;
+}
+
 /*
  * Telemetry message for the vehicle, originating from the driver module.
  *
@@ -153,10 +162,14 @@ message Telemetry {
   GpsInfo gps_info = 3;
   // positional info about the vehicle
   PositionInfo position_info = 4;
-  // status on attached gimbals and their orientations
+  // primary gimbal info
   GimbalInfo gimbal_info = 5;
   // enumeration of vehicle warnings
   AlertInfo alert_info = 6;
+  // flight mode of the vehicle
+  optional Mode mode = 7;
+  // Motion status of the vehicle
+  optional MotionStatus motion_status = 8;
 }
 
 // Raw camera frames
@@ -177,8 +190,8 @@ message RawFrame {
   uint64 id = 7;
   // positional info about the vehicle
   PositionInfo position_info = 8;
-  // status on gimbal this frame is attached to, if applicable
-  GimbalStatus gimbal_status = 9;
+  // info on the gimbal this frame is attached to, if applicable
+  GimbalInfo gimbal_info = 9;
   // ID of origin camera
   uint64 camera_id = 10;
 }
@@ -191,10 +204,10 @@ message EncodedFrame {
   bytes encoded_data = 2;
   // frame ID for future correlation
   uint64 id = 3;
+  // info on the gimbal this frame is attached to, if applicable
+  GimbalInfo gimbal_info = 4;
   // positional info about the vehicle
-  PositionInfo position_info = 4;
-  // status on gimbal this frame is attached to, if applicable
-  GimbalStatus gimbal_status = 5;
+  PositionInfo position_info = 5;
   // ID of origin camera
   uint64 camera_id = 6;
 }

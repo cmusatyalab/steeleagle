@@ -7,16 +7,17 @@ import "time"
 type WaitOptions struct {
 	Interval   time.Duration
 	Timeout    time.Duration
+	Stall      time.Duration
 	Tolerances Tolerances
 }
 
 // Tolerances are the tolerances waiters use to decide when a command has
 // satisfied its expectation.
 type Tolerances struct {
-	PosTol      float32
-	AngleTol    float32
-	SpeedTol    float32
-	AngSpeedTol float32
+	PosTol      float32 // position tolerance
+	AngleTol    float32 // angle tolerance
+	SpeedTol    float32 // speed tolerance
+	AngSpeedTol float32 // angular speed tolerance
 }
 
 // WaitOption is a functional option for waitOptions.
@@ -33,6 +34,13 @@ func WithPollInterval(t time.Duration) WaitOption {
 func WithTimeout(t time.Duration) WaitOption {
 	return func(w *WaitOptions) {
 		w.Timeout = t
+	}
+}
+
+// WithStall sets the stall timeout of the Wait call.
+func WithStall(t time.Duration) WaitOption {
+	return func(w *WaitOptions) {
+		w.Stall = t
 	}
 }
 

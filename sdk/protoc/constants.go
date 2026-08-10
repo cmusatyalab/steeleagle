@@ -5,7 +5,7 @@ import "google.golang.org/protobuf/compiler/protogen"
 // sdkImportPath is the Go import path for core_iface.pb.go and core_msg.pb.go.
 const sdkImportPath protogen.GoImportPath = "github.com/cmusatyalab/steeleagle/sdk"
 
-// enumsImportPath is the Go import path for the generated core_enums.pb.go file.
+// enumsImportPath is the Go import path for core_enums.pb.go.
 const enumsImportPath protogen.GoImportPath = "github.com/cmusatyalab/steeleagle/sdk/enums"
 
 // commonPackage is the package that holds SteelEagle protocol common types.

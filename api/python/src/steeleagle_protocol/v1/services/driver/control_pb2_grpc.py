@@ -5,13 +5,22 @@ import grpc
 from steeleagle_protocol.v1.services.driver import control_pb2 as steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2
 
 
-class ControlServiceStub:
+class GuidanceServiceStub:
     """
-    Used for low-level control of a vehicle.
+    Used for low-level control of the driver.
 
-    This service is hosted by the driver module and represents the global
-    control interface for the vehicle. Most methods called here will result
-    in actuation of the vehicle if it is armed (be careful!).
+    This service provides a setpoint control interface for the driver. Each
+    command creates a target setpoint for the device, which will then cause the
+    device to actuate toward the setpoint until command completion. Each command
+    will:
+    - [Action/Guidance/Gimbal] Clear the `setpoint`/`gimbal_setpoint` field in Telemetry
+    - [Guidance/Gimbal] Return a `setpoint`/`gimbal_setpoint` in NEU frame
+    - [Guidance/Gimbal] Set the `setpoint`/`gimbal_setpoint` Telemetry field to be `setpoint`/`gimbal_setpoint`
+    - [Action/Guidance] Return an `expected_mode` which is the expected end-state Mode
+    - [Action/Guidance] Return an `expected_status` which is the expected end-state MotionStatus
+    - [Action/Guidance] Set the `mode` field in the vehicle telemetry
+
+    These commands will result in actuation of the device if it is active (be careful!).
     """
 
     def __init__(self, channel):
@@ -21,72 +30,84 @@ class ControlServiceStub:
             channel: A grpc.Channel.
         """
         self.TakeOff = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.ControlService/TakeOff',
+                '/steeleagle_protocol.v1.services.driver.GuidanceService/TakeOff',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.TakeOffRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.TakeOffResponse.FromString,
                 _registered_method=True)
         self.Land = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.ControlService/Land',
+                '/steeleagle_protocol.v1.services.driver.GuidanceService/Land',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.LandRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.LandResponse.FromString,
                 _registered_method=True)
         self.Hold = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.ControlService/Hold',
+                '/steeleagle_protocol.v1.services.driver.GuidanceService/Hold',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.HoldRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.HoldResponse.FromString,
                 _registered_method=True)
         self.Kill = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.ControlService/Kill',
+                '/steeleagle_protocol.v1.services.driver.GuidanceService/Kill',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.KillRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.KillResponse.FromString,
                 _registered_method=True)
-        self.SetHome = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.ControlService/SetHome',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetHomeRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetHomeResponse.FromString,
-                _registered_method=True)
         self.ReturnToHome = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.ControlService/ReturnToHome',
+                '/steeleagle_protocol.v1.services.driver.GuidanceService/ReturnToHome',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.ReturnToHomeRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.ReturnToHomeResponse.FromString,
                 _registered_method=True)
-        self.GoToGlobalPosition = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.ControlService/GoToGlobalPosition',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.GoToGlobalPositionRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.GoToGlobalPositionResponse.FromString,
+        self.SetGlobalPositionTarget = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.driver.GuidanceService/SetGlobalPositionTarget',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGlobalPositionTargetRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGlobalPositionTargetResponse.FromString,
                 _registered_method=True)
-        self.GoToRelativePosition = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.ControlService/GoToRelativePosition',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.GoToRelativePositionRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.GoToRelativePositionResponse.FromString,
+        self.SetRelativePositionTarget = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.driver.GuidanceService/SetRelativePositionTarget',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetRelativePositionTargetRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetRelativePositionTargetResponse.FromString,
                 _registered_method=True)
-        self.SetVelocity = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.ControlService/SetVelocity',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetVelocityRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetVelocityResponse.FromString,
+        self.SetVelocityTarget = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.driver.GuidanceService/SetVelocityTarget',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetVelocityTargetRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetVelocityTargetResponse.FromString,
                 _registered_method=True)
-        self.SetGimbalPose = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.ControlService/SetGimbalPose',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalPoseRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalPoseResponse.FromString,
+        self.SetGimbalAngleTarget = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.driver.GuidanceService/SetGimbalAngleTarget',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalAngleTargetRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalAngleTargetResponse.FromString,
+                _registered_method=True)
+        self.SetGimbalVelocityTarget = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.driver.GuidanceService/SetGimbalVelocityTarget',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalVelocityTargetRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalVelocityTargetResponse.FromString,
                 _registered_method=True)
 
 
-class ControlServiceServicer:
+class GuidanceServiceServicer:
     """
-    Used for low-level control of a vehicle.
+    Used for low-level control of the driver.
 
-    This service is hosted by the driver module and represents the global
-    control interface for the vehicle. Most methods called here will result
-    in actuation of the vehicle if it is armed (be careful!).
+    This service provides a setpoint control interface for the driver. Each
+    command creates a target setpoint for the device, which will then cause the
+    device to actuate toward the setpoint until command completion. Each command
+    will:
+    - [Action/Guidance/Gimbal] Clear the `setpoint`/`gimbal_setpoint` field in Telemetry
+    - [Guidance/Gimbal] Return a `setpoint`/`gimbal_setpoint` in NEU frame
+    - [Guidance/Gimbal] Set the `setpoint`/`gimbal_setpoint` Telemetry field to be `setpoint`/`gimbal_setpoint`
+    - [Action/Guidance] Return an `expected_mode` which is the expected end-state Mode
+    - [Action/Guidance] Return an `expected_status` which is the expected end-state MotionStatus
+    - [Action/Guidance] Set the `mode` field in the vehicle telemetry
+
+    These commands will result in actuation of the device if it is active (be careful!).
     """
 
     def TakeOff(self, request, context):
         """
-        Order the vehicle to take off.
+        Order the vehicle to take off _(Action)_.
 
         Causes the vehicle to take off to a specified take off altitude.
         Implicitly arms the vehicle.
+
+        Returns an _Action_ style response with `expected_mode` set to LOITER
+        and `expected_status` set to `MOTION_STATUS_HOLDING`.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -94,10 +115,13 @@ class ControlServiceServicer:
 
     def Land(self, request, context):
         """
-        Order the vehicle to land.
+        Order the vehicle to land _(Action)_.
 
         Causes the vehicle to land at its current location. Implicitly
         disarms the vehicle.
+
+        Returns an _Action_ style response with `expected_mode` set to LAND
+        and `expected_status` set to `MOTION_STATUS_STOPPED`.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -105,10 +129,13 @@ class ControlServiceServicer:
 
     def Hold(self, request, context):
         """
-        Order the vehicle to hold/loiter.
+        Order the vehicle to hold/loiter _(Action)_.
 
         Causes the vehicle to hold at its current location and to
         cancel any ongoing movement commands (`ReturnToHome` e.g.).
+
+        Returns an _Action_ style response with `expected_mode` set to LOITER
+        and `expected_status` set to `MOTION_STATUS_HOLDING`.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -116,22 +143,13 @@ class ControlServiceServicer:
 
     def Kill(self, request, context):
         """
-        Orders an emergency shutdown of the vehicle motors.
+        Orders an emergency shutdown of the vehicle motors _(Action)_.
 
         Causes the vehicle to immediately turn off its motors. _This will
         result in the vehicle going into freefall, only for emergencies!_
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
 
-    def SetHome(self, request, context):
-        """
-        Set the home location of the vehicle.
-
-        Changes the home location of the vehicle. Future `ReturnToHome`
-        commands will move the vehicle to the provided location instead
-        of its starting position.
+        Returns an _Action_ style response with `expected_mode` set to EMERGENCY
+        and `expected_status` set to `MOTION_STATUS_STOPPED`.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -139,7 +157,7 @@ class ControlServiceServicer:
 
     def ReturnToHome(self, request, context):
         """
-        Order the vehicle to return to its home position.
+        Order the vehicle to return to its home position _(Action)_.
 
         Causes the vehicle to return to its home position. If the home position
         has not been explicitly set, this will be its start position (defined
@@ -151,99 +169,116 @@ class ControlServiceServicer:
         The vehicle will interpret `end_behavior` as follows:
         - `HOVER` -> hover at `final_altitude` above home position
         - `LAND` -> land at home position
+
+        Returns an _Action_ style response with `expected_mode` set to either LOITER 
+        or LAND and `expected_status` set to `MOTION_STATUS_HOLDING` or 
+        `MOTION_STATUS_STOPPED`.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GoToGlobalPosition(self, request, context):
+    def SetGlobalPositionTarget(self, request, context):
         """
-        Order the vehicle to move to a global position.
+        Order the device to move to a global position target _(Guidance)_.
 
-        Causes the vehicle to transit to the provided global position. The vehicle
+        Causes the device to transit to the provided `GlobalPosition`. The device
         will interpret the heading of travel according to `heading_mode`:
-        - `TO_TARGET` -> turn to face the target position bearing
-        - `HEADING_START` -> turn to face the provided heading in the global position object.
+        - `TO_TARGET` -> turn to face the target position bearing (`heading` of `GlobalPosition` is ignored)
+        - `HEADING_START` -> turn to face the provided `heading` in `GlobalPosition`
 
-        This will be the heading the vehicle maintains for the duration of transit.
+        This will be the heading the device maintains for the duration of transit.
 
-        The vehicle will move towards the target at the specified maximum velocity
-        until the vehicle has reached its destination. Error tolerance is determined
-        by the driver. Maximum velocity is interpreted from `max_velocity` as follows:
-        - `x_vel` -> maximum _horizontal_ velocity
-        - `y_vel` -> ignored
-        - `z_vel` -> maximum _vertical_ velocity
+        The device will move towards the target at the specified `speed` and turn at
+        the specified `angular_speed` until the device has reached its destination.
+        If neither are provided, the device will choose hardware defaults.
 
-        If no maximum velocity is provided, the driver will use a preset speed usually
-        determined by the manufacturer or hardware settings.
-
-        During motion, the vehicle will also ascend or descend towards the target
+        During motion, the device will also ascend or descend towards the target
         altitude, linearly interpolating this movement over the duration of travel.
-        The vehicle will interpret altitude from `altitude_mode` as follows:
+        The device will interpret altitude from `altitude_mode` as follows:
         - `ABSOLUTE` -> altitude is relative to MSL (Mean Sea Level)
         - `RELATIVE` -> altitude is relative to take off position
+
+        An unspecified `altitude_mode` will default to `ABSOLUTE`, unless this is unsupported
+        in which case it will default to `RELATIVE`.
+
+        Returns a _Guidance_ style response, with `setpoint` set to the target `GlobalPosition`
+        and `expected_status` set to `MOTION_STATUS_HOLDING`.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GoToRelativePosition(self, request, context):
+    def SetRelativePositionTarget(self, request, context):
         """
-        Order the vehicle to move to a relative position.
+        Order the device to move to a relative position target _(Guidance)_.
 
-        Causes the vehicle to transit to the provided relative position. The vehicle
+        Causes the device to transit to the provided `RelativePosition`. The device
         will interpret the input position according to `frame` as follows:
-        - `BODY` -> (`x`, `y`, `z`) = (forward offset, right offset, up offset) _from current position_
-        - `NEU` -> (`x`, `y`, `z`) = (north offset, east offset, up offset) _from start position_
+        - `BODY` -> (`x`, `y`, `z`, `angle`) = (forward offset, right offset, up offset, angle offset) _from current position_
+        - `NEU` -> (`x`, `y`, `z`, `angle`) = (north offset, east offset, up offset, absolute heading) _from start position_
 
-        The vehicle will move towards the target at the specified maximum velocity
-        until the vehicle has reached its destination. Error tolerance is determined
-        by the driver. Maximum velocity is interpreted from `max_velocity` as follows:
-        - `x_vel` -> maximum _horizontal_ velocity
-        - `y_vel` -> ignored
-        - `z_vel` -> maximum _vertical_ velocity
+        The device will move towards the target at the specified `speed` and turn at
+        the specified `angular_speed` until the device has reached its destination.
+        If neither are provided, the device will choose hardware defaults.
 
-        If no maximum velocity is provided, the driver will use a preset speed usually
-        determined by the manufacturer or hardware settings.
+        Returns a _Guidance_ style response with `setpoint` set to the target `RelativePosition` in
+        the NEU frame, and `expected_status` set to `MOTION_STATUS_HOLDING`.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def SetVelocity(self, request, context):
+    def SetVelocityTarget(self, request, context):
         """
-        Order the vehicle to accelerate to a velocity.
+        Order the device to accelerate to a velocity target _(Guidance)_.
 
-        Causes the vehicle to accelerate until it reaches a provided velocity.
-        The vehicle will interpret the input velocity according to `frame` as follows:
+        Causes the device to accelerate until it reaches a provided velocity.
+        The device will interpret the input velocity according to `frame` as follows:
         - `BODY` -> (`x_vel`, `y_vel`, `z_vel`) = (forward velocity, right velocity, up velocity)
         - `NEU` -> (`x_vel`, `y_vel`, `z_vel`) = (north velocity, east velocity, up velocity)
+
+        Returns a _Guidance_ style response, with `setpoint` set to the target `Velocity` in
+        the NEU frame, and `expected_status` set to `MOTION_STATUS_IN_TRANSIT`.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def SetGimbalPose(self, request, context):
+    def SetGimbalAngleTarget(self, request, context):
         """
-        Order the vehicle to set the pose of a gimbal.
+        Order the device to set the angle pose of the gimbal _(Gimbal)_.
 
-        Causes the vehicle to actuate a gimbal to a new pose. The vehicle
-        will interpret the new pose type from `pose_mode` as follows:
-        - `ABSOLUTE` -> absolute angle
-        - `RELATIVE` -> angle relative to current position
-        - `VELOCITY` -> angular velocities
-
-        The vehicle will interpret the new pose angles according to `frame`
+        The device will interpret the new pose angles according to `frame`
         as follows:
         - `BODY` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, body yaw)
         - `NEU` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, global yaw)
+
+        Returns a _Gimbal_ style response, with `setpoint` set to the target `Pose` in
+        the NEU frame.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SetGimbalVelocityTarget(self, request, context):
+        """
+        Order the device to set the velocity of the gimbal _(Gimbal)_.
+
+        The device will interpret the new pose angles according to `frame`
+        as follows:
+        - `BODY` -> (`pitch_vel`, `roll_vel`, `yaw_vel`) = (body pitch velocity, body roll velocity, body yaw velocity)
+        - `NEU` -> (`pitch_vel`, `roll_vel`, `yaw_vel`) = (body pitch velocity, body roll velocity, global yaw velocity)
+
+        Returns a _Gimbal_ style response, with `setpoint` set to the target `PoseVelocity` in
+        the NEU frame.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
 
-def add_ControlServiceServicer_to_server(servicer, server):
+def add_GuidanceServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'TakeOff': grpc.unary_unary_rpc_method_handler(
                     servicer.TakeOff,
@@ -265,51 +300,60 @@ def add_ControlServiceServicer_to_server(servicer, server):
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.KillRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.KillResponse.SerializeToString,
             ),
-            'SetHome': grpc.unary_unary_rpc_method_handler(
-                    servicer.SetHome,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetHomeRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetHomeResponse.SerializeToString,
-            ),
             'ReturnToHome': grpc.unary_unary_rpc_method_handler(
                     servicer.ReturnToHome,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.ReturnToHomeRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.ReturnToHomeResponse.SerializeToString,
             ),
-            'GoToGlobalPosition': grpc.unary_unary_rpc_method_handler(
-                    servicer.GoToGlobalPosition,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.GoToGlobalPositionRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.GoToGlobalPositionResponse.SerializeToString,
+            'SetGlobalPositionTarget': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetGlobalPositionTarget,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGlobalPositionTargetRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGlobalPositionTargetResponse.SerializeToString,
             ),
-            'GoToRelativePosition': grpc.unary_unary_rpc_method_handler(
-                    servicer.GoToRelativePosition,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.GoToRelativePositionRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.GoToRelativePositionResponse.SerializeToString,
+            'SetRelativePositionTarget': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetRelativePositionTarget,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetRelativePositionTargetRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetRelativePositionTargetResponse.SerializeToString,
             ),
-            'SetVelocity': grpc.unary_unary_rpc_method_handler(
-                    servicer.SetVelocity,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetVelocityRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetVelocityResponse.SerializeToString,
+            'SetVelocityTarget': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetVelocityTarget,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetVelocityTargetRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetVelocityTargetResponse.SerializeToString,
             ),
-            'SetGimbalPose': grpc.unary_unary_rpc_method_handler(
-                    servicer.SetGimbalPose,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalPoseRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalPoseResponse.SerializeToString,
+            'SetGimbalAngleTarget': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetGimbalAngleTarget,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalAngleTargetRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalAngleTargetResponse.SerializeToString,
+            ),
+            'SetGimbalVelocityTarget': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetGimbalVelocityTarget,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalVelocityTargetRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalVelocityTargetResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'steeleagle_protocol.v1.services.driver.ControlService', rpc_method_handlers)
+            'steeleagle_protocol.v1.services.driver.GuidanceService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('steeleagle_protocol.v1.services.driver.ControlService', rpc_method_handlers)
+    server.add_registered_method_handlers('steeleagle_protocol.v1.services.driver.GuidanceService', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
-class ControlService:
+class GuidanceService:
     """
-    Used for low-level control of a vehicle.
+    Used for low-level control of the driver.
 
-    This service is hosted by the driver module and represents the global
-    control interface for the vehicle. Most methods called here will result
-    in actuation of the vehicle if it is armed (be careful!).
+    This service provides a setpoint control interface for the driver. Each
+    command creates a target setpoint for the device, which will then cause the
+    device to actuate toward the setpoint until command completion. Each command
+    will:
+    - [Action/Guidance/Gimbal] Clear the `setpoint`/`gimbal_setpoint` field in Telemetry
+    - [Guidance/Gimbal] Return a `setpoint`/`gimbal_setpoint` in NEU frame
+    - [Guidance/Gimbal] Set the `setpoint`/`gimbal_setpoint` Telemetry field to be `setpoint`/`gimbal_setpoint`
+    - [Action/Guidance] Return an `expected_mode` which is the expected end-state Mode
+    - [Action/Guidance] Return an `expected_status` which is the expected end-state MotionStatus
+    - [Action/Guidance] Set the `mode` field in the vehicle telemetry
+
+    These commands will result in actuation of the device if it is active (be careful!).
     """
 
     @staticmethod
@@ -326,7 +370,7 @@ class ControlService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.ControlService/TakeOff',
+            '/steeleagle_protocol.v1.services.driver.GuidanceService/TakeOff',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.TakeOffRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.TakeOffResponse.FromString,
             options,
@@ -353,7 +397,7 @@ class ControlService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.ControlService/Land',
+            '/steeleagle_protocol.v1.services.driver.GuidanceService/Land',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.LandRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.LandResponse.FromString,
             options,
@@ -380,7 +424,7 @@ class ControlService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.ControlService/Hold',
+            '/steeleagle_protocol.v1.services.driver.GuidanceService/Hold',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.HoldRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.HoldResponse.FromString,
             options,
@@ -407,36 +451,9 @@ class ControlService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.ControlService/Kill',
+            '/steeleagle_protocol.v1.services.driver.GuidanceService/Kill',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.KillRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.KillResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def SetHome(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/steeleagle_protocol.v1.services.driver.ControlService/SetHome',
-            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetHomeRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetHomeResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -461,7 +478,7 @@ class ControlService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.ControlService/ReturnToHome',
+            '/steeleagle_protocol.v1.services.driver.GuidanceService/ReturnToHome',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.ReturnToHomeRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.ReturnToHomeResponse.FromString,
             options,
@@ -475,7 +492,7 @@ class ControlService:
             _registered_method=True)
 
     @staticmethod
-    def GoToGlobalPosition(request,
+    def SetGlobalPositionTarget(request,
             target,
             options=(),
             channel_credentials=None,
@@ -488,9 +505,9 @@ class ControlService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.ControlService/GoToGlobalPosition',
-            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.GoToGlobalPositionRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.GoToGlobalPositionResponse.FromString,
+            '/steeleagle_protocol.v1.services.driver.GuidanceService/SetGlobalPositionTarget',
+            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGlobalPositionTargetRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGlobalPositionTargetResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -502,7 +519,7 @@ class ControlService:
             _registered_method=True)
 
     @staticmethod
-    def GoToRelativePosition(request,
+    def SetRelativePositionTarget(request,
             target,
             options=(),
             channel_credentials=None,
@@ -515,9 +532,9 @@ class ControlService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.ControlService/GoToRelativePosition',
-            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.GoToRelativePositionRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.GoToRelativePositionResponse.FromString,
+            '/steeleagle_protocol.v1.services.driver.GuidanceService/SetRelativePositionTarget',
+            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetRelativePositionTargetRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetRelativePositionTargetResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -529,7 +546,7 @@ class ControlService:
             _registered_method=True)
 
     @staticmethod
-    def SetVelocity(request,
+    def SetVelocityTarget(request,
             target,
             options=(),
             channel_credentials=None,
@@ -542,9 +559,9 @@ class ControlService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.ControlService/SetVelocity',
-            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetVelocityRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetVelocityResponse.FromString,
+            '/steeleagle_protocol.v1.services.driver.GuidanceService/SetVelocityTarget',
+            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetVelocityTargetRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetVelocityTargetResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -556,7 +573,7 @@ class ControlService:
             _registered_method=True)
 
     @staticmethod
-    def SetGimbalPose(request,
+    def SetGimbalAngleTarget(request,
             target,
             options=(),
             channel_credentials=None,
@@ -569,9 +586,36 @@ class ControlService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.ControlService/SetGimbalPose',
-            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalPoseRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalPoseResponse.FromString,
+            '/steeleagle_protocol.v1.services.driver.GuidanceService/SetGimbalAngleTarget',
+            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalAngleTargetRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalAngleTargetResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SetGimbalVelocityTarget(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/steeleagle_protocol.v1.services.driver.GuidanceService/SetGimbalVelocityTarget',
+            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalVelocityTargetRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalVelocityTargetResponse.FromString,
             options,
             channel_credentials,
             insecure,

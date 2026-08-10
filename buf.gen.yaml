@@ -10,7 +10,7 @@ plugins:
     opt:
       - paths=source_relative
       - default_api_level=API_OPAQUE
-  - local: [go, run, ./cmd/protoc]
+  - local: [go, run, ./sdk/protoc]
     out: sdk/
     strategy: all
     opt: 

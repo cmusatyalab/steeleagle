@@ -23,16 +23,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SwarmService_SwarmTakeOff_FullMethodName       = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmTakeOff"
-	SwarmService_SwarmLand_FullMethodName          = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmLand"
-	SwarmService_SwarmHold_FullMethodName          = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmHold"
-	SwarmService_SwarmKill_FullMethodName          = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmKill"
-	SwarmService_SwarmReturnToHome_FullMethodName  = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmReturnToHome"
-	SwarmService_SwarmSetVelocity_FullMethodName   = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmSetVelocity"
-	SwarmService_SwarmSetGimbalPose_FullMethodName = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmSetGimbalPose"
-	SwarmService_SwarmStartMission_FullMethodName  = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmStartMission"
-	SwarmService_SwarmUploadMission_FullMethodName = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmUploadMission"
-	SwarmService_SwarmStopMission_FullMethodName   = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmStopMission"
+	SwarmService_SwarmTakeOff_FullMethodName              = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmTakeOff"
+	SwarmService_SwarmLand_FullMethodName                 = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmLand"
+	SwarmService_SwarmHold_FullMethodName                 = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmHold"
+	SwarmService_SwarmKill_FullMethodName                 = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmKill"
+	SwarmService_SwarmReturnToHome_FullMethodName         = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmReturnToHome"
+	SwarmService_SwarmSetVelocityTarget_FullMethodName    = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmSetVelocityTarget"
+	SwarmService_SwarmSetGimbalAngleTarget_FullMethodName = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmSetGimbalAngleTarget"
+	SwarmService_SwarmStartMission_FullMethodName         = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmStartMission"
+	SwarmService_SwarmUploadMission_FullMethodName        = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmUploadMission"
+	SwarmService_SwarmStopMission_FullMethodName          = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmStopMission"
 )
 
 // SwarmServiceClient is the client API for SwarmService service.
@@ -84,24 +84,23 @@ type SwarmServiceClient interface {
 	SwarmReturnToHome(ctx context.Context, in *SwarmReturnToHomeRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SwarmReturnToHomeResponse], error)
 	// Order multiple vehicles to accelerate to a velocity.
 	//
-	// Causes vehicles to accelerate until they reache a provided velocity. Each
+	// Causes vehicles to accelerate until they reach a provided velocity. Each
 	// vehicle will interpret the input velocity according to `frame` as follows:
 	// - `BODY` -> (`x_vel`, `y_vel`, `z_vel`) = (forward velocity, right velocity, up velocity)
 	// - `NEU` -> (`x_vel`, `y_vel`, `z_vel`) = (north velocity, east velocity, up velocity)
-	SwarmSetVelocity(ctx context.Context, in *SwarmSetVelocityRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SwarmSetVelocityResponse], error)
-	// Order multiple vehicles to set the pose of a gimbal.
+	SwarmSetVelocityTarget(ctx context.Context, in *SwarmSetVelocityTargetRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SwarmSetVelocityTargetResponse], error)
+	// Order multiple vehicles to set the angle of a gimbal.
 	//
 	// Causes vehicles to actuate a gimbal to a new pose. Each vehicle
 	// will interpret the new pose type from `pose_mode` as follows:
 	// - `ABSOLUTE` -> absolute angle
 	// - `RELATIVE` -> angle relative to current position
-	// - `VELOCITY` -> angular velocities
 	//
 	// Each vehicle will interpret the new pose angles according to `frame`
 	// as follows:
 	// - `BODY` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, body yaw)
 	// - `NEU` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, global yaw)
-	SwarmSetGimbalPose(ctx context.Context, in *SwarmSetGimbalPoseRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SwarmSetGimbalPoseResponse], error)
+	SwarmSetGimbalAngleTarget(ctx context.Context, in *SwarmSetGimbalAngleTargetRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SwarmSetGimbalAngleTargetResponse], error)
 	// Order multiple vehicles to start a mission.
 	//
 	// Causes vehicles to start their uploaded mission. This will enable autonomous
@@ -223,13 +222,13 @@ func (c *swarmServiceClient) SwarmReturnToHome(ctx context.Context, in *SwarmRet
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SwarmService_SwarmReturnToHomeClient = grpc.ServerStreamingClient[SwarmReturnToHomeResponse]
 
-func (c *swarmServiceClient) SwarmSetVelocity(ctx context.Context, in *SwarmSetVelocityRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SwarmSetVelocityResponse], error) {
+func (c *swarmServiceClient) SwarmSetVelocityTarget(ctx context.Context, in *SwarmSetVelocityTargetRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SwarmSetVelocityTargetResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &SwarmService_ServiceDesc.Streams[5], SwarmService_SwarmSetVelocity_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &SwarmService_ServiceDesc.Streams[5], SwarmService_SwarmSetVelocityTarget_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[SwarmSetVelocityRequest, SwarmSetVelocityResponse]{ClientStream: stream}
+	x := &grpc.GenericClientStream[SwarmSetVelocityTargetRequest, SwarmSetVelocityTargetResponse]{ClientStream: stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -240,15 +239,15 @@ func (c *swarmServiceClient) SwarmSetVelocity(ctx context.Context, in *SwarmSetV
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type SwarmService_SwarmSetVelocityClient = grpc.ServerStreamingClient[SwarmSetVelocityResponse]
+type SwarmService_SwarmSetVelocityTargetClient = grpc.ServerStreamingClient[SwarmSetVelocityTargetResponse]
 
-func (c *swarmServiceClient) SwarmSetGimbalPose(ctx context.Context, in *SwarmSetGimbalPoseRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SwarmSetGimbalPoseResponse], error) {
+func (c *swarmServiceClient) SwarmSetGimbalAngleTarget(ctx context.Context, in *SwarmSetGimbalAngleTargetRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SwarmSetGimbalAngleTargetResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &SwarmService_ServiceDesc.Streams[6], SwarmService_SwarmSetGimbalPose_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &SwarmService_ServiceDesc.Streams[6], SwarmService_SwarmSetGimbalAngleTarget_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[SwarmSetGimbalPoseRequest, SwarmSetGimbalPoseResponse]{ClientStream: stream}
+	x := &grpc.GenericClientStream[SwarmSetGimbalAngleTargetRequest, SwarmSetGimbalAngleTargetResponse]{ClientStream: stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -259,7 +258,7 @@ func (c *swarmServiceClient) SwarmSetGimbalPose(ctx context.Context, in *SwarmSe
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type SwarmService_SwarmSetGimbalPoseClient = grpc.ServerStreamingClient[SwarmSetGimbalPoseResponse]
+type SwarmService_SwarmSetGimbalAngleTargetClient = grpc.ServerStreamingClient[SwarmSetGimbalAngleTargetResponse]
 
 func (c *swarmServiceClient) SwarmStartMission(ctx context.Context, in *SwarmStartMissionRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SwarmStartMissionResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -367,24 +366,23 @@ type SwarmServiceServer interface {
 	SwarmReturnToHome(*SwarmReturnToHomeRequest, grpc.ServerStreamingServer[SwarmReturnToHomeResponse]) error
 	// Order multiple vehicles to accelerate to a velocity.
 	//
-	// Causes vehicles to accelerate until they reache a provided velocity. Each
+	// Causes vehicles to accelerate until they reach a provided velocity. Each
 	// vehicle will interpret the input velocity according to `frame` as follows:
 	// - `BODY` -> (`x_vel`, `y_vel`, `z_vel`) = (forward velocity, right velocity, up velocity)
 	// - `NEU` -> (`x_vel`, `y_vel`, `z_vel`) = (north velocity, east velocity, up velocity)
-	SwarmSetVelocity(*SwarmSetVelocityRequest, grpc.ServerStreamingServer[SwarmSetVelocityResponse]) error
-	// Order multiple vehicles to set the pose of a gimbal.
+	SwarmSetVelocityTarget(*SwarmSetVelocityTargetRequest, grpc.ServerStreamingServer[SwarmSetVelocityTargetResponse]) error
+	// Order multiple vehicles to set the angle of a gimbal.
 	//
 	// Causes vehicles to actuate a gimbal to a new pose. Each vehicle
 	// will interpret the new pose type from `pose_mode` as follows:
 	// - `ABSOLUTE` -> absolute angle
 	// - `RELATIVE` -> angle relative to current position
-	// - `VELOCITY` -> angular velocities
 	//
 	// Each vehicle will interpret the new pose angles according to `frame`
 	// as follows:
 	// - `BODY` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, body yaw)
 	// - `NEU` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, global yaw)
-	SwarmSetGimbalPose(*SwarmSetGimbalPoseRequest, grpc.ServerStreamingServer[SwarmSetGimbalPoseResponse]) error
+	SwarmSetGimbalAngleTarget(*SwarmSetGimbalAngleTargetRequest, grpc.ServerStreamingServer[SwarmSetGimbalAngleTargetResponse]) error
 	// Order multiple vehicles to start a mission.
 	//
 	// Causes vehicles to start their uploaded mission. This will enable autonomous
@@ -426,11 +424,11 @@ func (UnimplementedSwarmServiceServer) SwarmKill(*SwarmKillRequest, grpc.ServerS
 func (UnimplementedSwarmServiceServer) SwarmReturnToHome(*SwarmReturnToHomeRequest, grpc.ServerStreamingServer[SwarmReturnToHomeResponse]) error {
 	return status.Error(codes.Unimplemented, "method SwarmReturnToHome not implemented")
 }
-func (UnimplementedSwarmServiceServer) SwarmSetVelocity(*SwarmSetVelocityRequest, grpc.ServerStreamingServer[SwarmSetVelocityResponse]) error {
-	return status.Error(codes.Unimplemented, "method SwarmSetVelocity not implemented")
+func (UnimplementedSwarmServiceServer) SwarmSetVelocityTarget(*SwarmSetVelocityTargetRequest, grpc.ServerStreamingServer[SwarmSetVelocityTargetResponse]) error {
+	return status.Error(codes.Unimplemented, "method SwarmSetVelocityTarget not implemented")
 }
-func (UnimplementedSwarmServiceServer) SwarmSetGimbalPose(*SwarmSetGimbalPoseRequest, grpc.ServerStreamingServer[SwarmSetGimbalPoseResponse]) error {
-	return status.Error(codes.Unimplemented, "method SwarmSetGimbalPose not implemented")
+func (UnimplementedSwarmServiceServer) SwarmSetGimbalAngleTarget(*SwarmSetGimbalAngleTargetRequest, grpc.ServerStreamingServer[SwarmSetGimbalAngleTargetResponse]) error {
+	return status.Error(codes.Unimplemented, "method SwarmSetGimbalAngleTarget not implemented")
 }
 func (UnimplementedSwarmServiceServer) SwarmStartMission(*SwarmStartMissionRequest, grpc.ServerStreamingServer[SwarmStartMissionResponse]) error {
 	return status.Error(codes.Unimplemented, "method SwarmStartMission not implemented")
@@ -517,27 +515,27 @@ func _SwarmService_SwarmReturnToHome_Handler(srv interface{}, stream grpc.Server
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SwarmService_SwarmReturnToHomeServer = grpc.ServerStreamingServer[SwarmReturnToHomeResponse]
 
-func _SwarmService_SwarmSetVelocity_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(SwarmSetVelocityRequest)
+func _SwarmService_SwarmSetVelocityTarget_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(SwarmSetVelocityTargetRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(SwarmServiceServer).SwarmSetVelocity(m, &grpc.GenericServerStream[SwarmSetVelocityRequest, SwarmSetVelocityResponse]{ServerStream: stream})
+	return srv.(SwarmServiceServer).SwarmSetVelocityTarget(m, &grpc.GenericServerStream[SwarmSetVelocityTargetRequest, SwarmSetVelocityTargetResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type SwarmService_SwarmSetVelocityServer = grpc.ServerStreamingServer[SwarmSetVelocityResponse]
+type SwarmService_SwarmSetVelocityTargetServer = grpc.ServerStreamingServer[SwarmSetVelocityTargetResponse]
 
-func _SwarmService_SwarmSetGimbalPose_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(SwarmSetGimbalPoseRequest)
+func _SwarmService_SwarmSetGimbalAngleTarget_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(SwarmSetGimbalAngleTargetRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(SwarmServiceServer).SwarmSetGimbalPose(m, &grpc.GenericServerStream[SwarmSetGimbalPoseRequest, SwarmSetGimbalPoseResponse]{ServerStream: stream})
+	return srv.(SwarmServiceServer).SwarmSetGimbalAngleTarget(m, &grpc.GenericServerStream[SwarmSetGimbalAngleTargetRequest, SwarmSetGimbalAngleTargetResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type SwarmService_SwarmSetGimbalPoseServer = grpc.ServerStreamingServer[SwarmSetGimbalPoseResponse]
+type SwarmService_SwarmSetGimbalAngleTargetServer = grpc.ServerStreamingServer[SwarmSetGimbalAngleTargetResponse]
 
 func _SwarmService_SwarmStartMission_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(SwarmStartMissionRequest)
@@ -606,13 +604,13 @@ var SwarmService_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 		{
-			StreamName:    "SwarmSetVelocity",
-			Handler:       _SwarmService_SwarmSetVelocity_Handler,
+			StreamName:    "SwarmSetVelocityTarget",
+			Handler:       _SwarmService_SwarmSetVelocityTarget_Handler,
 			ServerStreams: true,
 		},
 		{
-			StreamName:    "SwarmSetGimbalPose",
-			Handler:       _SwarmService_SwarmSetGimbalPose_Handler,
+			StreamName:    "SwarmSetGimbalAngleTarget",
+			Handler:       _SwarmService_SwarmSetGimbalAngleTarget_Handler,
 			ServerStreams: true,
 		},
 		{

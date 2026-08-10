@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n*steeleagle_protocol/v1/common/common.proto\x12\x1dsteeleagle_protocol.v1.common\"l\n\x04Pose\x12\x19\n\x05pitch\x18\x01 \x01(\x02H\x00R\x05pitch\x88\x01\x01\x12\x17\n\x04roll\x18\x02 \x01(\x02H\x01R\x04roll\x88\x01\x01\x12\x15\n\x03yaw\x18\x03 \x01(\x02H\x02R\x03yaw\x88\x01\x01\x42\x08\n\x06_pitchB\x07\n\x05_rollB\x06\n\x04_yaw\"\xac\x01\n\x08Velocity\x12\x18\n\x05x_vel\x18\x01 \x01(\x02H\x00R\x04xVel\x88\x01\x01\x12\x18\n\x05y_vel\x18\x02 \x01(\x02H\x01R\x04yVel\x88\x01\x01\x12\x18\n\x05z_vel\x18\x03 \x01(\x02H\x02R\x04zVel\x88\x01\x01\x12$\n\x0b\x61ngular_vel\x18\x04 \x01(\x02H\x03R\nangularVel\x88\x01\x01\x42\x08\n\x06_x_velB\x08\n\x06_y_velB\x08\n\x06_z_velB\x0e\n\x0c_angular_vel\"\xc8\x01\n\x0eGlobalPosition\x12\x1f\n\x08latitude\x18\x01 \x01(\x01H\x00R\x08latitude\x88\x01\x01\x12!\n\tlongitude\x18\x02 \x01(\x01H\x01R\tlongitude\x88\x01\x01\x12\x1f\n\x08\x61ltitude\x18\x03 \x01(\x02H\x02R\x08\x61ltitude\x88\x01\x01\x12\x1d\n\x07heading\x18\x04 \x01(\x02H\x03R\x07heading\x88\x01\x01\x42\x0b\n\t_latitudeB\x0c\n\n_longitudeB\x0b\n\t_altitudeB\n\n\x08_heading\"\x82\x01\n\x10RelativePosition\x12\x11\n\x01x\x18\x01 \x01(\x02H\x00R\x01x\x88\x01\x01\x12\x11\n\x01y\x18\x02 \x01(\x02H\x01R\x01y\x88\x01\x01\x12\x11\n\x01z\x18\x03 \x01(\x02H\x02R\x01z\x88\x01\x01\x12\x19\n\x05\x61ngle\x18\x04 \x01(\x02H\x03R\x05\x61ngle\x88\x01\x01\x42\x04\n\x02_xB\x04\n\x02_yB\x04\n\x02_zB\x08\n\x06_angle\"B\n\x0bVehicleInfo\x12\x1d\n\nvehicle_id\x18\x01 \x01(\tR\tvehicleId\x12\x14\n\x05model\x18\x02 \x01(\tR\x05modelB\x8a\x02\n!com.steeleagle_protocol.v1.commonB\x0b\x43ommonProtoP\x01ZFgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/common\xa2\x02\x03SVC\xaa\x02\x1cSteeleagleProtocol.V1.Common\xca\x02\x1cSteeleagleProtocol\\V1\\Common\xe2\x02(SteeleagleProtocol\\V1\\Common\\GPBMetadata\xea\x02\x1eSteeleagleProtocol::V1::Commonb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n*steeleagle_protocol/v1/common/common.proto\x12\x1dsteeleagle_protocol.v1.common\"l\n\x04Pose\x12\x19\n\x05pitch\x18\x01 \x01(\x02H\x00R\x05pitch\x88\x01\x01\x12\x17\n\x04roll\x18\x02 \x01(\x02H\x01R\x04roll\x88\x01\x01\x12\x15\n\x03yaw\x18\x03 \x01(\x02H\x02R\x03yaw\x88\x01\x01\x42\x08\n\x06_pitchB\x07\n\x05_rollB\x06\n\x04_yaw\"\x95\x01\n\x0cPoseVelocity\x12 \n\tpitch_vel\x18\x01 \x01(\x02H\x00R\x08pitchVel\x88\x01\x01\x12\x1e\n\x08roll_vel\x18\x02 \x01(\x02H\x01R\x07rollVel\x88\x01\x01\x12\x1c\n\x07yaw_vel\x18\x03 \x01(\x02H\x02R\x06yawVel\x88\x01\x01\x42\x0c\n\n_pitch_velB\x0b\n\t_roll_velB\n\n\x08_yaw_vel\"\xac\x01\n\x08Velocity\x12\x18\n\x05x_vel\x18\x01 \x01(\x02H\x00R\x04xVel\x88\x01\x01\x12\x18\n\x05y_vel\x18\x02 \x01(\x02H\x01R\x04yVel\x88\x01\x01\x12\x18\n\x05z_vel\x18\x03 \x01(\x02H\x02R\x04zVel\x88\x01\x01\x12$\n\x0b\x61ngular_vel\x18\x04 \x01(\x02H\x03R\nangularVel\x88\x01\x01\x42\x08\n\x06_x_velB\x08\n\x06_y_velB\x08\n\x06_z_velB\x0e\n\x0c_angular_vel\"\xc8\x01\n\x0eGlobalPosition\x12\x1f\n\x08latitude\x18\x01 \x01(\x01H\x00R\x08latitude\x88\x01\x01\x12!\n\tlongitude\x18\x02 \x01(\x01H\x01R\tlongitude\x88\x01\x01\x12\x1f\n\x08\x61ltitude\x18\x03 \x01(\x02H\x02R\x08\x61ltitude\x88\x01\x01\x12\x1d\n\x07heading\x18\x04 \x01(\x02H\x03R\x07heading\x88\x01\x01\x42\x0b\n\t_latitudeB\x0c\n\n_longitudeB\x0b\n\t_altitudeB\n\n\x08_heading\"\x82\x01\n\x10RelativePosition\x12\x11\n\x01x\x18\x01 \x01(\x02H\x00R\x01x\x88\x01\x01\x12\x11\n\x01y\x18\x02 \x01(\x02H\x01R\x01y\x88\x01\x01\x12\x11\n\x01z\x18\x03 \x01(\x02H\x02R\x01z\x88\x01\x01\x12\x19\n\x05\x61ngle\x18\x04 \x01(\x02H\x03R\x05\x61ngle\x88\x01\x01\x42\x04\n\x02_xB\x04\n\x02_yB\x04\n\x02_zB\x08\n\x06_angle\"B\n\x0bVehicleInfo\x12\x1d\n\nvehicle_id\x18\x01 \x01(\tR\tvehicleId\x12\x14\n\x05model\x18\x02 \x01(\tR\x05modelB\x8a\x02\n!com.steeleagle_protocol.v1.commonB\x0b\x43ommonProtoP\x01ZFgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/common\xa2\x02\x03SVC\xaa\x02\x1cSteeleagleProtocol.V1.Common\xca\x02\x1cSteeleagleProtocol\\V1\\Common\xe2\x02(SteeleagleProtocol\\V1\\Common\\GPBMetadata\xea\x02\x1eSteeleagleProtocol::V1::Commonb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -34,12 +34,14 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._serialized_options = b'\n!com.steeleagle_protocol.v1.commonB\013CommonProtoP\001ZFgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/common\242\002\003SVC\252\002\034SteeleagleProtocol.V1.Common\312\002\034SteeleagleProtocol\\V1\\Common\342\002(SteeleagleProtocol\\V1\\Common\\GPBMetadata\352\002\036SteeleagleProtocol::V1::Common'
   _globals['_POSE']._serialized_start=77
   _globals['_POSE']._serialized_end=185
-  _globals['_VELOCITY']._serialized_start=188
-  _globals['_VELOCITY']._serialized_end=360
-  _globals['_GLOBALPOSITION']._serialized_start=363
-  _globals['_GLOBALPOSITION']._serialized_end=563
-  _globals['_RELATIVEPOSITION']._serialized_start=566
-  _globals['_RELATIVEPOSITION']._serialized_end=696
-  _globals['_VEHICLEINFO']._serialized_start=698
-  _globals['_VEHICLEINFO']._serialized_end=764
+  _globals['_POSEVELOCITY']._serialized_start=188
+  _globals['_POSEVELOCITY']._serialized_end=337
+  _globals['_VELOCITY']._serialized_start=340
+  _globals['_VELOCITY']._serialized_end=512
+  _globals['_GLOBALPOSITION']._serialized_start=515
+  _globals['_GLOBALPOSITION']._serialized_end=715
+  _globals['_RELATIVEPOSITION']._serialized_start=718
+  _globals['_RELATIVEPOSITION']._serialized_end=848
+  _globals['_VEHICLEINFO']._serialized_start=850
+  _globals['_VEHICLEINFO']._serialized_end=916
 # @@protoc_insertion_point(module_scope)

@@ -43,6 +43,7 @@ func (w *waiter[Resp]) Wait(options ...opt.WaitOption) (Resp, error) {
 	// Apply options
 	opts := opt.WaitOptions{
 		Interval: 100 * time.Millisecond,
+		Stall:    1 * time.Second,
 		Tolerances: opt.Tolerances{
 			PosTol:      0.5, // meters
 			AngleTol:    2.0, // degrees
@@ -56,30 +57,8 @@ func (w *waiter[Resp]) Wait(options ...opt.WaitOption) (Resp, error) {
 
 	if w.err != nil {
 		return w.resp, w.err
-	}
-	for {
-		done, err := w.poll()
-		if err != nil || done {
-			w.err = err
-			return w.resp, err
-		}
-		if opts.Timeout == 0 {
-			select {
-			case <-w.ctx.Done():
-				w.err = ErrContextExpired
-				return w.resp, w.err
-			case <-time.After(opts.Timeout):
-				return w.resp, ErrTimeout
-			case <-time.After(opts.Interval):
-			}
-		} else {
-			select {
-			case <-w.ctx.Done():
-				w.err = ErrContextExpired
-				return w.resp, w.err
-			case <-time.After(opts.Interval):
-			}
-		}
+	} else {
+		return w.resp, poll(opts)
 	}
 }
 

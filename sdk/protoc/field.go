@@ -16,7 +16,7 @@ func needsCommonFieldInterface(field *protogen.Field) bool {
 // commonFieldInterfaceName computes the per-field-scoped, getter-only
 // interface name for a field whose type is a common message.
 func commonFieldInterfaceName(parentGoName string, field *protogen.Field) string {
-	return parentGoName + "_Get" + field.GoName + "_" + field.Message.GoIdent.GoName
+	return parentGoName + "_" + field.GoName
 }
 
 // fieldReturnType computes the Go return type string for a scalar/enum/

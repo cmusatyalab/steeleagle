@@ -11,23 +11,26 @@ type Vehicle interface {
 	Land() *waiter[LandResponse]
 	Hold() *waiter[HoldResponse]
 	Kill() *waiter[KillResponse]
-	SetHome(latitude, longitude, altitude float64) *waiter[SetHomeResponse]
 	ReturnToHome(options ...opt.Option[opt.ReturnToHomeOption]) *waiter[ReturnToHomeResponse]
-	GoToGlobalPosition(
+	SetGlobalPositionTarget(
 		latitude, longitude, altitude, heading float64,
-		options ...opt.Option[opt.GoToGlobalPositionOption],
-	) *waiter[GoToGlobalPositionResponse]
-	GoToRelativePosition(
+		options ...opt.Option[opt.SetGlobalPositionTargetOption],
+	) *waiter[SetGlobalPositionTargetResponse]
+	SetRelativePositionTarget(
 		x, y, z, angle float64,
-		options ...opt.Option[opt.GoToRelativePositionOption],
-	) *waiter[GoToRelativePositionResponse]
-	SetVelocity(
+		options ...opt.Option[opt.SetRelativePositionTargetOption],
+	) *waiter[SetRelativePositionResponse]
+	SetVelocityTarget(
 		xVel, yVel, zVel, angularVel float64,
-		options ...opt.Option[opt.SetVelocityOption],
-	) *waiter[SetVelocityResponse]
-	SetGimbalPose(
+		options ...opt.Option[opt.SetVelocityTargetOption],
+	) *waiter[SetVelocityTargetResponse]
+	SetGimbalAngleTarget(
 		pitch, roll, yaw float64,
-		options ...opt.Option[opt.SetGimbalPoseOption],
-	) *waiter[SetGimbalPoseResponse]
+		options ...opt.Option[opt.SetGimbalAngleTargetOption],
+	) *waiter[SetGimbalAngleTargetResponse]
+	SetGimbalVelocityTarget(
+		pitchVel, rollVel, yawVel float64,
+		options ...opt.Option[opt.SetGimbalVelocityTargetOption],
+	) *waiter[SetGimbalVelocityTargetResponse]
 	GetTelemetry() *waiter[Telemetry]
 }
