@@ -792,7 +792,7 @@ class AvoidTask(Action):
             await asyncio.sleep(self._poll_period)
 
 
-# @register_action
+@register_action
 class Map(Action):
     """Fly an area, then iteratively re-fly the next-flight area returned by the mapping engine."""
 
