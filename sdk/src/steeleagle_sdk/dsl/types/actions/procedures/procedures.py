@@ -52,7 +52,15 @@ async def _fly(
             heading_mode=HeadingMode.TO_TARGET,
             max_velocity=max_velocity,
         )
-        await goto.execute()
+        response = await goto.execute()
+        if response is None or response.status >= common.ResponseStatus.CANCELLED:
+            msg = getattr(response, "response_string", None) or "no response"
+            logger.error(
+                "goto (%.6f, %.6f) failed: %s -- continuing",
+                loc.latitude,
+                loc.longitude,
+                msg,
+            )
 
         if hover_time > 0:
             await asyncio.sleep(hover_time)
@@ -827,12 +835,7 @@ class Map(Action):
 
     @staticmethod
     def _latest_area(results: list[tuple[float, FrameResult]]):
-        """Return the raw next-flight area from the latest navigation result, if any.
-
-        Left unconverted (proto or the already-deserialized pydantic mirror,
-        whichever `results` carries) -- `Map.update()` is what turns it into
-        something usable.
-        """
+        """Return the raw next-flight area from the latest navigation result, if any."""
         for _ts, res in reversed(results):
             if not res or not res.result:
                 continue
@@ -847,10 +850,10 @@ class Map(Action):
 
         current_map = MissionMap()  # init the map object without the area parameter will spawn the mission map
         first_trial_locations = self.initial_plan.apply(current_map)
+        t0 = time.time()
         await _fly(first_trial_locations, self.initial_plan.alt, self.hover_time, self.max_velocity)
-        
+
         for trial in range(self.num_trials - 1):
-            t0 = time.time()
             results = await fetch_results_range(self.compute_stream, t0, time.time())
             next_area = self._latest_area(results)
             if next_area is None:
@@ -872,6 +875,7 @@ class Map(Action):
                 )
                 return
 
+            t0 = time.time()
             await _fly(next_trial_locations, self.iterative_plan.alt, self.hover_time, self.max_velocity)
 
 
