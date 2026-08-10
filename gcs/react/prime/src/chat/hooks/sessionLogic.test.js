@@ -12,6 +12,7 @@ import {
     makeMessage,
     loadSessions,
     saveSessions,
+    setCurrentDraft,
     STORAGE_KEY,
 } from './sessionLogic.js';
 
@@ -19,6 +20,7 @@ describe('createSession', () => {
     it('creates a session with a system welcome message', () => {
         const s = createSession();
         expect(s.id).toBeTruthy();
+        expect(s.currentDraft).toBeNull();
         expect(s.messages).toHaveLength(1);
         expect(s.messages[0].role).toBe('system');
         expect(isPristine(s)).toBe(true);
@@ -178,5 +180,15 @@ describe('persistence', () => {
     it('returns null on malformed storage', () => {
         localStorage.setItem(STORAGE_KEY, '{not json');
         expect(loadSessions()).toBeNull();
+    });
+});
+
+describe('setCurrentDraft', () => {
+    it('stores normalized DSL and clears on empty', () => {
+        const s = createSession();
+        const withDraft = setCurrentDraft(s, { normalized_dsl: 'Mission:\n  Start a' });
+        expect(withDraft.currentDraft.normalized_dsl).toContain('Start a');
+        const cleared = setCurrentDraft(withDraft, null);
+        expect(cleared.currentDraft).toBeNull();
     });
 });

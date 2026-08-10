@@ -25,9 +25,23 @@ export function createSession(title = 'New conversation') {
         title,
         createdAt: now,
         updatedAt: now,
+        currentDraft: null,
         messages: [
             makeMessage('system', WELCOME_MESSAGE, { author: ASSISTANT_NAME }),
         ],
+    };
+}
+
+/** Attach or clear the last known-good draft DSL for a session. */
+export function setCurrentDraft(session, draft) {
+    const normalized =
+        draft && typeof draft.normalized_dsl === 'string' && draft.normalized_dsl.trim()
+            ? { normalized_dsl: draft.normalized_dsl.trim() }
+            : null;
+    return {
+        ...session,
+        updatedAt: Date.now(),
+        currentDraft: normalized,
     };
 }
 
