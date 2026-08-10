@@ -52,19 +52,19 @@ service DaemonService {
   rpc ForgetVehicles (ForgetVehiclesRequest) returns (ForgetVehiclesResponse) {}
 
   /*
-   * Fetch a driver plugin from a git repository at a pinned commit and install
-   * it under this name, running the driver's own install.sh and only replacing
+   * Fetch a plugin from a git repository at a pinned commit and install it
+   * under this name, running the plugin's own install.sh and only replacing
    * whatever was previously installed under this name if it exits zero.
-   * Separate from starting a vehicle, so a driver can be staged ahead of time
+   * Separate from starting a vehicle, so a plugin can be staged ahead of time
    * and StartVehicle/Configure never has to wait on a network fetch.
    */
-  rpc InstallDriver (InstallDriverRequest) returns (InstallDriverResponse) {}
+  rpc InstallPlugin (InstallPluginRequest) returns (InstallPluginResponse) {}
 
   /*
-   * List every driver name this daemon has installed and the ref it was last
-   * installed at.
+   * List every plugin this daemon has installed, the ref it was last installed
+   * at, and its category.
    */
-  rpc GetInstalledDrivers (GetInstalledDriversRequest) returns (GetInstalledDriversResponse) {}
+  rpc GetInstalledPlugins (GetInstalledPluginsRequest) returns (GetInstalledPluginsResponse) {}
 
   /*
    * Delete the persisted config and terminate the daemon process, relying on
@@ -127,27 +127,36 @@ message VehicleResult {
   string error = 3; // populated iff !ok
 }
 
-message InstallDriverRequest {
-  string name = 1;    // driver identifier, matches VehicleConfig.driver
+enum PluginCategory {
+  PLUGIN_CATEGORY_UNSPECIFIED = 0;
+  PLUGIN_CATEGORY_DRIVER = 1;
+  PLUGIN_CATEGORY_MISSION = 2;
+  PLUGIN_CATEGORY_EXTRA = 3;
+}
+
+message InstallPluginRequest {
+  string name = 1;    // plugin identifier, matches a VehicleConfig field of the same category
   string repo = 2;    // git URL
   string ref = 3;     // commit SHA, branch, or tag to check out
   string subpath = 4; // subfolder containing install.sh/run.sh; empty means repo root
+  PluginCategory category = 5;
 }
 
-message InstallDriverResponse {
+message InstallPluginResponse {
   bool ok = 1;
   string error = 2; // populated iff !ok; install.sh's captured output on a nonzero exit
 }
 
-message GetInstalledDriversRequest {}
+message GetInstalledPluginsRequest {}
 
-message GetInstalledDriversResponse {
-  repeated InstalledDriver drivers = 1;
+message GetInstalledPluginsResponse {
+  repeated InstalledPlugin plugins = 1;
 }
 
-message InstalledDriver {
+message InstalledPlugin {
   string name = 1;
   string ref = 2;
+  PluginCategory category = 3;
 }
 
 message ResetConfigRequest {}

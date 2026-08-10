@@ -24,6 +24,53 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type PluginCategory int32
+
+const (
+	PluginCategory_PLUGIN_CATEGORY_UNSPECIFIED PluginCategory = 0
+	PluginCategory_PLUGIN_CATEGORY_DRIVER      PluginCategory = 1
+	PluginCategory_PLUGIN_CATEGORY_MISSION     PluginCategory = 2
+	PluginCategory_PLUGIN_CATEGORY_EXTRA       PluginCategory = 3
+)
+
+// Enum value maps for PluginCategory.
+var (
+	PluginCategory_name = map[int32]string{
+		0: "PLUGIN_CATEGORY_UNSPECIFIED",
+		1: "PLUGIN_CATEGORY_DRIVER",
+		2: "PLUGIN_CATEGORY_MISSION",
+		3: "PLUGIN_CATEGORY_EXTRA",
+	}
+	PluginCategory_value = map[string]int32{
+		"PLUGIN_CATEGORY_UNSPECIFIED": 0,
+		"PLUGIN_CATEGORY_DRIVER":      1,
+		"PLUGIN_CATEGORY_MISSION":     2,
+		"PLUGIN_CATEGORY_EXTRA":       3,
+	}
+)
+
+func (x PluginCategory) Enum() *PluginCategory {
+	p := new(PluginCategory)
+	*p = x
+	return p
+}
+
+func (x PluginCategory) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PluginCategory) Descriptor() protoreflect.EnumDescriptor {
+	return file_steeleagle_protocol_v1_services_eagled_eagled_proto_enumTypes[0].Descriptor()
+}
+
+func (PluginCategory) Type() protoreflect.EnumType {
+	return &file_steeleagle_protocol_v1_services_eagled_eagled_proto_enumTypes[0]
+}
+
+func (x PluginCategory) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
 type ConfigureRequest struct {
 	state                 protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_ConfigToml string                 `protobuf:"bytes,1,opt,name=config_toml,json=configToml,proto3"`
@@ -573,30 +620,31 @@ func (b0 VehicleResult_builder) Build() *VehicleResult {
 	return m0
 }
 
-type InstallDriverRequest struct {
-	state              protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Name    string                 `protobuf:"bytes,1,opt,name=name,proto3"`
-	xxx_hidden_Repo    string                 `protobuf:"bytes,2,opt,name=repo,proto3"`
-	xxx_hidden_Ref     string                 `protobuf:"bytes,3,opt,name=ref,proto3"`
-	xxx_hidden_Subpath string                 `protobuf:"bytes,4,opt,name=subpath,proto3"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+type InstallPluginRequest struct {
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Name     string                 `protobuf:"bytes,1,opt,name=name,proto3"`
+	xxx_hidden_Repo     string                 `protobuf:"bytes,2,opt,name=repo,proto3"`
+	xxx_hidden_Ref      string                 `protobuf:"bytes,3,opt,name=ref,proto3"`
+	xxx_hidden_Subpath  string                 `protobuf:"bytes,4,opt,name=subpath,proto3"`
+	xxx_hidden_Category PluginCategory         `protobuf:"varint,5,opt,name=category,proto3,enum=steeleagle_protocol.v1.services.eagled.PluginCategory"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
-func (x *InstallDriverRequest) Reset() {
-	*x = InstallDriverRequest{}
+func (x *InstallPluginRequest) Reset() {
+	*x = InstallPluginRequest{}
 	mi := &file_steeleagle_protocol_v1_services_eagled_eagled_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *InstallDriverRequest) String() string {
+func (x *InstallPluginRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*InstallDriverRequest) ProtoMessage() {}
+func (*InstallPluginRequest) ProtoMessage() {}
 
-func (x *InstallDriverRequest) ProtoReflect() protoreflect.Message {
+func (x *InstallPluginRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_steeleagle_protocol_v1_services_eagled_eagled_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -608,71 +656,84 @@ func (x *InstallDriverRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *InstallDriverRequest) GetName() string {
+func (x *InstallPluginRequest) GetName() string {
 	if x != nil {
 		return x.xxx_hidden_Name
 	}
 	return ""
 }
 
-func (x *InstallDriverRequest) GetRepo() string {
+func (x *InstallPluginRequest) GetRepo() string {
 	if x != nil {
 		return x.xxx_hidden_Repo
 	}
 	return ""
 }
 
-func (x *InstallDriverRequest) GetRef() string {
+func (x *InstallPluginRequest) GetRef() string {
 	if x != nil {
 		return x.xxx_hidden_Ref
 	}
 	return ""
 }
 
-func (x *InstallDriverRequest) GetSubpath() string {
+func (x *InstallPluginRequest) GetSubpath() string {
 	if x != nil {
 		return x.xxx_hidden_Subpath
 	}
 	return ""
 }
 
-func (x *InstallDriverRequest) SetName(v string) {
+func (x *InstallPluginRequest) GetCategory() PluginCategory {
+	if x != nil {
+		return x.xxx_hidden_Category
+	}
+	return PluginCategory_PLUGIN_CATEGORY_UNSPECIFIED
+}
+
+func (x *InstallPluginRequest) SetName(v string) {
 	x.xxx_hidden_Name = v
 }
 
-func (x *InstallDriverRequest) SetRepo(v string) {
+func (x *InstallPluginRequest) SetRepo(v string) {
 	x.xxx_hidden_Repo = v
 }
 
-func (x *InstallDriverRequest) SetRef(v string) {
+func (x *InstallPluginRequest) SetRef(v string) {
 	x.xxx_hidden_Ref = v
 }
 
-func (x *InstallDriverRequest) SetSubpath(v string) {
+func (x *InstallPluginRequest) SetSubpath(v string) {
 	x.xxx_hidden_Subpath = v
 }
 
-type InstallDriverRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Name    string
-	Repo    string
-	Ref     string
-	Subpath string
+func (x *InstallPluginRequest) SetCategory(v PluginCategory) {
+	x.xxx_hidden_Category = v
 }
 
-func (b0 InstallDriverRequest_builder) Build() *InstallDriverRequest {
-	m0 := &InstallDriverRequest{}
+type InstallPluginRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Name     string
+	Repo     string
+	Ref      string
+	Subpath  string
+	Category PluginCategory
+}
+
+func (b0 InstallPluginRequest_builder) Build() *InstallPluginRequest {
+	m0 := &InstallPluginRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Repo = b.Repo
 	x.xxx_hidden_Ref = b.Ref
 	x.xxx_hidden_Subpath = b.Subpath
+	x.xxx_hidden_Category = b.Category
 	return m0
 }
 
-type InstallDriverResponse struct {
+type InstallPluginResponse struct {
 	state            protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Ok    bool                   `protobuf:"varint,1,opt,name=ok,proto3"`
 	xxx_hidden_Error string                 `protobuf:"bytes,2,opt,name=error,proto3"`
@@ -680,20 +741,20 @@ type InstallDriverResponse struct {
 	sizeCache        protoimpl.SizeCache
 }
 
-func (x *InstallDriverResponse) Reset() {
-	*x = InstallDriverResponse{}
+func (x *InstallPluginResponse) Reset() {
+	*x = InstallPluginResponse{}
 	mi := &file_steeleagle_protocol_v1_services_eagled_eagled_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *InstallDriverResponse) String() string {
+func (x *InstallPluginResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*InstallDriverResponse) ProtoMessage() {}
+func (*InstallPluginResponse) ProtoMessage() {}
 
-func (x *InstallDriverResponse) ProtoReflect() protoreflect.Message {
+func (x *InstallPluginResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_steeleagle_protocol_v1_services_eagled_eagled_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -705,37 +766,37 @@ func (x *InstallDriverResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *InstallDriverResponse) GetOk() bool {
+func (x *InstallPluginResponse) GetOk() bool {
 	if x != nil {
 		return x.xxx_hidden_Ok
 	}
 	return false
 }
 
-func (x *InstallDriverResponse) GetError() string {
+func (x *InstallPluginResponse) GetError() string {
 	if x != nil {
 		return x.xxx_hidden_Error
 	}
 	return ""
 }
 
-func (x *InstallDriverResponse) SetOk(v bool) {
+func (x *InstallPluginResponse) SetOk(v bool) {
 	x.xxx_hidden_Ok = v
 }
 
-func (x *InstallDriverResponse) SetError(v string) {
+func (x *InstallPluginResponse) SetError(v string) {
 	x.xxx_hidden_Error = v
 }
 
-type InstallDriverResponse_builder struct {
+type InstallPluginResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Ok    bool
 	Error string
 }
 
-func (b0 InstallDriverResponse_builder) Build() *InstallDriverResponse {
-	m0 := &InstallDriverResponse{}
+func (b0 InstallPluginResponse_builder) Build() *InstallPluginResponse {
+	m0 := &InstallPluginResponse{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ok = b.Ok
@@ -743,26 +804,26 @@ func (b0 InstallDriverResponse_builder) Build() *InstallDriverResponse {
 	return m0
 }
 
-type GetInstalledDriversRequest struct {
+type GetInstalledPluginsRequest struct {
 	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetInstalledDriversRequest) Reset() {
-	*x = GetInstalledDriversRequest{}
+func (x *GetInstalledPluginsRequest) Reset() {
+	*x = GetInstalledPluginsRequest{}
 	mi := &file_steeleagle_protocol_v1_services_eagled_eagled_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetInstalledDriversRequest) String() string {
+func (x *GetInstalledPluginsRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetInstalledDriversRequest) ProtoMessage() {}
+func (*GetInstalledPluginsRequest) ProtoMessage() {}
 
-func (x *GetInstalledDriversRequest) ProtoReflect() protoreflect.Message {
+func (x *GetInstalledPluginsRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_steeleagle_protocol_v1_services_eagled_eagled_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -774,39 +835,39 @@ func (x *GetInstalledDriversRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-type GetInstalledDriversRequest_builder struct {
+type GetInstalledPluginsRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 }
 
-func (b0 GetInstalledDriversRequest_builder) Build() *GetInstalledDriversRequest {
-	m0 := &GetInstalledDriversRequest{}
+func (b0 GetInstalledPluginsRequest_builder) Build() *GetInstalledPluginsRequest {
+	m0 := &GetInstalledPluginsRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
 	return m0
 }
 
-type GetInstalledDriversResponse struct {
+type GetInstalledPluginsResponse struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Drivers *[]*InstalledDriver    `protobuf:"bytes,1,rep,name=drivers,proto3"`
+	xxx_hidden_Plugins *[]*InstalledPlugin    `protobuf:"bytes,1,rep,name=plugins,proto3"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
-func (x *GetInstalledDriversResponse) Reset() {
-	*x = GetInstalledDriversResponse{}
+func (x *GetInstalledPluginsResponse) Reset() {
+	*x = GetInstalledPluginsResponse{}
 	mi := &file_steeleagle_protocol_v1_services_eagled_eagled_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetInstalledDriversResponse) String() string {
+func (x *GetInstalledPluginsResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetInstalledDriversResponse) ProtoMessage() {}
+func (*GetInstalledPluginsResponse) ProtoMessage() {}
 
-func (x *GetInstalledDriversResponse) ProtoReflect() protoreflect.Message {
+func (x *GetInstalledPluginsResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_steeleagle_protocol_v1_services_eagled_eagled_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -818,55 +879,56 @@ func (x *GetInstalledDriversResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *GetInstalledDriversResponse) GetDrivers() []*InstalledDriver {
+func (x *GetInstalledPluginsResponse) GetPlugins() []*InstalledPlugin {
 	if x != nil {
-		if x.xxx_hidden_Drivers != nil {
-			return *x.xxx_hidden_Drivers
+		if x.xxx_hidden_Plugins != nil {
+			return *x.xxx_hidden_Plugins
 		}
 	}
 	return nil
 }
 
-func (x *GetInstalledDriversResponse) SetDrivers(v []*InstalledDriver) {
-	x.xxx_hidden_Drivers = &v
+func (x *GetInstalledPluginsResponse) SetPlugins(v []*InstalledPlugin) {
+	x.xxx_hidden_Plugins = &v
 }
 
-type GetInstalledDriversResponse_builder struct {
+type GetInstalledPluginsResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Drivers []*InstalledDriver
+	Plugins []*InstalledPlugin
 }
 
-func (b0 GetInstalledDriversResponse_builder) Build() *GetInstalledDriversResponse {
-	m0 := &GetInstalledDriversResponse{}
+func (b0 GetInstalledPluginsResponse_builder) Build() *GetInstalledPluginsResponse {
+	m0 := &GetInstalledPluginsResponse{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_Drivers = &b.Drivers
+	x.xxx_hidden_Plugins = &b.Plugins
 	return m0
 }
 
-type InstalledDriver struct {
-	state           protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Name string                 `protobuf:"bytes,1,opt,name=name,proto3"`
-	xxx_hidden_Ref  string                 `protobuf:"bytes,2,opt,name=ref,proto3"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+type InstalledPlugin struct {
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Name     string                 `protobuf:"bytes,1,opt,name=name,proto3"`
+	xxx_hidden_Ref      string                 `protobuf:"bytes,2,opt,name=ref,proto3"`
+	xxx_hidden_Category PluginCategory         `protobuf:"varint,3,opt,name=category,proto3,enum=steeleagle_protocol.v1.services.eagled.PluginCategory"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
-func (x *InstalledDriver) Reset() {
-	*x = InstalledDriver{}
+func (x *InstalledPlugin) Reset() {
+	*x = InstalledPlugin{}
 	mi := &file_steeleagle_protocol_v1_services_eagled_eagled_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *InstalledDriver) String() string {
+func (x *InstalledPlugin) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*InstalledDriver) ProtoMessage() {}
+func (*InstalledPlugin) ProtoMessage() {}
 
-func (x *InstalledDriver) ProtoReflect() protoreflect.Message {
+func (x *InstalledPlugin) ProtoReflect() protoreflect.Message {
 	mi := &file_steeleagle_protocol_v1_services_eagled_eagled_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -878,41 +940,54 @@ func (x *InstalledDriver) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *InstalledDriver) GetName() string {
+func (x *InstalledPlugin) GetName() string {
 	if x != nil {
 		return x.xxx_hidden_Name
 	}
 	return ""
 }
 
-func (x *InstalledDriver) GetRef() string {
+func (x *InstalledPlugin) GetRef() string {
 	if x != nil {
 		return x.xxx_hidden_Ref
 	}
 	return ""
 }
 
-func (x *InstalledDriver) SetName(v string) {
+func (x *InstalledPlugin) GetCategory() PluginCategory {
+	if x != nil {
+		return x.xxx_hidden_Category
+	}
+	return PluginCategory_PLUGIN_CATEGORY_UNSPECIFIED
+}
+
+func (x *InstalledPlugin) SetName(v string) {
 	x.xxx_hidden_Name = v
 }
 
-func (x *InstalledDriver) SetRef(v string) {
+func (x *InstalledPlugin) SetRef(v string) {
 	x.xxx_hidden_Ref = v
 }
 
-type InstalledDriver_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Name string
-	Ref  string
+func (x *InstalledPlugin) SetCategory(v PluginCategory) {
+	x.xxx_hidden_Category = v
 }
 
-func (b0 InstalledDriver_builder) Build() *InstalledDriver {
-	m0 := &InstalledDriver{}
+type InstalledPlugin_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Name     string
+	Ref      string
+	Category PluginCategory
+}
+
+func (b0 InstalledPlugin_builder) Build() *InstalledPlugin {
+	m0 := &InstalledPlugin{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Category = b.Category
 	return m0
 }
 
@@ -1525,21 +1600,23 @@ const file_steeleagle_protocol_v1_services_eagled_eagled_proto_rawDesc = "" +
 	"\rVehicleResult\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x0e\n" +
 	"\x02ok\x18\x02 \x01(\bR\x02ok\x12\x14\n" +
-	"\x05error\x18\x03 \x01(\tR\x05error\"j\n" +
-	"\x14InstallDriverRequest\x12\x12\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\"\xbe\x01\n" +
+	"\x14InstallPluginRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04repo\x18\x02 \x01(\tR\x04repo\x12\x10\n" +
 	"\x03ref\x18\x03 \x01(\tR\x03ref\x12\x18\n" +
-	"\asubpath\x18\x04 \x01(\tR\asubpath\"=\n" +
-	"\x15InstallDriverResponse\x12\x0e\n" +
+	"\asubpath\x18\x04 \x01(\tR\asubpath\x12R\n" +
+	"\bcategory\x18\x05 \x01(\x0e26.steeleagle_protocol.v1.services.eagled.PluginCategoryR\bcategory\"=\n" +
+	"\x15InstallPluginResponse\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\"\x1c\n" +
-	"\x1aGetInstalledDriversRequest\"p\n" +
-	"\x1bGetInstalledDriversResponse\x12Q\n" +
-	"\adrivers\x18\x01 \x03(\v27.steeleagle_protocol.v1.services.eagled.InstalledDriverR\adrivers\"7\n" +
-	"\x0fInstalledDriver\x12\x12\n" +
+	"\x1aGetInstalledPluginsRequest\"p\n" +
+	"\x1bGetInstalledPluginsResponse\x12Q\n" +
+	"\aplugins\x18\x01 \x03(\v27.steeleagle_protocol.v1.services.eagled.InstalledPluginR\aplugins\"\x8b\x01\n" +
+	"\x0fInstalledPlugin\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x10\n" +
-	"\x03ref\x18\x02 \x01(\tR\x03ref\"\x14\n" +
+	"\x03ref\x18\x02 \x01(\tR\x03ref\x12R\n" +
+	"\bcategory\x18\x03 \x01(\x0e26.steeleagle_protocol.v1.services.eagled.PluginCategoryR\bcategory\"\x14\n" +
 	"\x12ResetConfigRequest\"\x15\n" +
 	"\x13ResetConfigResponse\"\x16\n" +
 	"\x14RestartDaemonRequest\"\x17\n" +
@@ -1568,76 +1645,85 @@ const file_steeleagle_protocol_v1_services_eagled_eagled_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
 	"\x06driver\x18\x02 \x01(\tR\x06driver\x12\x18\n" +
 	"\arunning\x18\x03 \x01(\bR\arunning\x12\x12\n" +
-	"\x04port\x18\x04 \x01(\x05R\x04port2\xa2\n" +
+	"\x04port\x18\x04 \x01(\x05R\x04port*\x85\x01\n" +
+	"\x0ePluginCategory\x12\x1f\n" +
+	"\x1bPLUGIN_CATEGORY_UNSPECIFIED\x10\x00\x12\x1a\n" +
+	"\x16PLUGIN_CATEGORY_DRIVER\x10\x01\x12\x1b\n" +
+	"\x17PLUGIN_CATEGORY_MISSION\x10\x02\x12\x19\n" +
+	"\x15PLUGIN_CATEGORY_EXTRA\x10\x032\xa2\n" +
 	"\n" +
 	"\rDaemonService\x12\x82\x01\n" +
 	"\tConfigure\x128.steeleagle_protocol.v1.services.eagled.ConfigureRequest\x1a9.steeleagle_protocol.v1.services.eagled.ConfigureResponse\"\x00\x12\x8b\x01\n" +
 	"\fStopVehicles\x12;.steeleagle_protocol.v1.services.eagled.StopVehiclesRequest\x1a<.steeleagle_protocol.v1.services.eagled.StopVehiclesResponse\"\x00\x12\x94\x01\n" +
 	"\x0fRestartVehicles\x12>.steeleagle_protocol.v1.services.eagled.RestartVehiclesRequest\x1a?.steeleagle_protocol.v1.services.eagled.RestartVehiclesResponse\"\x00\x12\x91\x01\n" +
 	"\x0eForgetVehicles\x12=.steeleagle_protocol.v1.services.eagled.ForgetVehiclesRequest\x1a>.steeleagle_protocol.v1.services.eagled.ForgetVehiclesResponse\"\x00\x12\x8e\x01\n" +
-	"\rInstallDriver\x12<.steeleagle_protocol.v1.services.eagled.InstallDriverRequest\x1a=.steeleagle_protocol.v1.services.eagled.InstallDriverResponse\"\x00\x12\xa0\x01\n" +
-	"\x13GetInstalledDrivers\x12B.steeleagle_protocol.v1.services.eagled.GetInstalledDriversRequest\x1aC.steeleagle_protocol.v1.services.eagled.GetInstalledDriversResponse\"\x00\x12\x88\x01\n" +
+	"\rInstallPlugin\x12<.steeleagle_protocol.v1.services.eagled.InstallPluginRequest\x1a=.steeleagle_protocol.v1.services.eagled.InstallPluginResponse\"\x00\x12\xa0\x01\n" +
+	"\x13GetInstalledPlugins\x12B.steeleagle_protocol.v1.services.eagled.GetInstalledPluginsRequest\x1aC.steeleagle_protocol.v1.services.eagled.GetInstalledPluginsResponse\"\x00\x12\x88\x01\n" +
 	"\vResetConfig\x12:.steeleagle_protocol.v1.services.eagled.ResetConfigRequest\x1a;.steeleagle_protocol.v1.services.eagled.ResetConfigResponse\"\x00\x12\x8e\x01\n" +
 	"\rRestartDaemon\x12<.steeleagle_protocol.v1.services.eagled.RestartDaemonRequest\x1a=.steeleagle_protocol.v1.services.eagled.RestartDaemonResponse\"\x00\x12\x82\x01\n" +
 	"\tGetStatus\x128.steeleagle_protocol.v1.services.eagled.GetStatusRequest\x1a9.steeleagle_protocol.v1.services.eagled.GetStatusResponse\"\x00B\xc2\x02\n" +
 	"*com.steeleagle_protocol.v1.services.eagledB\vEagledProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/eagled\xa2\x02\x04SVSE\xaa\x02%SteeleagleProtocol.V1.Services.Eagled\xca\x02%SteeleagleProtocol\\V1\\Services\\Eagled\xe2\x021SteeleagleProtocol\\V1\\Services\\Eagled\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Services::Eagledb\x06proto3"
 
+var file_steeleagle_protocol_v1_services_eagled_eagled_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_steeleagle_protocol_v1_services_eagled_eagled_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_steeleagle_protocol_v1_services_eagled_eagled_proto_goTypes = []any{
-	(*ConfigureRequest)(nil),            // 0: steeleagle_protocol.v1.services.eagled.ConfigureRequest
-	(*ConfigureResponse)(nil),           // 1: steeleagle_protocol.v1.services.eagled.ConfigureResponse
-	(*StopVehiclesRequest)(nil),         // 2: steeleagle_protocol.v1.services.eagled.StopVehiclesRequest
-	(*StopVehiclesResponse)(nil),        // 3: steeleagle_protocol.v1.services.eagled.StopVehiclesResponse
-	(*RestartVehiclesRequest)(nil),      // 4: steeleagle_protocol.v1.services.eagled.RestartVehiclesRequest
-	(*RestartVehiclesResponse)(nil),     // 5: steeleagle_protocol.v1.services.eagled.RestartVehiclesResponse
-	(*ForgetVehiclesRequest)(nil),       // 6: steeleagle_protocol.v1.services.eagled.ForgetVehiclesRequest
-	(*ForgetVehiclesResponse)(nil),      // 7: steeleagle_protocol.v1.services.eagled.ForgetVehiclesResponse
-	(*VehicleResult)(nil),               // 8: steeleagle_protocol.v1.services.eagled.VehicleResult
-	(*InstallDriverRequest)(nil),        // 9: steeleagle_protocol.v1.services.eagled.InstallDriverRequest
-	(*InstallDriverResponse)(nil),       // 10: steeleagle_protocol.v1.services.eagled.InstallDriverResponse
-	(*GetInstalledDriversRequest)(nil),  // 11: steeleagle_protocol.v1.services.eagled.GetInstalledDriversRequest
-	(*GetInstalledDriversResponse)(nil), // 12: steeleagle_protocol.v1.services.eagled.GetInstalledDriversResponse
-	(*InstalledDriver)(nil),             // 13: steeleagle_protocol.v1.services.eagled.InstalledDriver
-	(*ResetConfigRequest)(nil),          // 14: steeleagle_protocol.v1.services.eagled.ResetConfigRequest
-	(*ResetConfigResponse)(nil),         // 15: steeleagle_protocol.v1.services.eagled.ResetConfigResponse
-	(*RestartDaemonRequest)(nil),        // 16: steeleagle_protocol.v1.services.eagled.RestartDaemonRequest
-	(*RestartDaemonResponse)(nil),       // 17: steeleagle_protocol.v1.services.eagled.RestartDaemonResponse
-	(*GetStatusRequest)(nil),            // 18: steeleagle_protocol.v1.services.eagled.GetStatusRequest
-	(*GetStatusResponse)(nil),           // 19: steeleagle_protocol.v1.services.eagled.GetStatusResponse
-	(*DaemonConfig)(nil),                // 20: steeleagle_protocol.v1.services.eagled.DaemonConfig
-	(*VehicleStatus)(nil),               // 21: steeleagle_protocol.v1.services.eagled.VehicleStatus
+	(PluginCategory)(0),                 // 0: steeleagle_protocol.v1.services.eagled.PluginCategory
+	(*ConfigureRequest)(nil),            // 1: steeleagle_protocol.v1.services.eagled.ConfigureRequest
+	(*ConfigureResponse)(nil),           // 2: steeleagle_protocol.v1.services.eagled.ConfigureResponse
+	(*StopVehiclesRequest)(nil),         // 3: steeleagle_protocol.v1.services.eagled.StopVehiclesRequest
+	(*StopVehiclesResponse)(nil),        // 4: steeleagle_protocol.v1.services.eagled.StopVehiclesResponse
+	(*RestartVehiclesRequest)(nil),      // 5: steeleagle_protocol.v1.services.eagled.RestartVehiclesRequest
+	(*RestartVehiclesResponse)(nil),     // 6: steeleagle_protocol.v1.services.eagled.RestartVehiclesResponse
+	(*ForgetVehiclesRequest)(nil),       // 7: steeleagle_protocol.v1.services.eagled.ForgetVehiclesRequest
+	(*ForgetVehiclesResponse)(nil),      // 8: steeleagle_protocol.v1.services.eagled.ForgetVehiclesResponse
+	(*VehicleResult)(nil),               // 9: steeleagle_protocol.v1.services.eagled.VehicleResult
+	(*InstallPluginRequest)(nil),        // 10: steeleagle_protocol.v1.services.eagled.InstallPluginRequest
+	(*InstallPluginResponse)(nil),       // 11: steeleagle_protocol.v1.services.eagled.InstallPluginResponse
+	(*GetInstalledPluginsRequest)(nil),  // 12: steeleagle_protocol.v1.services.eagled.GetInstalledPluginsRequest
+	(*GetInstalledPluginsResponse)(nil), // 13: steeleagle_protocol.v1.services.eagled.GetInstalledPluginsResponse
+	(*InstalledPlugin)(nil),             // 14: steeleagle_protocol.v1.services.eagled.InstalledPlugin
+	(*ResetConfigRequest)(nil),          // 15: steeleagle_protocol.v1.services.eagled.ResetConfigRequest
+	(*ResetConfigResponse)(nil),         // 16: steeleagle_protocol.v1.services.eagled.ResetConfigResponse
+	(*RestartDaemonRequest)(nil),        // 17: steeleagle_protocol.v1.services.eagled.RestartDaemonRequest
+	(*RestartDaemonResponse)(nil),       // 18: steeleagle_protocol.v1.services.eagled.RestartDaemonResponse
+	(*GetStatusRequest)(nil),            // 19: steeleagle_protocol.v1.services.eagled.GetStatusRequest
+	(*GetStatusResponse)(nil),           // 20: steeleagle_protocol.v1.services.eagled.GetStatusResponse
+	(*DaemonConfig)(nil),                // 21: steeleagle_protocol.v1.services.eagled.DaemonConfig
+	(*VehicleStatus)(nil),               // 22: steeleagle_protocol.v1.services.eagled.VehicleStatus
 }
 var file_steeleagle_protocol_v1_services_eagled_eagled_proto_depIdxs = []int32{
-	8,  // 0: steeleagle_protocol.v1.services.eagled.ConfigureResponse.vehicles:type_name -> steeleagle_protocol.v1.services.eagled.VehicleResult
-	8,  // 1: steeleagle_protocol.v1.services.eagled.StopVehiclesResponse.vehicles:type_name -> steeleagle_protocol.v1.services.eagled.VehicleResult
-	8,  // 2: steeleagle_protocol.v1.services.eagled.RestartVehiclesResponse.vehicles:type_name -> steeleagle_protocol.v1.services.eagled.VehicleResult
-	8,  // 3: steeleagle_protocol.v1.services.eagled.ForgetVehiclesResponse.vehicles:type_name -> steeleagle_protocol.v1.services.eagled.VehicleResult
-	13, // 4: steeleagle_protocol.v1.services.eagled.GetInstalledDriversResponse.drivers:type_name -> steeleagle_protocol.v1.services.eagled.InstalledDriver
-	20, // 5: steeleagle_protocol.v1.services.eagled.GetStatusResponse.config:type_name -> steeleagle_protocol.v1.services.eagled.DaemonConfig
-	21, // 6: steeleagle_protocol.v1.services.eagled.GetStatusResponse.vehicles:type_name -> steeleagle_protocol.v1.services.eagled.VehicleStatus
-	0,  // 7: steeleagle_protocol.v1.services.eagled.DaemonService.Configure:input_type -> steeleagle_protocol.v1.services.eagled.ConfigureRequest
-	2,  // 8: steeleagle_protocol.v1.services.eagled.DaemonService.StopVehicles:input_type -> steeleagle_protocol.v1.services.eagled.StopVehiclesRequest
-	4,  // 9: steeleagle_protocol.v1.services.eagled.DaemonService.RestartVehicles:input_type -> steeleagle_protocol.v1.services.eagled.RestartVehiclesRequest
-	6,  // 10: steeleagle_protocol.v1.services.eagled.DaemonService.ForgetVehicles:input_type -> steeleagle_protocol.v1.services.eagled.ForgetVehiclesRequest
-	9,  // 11: steeleagle_protocol.v1.services.eagled.DaemonService.InstallDriver:input_type -> steeleagle_protocol.v1.services.eagled.InstallDriverRequest
-	11, // 12: steeleagle_protocol.v1.services.eagled.DaemonService.GetInstalledDrivers:input_type -> steeleagle_protocol.v1.services.eagled.GetInstalledDriversRequest
-	14, // 13: steeleagle_protocol.v1.services.eagled.DaemonService.ResetConfig:input_type -> steeleagle_protocol.v1.services.eagled.ResetConfigRequest
-	16, // 14: steeleagle_protocol.v1.services.eagled.DaemonService.RestartDaemon:input_type -> steeleagle_protocol.v1.services.eagled.RestartDaemonRequest
-	18, // 15: steeleagle_protocol.v1.services.eagled.DaemonService.GetStatus:input_type -> steeleagle_protocol.v1.services.eagled.GetStatusRequest
-	1,  // 16: steeleagle_protocol.v1.services.eagled.DaemonService.Configure:output_type -> steeleagle_protocol.v1.services.eagled.ConfigureResponse
-	3,  // 17: steeleagle_protocol.v1.services.eagled.DaemonService.StopVehicles:output_type -> steeleagle_protocol.v1.services.eagled.StopVehiclesResponse
-	5,  // 18: steeleagle_protocol.v1.services.eagled.DaemonService.RestartVehicles:output_type -> steeleagle_protocol.v1.services.eagled.RestartVehiclesResponse
-	7,  // 19: steeleagle_protocol.v1.services.eagled.DaemonService.ForgetVehicles:output_type -> steeleagle_protocol.v1.services.eagled.ForgetVehiclesResponse
-	10, // 20: steeleagle_protocol.v1.services.eagled.DaemonService.InstallDriver:output_type -> steeleagle_protocol.v1.services.eagled.InstallDriverResponse
-	12, // 21: steeleagle_protocol.v1.services.eagled.DaemonService.GetInstalledDrivers:output_type -> steeleagle_protocol.v1.services.eagled.GetInstalledDriversResponse
-	15, // 22: steeleagle_protocol.v1.services.eagled.DaemonService.ResetConfig:output_type -> steeleagle_protocol.v1.services.eagled.ResetConfigResponse
-	17, // 23: steeleagle_protocol.v1.services.eagled.DaemonService.RestartDaemon:output_type -> steeleagle_protocol.v1.services.eagled.RestartDaemonResponse
-	19, // 24: steeleagle_protocol.v1.services.eagled.DaemonService.GetStatus:output_type -> steeleagle_protocol.v1.services.eagled.GetStatusResponse
-	16, // [16:25] is the sub-list for method output_type
-	7,  // [7:16] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	9,  // 0: steeleagle_protocol.v1.services.eagled.ConfigureResponse.vehicles:type_name -> steeleagle_protocol.v1.services.eagled.VehicleResult
+	9,  // 1: steeleagle_protocol.v1.services.eagled.StopVehiclesResponse.vehicles:type_name -> steeleagle_protocol.v1.services.eagled.VehicleResult
+	9,  // 2: steeleagle_protocol.v1.services.eagled.RestartVehiclesResponse.vehicles:type_name -> steeleagle_protocol.v1.services.eagled.VehicleResult
+	9,  // 3: steeleagle_protocol.v1.services.eagled.ForgetVehiclesResponse.vehicles:type_name -> steeleagle_protocol.v1.services.eagled.VehicleResult
+	0,  // 4: steeleagle_protocol.v1.services.eagled.InstallPluginRequest.category:type_name -> steeleagle_protocol.v1.services.eagled.PluginCategory
+	14, // 5: steeleagle_protocol.v1.services.eagled.GetInstalledPluginsResponse.plugins:type_name -> steeleagle_protocol.v1.services.eagled.InstalledPlugin
+	0,  // 6: steeleagle_protocol.v1.services.eagled.InstalledPlugin.category:type_name -> steeleagle_protocol.v1.services.eagled.PluginCategory
+	21, // 7: steeleagle_protocol.v1.services.eagled.GetStatusResponse.config:type_name -> steeleagle_protocol.v1.services.eagled.DaemonConfig
+	22, // 8: steeleagle_protocol.v1.services.eagled.GetStatusResponse.vehicles:type_name -> steeleagle_protocol.v1.services.eagled.VehicleStatus
+	1,  // 9: steeleagle_protocol.v1.services.eagled.DaemonService.Configure:input_type -> steeleagle_protocol.v1.services.eagled.ConfigureRequest
+	3,  // 10: steeleagle_protocol.v1.services.eagled.DaemonService.StopVehicles:input_type -> steeleagle_protocol.v1.services.eagled.StopVehiclesRequest
+	5,  // 11: steeleagle_protocol.v1.services.eagled.DaemonService.RestartVehicles:input_type -> steeleagle_protocol.v1.services.eagled.RestartVehiclesRequest
+	7,  // 12: steeleagle_protocol.v1.services.eagled.DaemonService.ForgetVehicles:input_type -> steeleagle_protocol.v1.services.eagled.ForgetVehiclesRequest
+	10, // 13: steeleagle_protocol.v1.services.eagled.DaemonService.InstallPlugin:input_type -> steeleagle_protocol.v1.services.eagled.InstallPluginRequest
+	12, // 14: steeleagle_protocol.v1.services.eagled.DaemonService.GetInstalledPlugins:input_type -> steeleagle_protocol.v1.services.eagled.GetInstalledPluginsRequest
+	15, // 15: steeleagle_protocol.v1.services.eagled.DaemonService.ResetConfig:input_type -> steeleagle_protocol.v1.services.eagled.ResetConfigRequest
+	17, // 16: steeleagle_protocol.v1.services.eagled.DaemonService.RestartDaemon:input_type -> steeleagle_protocol.v1.services.eagled.RestartDaemonRequest
+	19, // 17: steeleagle_protocol.v1.services.eagled.DaemonService.GetStatus:input_type -> steeleagle_protocol.v1.services.eagled.GetStatusRequest
+	2,  // 18: steeleagle_protocol.v1.services.eagled.DaemonService.Configure:output_type -> steeleagle_protocol.v1.services.eagled.ConfigureResponse
+	4,  // 19: steeleagle_protocol.v1.services.eagled.DaemonService.StopVehicles:output_type -> steeleagle_protocol.v1.services.eagled.StopVehiclesResponse
+	6,  // 20: steeleagle_protocol.v1.services.eagled.DaemonService.RestartVehicles:output_type -> steeleagle_protocol.v1.services.eagled.RestartVehiclesResponse
+	8,  // 21: steeleagle_protocol.v1.services.eagled.DaemonService.ForgetVehicles:output_type -> steeleagle_protocol.v1.services.eagled.ForgetVehiclesResponse
+	11, // 22: steeleagle_protocol.v1.services.eagled.DaemonService.InstallPlugin:output_type -> steeleagle_protocol.v1.services.eagled.InstallPluginResponse
+	13, // 23: steeleagle_protocol.v1.services.eagled.DaemonService.GetInstalledPlugins:output_type -> steeleagle_protocol.v1.services.eagled.GetInstalledPluginsResponse
+	16, // 24: steeleagle_protocol.v1.services.eagled.DaemonService.ResetConfig:output_type -> steeleagle_protocol.v1.services.eagled.ResetConfigResponse
+	18, // 25: steeleagle_protocol.v1.services.eagled.DaemonService.RestartDaemon:output_type -> steeleagle_protocol.v1.services.eagled.RestartDaemonResponse
+	20, // 26: steeleagle_protocol.v1.services.eagled.DaemonService.GetStatus:output_type -> steeleagle_protocol.v1.services.eagled.GetStatusResponse
+	18, // [18:27] is the sub-list for method output_type
+	9,  // [9:18] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_steeleagle_protocol_v1_services_eagled_eagled_proto_init() }
@@ -1650,13 +1736,14 @@ func file_steeleagle_protocol_v1_services_eagled_eagled_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_services_eagled_eagled_proto_rawDesc), len(file_steeleagle_protocol_v1_services_eagled_eagled_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_steeleagle_protocol_v1_services_eagled_eagled_proto_goTypes,
 		DependencyIndexes: file_steeleagle_protocol_v1_services_eagled_eagled_proto_depIdxs,
+		EnumInfos:         file_steeleagle_protocol_v1_services_eagled_eagled_proto_enumTypes,
 		MessageInfos:      file_steeleagle_protocol_v1_services_eagled_eagled_proto_msgTypes,
 	}.Build()
 	File_steeleagle_protocol_v1_services_eagled_eagled_proto = out.File

@@ -493,7 +493,7 @@ requires-dist = [
     { name = "redis" },
     { name = "requests" },
     { name = "rich" },
-    { name = "steeleagle-protocol", specifier = ">=0.1.11" },
+    { name = "steeleagle-protocol", specifier = ">=0.1.16" },
     { name = "steeleagle-sdk", editable = "../../../../steeleagle/sdk" },
     { name = "toml" },
     { name = "uvicorn" },
@@ -1615,15 +1615,15 @@ wheels = [
 
 [[package]]
 name = "steeleagle-protocol"
-version = "0.1.11"
+version = "0.1.16"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "grpcio" },
     { name = "protobuf" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f9/36/b21d5468f1f5955ad9dd2b2a21cfbe698744495e270c8159089944a0e2bf/steeleagle_protocol-0.1.11.tar.gz", hash = "sha256:01aa7ee0f062cc7735ac16ad4963b024bbd8a47cb1d387fe3adf1223b6cb71a9", size = 21123, upload-time = "2026-07-23T20:50:09.912Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/57/cd/1d659466102696247de2f94e8a1f2c26750d55a6fdc4dd56802e70d726ac/steeleagle_protocol-0.1.16.tar.gz", hash = "sha256:745eb6bad85ca36f4c381fce3dcf26a907c1ee5cf3c62d759bccd1e10a86fe21", size = 21506, upload-time = "2026-08-02T05:25:40.018Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9d/d5/7b54977dbfa8420c0e3c3b9ec333771e4424124fbbdf75ae752aaea4e1c8/steeleagle_protocol-0.1.11-py3-none-any.whl", hash = "sha256:a95b83d467be55c322fcfd527bc4d42af7872e7ee710c43e989a919711d01350", size = 33291, upload-time = "2026-07-23T20:50:09.023Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/f8/80405476a7d8b870ef16668a566ee25d8184a6a58f2ef18af2d20da37e2a/steeleagle_protocol-0.1.16-py3-none-any.whl", hash = "sha256:3c0d8ce61513a0cc5f17d14e80068305daef07bfc4108a7a1b45a99acf4f4b45", size = 35870, upload-time = "2026-08-02T05:25:38.835Z" },
 ]
 
 [[package]]

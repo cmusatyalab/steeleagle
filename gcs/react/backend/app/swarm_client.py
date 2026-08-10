@@ -45,7 +45,7 @@ class SwarmClient:
     ) -> list[VehicleResult]:
         request = swarm_pb2.SwarmTakeOffRequest(
             vehicles=vehicles,
-            request=control_pb2.TakeOffRequest(take_off_altitude=altitude),
+            request=control_pb2.TakeOffRequest(altitude=altitude),
         )
         return await _collect_stream(self._stub.SwarmTakeOff(request))
 
@@ -69,7 +69,7 @@ class SwarmClient:
 
     async def stop_mission(self, vehicles: list[str]) -> list[VehicleResult]:
         request = swarm_pb2.SwarmStopMissionRequest(
-            vehicles=vehicles, request=mission_pb2.StopMissionResponse()
+            vehicles=vehicles, request=mission_pb2.StopMissionRequest()
         )
         return await _collect_stream(self._stub.SwarmStopMission(request))
 

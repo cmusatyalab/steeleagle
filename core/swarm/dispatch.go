@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -16,6 +17,7 @@ import (
 type vehicleDialer interface {
 	clientConn(vehicleName string) (*grpc.ClientConn, error)
 	callTimeout() time.Duration
+	logger() zerolog.Logger
 }
 
 // dispatch resolves+dials each named vehicle, invokes call against it
@@ -25,6 +27,7 @@ type vehicleDialer interface {
 // buildResponse), so a failure never aborts the overall RPC.
 func dispatch[Req, DriverResp, Resp any](
 	d vehicleDialer,
+	rpcName string,
 	vehicles []string,
 	stream grpc.ServerStreamingServer[Resp],
 	req *Req,
@@ -32,6 +35,7 @@ func dispatch[Req, DriverResp, Resp any](
 	buildResp func(vehicle string, resp *DriverResp, err error) *Resp,
 ) error {
 	ctx := stream.Context()
+	log := d.logger()
 	results := make(chan *Resp, len(vehicles))
 	var wg sync.WaitGroup
 	for _, vehicle := range vehicles {
@@ -44,6 +48,11 @@ func dispatch[Req, DriverResp, Resp any](
 				rpcCtx, cancel := context.WithTimeout(ctx, d.callTimeout())
 				defer cancel()
 				resp, err = sendRpc(rpcCtx, conn, req)
+			}
+			if err != nil {
+				log.Warn().Str("vehicle", vehicle).Str("rpc", rpcName).Err(err).Msg("vehicle command failed")
+			} else {
+				log.Debug().Str("vehicle", vehicle).Str("rpc", rpcName).Msg("vehicle command dispatched")
 			}
 			results <- buildResp(vehicle, resp, err)
 		}(vehicle)

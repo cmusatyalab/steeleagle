@@ -17,8 +17,8 @@ import (
 // defaultCallTimeout bounds each per-vehicle proxied call.
 const defaultCallTimeout = 5 * time.Second
 
-// SwarmServer implements swarmpb.SwarmServiceServer, proxying each request to the
-// targeted vehicles' driver/mission services.
+// SwarmServer implements swarmpb.SwarmServiceServer, proxying each request to
+// the targeted vehicles' driver/mission services.
 type SwarmServer struct {
 	swarmpb.UnimplementedSwarmServiceServer
 	resolver VehicleResolver // resolves vehicle names to addresses
@@ -27,18 +27,22 @@ type SwarmServer struct {
 	log      zerolog.Logger  // logger object
 }
 
-// NewSwarmServer creates a new swarm server that reaches vehicles through the given
-// VehicleResolver.
+// NewSwarmServer creates a new swarm server that reaches vehicles through the
+// given VehicleResolver.
 func NewSwarmServer(resolver VehicleResolver, options ...Option) *SwarmServer {
 	s := &SwarmServer{
 		resolver: resolver,
-		pool:     newConnPool(),
 		timeout:  defaultCallTimeout,
 		log:      zerolog.New(os.Stderr).With().Timestamp().Logger(),
 	}
+	// Built before options run: WithDialer writes into s.pool directly, so
+	// it must already exist.
+	s.pool = newConnPool(s.log)
 	for _, option := range options {
 		option(s)
 	}
+	// Re-synced after options run in case WithLogger overrode s.log above.
+	s.pool.log = s.log
 	return s
 }
 
@@ -56,6 +60,12 @@ func (s *SwarmServer) callTimeout() time.Duration {
 	return s.timeout
 }
 
+// logger returns the logger dispatch uses to report per-vehicle command
+// outcomes.
+func (s *SwarmServer) logger() zerolog.Logger {
+	return s.log
+}
+
 // Close closes every pooled connection to a vehicle.
 func (s *SwarmServer) Close() {
 	s.pool.close()
@@ -67,6 +77,7 @@ func (s *SwarmServer) SwarmTakeOff(
 ) error {
 	return dispatch(
 		s,
+		"SwarmTakeOff",
 		req.GetVehicles(),
 		stream,
 		req.GetRequest(),
@@ -91,6 +102,7 @@ func (s *SwarmServer) SwarmLand(
 ) error {
 	return dispatch(
 		s,
+		"SwarmLand",
 		req.GetVehicles(),
 		stream,
 		req.GetRequest(),
@@ -115,6 +127,7 @@ func (s *SwarmServer) SwarmHold(
 ) error {
 	return dispatch(
 		s,
+		"SwarmHold",
 		req.GetVehicles(),
 		stream,
 		req.GetRequest(),
@@ -139,6 +152,7 @@ func (s *SwarmServer) SwarmKill(
 ) error {
 	return dispatch(
 		s,
+		"SwarmKill",
 		req.GetVehicles(),
 		stream,
 		req.GetRequest(),
@@ -163,6 +177,7 @@ func (s *SwarmServer) SwarmReturnToHome(
 ) error {
 	return dispatch(
 		s,
+		"SwarmReturnToHome",
 		req.GetVehicles(),
 		stream,
 		req.GetRequest(),
@@ -187,6 +202,7 @@ func (s *SwarmServer) SwarmSetVelocity(
 ) error {
 	return dispatch(
 		s,
+		"SwarmSetVelocity",
 		req.GetVehicles(),
 		stream,
 		req.GetRequest(),
@@ -211,6 +227,7 @@ func (s *SwarmServer) SwarmSetGimbalPose(
 ) error {
 	return dispatch(
 		s,
+		"SwarmSetGimbalPose",
 		req.GetVehicles(),
 		stream,
 		req.GetRequest(),
@@ -235,6 +252,7 @@ func (s *SwarmServer) SwarmStartMission(
 ) error {
 	return dispatch(
 		s,
+		"SwarmStartMission",
 		req.GetVehicles(),
 		stream,
 		req.GetRequest(),
@@ -259,6 +277,7 @@ func (s *SwarmServer) SwarmUploadMission(
 ) error {
 	return dispatch(
 		s,
+		"SwarmUploadMission",
 		req.GetVehicles(),
 		stream,
 		req.GetRequest(),
@@ -283,6 +302,7 @@ func (s *SwarmServer) SwarmStopMission(
 ) error {
 	return dispatch(
 		s,
+		"SwarmStopMission",
 		req.GetVehicles(),
 		stream,
 		req.GetRequest(),

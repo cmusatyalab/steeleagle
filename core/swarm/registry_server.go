@@ -3,8 +3,10 @@ package swarm
 import (
 	"net"
 	"net/netip"
+	"os"
 
 	swarmpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/swarm"
+	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/peer"
@@ -17,10 +19,14 @@ import (
 type RegistryServer struct {
 	swarmpb.UnimplementedRegistryServiceServer
 	registry *Registry
+	log      zerolog.Logger
 }
 
 func NewRegistryServer(registry *Registry) *RegistryServer {
-	return &RegistryServer{registry: registry}
+	return &RegistryServer{
+		registry: registry,
+		log:      zerolog.New(os.Stderr).With().Timestamp().Logger(),
+	}
 }
 
 func (s *RegistryServer) Register(
@@ -48,7 +54,15 @@ func (s *RegistryServer) Register(
 	addr := netip.AddrPortFrom(tcpAddr.AddrPort().Addr(), uint16(req.GetPort()))
 
 	unregister := s.registry.Register(req.GetName(), addr)
-	defer unregister()
+	s.log.Info().
+		Str("vehicle", req.GetName()).
+		Str("daemon", req.GetDaemonName()).
+		Str("addr", addr.String()).
+		Msg("vehicle registered")
+	defer func() {
+		unregister()
+		s.log.Info().Str("vehicle", req.GetName()).Msg("vehicle unregistered")
+	}()
 
 	if err := stream.Send(swarmpb.RegisterResponse_builder{}.Build()); err != nil {
 		return err

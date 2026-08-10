@@ -146,7 +146,7 @@ async def test_take_off_sends_altitude(swarm_client_factory):
 
     sent = servicer.received["SwarmTakeOff"][0]
     assert list(sent.vehicles) == ["drone1"]
-    assert sent.request.take_off_altitude == pytest.approx(12.5)
+    assert sent.request.altitude == pytest.approx(12.5)
 
 
 async def test_land(swarm_client_factory):

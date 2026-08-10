@@ -2,9 +2,14 @@ package vehicle
 
 import (
 	_ "embed"
+	"time"
 
 	"github.com/cmusatyalab/steeleagle/core/util"
 )
+
+// streamRetryDelay is how long startDriverStreaming waits before retrying a
+// broken telemetry or video stream,
+const streamRetryDelay = 250 * time.Millisecond
 
 // VideoStreamType determines the type of video streaming that the vehicle
 // uses. RTSP will forward an existing RTSP stream from the driver. Frames will

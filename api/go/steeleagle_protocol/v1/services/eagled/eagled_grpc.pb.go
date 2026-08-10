@@ -27,8 +27,8 @@ const (
 	DaemonService_StopVehicles_FullMethodName        = "/steeleagle_protocol.v1.services.eagled.DaemonService/StopVehicles"
 	DaemonService_RestartVehicles_FullMethodName     = "/steeleagle_protocol.v1.services.eagled.DaemonService/RestartVehicles"
 	DaemonService_ForgetVehicles_FullMethodName      = "/steeleagle_protocol.v1.services.eagled.DaemonService/ForgetVehicles"
-	DaemonService_InstallDriver_FullMethodName       = "/steeleagle_protocol.v1.services.eagled.DaemonService/InstallDriver"
-	DaemonService_GetInstalledDrivers_FullMethodName = "/steeleagle_protocol.v1.services.eagled.DaemonService/GetInstalledDrivers"
+	DaemonService_InstallPlugin_FullMethodName       = "/steeleagle_protocol.v1.services.eagled.DaemonService/InstallPlugin"
+	DaemonService_GetInstalledPlugins_FullMethodName = "/steeleagle_protocol.v1.services.eagled.DaemonService/GetInstalledPlugins"
 	DaemonService_ResetConfig_FullMethodName         = "/steeleagle_protocol.v1.services.eagled.DaemonService/ResetConfig"
 	DaemonService_RestartDaemon_FullMethodName       = "/steeleagle_protocol.v1.services.eagled.DaemonService/RestartDaemon"
 	DaemonService_GetStatus_FullMethodName           = "/steeleagle_protocol.v1.services.eagled.DaemonService/GetStatus"
@@ -68,15 +68,15 @@ type DaemonServiceClient interface {
 	// eagled restart unless reconfigured. A name that isn't known to this daemon
 	// is reported as a per-vehicle failure rather than aborting the whole call.
 	ForgetVehicles(ctx context.Context, in *ForgetVehiclesRequest, opts ...grpc.CallOption) (*ForgetVehiclesResponse, error)
-	// Fetch a driver plugin from a git repository at a pinned commit and install
-	// it under this name, running the driver's own install.sh and only replacing
+	// Fetch a plugin from a git repository at a pinned commit and install it
+	// under this name, running the plugin's own install.sh and only replacing
 	// whatever was previously installed under this name if it exits zero.
-	// Separate from starting a vehicle, so a driver can be staged ahead of time
+	// Separate from starting a vehicle, so a plugin can be staged ahead of time
 	// and StartVehicle/Configure never has to wait on a network fetch.
-	InstallDriver(ctx context.Context, in *InstallDriverRequest, opts ...grpc.CallOption) (*InstallDriverResponse, error)
-	// List every driver name this daemon has installed and the ref it was last
-	// installed at.
-	GetInstalledDrivers(ctx context.Context, in *GetInstalledDriversRequest, opts ...grpc.CallOption) (*GetInstalledDriversResponse, error)
+	InstallPlugin(ctx context.Context, in *InstallPluginRequest, opts ...grpc.CallOption) (*InstallPluginResponse, error)
+	// List every plugin this daemon has installed, the ref it was last installed
+	// at, and its category.
+	GetInstalledPlugins(ctx context.Context, in *GetInstalledPluginsRequest, opts ...grpc.CallOption) (*GetInstalledPluginsResponse, error)
 	// Delete the persisted config and terminate the daemon process, relying on
 	// systemd to bring it back up unconfigured, as if freshly installed. Every
 	// currently-running vehicle is torn down as part of that shutdown. This is
@@ -140,20 +140,20 @@ func (c *daemonServiceClient) ForgetVehicles(ctx context.Context, in *ForgetVehi
 	return out, nil
 }
 
-func (c *daemonServiceClient) InstallDriver(ctx context.Context, in *InstallDriverRequest, opts ...grpc.CallOption) (*InstallDriverResponse, error) {
+func (c *daemonServiceClient) InstallPlugin(ctx context.Context, in *InstallPluginRequest, opts ...grpc.CallOption) (*InstallPluginResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(InstallDriverResponse)
-	err := c.cc.Invoke(ctx, DaemonService_InstallDriver_FullMethodName, in, out, cOpts...)
+	out := new(InstallPluginResponse)
+	err := c.cc.Invoke(ctx, DaemonService_InstallPlugin_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *daemonServiceClient) GetInstalledDrivers(ctx context.Context, in *GetInstalledDriversRequest, opts ...grpc.CallOption) (*GetInstalledDriversResponse, error) {
+func (c *daemonServiceClient) GetInstalledPlugins(ctx context.Context, in *GetInstalledPluginsRequest, opts ...grpc.CallOption) (*GetInstalledPluginsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetInstalledDriversResponse)
-	err := c.cc.Invoke(ctx, DaemonService_GetInstalledDrivers_FullMethodName, in, out, cOpts...)
+	out := new(GetInstalledPluginsResponse)
+	err := c.cc.Invoke(ctx, DaemonService_GetInstalledPlugins_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -224,15 +224,15 @@ type DaemonServiceServer interface {
 	// eagled restart unless reconfigured. A name that isn't known to this daemon
 	// is reported as a per-vehicle failure rather than aborting the whole call.
 	ForgetVehicles(context.Context, *ForgetVehiclesRequest) (*ForgetVehiclesResponse, error)
-	// Fetch a driver plugin from a git repository at a pinned commit and install
-	// it under this name, running the driver's own install.sh and only replacing
+	// Fetch a plugin from a git repository at a pinned commit and install it
+	// under this name, running the plugin's own install.sh and only replacing
 	// whatever was previously installed under this name if it exits zero.
-	// Separate from starting a vehicle, so a driver can be staged ahead of time
+	// Separate from starting a vehicle, so a plugin can be staged ahead of time
 	// and StartVehicle/Configure never has to wait on a network fetch.
-	InstallDriver(context.Context, *InstallDriverRequest) (*InstallDriverResponse, error)
-	// List every driver name this daemon has installed and the ref it was last
-	// installed at.
-	GetInstalledDrivers(context.Context, *GetInstalledDriversRequest) (*GetInstalledDriversResponse, error)
+	InstallPlugin(context.Context, *InstallPluginRequest) (*InstallPluginResponse, error)
+	// List every plugin this daemon has installed, the ref it was last installed
+	// at, and its category.
+	GetInstalledPlugins(context.Context, *GetInstalledPluginsRequest) (*GetInstalledPluginsResponse, error)
 	// Delete the persisted config and terminate the daemon process, relying on
 	// systemd to bring it back up unconfigured, as if freshly installed. Every
 	// currently-running vehicle is torn down as part of that shutdown. This is
@@ -268,11 +268,11 @@ func (UnimplementedDaemonServiceServer) RestartVehicles(context.Context, *Restar
 func (UnimplementedDaemonServiceServer) ForgetVehicles(context.Context, *ForgetVehiclesRequest) (*ForgetVehiclesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ForgetVehicles not implemented")
 }
-func (UnimplementedDaemonServiceServer) InstallDriver(context.Context, *InstallDriverRequest) (*InstallDriverResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method InstallDriver not implemented")
+func (UnimplementedDaemonServiceServer) InstallPlugin(context.Context, *InstallPluginRequest) (*InstallPluginResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method InstallPlugin not implemented")
 }
-func (UnimplementedDaemonServiceServer) GetInstalledDrivers(context.Context, *GetInstalledDriversRequest) (*GetInstalledDriversResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetInstalledDrivers not implemented")
+func (UnimplementedDaemonServiceServer) GetInstalledPlugins(context.Context, *GetInstalledPluginsRequest) (*GetInstalledPluginsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetInstalledPlugins not implemented")
 }
 func (UnimplementedDaemonServiceServer) ResetConfig(context.Context, *ResetConfigRequest) (*ResetConfigResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ResetConfig not implemented")
@@ -376,38 +376,38 @@ func _DaemonService_ForgetVehicles_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DaemonService_InstallDriver_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(InstallDriverRequest)
+func _DaemonService_InstallPlugin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InstallPluginRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DaemonServiceServer).InstallDriver(ctx, in)
+		return srv.(DaemonServiceServer).InstallPlugin(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: DaemonService_InstallDriver_FullMethodName,
+		FullMethod: DaemonService_InstallPlugin_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DaemonServiceServer).InstallDriver(ctx, req.(*InstallDriverRequest))
+		return srv.(DaemonServiceServer).InstallPlugin(ctx, req.(*InstallPluginRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DaemonService_GetInstalledDrivers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetInstalledDriversRequest)
+func _DaemonService_GetInstalledPlugins_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetInstalledPluginsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DaemonServiceServer).GetInstalledDrivers(ctx, in)
+		return srv.(DaemonServiceServer).GetInstalledPlugins(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: DaemonService_GetInstalledDrivers_FullMethodName,
+		FullMethod: DaemonService_GetInstalledPlugins_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DaemonServiceServer).GetInstalledDrivers(ctx, req.(*GetInstalledDriversRequest))
+		return srv.(DaemonServiceServer).GetInstalledPlugins(ctx, req.(*GetInstalledPluginsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -490,12 +490,12 @@ var DaemonService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _DaemonService_ForgetVehicles_Handler,
 		},
 		{
-			MethodName: "InstallDriver",
-			Handler:    _DaemonService_InstallDriver_Handler,
+			MethodName: "InstallPlugin",
+			Handler:    _DaemonService_InstallPlugin_Handler,
 		},
 		{
-			MethodName: "GetInstalledDrivers",
-			Handler:    _DaemonService_GetInstalledDrivers_Handler,
+			MethodName: "GetInstalledPlugins",
+			Handler:    _DaemonService_GetInstalledPlugins_Handler,
 		},
 		{
 			MethodName: "ResetConfig",

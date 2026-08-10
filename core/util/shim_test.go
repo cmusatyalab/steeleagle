@@ -35,6 +35,7 @@ func TestShimPlugin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't start command: %v", err)
 	}
+	defer cmd.Wait()
 	acl.AddPID(cmd.Process.Pid)
 	ln, conn, err := plugin.Start(t.Context())
 	if err != nil {
