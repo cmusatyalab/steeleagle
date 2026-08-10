@@ -36,25 +36,35 @@ type AviaryConfig struct {
 	Dir string `toml:"dir,omitempty"`
 }
 
+// PluginRef names an installed plugin and the rguments to launch it with. Args
+// is optional.
+type PluginRef struct {
+	Name string   `toml:"name"`
+	Args []string `toml:"args,omitempty"`
+}
+
 // VehicleConfig models a single [[vehicles]] entry — one vehicle this daemon
 // hosts.
 type VehicleConfig struct {
 	Name      string  `toml:"name"`
-	Driver    string  `toml:"driver,omitempty"`
 	Simulate  bool    `toml:"simulate,omitempty"`  // connect vehicle to shared aviary simulator
 	Interface string  `toml:"interface,omitempty"` // aviary driver interface; defaults to DefaultAviaryInterface
 	Lat       float64 `toml:"lat,omitempty"`
 	Lon       float64 `toml:"lon,omitempty"`
 	Alt       float64 `toml:"alt,omitempty"`
 
+	// Driver names a plugin installed via InstallPlugin under
+	// PLUGIN_CATEGORY_DRIVER. Required unless Simulate is true, in which case
+	// it's ignored and the vehicle instead connects to the shared aviary
+	// simulator.
+	Driver *PluginRef `toml:"driver,omitempty"`
 	// Mission, if set, names a plugin installed via InstallPlugin under
-	// PLUGIN_CATEGORY_MISSION. Optional -- a vehicle runs fine with no
-	// mission plugin.
-	Mission string `toml:"mission,omitempty"`
+	// PLUGIN_CATEGORY_MISSION. Optional, a vehicle runs fine with no mission
+	// plugin.
+	Mission *PluginRef `toml:"mission,omitempty"`
 	// Plugins names additional plugins installed under
-	// PLUGIN_CATEGORY_EXTRA, started alongside the vehicle but not wired
-	// into its ControlService/StreamService/MissionService proxying.
-	Plugins []string `toml:"plugins,omitempty"`
+	// PLUGIN_CATEGORY_EXTRA.
+	Plugins []PluginRef `toml:"plugins,omitempty"`
 
 	// Video overrides this vehicle's video stream config. If omitted,
 	// simulated vehicles default to "frames" and every other vehicle defaults

@@ -181,51 +181,72 @@ func installedPluginPath(name, category string) (string, error) {
 
 // newDriverPlugin builds the driver plugin for vehicleCfg: a shim attached
 // to the shared aviary simulator's socket for that vehicle if Simulate is
-// set, or a plugin installed under PLUGIN_CATEGORY_DRIVER otherwise.
+// set, or a plugin installed under PLUGIN_CATEGORY_DRIVER otherwise. Driver
+// is ignored when Simulate is true -- including any Args on it, since the
+// shim wraps an already-running aviary process rather than spawning one.
 func newDriverPlugin(vehicleCfg VehicleConfig, pluginDir string) (util.Plugin, error) {
 	if vehicleCfg.Simulate {
 		return util.CreateShimPlugin(aviarySocketPath(pluginDir, vehicleCfg.Name), "")
 	}
-	path, err := installedPluginPath(vehicleCfg.Driver, categoryDriver)
+	var name string
+	var args []string
+	if vehicleCfg.Driver != nil {
+		name, args = vehicleCfg.Driver.Name, vehicleCfg.Driver.Args
+	}
+	path, err := installedPluginPath(name, categoryDriver)
 	if err != nil {
 		return nil, err
 	}
-	return util.CreateBasePlugin(
-		util.WithName(vehicleCfg.Name+"-driver"),
+	opts := []util.PluginOption{
+		util.WithName(vehicleCfg.Name + "-driver"),
 		util.WithPath(path),
-	)
+	}
+	if len(args) > 0 {
+		opts = append(opts, util.WithScriptArgs(args))
+	}
+	return util.CreateBasePlugin(opts...)
 }
 
-// newMissionPlugin builds vehicleCfg's mission plugin, if any (Mission ==
-// "" is fine; a vehicle runs with no mission plugin).
+// newMissionPlugin builds vehicleCfg's mission plugin, if specified.
+// WithAuthCode tags it as the mission module.
 func newMissionPlugin(vehicleCfg VehicleConfig) (util.Plugin, error) {
-	path, err := installedPluginPath(vehicleCfg.Mission, categoryMission)
+	if vehicleCfg.Mission == nil {
+		return nil, nil
+	}
+	path, err := installedPluginPath(vehicleCfg.Mission.Name, categoryMission)
 	if err != nil {
 		return nil, err
 	}
 	if path == "" {
 		return nil, nil
 	}
-	return util.CreateBasePlugin(
-		util.WithName(vehicleCfg.Name+"-mission"),
+	opts := []util.PluginOption{
+		util.WithName(vehicleCfg.Name + "-mission"),
 		util.WithPath(path),
-	)
+		util.WithAuthCode(util.MissionCode),
+	}
+	if len(vehicleCfg.Mission.Args) > 0 {
+		opts = append(opts, util.WithScriptArgs(vehicleCfg.Mission.Args))
+	}
+	return util.CreateBasePlugin(opts...)
 }
 
-// newExtraPlugins builds every plugin listed in vehicleCfg.Plugins. Unlike
-// Driver/Mission, these aren't wired into the vehicle's gRPC proxy -- they
-// just run alongside it (see core/vehicle.PluginConfig.Plugins).
+// newExtraPlugins builds every plugin listed in vehicleCfg.Plugins.
 func newExtraPlugins(vehicleCfg VehicleConfig) ([]util.Plugin, error) {
 	plugins := make([]util.Plugin, 0, len(vehicleCfg.Plugins))
-	for _, name := range vehicleCfg.Plugins {
-		path, err := installedPluginPath(name, categoryExtra)
+	for _, ref := range vehicleCfg.Plugins {
+		path, err := installedPluginPath(ref.Name, categoryExtra)
 		if err != nil {
 			return nil, err
 		}
-		p, err := util.CreateBasePlugin(
-			util.WithName(vehicleCfg.Name+"-"+name),
+		opts := []util.PluginOption{
+			util.WithName(vehicleCfg.Name + "-" + ref.Name),
 			util.WithPath(path),
-		)
+		}
+		if len(ref.Args) > 0 {
+			opts = append(opts, util.WithScriptArgs(ref.Args))
+		}
+		p, err := util.CreateBasePlugin(opts...)
 		if err != nil {
 			return nil, err
 		}

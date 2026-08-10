@@ -200,7 +200,8 @@ daemon-name = "test-daemon"
 
 [[vehicles]]
 name = %q
-driver = %q
+[vehicles.driver]
+name = %q
 `, vehiclePort, inst.PluginDir, vehicleName, driverName)
 }
 
