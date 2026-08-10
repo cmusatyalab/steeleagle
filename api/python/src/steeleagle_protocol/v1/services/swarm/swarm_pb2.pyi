@@ -109,45 +109,45 @@ class SwarmReturnToHomeResponse(_message.Message):
     details: str
     def __init__(self, vehicle: _Optional[str] = ..., response: _Optional[_Union[_control_pb2.ReturnToHomeResponse, _Mapping]] = ..., code: _Optional[int] = ..., details: _Optional[str] = ...) -> None: ...
 
-class SwarmSetVelocityRequest(_message.Message):
+class SwarmSetVelocityTargetRequest(_message.Message):
     __slots__ = ("vehicles", "request")
     VEHICLES_FIELD_NUMBER: _ClassVar[int]
     REQUEST_FIELD_NUMBER: _ClassVar[int]
     vehicles: _containers.RepeatedScalarFieldContainer[str]
-    request: _control_pb2.SetVelocityRequest
-    def __init__(self, vehicles: _Optional[_Iterable[str]] = ..., request: _Optional[_Union[_control_pb2.SetVelocityRequest, _Mapping]] = ...) -> None: ...
+    request: _control_pb2.SetVelocityTargetRequest
+    def __init__(self, vehicles: _Optional[_Iterable[str]] = ..., request: _Optional[_Union[_control_pb2.SetVelocityTargetRequest, _Mapping]] = ...) -> None: ...
 
-class SwarmSetVelocityResponse(_message.Message):
+class SwarmSetVelocityTargetResponse(_message.Message):
     __slots__ = ("vehicle", "response", "code", "details")
     VEHICLE_FIELD_NUMBER: _ClassVar[int]
     RESPONSE_FIELD_NUMBER: _ClassVar[int]
     CODE_FIELD_NUMBER: _ClassVar[int]
     DETAILS_FIELD_NUMBER: _ClassVar[int]
     vehicle: str
-    response: _control_pb2.SetVelocityResponse
+    response: _control_pb2.SetVelocityTargetResponse
     code: int
     details: str
-    def __init__(self, vehicle: _Optional[str] = ..., response: _Optional[_Union[_control_pb2.SetVelocityResponse, _Mapping]] = ..., code: _Optional[int] = ..., details: _Optional[str] = ...) -> None: ...
+    def __init__(self, vehicle: _Optional[str] = ..., response: _Optional[_Union[_control_pb2.SetVelocityTargetResponse, _Mapping]] = ..., code: _Optional[int] = ..., details: _Optional[str] = ...) -> None: ...
 
-class SwarmSetGimbalPoseRequest(_message.Message):
+class SwarmSetGimbalAngleTargetRequest(_message.Message):
     __slots__ = ("vehicles", "request")
     VEHICLES_FIELD_NUMBER: _ClassVar[int]
     REQUEST_FIELD_NUMBER: _ClassVar[int]
     vehicles: _containers.RepeatedScalarFieldContainer[str]
-    request: _control_pb2.SetGimbalPoseRequest
-    def __init__(self, vehicles: _Optional[_Iterable[str]] = ..., request: _Optional[_Union[_control_pb2.SetGimbalPoseRequest, _Mapping]] = ...) -> None: ...
+    request: _control_pb2.SetGimbalAngleTargetRequest
+    def __init__(self, vehicles: _Optional[_Iterable[str]] = ..., request: _Optional[_Union[_control_pb2.SetGimbalAngleTargetRequest, _Mapping]] = ...) -> None: ...
 
-class SwarmSetGimbalPoseResponse(_message.Message):
+class SwarmSetGimbalAngleTargetResponse(_message.Message):
     __slots__ = ("vehicle", "response", "code", "details")
     VEHICLE_FIELD_NUMBER: _ClassVar[int]
     RESPONSE_FIELD_NUMBER: _ClassVar[int]
     CODE_FIELD_NUMBER: _ClassVar[int]
     DETAILS_FIELD_NUMBER: _ClassVar[int]
     vehicle: str
-    response: _control_pb2.SetGimbalPoseResponse
+    response: _control_pb2.SetGimbalAngleTargetResponse
     code: int
     details: str
-    def __init__(self, vehicle: _Optional[str] = ..., response: _Optional[_Union[_control_pb2.SetGimbalPoseResponse, _Mapping]] = ..., code: _Optional[int] = ..., details: _Optional[str] = ...) -> None: ...
+    def __init__(self, vehicle: _Optional[str] = ..., response: _Optional[_Union[_control_pb2.SetGimbalAngleTargetResponse, _Mapping]] = ..., code: _Optional[int] = ..., details: _Optional[str] = ...) -> None: ...
 
 class SwarmUploadMissionRequest(_message.Message):
     __slots__ = ("vehicles", "request")

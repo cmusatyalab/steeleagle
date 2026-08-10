@@ -1,5 +1,3 @@
-//go:build ignore
-
 package sdk
 
 import (
@@ -13,23 +11,23 @@ type Vehicle interface {
 	Kill() *waiter[KillResponse]
 	ReturnToHome(options ...opt.Option[opt.ReturnToHomeOption]) *waiter[ReturnToHomeResponse]
 	SetGlobalPositionTarget(
-		latitude, longitude, altitude, heading float64,
+		latitude, longitude float64, altitude, heading float32,
 		options ...opt.Option[opt.SetGlobalPositionTargetOption],
 	) *waiter[SetGlobalPositionTargetResponse]
 	SetRelativePositionTarget(
-		x, y, z, angle float64,
+		x, y, z, angle float32,
 		options ...opt.Option[opt.SetRelativePositionTargetOption],
-	) *waiter[SetRelativePositionResponse]
+	) *waiter[SetRelativePositionTargetResponse]
 	SetVelocityTarget(
-		xVel, yVel, zVel, angularVel float64,
+		xVel, yVel, zVel, angularVel float32,
 		options ...opt.Option[opt.SetVelocityTargetOption],
 	) *waiter[SetVelocityTargetResponse]
 	SetGimbalAngleTarget(
-		pitch, roll, yaw float64,
+		pitch, roll, yaw float32,
 		options ...opt.Option[opt.SetGimbalAngleTargetOption],
 	) *waiter[SetGimbalAngleTargetResponse]
 	SetGimbalVelocityTarget(
-		pitchVel, rollVel, yawVel float64,
+		pitchVel, rollVel, yawVel float32,
 		options ...opt.Option[opt.SetGimbalVelocityTargetOption],
 	) *waiter[SetGimbalVelocityTargetResponse]
 	GetTelemetry() *waiter[Telemetry]

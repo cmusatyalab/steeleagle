@@ -5,7 +5,7 @@ import grpc
 from steeleagle_protocol.v1.services.driver import control_pb2 as steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2
 
 
-class GuidanceServiceStub:
+class ControlServiceStub:
     """
     Used for low-level control of the driver.
 
@@ -30,58 +30,58 @@ class GuidanceServiceStub:
             channel: A grpc.Channel.
         """
         self.TakeOff = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.GuidanceService/TakeOff',
+                '/steeleagle_protocol.v1.services.driver.ControlService/TakeOff',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.TakeOffRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.TakeOffResponse.FromString,
                 _registered_method=True)
         self.Land = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.GuidanceService/Land',
+                '/steeleagle_protocol.v1.services.driver.ControlService/Land',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.LandRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.LandResponse.FromString,
                 _registered_method=True)
         self.Hold = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.GuidanceService/Hold',
+                '/steeleagle_protocol.v1.services.driver.ControlService/Hold',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.HoldRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.HoldResponse.FromString,
                 _registered_method=True)
         self.Kill = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.GuidanceService/Kill',
+                '/steeleagle_protocol.v1.services.driver.ControlService/Kill',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.KillRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.KillResponse.FromString,
                 _registered_method=True)
         self.ReturnToHome = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.GuidanceService/ReturnToHome',
+                '/steeleagle_protocol.v1.services.driver.ControlService/ReturnToHome',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.ReturnToHomeRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.ReturnToHomeResponse.FromString,
                 _registered_method=True)
         self.SetGlobalPositionTarget = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.GuidanceService/SetGlobalPositionTarget',
+                '/steeleagle_protocol.v1.services.driver.ControlService/SetGlobalPositionTarget',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGlobalPositionTargetRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGlobalPositionTargetResponse.FromString,
                 _registered_method=True)
         self.SetRelativePositionTarget = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.GuidanceService/SetRelativePositionTarget',
+                '/steeleagle_protocol.v1.services.driver.ControlService/SetRelativePositionTarget',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetRelativePositionTargetRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetRelativePositionTargetResponse.FromString,
                 _registered_method=True)
         self.SetVelocityTarget = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.GuidanceService/SetVelocityTarget',
+                '/steeleagle_protocol.v1.services.driver.ControlService/SetVelocityTarget',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetVelocityTargetRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetVelocityTargetResponse.FromString,
                 _registered_method=True)
         self.SetGimbalAngleTarget = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.GuidanceService/SetGimbalAngleTarget',
+                '/steeleagle_protocol.v1.services.driver.ControlService/SetGimbalAngleTarget',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalAngleTargetRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalAngleTargetResponse.FromString,
                 _registered_method=True)
         self.SetGimbalVelocityTarget = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.GuidanceService/SetGimbalVelocityTarget',
+                '/steeleagle_protocol.v1.services.driver.ControlService/SetGimbalVelocityTarget',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalVelocityTargetRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalVelocityTargetResponse.FromString,
                 _registered_method=True)
 
 
-class GuidanceServiceServicer:
+class ControlServiceServicer:
     """
     Used for low-level control of the driver.
 
@@ -278,7 +278,7 @@ class GuidanceServiceServicer:
         raise NotImplementedError('Method not implemented!')
 
 
-def add_GuidanceServiceServicer_to_server(servicer, server):
+def add_ControlServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'TakeOff': grpc.unary_unary_rpc_method_handler(
                     servicer.TakeOff,
@@ -332,13 +332,13 @@ def add_GuidanceServiceServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'steeleagle_protocol.v1.services.driver.GuidanceService', rpc_method_handlers)
+            'steeleagle_protocol.v1.services.driver.ControlService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('steeleagle_protocol.v1.services.driver.GuidanceService', rpc_method_handlers)
+    server.add_registered_method_handlers('steeleagle_protocol.v1.services.driver.ControlService', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
-class GuidanceService:
+class ControlService:
     """
     Used for low-level control of the driver.
 
@@ -370,7 +370,7 @@ class GuidanceService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.GuidanceService/TakeOff',
+            '/steeleagle_protocol.v1.services.driver.ControlService/TakeOff',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.TakeOffRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.TakeOffResponse.FromString,
             options,
@@ -397,7 +397,7 @@ class GuidanceService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.GuidanceService/Land',
+            '/steeleagle_protocol.v1.services.driver.ControlService/Land',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.LandRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.LandResponse.FromString,
             options,
@@ -424,7 +424,7 @@ class GuidanceService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.GuidanceService/Hold',
+            '/steeleagle_protocol.v1.services.driver.ControlService/Hold',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.HoldRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.HoldResponse.FromString,
             options,
@@ -451,7 +451,7 @@ class GuidanceService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.GuidanceService/Kill',
+            '/steeleagle_protocol.v1.services.driver.ControlService/Kill',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.KillRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.KillResponse.FromString,
             options,
@@ -478,7 +478,7 @@ class GuidanceService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.GuidanceService/ReturnToHome',
+            '/steeleagle_protocol.v1.services.driver.ControlService/ReturnToHome',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.ReturnToHomeRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.ReturnToHomeResponse.FromString,
             options,
@@ -505,7 +505,7 @@ class GuidanceService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.GuidanceService/SetGlobalPositionTarget',
+            '/steeleagle_protocol.v1.services.driver.ControlService/SetGlobalPositionTarget',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGlobalPositionTargetRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGlobalPositionTargetResponse.FromString,
             options,
@@ -532,7 +532,7 @@ class GuidanceService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.GuidanceService/SetRelativePositionTarget',
+            '/steeleagle_protocol.v1.services.driver.ControlService/SetRelativePositionTarget',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetRelativePositionTargetRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetRelativePositionTargetResponse.FromString,
             options,
@@ -559,7 +559,7 @@ class GuidanceService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.GuidanceService/SetVelocityTarget',
+            '/steeleagle_protocol.v1.services.driver.ControlService/SetVelocityTarget',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetVelocityTargetRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetVelocityTargetResponse.FromString,
             options,
@@ -586,7 +586,7 @@ class GuidanceService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.GuidanceService/SetGimbalAngleTarget',
+            '/steeleagle_protocol.v1.services.driver.ControlService/SetGimbalAngleTarget',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalAngleTargetRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalAngleTargetResponse.FromString,
             options,
@@ -613,7 +613,7 @@ class GuidanceService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.GuidanceService/SetGimbalVelocityTarget',
+            '/steeleagle_protocol.v1.services.driver.ControlService/SetGimbalVelocityTarget',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalVelocityTargetRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SetGimbalVelocityTargetResponse.FromString,
             options,

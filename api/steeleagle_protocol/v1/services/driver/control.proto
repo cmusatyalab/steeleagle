@@ -26,7 +26,7 @@ import "steeleagle_protocol/v1/messages/telemetry/telemetry.proto";
  *
  * These commands will result in actuation of the device if it is active (be careful!).
  */
-service GuidanceService {
+service ControlService {
   /*
    * Order the vehicle to take off _(Action)_.
    *
@@ -305,7 +305,7 @@ message SetVelocityTargetResponse {
 
 message SetGimbalAngleTargetRequest {
   common.Pose pose = 1; // target pose
-  optional AngleMode pose_mode = 2; // specifies how to interpret the target pose
+  optional AngleMode angle_mode = 2; // specifies how to interpret the target pose
   optional ReferenceFrame frame = 3; // frame of reference
 }
 
@@ -315,8 +315,7 @@ message SetGimbalAngleTargetResponse {
 
 message SetGimbalVelocityTargetRequest {
   common.PoseVelocity pose_velocity = 1; // target pose velocity
-  optional AngleMode pose_mode = 2; // specifies how to interpret the target pose
-  optional ReferenceFrame frame = 3; // frame of reference
+  optional ReferenceFrame frame = 2; // frame of reference
 }
 
 message SetGimbalVelocityTargetResponse {

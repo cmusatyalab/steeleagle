@@ -1,4 +1,5 @@
 from steeleagle_protocol.v1.common import common_pb2 as _common_pb2
+from steeleagle_protocol.v1.messages.telemetry import telemetry_pb2 as _telemetry_pb2
 from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
@@ -31,12 +32,11 @@ class ReferenceFrame(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     REFERENCE_FRAME_BODY: _ClassVar[ReferenceFrame]
     REFERENCE_FRAME_NEU: _ClassVar[ReferenceFrame]
 
-class PoseMode(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+class AngleMode(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
-    POSE_MODE_UNSPECIFIED: _ClassVar[PoseMode]
-    POSE_MODE_ANGLE: _ClassVar[PoseMode]
-    POSE_MODE_OFFSET: _ClassVar[PoseMode]
-    POSE_MODE_VELOCITY: _ClassVar[PoseMode]
+    ANGLE_MODE_UNSPECIFIED: _ClassVar[AngleMode]
+    ANGLE_MODE_ABSOLUTE: _ClassVar[AngleMode]
+    ANGLE_MODE_OFFSET: _ClassVar[AngleMode]
 RETURN_TO_HOME_END_BEHAVIOR_UNSPECIFIED: ReturnToHomeEndBehavior
 RETURN_TO_HOME_END_BEHAVIOR_HOVER: ReturnToHomeEndBehavior
 RETURN_TO_HOME_END_BEHAVIOR_LAND: ReturnToHomeEndBehavior
@@ -49,10 +49,9 @@ HEADING_MODE_START: HeadingMode
 REFERENCE_FRAME_UNSPECIFIED: ReferenceFrame
 REFERENCE_FRAME_BODY: ReferenceFrame
 REFERENCE_FRAME_NEU: ReferenceFrame
-POSE_MODE_UNSPECIFIED: PoseMode
-POSE_MODE_ANGLE: PoseMode
-POSE_MODE_OFFSET: PoseMode
-POSE_MODE_VELOCITY: PoseMode
+ANGLE_MODE_UNSPECIFIED: AngleMode
+ANGLE_MODE_ABSOLUTE: AngleMode
+ANGLE_MODE_OFFSET: AngleMode
 
 class TakeOffRequest(_message.Message):
     __slots__ = ("altitude",)
@@ -61,42 +60,48 @@ class TakeOffRequest(_message.Message):
     def __init__(self, altitude: _Optional[float] = ...) -> None: ...
 
 class TakeOffResponse(_message.Message):
-    __slots__ = ()
-    def __init__(self) -> None: ...
+    __slots__ = ("expected_mode", "expected_status")
+    EXPECTED_MODE_FIELD_NUMBER: _ClassVar[int]
+    EXPECTED_STATUS_FIELD_NUMBER: _ClassVar[int]
+    expected_mode: _telemetry_pb2.Mode
+    expected_status: _telemetry_pb2.MotionStatus
+    def __init__(self, expected_mode: _Optional[_Union[_telemetry_pb2.Mode, str]] = ..., expected_status: _Optional[_Union[_telemetry_pb2.MotionStatus, str]] = ...) -> None: ...
 
 class LandRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
 class LandResponse(_message.Message):
-    __slots__ = ()
-    def __init__(self) -> None: ...
+    __slots__ = ("expected_mode", "expected_status")
+    EXPECTED_MODE_FIELD_NUMBER: _ClassVar[int]
+    EXPECTED_STATUS_FIELD_NUMBER: _ClassVar[int]
+    expected_mode: _telemetry_pb2.Mode
+    expected_status: _telemetry_pb2.MotionStatus
+    def __init__(self, expected_mode: _Optional[_Union[_telemetry_pb2.Mode, str]] = ..., expected_status: _Optional[_Union[_telemetry_pb2.MotionStatus, str]] = ...) -> None: ...
 
 class HoldRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
 class HoldResponse(_message.Message):
-    __slots__ = ()
-    def __init__(self) -> None: ...
+    __slots__ = ("expected_mode", "expected_status")
+    EXPECTED_MODE_FIELD_NUMBER: _ClassVar[int]
+    EXPECTED_STATUS_FIELD_NUMBER: _ClassVar[int]
+    expected_mode: _telemetry_pb2.Mode
+    expected_status: _telemetry_pb2.MotionStatus
+    def __init__(self, expected_mode: _Optional[_Union[_telemetry_pb2.Mode, str]] = ..., expected_status: _Optional[_Union[_telemetry_pb2.MotionStatus, str]] = ...) -> None: ...
 
 class KillRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
 class KillResponse(_message.Message):
-    __slots__ = ()
-    def __init__(self) -> None: ...
-
-class SetHomeRequest(_message.Message):
-    __slots__ = ("new_home",)
-    NEW_HOME_FIELD_NUMBER: _ClassVar[int]
-    new_home: _common_pb2.GlobalPosition
-    def __init__(self, new_home: _Optional[_Union[_common_pb2.GlobalPosition, _Mapping]] = ...) -> None: ...
-
-class SetHomeResponse(_message.Message):
-    __slots__ = ()
-    def __init__(self) -> None: ...
+    __slots__ = ("expected_mode", "expected_status")
+    EXPECTED_MODE_FIELD_NUMBER: _ClassVar[int]
+    EXPECTED_STATUS_FIELD_NUMBER: _ClassVar[int]
+    expected_mode: _telemetry_pb2.Mode
+    expected_status: _telemetry_pb2.MotionStatus
+    def __init__(self, expected_mode: _Optional[_Union[_telemetry_pb2.Mode, str]] = ..., expected_status: _Optional[_Union[_telemetry_pb2.MotionStatus, str]] = ...) -> None: ...
 
 class ReturnToHomeRequest(_message.Message):
     __slots__ = ("end_behavior", "min_return_altitude", "final_altitude")
@@ -109,10 +114,14 @@ class ReturnToHomeRequest(_message.Message):
     def __init__(self, end_behavior: _Optional[_Union[ReturnToHomeEndBehavior, str]] = ..., min_return_altitude: _Optional[float] = ..., final_altitude: _Optional[float] = ...) -> None: ...
 
 class ReturnToHomeResponse(_message.Message):
-    __slots__ = ()
-    def __init__(self) -> None: ...
+    __slots__ = ("expected_mode", "expected_status")
+    EXPECTED_MODE_FIELD_NUMBER: _ClassVar[int]
+    EXPECTED_STATUS_FIELD_NUMBER: _ClassVar[int]
+    expected_mode: _telemetry_pb2.Mode
+    expected_status: _telemetry_pb2.MotionStatus
+    def __init__(self, expected_mode: _Optional[_Union[_telemetry_pb2.Mode, str]] = ..., expected_status: _Optional[_Union[_telemetry_pb2.MotionStatus, str]] = ...) -> None: ...
 
-class GoToGlobalPositionRequest(_message.Message):
+class SetGlobalPositionTargetRequest(_message.Message):
     __slots__ = ("position", "heading_mode", "altitude_mode", "speed", "angular_speed")
     POSITION_FIELD_NUMBER: _ClassVar[int]
     HEADING_MODE_FIELD_NUMBER: _ClassVar[int]
@@ -126,11 +135,15 @@ class GoToGlobalPositionRequest(_message.Message):
     angular_speed: float
     def __init__(self, position: _Optional[_Union[_common_pb2.GlobalPosition, _Mapping]] = ..., heading_mode: _Optional[_Union[HeadingMode, str]] = ..., altitude_mode: _Optional[_Union[AltitudeMode, str]] = ..., speed: _Optional[float] = ..., angular_speed: _Optional[float] = ...) -> None: ...
 
-class GoToGlobalPositionResponse(_message.Message):
-    __slots__ = ()
-    def __init__(self) -> None: ...
+class SetGlobalPositionTargetResponse(_message.Message):
+    __slots__ = ("setpoint", "expected_status")
+    SETPOINT_FIELD_NUMBER: _ClassVar[int]
+    EXPECTED_STATUS_FIELD_NUMBER: _ClassVar[int]
+    setpoint: _common_pb2.GlobalPosition
+    expected_status: _telemetry_pb2.MotionStatus
+    def __init__(self, setpoint: _Optional[_Union[_common_pb2.GlobalPosition, _Mapping]] = ..., expected_status: _Optional[_Union[_telemetry_pb2.MotionStatus, str]] = ...) -> None: ...
 
-class GoToRelativePositionRequest(_message.Message):
+class SetRelativePositionTargetRequest(_message.Message):
     __slots__ = ("position", "speed", "angular_speed", "frame")
     POSITION_FIELD_NUMBER: _ClassVar[int]
     SPEED_FIELD_NUMBER: _ClassVar[int]
@@ -142,11 +155,15 @@ class GoToRelativePositionRequest(_message.Message):
     frame: ReferenceFrame
     def __init__(self, position: _Optional[_Union[_common_pb2.RelativePosition, _Mapping]] = ..., speed: _Optional[float] = ..., angular_speed: _Optional[float] = ..., frame: _Optional[_Union[ReferenceFrame, str]] = ...) -> None: ...
 
-class GoToRelativePositionResponse(_message.Message):
-    __slots__ = ()
-    def __init__(self) -> None: ...
+class SetRelativePositionTargetResponse(_message.Message):
+    __slots__ = ("setpoint", "expected_status")
+    SETPOINT_FIELD_NUMBER: _ClassVar[int]
+    EXPECTED_STATUS_FIELD_NUMBER: _ClassVar[int]
+    setpoint: _common_pb2.RelativePosition
+    expected_status: _telemetry_pb2.MotionStatus
+    def __init__(self, setpoint: _Optional[_Union[_common_pb2.RelativePosition, _Mapping]] = ..., expected_status: _Optional[_Union[_telemetry_pb2.MotionStatus, str]] = ...) -> None: ...
 
-class SetVelocityRequest(_message.Message):
+class SetVelocityTargetRequest(_message.Message):
     __slots__ = ("velocity", "frame")
     VELOCITY_FIELD_NUMBER: _ClassVar[int]
     FRAME_FIELD_NUMBER: _ClassVar[int]
@@ -154,22 +171,40 @@ class SetVelocityRequest(_message.Message):
     frame: ReferenceFrame
     def __init__(self, velocity: _Optional[_Union[_common_pb2.Velocity, _Mapping]] = ..., frame: _Optional[_Union[ReferenceFrame, str]] = ...) -> None: ...
 
-class SetVelocityResponse(_message.Message):
-    __slots__ = ()
-    def __init__(self) -> None: ...
+class SetVelocityTargetResponse(_message.Message):
+    __slots__ = ("setpoint", "expected_status")
+    SETPOINT_FIELD_NUMBER: _ClassVar[int]
+    EXPECTED_STATUS_FIELD_NUMBER: _ClassVar[int]
+    setpoint: _common_pb2.Velocity
+    expected_status: _telemetry_pb2.MotionStatus
+    def __init__(self, setpoint: _Optional[_Union[_common_pb2.Velocity, _Mapping]] = ..., expected_status: _Optional[_Union[_telemetry_pb2.MotionStatus, str]] = ...) -> None: ...
 
-class SetGimbalPoseRequest(_message.Message):
-    __slots__ = ("gimbal_id", "pose", "pose_mode", "frame")
-    GIMBAL_ID_FIELD_NUMBER: _ClassVar[int]
+class SetGimbalAngleTargetRequest(_message.Message):
+    __slots__ = ("pose", "angle_mode", "frame")
     POSE_FIELD_NUMBER: _ClassVar[int]
-    POSE_MODE_FIELD_NUMBER: _ClassVar[int]
+    ANGLE_MODE_FIELD_NUMBER: _ClassVar[int]
     FRAME_FIELD_NUMBER: _ClassVar[int]
-    gimbal_id: int
     pose: _common_pb2.Pose
-    pose_mode: PoseMode
+    angle_mode: AngleMode
     frame: ReferenceFrame
-    def __init__(self, gimbal_id: _Optional[int] = ..., pose: _Optional[_Union[_common_pb2.Pose, _Mapping]] = ..., pose_mode: _Optional[_Union[PoseMode, str]] = ..., frame: _Optional[_Union[ReferenceFrame, str]] = ...) -> None: ...
+    def __init__(self, pose: _Optional[_Union[_common_pb2.Pose, _Mapping]] = ..., angle_mode: _Optional[_Union[AngleMode, str]] = ..., frame: _Optional[_Union[ReferenceFrame, str]] = ...) -> None: ...
 
-class SetGimbalPoseResponse(_message.Message):
-    __slots__ = ()
-    def __init__(self) -> None: ...
+class SetGimbalAngleTargetResponse(_message.Message):
+    __slots__ = ("setpoint",)
+    SETPOINT_FIELD_NUMBER: _ClassVar[int]
+    setpoint: _common_pb2.Pose
+    def __init__(self, setpoint: _Optional[_Union[_common_pb2.Pose, _Mapping]] = ...) -> None: ...
+
+class SetGimbalVelocityTargetRequest(_message.Message):
+    __slots__ = ("pose_velocity", "frame")
+    POSE_VELOCITY_FIELD_NUMBER: _ClassVar[int]
+    FRAME_FIELD_NUMBER: _ClassVar[int]
+    pose_velocity: _common_pb2.PoseVelocity
+    frame: ReferenceFrame
+    def __init__(self, pose_velocity: _Optional[_Union[_common_pb2.PoseVelocity, _Mapping]] = ..., frame: _Optional[_Union[ReferenceFrame, str]] = ...) -> None: ...
+
+class SetGimbalVelocityTargetResponse(_message.Message):
+    __slots__ = ("setpoint",)
+    SETPOINT_FIELD_NUMBER: _ClassVar[int]
+    setpoint: _common_pb2.PoseVelocity
+    def __init__(self, setpoint: _Optional[_Union[_common_pb2.PoseVelocity, _Mapping]] = ...) -> None: ...

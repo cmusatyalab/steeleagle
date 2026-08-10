@@ -1,13 +1,8 @@
-//go:build ignore
-
 package sdk
 
 import (
-	"context"
-
 	driverpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver"
 	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
-	"github.com/cmusatyalab/steeleagle/sdk/enums"
 	"github.com/cmusatyalab/steeleagle/sdk/opt"
 )
 
@@ -22,7 +17,7 @@ func (v *vehicleContext) TakeOff(options ...opt.Option[opt.TakeOffOption]) *wait
 		v.ctx,
 		&takeOffResponseWrapper{inner: resp},
 		grpcToSentinel(err),
-		basePoller(v, req, enums.MotionStatusHolding),
+		actionPoller(v, resp),
 	)
 }
 
@@ -34,7 +29,7 @@ func (v *vehicleContext) Land() *waiter[LandResponse] {
 		v.ctx,
 		&landResponseWrapper{inner: resp},
 		grpcToSentinel(err),
-		basePoller(v, req, enums.MotionStatusStopped),
+		actionPoller(v, resp),
 	)
 }
 
@@ -46,7 +41,7 @@ func (v *vehicleContext) Hold() *waiter[HoldResponse] {
 		v.ctx,
 		&holdResponseWrapper{inner: resp},
 		grpcToSentinel(err),
-		basePoller(v, req, enums.MotionStatusHolding),
+		actionPoller(v, resp),
 	)
 }
 
@@ -58,7 +53,7 @@ func (v *vehicleContext) Kill() *waiter[KillResponse] {
 		v.ctx,
 		&killResponseWrapper{inner: resp},
 		grpcToSentinel(err),
-		basePoller(v, req, enums.MotionStatusStopped),
+		actionPoller(v, resp),
 	)
 }
 
@@ -69,21 +64,12 @@ func (v *vehicleContext) ReturnToHome(options ...opt.Option[opt.ReturnToHomeOpti
 	}
 	resp, err := v.control.ReturnToHome(v.ctx, req)
 
-	if req.GetEndBehavior() <= 1 { // hover end behavior
-		return newWaiter[ReturnToHomeResponse](
-			v.ctx,
-			&returnToHomeResponseWrapper{inner: resp},
-			grpcToSentinel(err),
-			basePoller(v, req, enums.MotionStatusHolding),
-		)
-	} else { // land end behavior
-		return newWaiter[ReturnToHomeResponse](
-			v.ctx,
-			&returnToHomeResponseWrapper{inner: resp},
-			grpcToSentinel(err),
-			basePoller(v, req, enums.MotionStatusStopped),
-		)
-	}
+	return newWaiter[ReturnToHomeResponse](
+		v.ctx,
+		&returnToHomeResponseWrapper{inner: resp},
+		grpcToSentinel(err),
+		actionPoller(v, resp),
+	)
 }
 
 func (v *vehicleContext) SetGlobalPositionTarget(
@@ -103,7 +89,7 @@ func (v *vehicleContext) SetGlobalPositionTarget(
 		v.ctx,
 		&setGlobalPositionTargetResponseWrapper{inner: resp},
 		grpcToSentinel(err),
-		basePoller(v, req, enums.MotionStatusHolding),
+		guidancePoller(v, resp),
 	)
 }
 
@@ -124,7 +110,7 @@ func (v *vehicleContext) SetRelativePositionTarget(
 		v.ctx,
 		&setRelativePositionTargetResponseWrapper{inner: resp},
 		grpcToSentinel(err),
-		basePoller(v, req, enums.MotionStatusHolding),
+		guidancePoller(v, resp),
 	)
 }
 
@@ -145,7 +131,7 @@ func (v *vehicleContext) SetVelocityTarget(
 		v.ctx,
 		&setVelocityTargetResponseWrapper{inner: resp},
 		grpcToSentinel(err),
-		basePoller(v, req, enums.MotionStatusInTransit),
+		guidancePoller(v, resp),
 	)
 }
 
@@ -165,7 +151,7 @@ func (v *vehicleContext) SetGimbalAngleTarget(
 		v.ctx,
 		&setGimbalAngleTargetResponseWrapper{inner: resp},
 		grpcToSentinel(err),
-		setGimbalPosePoller(v, req),
+		gimbalPoller(v, resp),
 	)
 }
 
@@ -185,7 +171,7 @@ func (v *vehicleContext) SetGimbalVelocityTarget(
 		v.ctx,
 		&setGimbalVelocityTargetResponseWrapper{inner: resp},
 		grpcToSentinel(err),
-		setGimbalPosePoller(v, req),
+		gimbalPoller(v, resp),
 	)
 }
 
@@ -201,6 +187,6 @@ func (v *vehicleContext) GetTelemetry() *waiter[Telemetry] {
 		v.ctx,
 		wrapper,
 		grpcToSentinel(err),
-		func(context.Context) (bool, error) { return true, nil },
+		func(opt.WaitOptions) error { return nil },
 	)
 }

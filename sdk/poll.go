@@ -1,5 +1,3 @@
-//go:build ignore
-
 package sdk
 
 import (
@@ -8,7 +6,7 @@ import (
 	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
 	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
 	"github.com/cmusatyalab/steeleagle/sdk/opt"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 	anypb "google.golang.org/protobuf/types/known/anypb"
 )
 
@@ -16,9 +14,15 @@ import (
 // or it exits with error.
 type pollFunc func(opt.WaitOptions) error
 
+// isAction makes sure that the response represents an action style RPC.
+type isAction interface {
+	GetExpectedMode() telemetrypb.Mode
+	GetExpectedStatus() telemetrypb.MotionStatus
+}
+
 // actionPoller is a poller function that checks the expectation of an action
 // style RPC.
-func actionPoller(v *vehicleContext, resp proto.Message) pollFunc {
+func actionPoller[Resp isAction](v *vehicleContext, resp Resp) pollFunc {
 	return func(w opt.WaitOptions) error {
 		timeout := time.NewTimer(w.Timeout)
 		defer timeout.Stop()
@@ -42,9 +46,15 @@ func actionPoller(v *vehicleContext, resp proto.Message) pollFunc {
 	}
 }
 
+// isGuidance makes sure that the response represents an guidance style RPC.
+type isGuidance[S proto.Message] interface {
+	GetSetpoint() S
+	GetExpectedStatus() telemetrypb.MotionStatus
+}
+
 // guidancePoller is a poller function that checks the expectation of a
 // guidance style RPC.
-func guidancePoller(v *vehicleContext, resp proto.Message) pollFunc {
+func guidancePoller[S proto.Message, Resp isGuidance[S]](v *vehicleContext, resp Resp) pollFunc {
 	return func(w opt.WaitOptions) error {
 		timeout := time.NewTimer(w.Timeout)
 		defer timeout.Stop()
@@ -52,18 +62,19 @@ func guidancePoller(v *vehicleContext, resp proto.Message) pollFunc {
 		activeStall := false
 		stall.Stop() // we only want to run this timer when a stall is detected
 		defer stall.Stop()
-		lastDistance := 0.0
+		lastDistance := float32(0.0)
 		for {
 			t, err := fetchTelemetry(v)
 			// Only do check if we have telemetry and position info
 			if err == nil && t.HasPositionInfo() {
 				// Check the setpoints to make sure they match
-				if anyMatches(t.GetPositionInfo().GetSetpoint(), resp.GetSetpoint()) {
-					distance, tolCheck, err = getDistance(resp.GetSetpoint(), t, w.Tolerances)
+				matches, matchErr := anyMatches(t.GetPositionInfo().GetSetpoint(), resp.GetSetpoint())
+				if matchErr == nil && matches {
+					distance, tolCheck, err := getDistance(resp.GetSetpoint(), t, w.Tolerances)
 					// If we are within tolerance and have the right motion status, we have arrived
 					if tolCheck && t.GetMotionStatus() == resp.GetExpectedStatus() {
 						return nil
-					} else if lastDistance { // we have already set lastDistance so we do a stall check
+					} else if lastDistance != 0.0 { // we have already set lastDistance so we do a stall check
 						if distance >= lastDistance { // stall is active
 							if !activeStall { // only reset the timer if there is an active stall
 								stall.Stop()
@@ -98,9 +109,14 @@ func guidancePoller(v *vehicleContext, resp proto.Message) pollFunc {
 	}
 }
 
+// isGimbal makes sure that the response represents an guidance style RPC.
+type isGimbal[S proto.Message] interface {
+	GetSetpoint() S
+}
+
 // gimbalPoller is a poller function that checks the expectation of a
 // gimbal style RPC.
-func gimbalPoller(v *vehicleContext, resp proto.Message) pollFunc {
+func gimbalPoller[S proto.Message, Resp isGimbal[S]](v *vehicleContext, resp Resp) pollFunc {
 	return func(w opt.WaitOptions) error {
 		timeout := time.NewTimer(w.Timeout)
 		defer timeout.Stop()
@@ -108,18 +124,19 @@ func gimbalPoller(v *vehicleContext, resp proto.Message) pollFunc {
 		activeStall := false
 		stall.Stop() // we only want to run this timer when a stall is detected
 		defer stall.Stop()
-		lastDistance := 0.0
+		lastDistance := float32(0.0)
 		for {
 			t, err := fetchTelemetry(v)
 			// Only do check if we have telemetry and gimbal info
 			if err == nil && t.HasGimbalInfo() {
 				// Check the setpoints to make sure they match
-				if anyMatches(t.GetGimbalInfo().GetGimbalSetpoint(), resp.GetSetpoint()) {
-					distance, tolCheck, err = getDistance(resp.GetSetpoint(), t, w.Tolerances)
+				matches, matchErr := anyMatches(t.GetGimbalInfo().GetGimbalSetpoint(), resp.GetSetpoint())
+				if matchErr == nil && matches {
+					distance, tolCheck, err := getDistance(resp.GetSetpoint(), t, w.Tolerances)
 					// If we are within tolerance and have the right motion status, we have arrived
 					if tolCheck {
 						return nil
-					} else if lastDistance { // we have already set lastDistance so we do a stall check
+					} else if lastDistance != 0.0 { // we have already set lastDistance so we do a stall check
 						if distance >= lastDistance { // stall is active
 							if !activeStall { // only reset the timer if there is an active stall
 								stall.Stop()

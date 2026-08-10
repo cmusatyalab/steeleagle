@@ -14,6 +14,16 @@ class Pose(_message.Message):
     yaw: float
     def __init__(self, pitch: _Optional[float] = ..., roll: _Optional[float] = ..., yaw: _Optional[float] = ...) -> None: ...
 
+class PoseVelocity(_message.Message):
+    __slots__ = ("pitch_vel", "roll_vel", "yaw_vel")
+    PITCH_VEL_FIELD_NUMBER: _ClassVar[int]
+    ROLL_VEL_FIELD_NUMBER: _ClassVar[int]
+    YAW_VEL_FIELD_NUMBER: _ClassVar[int]
+    pitch_vel: float
+    roll_vel: float
+    yaw_vel: float
+    def __init__(self, pitch_vel: _Optional[float] = ..., roll_vel: _Optional[float] = ..., yaw_vel: _Optional[float] = ...) -> None: ...
+
 class Velocity(_message.Message):
     __slots__ = ("x_vel", "y_vel", "z_vel", "angular_vel")
     X_VEL_FIELD_NUMBER: _ClassVar[int]

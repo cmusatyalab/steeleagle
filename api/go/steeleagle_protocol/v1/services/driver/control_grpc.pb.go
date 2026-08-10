@@ -23,19 +23,19 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	GuidanceService_TakeOff_FullMethodName                   = "/steeleagle_protocol.v1.services.driver.GuidanceService/TakeOff"
-	GuidanceService_Land_FullMethodName                      = "/steeleagle_protocol.v1.services.driver.GuidanceService/Land"
-	GuidanceService_Hold_FullMethodName                      = "/steeleagle_protocol.v1.services.driver.GuidanceService/Hold"
-	GuidanceService_Kill_FullMethodName                      = "/steeleagle_protocol.v1.services.driver.GuidanceService/Kill"
-	GuidanceService_ReturnToHome_FullMethodName              = "/steeleagle_protocol.v1.services.driver.GuidanceService/ReturnToHome"
-	GuidanceService_SetGlobalPositionTarget_FullMethodName   = "/steeleagle_protocol.v1.services.driver.GuidanceService/SetGlobalPositionTarget"
-	GuidanceService_SetRelativePositionTarget_FullMethodName = "/steeleagle_protocol.v1.services.driver.GuidanceService/SetRelativePositionTarget"
-	GuidanceService_SetVelocityTarget_FullMethodName         = "/steeleagle_protocol.v1.services.driver.GuidanceService/SetVelocityTarget"
-	GuidanceService_SetGimbalAngleTarget_FullMethodName      = "/steeleagle_protocol.v1.services.driver.GuidanceService/SetGimbalAngleTarget"
-	GuidanceService_SetGimbalVelocityTarget_FullMethodName   = "/steeleagle_protocol.v1.services.driver.GuidanceService/SetGimbalVelocityTarget"
+	ControlService_TakeOff_FullMethodName                   = "/steeleagle_protocol.v1.services.driver.ControlService/TakeOff"
+	ControlService_Land_FullMethodName                      = "/steeleagle_protocol.v1.services.driver.ControlService/Land"
+	ControlService_Hold_FullMethodName                      = "/steeleagle_protocol.v1.services.driver.ControlService/Hold"
+	ControlService_Kill_FullMethodName                      = "/steeleagle_protocol.v1.services.driver.ControlService/Kill"
+	ControlService_ReturnToHome_FullMethodName              = "/steeleagle_protocol.v1.services.driver.ControlService/ReturnToHome"
+	ControlService_SetGlobalPositionTarget_FullMethodName   = "/steeleagle_protocol.v1.services.driver.ControlService/SetGlobalPositionTarget"
+	ControlService_SetRelativePositionTarget_FullMethodName = "/steeleagle_protocol.v1.services.driver.ControlService/SetRelativePositionTarget"
+	ControlService_SetVelocityTarget_FullMethodName         = "/steeleagle_protocol.v1.services.driver.ControlService/SetVelocityTarget"
+	ControlService_SetGimbalAngleTarget_FullMethodName      = "/steeleagle_protocol.v1.services.driver.ControlService/SetGimbalAngleTarget"
+	ControlService_SetGimbalVelocityTarget_FullMethodName   = "/steeleagle_protocol.v1.services.driver.ControlService/SetGimbalVelocityTarget"
 )
 
-// GuidanceServiceClient is the client API for GuidanceService service.
+// ControlServiceClient is the client API for ControlService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
@@ -53,7 +53,7 @@ const (
 // - [Action/Guidance] Set the `mode` field in the vehicle telemetry
 //
 // These commands will result in actuation of the device if it is active (be careful!).
-type GuidanceServiceClient interface {
+type ControlServiceClient interface {
 	// Order the vehicle to take off _(Action)_.
 	//
 	// Causes the vehicle to take off to a specified take off altitude.
@@ -174,116 +174,116 @@ type GuidanceServiceClient interface {
 	SetGimbalVelocityTarget(ctx context.Context, in *SetGimbalVelocityTargetRequest, opts ...grpc.CallOption) (*SetGimbalVelocityTargetResponse, error)
 }
 
-type guidanceServiceClient struct {
+type controlServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewGuidanceServiceClient(cc grpc.ClientConnInterface) GuidanceServiceClient {
-	return &guidanceServiceClient{cc}
+func NewControlServiceClient(cc grpc.ClientConnInterface) ControlServiceClient {
+	return &controlServiceClient{cc}
 }
 
-func (c *guidanceServiceClient) TakeOff(ctx context.Context, in *TakeOffRequest, opts ...grpc.CallOption) (*TakeOffResponse, error) {
+func (c *controlServiceClient) TakeOff(ctx context.Context, in *TakeOffRequest, opts ...grpc.CallOption) (*TakeOffResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(TakeOffResponse)
-	err := c.cc.Invoke(ctx, GuidanceService_TakeOff_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, ControlService_TakeOff_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *guidanceServiceClient) Land(ctx context.Context, in *LandRequest, opts ...grpc.CallOption) (*LandResponse, error) {
+func (c *controlServiceClient) Land(ctx context.Context, in *LandRequest, opts ...grpc.CallOption) (*LandResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(LandResponse)
-	err := c.cc.Invoke(ctx, GuidanceService_Land_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, ControlService_Land_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *guidanceServiceClient) Hold(ctx context.Context, in *HoldRequest, opts ...grpc.CallOption) (*HoldResponse, error) {
+func (c *controlServiceClient) Hold(ctx context.Context, in *HoldRequest, opts ...grpc.CallOption) (*HoldResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(HoldResponse)
-	err := c.cc.Invoke(ctx, GuidanceService_Hold_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, ControlService_Hold_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *guidanceServiceClient) Kill(ctx context.Context, in *KillRequest, opts ...grpc.CallOption) (*KillResponse, error) {
+func (c *controlServiceClient) Kill(ctx context.Context, in *KillRequest, opts ...grpc.CallOption) (*KillResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(KillResponse)
-	err := c.cc.Invoke(ctx, GuidanceService_Kill_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, ControlService_Kill_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *guidanceServiceClient) ReturnToHome(ctx context.Context, in *ReturnToHomeRequest, opts ...grpc.CallOption) (*ReturnToHomeResponse, error) {
+func (c *controlServiceClient) ReturnToHome(ctx context.Context, in *ReturnToHomeRequest, opts ...grpc.CallOption) (*ReturnToHomeResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ReturnToHomeResponse)
-	err := c.cc.Invoke(ctx, GuidanceService_ReturnToHome_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, ControlService_ReturnToHome_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *guidanceServiceClient) SetGlobalPositionTarget(ctx context.Context, in *SetGlobalPositionTargetRequest, opts ...grpc.CallOption) (*SetGlobalPositionTargetResponse, error) {
+func (c *controlServiceClient) SetGlobalPositionTarget(ctx context.Context, in *SetGlobalPositionTargetRequest, opts ...grpc.CallOption) (*SetGlobalPositionTargetResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SetGlobalPositionTargetResponse)
-	err := c.cc.Invoke(ctx, GuidanceService_SetGlobalPositionTarget_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, ControlService_SetGlobalPositionTarget_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *guidanceServiceClient) SetRelativePositionTarget(ctx context.Context, in *SetRelativePositionTargetRequest, opts ...grpc.CallOption) (*SetRelativePositionTargetResponse, error) {
+func (c *controlServiceClient) SetRelativePositionTarget(ctx context.Context, in *SetRelativePositionTargetRequest, opts ...grpc.CallOption) (*SetRelativePositionTargetResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SetRelativePositionTargetResponse)
-	err := c.cc.Invoke(ctx, GuidanceService_SetRelativePositionTarget_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, ControlService_SetRelativePositionTarget_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *guidanceServiceClient) SetVelocityTarget(ctx context.Context, in *SetVelocityTargetRequest, opts ...grpc.CallOption) (*SetVelocityTargetResponse, error) {
+func (c *controlServiceClient) SetVelocityTarget(ctx context.Context, in *SetVelocityTargetRequest, opts ...grpc.CallOption) (*SetVelocityTargetResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SetVelocityTargetResponse)
-	err := c.cc.Invoke(ctx, GuidanceService_SetVelocityTarget_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, ControlService_SetVelocityTarget_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *guidanceServiceClient) SetGimbalAngleTarget(ctx context.Context, in *SetGimbalAngleTargetRequest, opts ...grpc.CallOption) (*SetGimbalAngleTargetResponse, error) {
+func (c *controlServiceClient) SetGimbalAngleTarget(ctx context.Context, in *SetGimbalAngleTargetRequest, opts ...grpc.CallOption) (*SetGimbalAngleTargetResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SetGimbalAngleTargetResponse)
-	err := c.cc.Invoke(ctx, GuidanceService_SetGimbalAngleTarget_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, ControlService_SetGimbalAngleTarget_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *guidanceServiceClient) SetGimbalVelocityTarget(ctx context.Context, in *SetGimbalVelocityTargetRequest, opts ...grpc.CallOption) (*SetGimbalVelocityTargetResponse, error) {
+func (c *controlServiceClient) SetGimbalVelocityTarget(ctx context.Context, in *SetGimbalVelocityTargetRequest, opts ...grpc.CallOption) (*SetGimbalVelocityTargetResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SetGimbalVelocityTargetResponse)
-	err := c.cc.Invoke(ctx, GuidanceService_SetGimbalVelocityTarget_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, ControlService_SetGimbalVelocityTarget_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// GuidanceServiceServer is the server API for GuidanceService service.
-// All implementations must embed UnimplementedGuidanceServiceServer
+// ControlServiceServer is the server API for ControlService service.
+// All implementations must embed UnimplementedControlServiceServer
 // for forward compatibility.
 //
 // Used for low-level control of the driver.
@@ -300,7 +300,7 @@ func (c *guidanceServiceClient) SetGimbalVelocityTarget(ctx context.Context, in 
 // - [Action/Guidance] Set the `mode` field in the vehicle telemetry
 //
 // These commands will result in actuation of the device if it is active (be careful!).
-type GuidanceServiceServer interface {
+type ControlServiceServer interface {
 	// Order the vehicle to take off _(Action)_.
 	//
 	// Causes the vehicle to take off to a specified take off altitude.
@@ -419,293 +419,293 @@ type GuidanceServiceServer interface {
 	// Returns a _Gimbal_ style response, with `setpoint` set to the target `PoseVelocity` in
 	// the NEU frame.
 	SetGimbalVelocityTarget(context.Context, *SetGimbalVelocityTargetRequest) (*SetGimbalVelocityTargetResponse, error)
-	mustEmbedUnimplementedGuidanceServiceServer()
+	mustEmbedUnimplementedControlServiceServer()
 }
 
-// UnimplementedGuidanceServiceServer must be embedded to have
+// UnimplementedControlServiceServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedGuidanceServiceServer struct{}
+type UnimplementedControlServiceServer struct{}
 
-func (UnimplementedGuidanceServiceServer) TakeOff(context.Context, *TakeOffRequest) (*TakeOffResponse, error) {
+func (UnimplementedControlServiceServer) TakeOff(context.Context, *TakeOffRequest) (*TakeOffResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method TakeOff not implemented")
 }
-func (UnimplementedGuidanceServiceServer) Land(context.Context, *LandRequest) (*LandResponse, error) {
+func (UnimplementedControlServiceServer) Land(context.Context, *LandRequest) (*LandResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Land not implemented")
 }
-func (UnimplementedGuidanceServiceServer) Hold(context.Context, *HoldRequest) (*HoldResponse, error) {
+func (UnimplementedControlServiceServer) Hold(context.Context, *HoldRequest) (*HoldResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Hold not implemented")
 }
-func (UnimplementedGuidanceServiceServer) Kill(context.Context, *KillRequest) (*KillResponse, error) {
+func (UnimplementedControlServiceServer) Kill(context.Context, *KillRequest) (*KillResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Kill not implemented")
 }
-func (UnimplementedGuidanceServiceServer) ReturnToHome(context.Context, *ReturnToHomeRequest) (*ReturnToHomeResponse, error) {
+func (UnimplementedControlServiceServer) ReturnToHome(context.Context, *ReturnToHomeRequest) (*ReturnToHomeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ReturnToHome not implemented")
 }
-func (UnimplementedGuidanceServiceServer) SetGlobalPositionTarget(context.Context, *SetGlobalPositionTargetRequest) (*SetGlobalPositionTargetResponse, error) {
+func (UnimplementedControlServiceServer) SetGlobalPositionTarget(context.Context, *SetGlobalPositionTargetRequest) (*SetGlobalPositionTargetResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetGlobalPositionTarget not implemented")
 }
-func (UnimplementedGuidanceServiceServer) SetRelativePositionTarget(context.Context, *SetRelativePositionTargetRequest) (*SetRelativePositionTargetResponse, error) {
+func (UnimplementedControlServiceServer) SetRelativePositionTarget(context.Context, *SetRelativePositionTargetRequest) (*SetRelativePositionTargetResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetRelativePositionTarget not implemented")
 }
-func (UnimplementedGuidanceServiceServer) SetVelocityTarget(context.Context, *SetVelocityTargetRequest) (*SetVelocityTargetResponse, error) {
+func (UnimplementedControlServiceServer) SetVelocityTarget(context.Context, *SetVelocityTargetRequest) (*SetVelocityTargetResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetVelocityTarget not implemented")
 }
-func (UnimplementedGuidanceServiceServer) SetGimbalAngleTarget(context.Context, *SetGimbalAngleTargetRequest) (*SetGimbalAngleTargetResponse, error) {
+func (UnimplementedControlServiceServer) SetGimbalAngleTarget(context.Context, *SetGimbalAngleTargetRequest) (*SetGimbalAngleTargetResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetGimbalAngleTarget not implemented")
 }
-func (UnimplementedGuidanceServiceServer) SetGimbalVelocityTarget(context.Context, *SetGimbalVelocityTargetRequest) (*SetGimbalVelocityTargetResponse, error) {
+func (UnimplementedControlServiceServer) SetGimbalVelocityTarget(context.Context, *SetGimbalVelocityTargetRequest) (*SetGimbalVelocityTargetResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetGimbalVelocityTarget not implemented")
 }
-func (UnimplementedGuidanceServiceServer) mustEmbedUnimplementedGuidanceServiceServer() {}
-func (UnimplementedGuidanceServiceServer) testEmbeddedByValue()                         {}
+func (UnimplementedControlServiceServer) mustEmbedUnimplementedControlServiceServer() {}
+func (UnimplementedControlServiceServer) testEmbeddedByValue()                        {}
 
-// UnsafeGuidanceServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to GuidanceServiceServer will
+// UnsafeControlServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ControlServiceServer will
 // result in compilation errors.
-type UnsafeGuidanceServiceServer interface {
-	mustEmbedUnimplementedGuidanceServiceServer()
+type UnsafeControlServiceServer interface {
+	mustEmbedUnimplementedControlServiceServer()
 }
 
-func RegisterGuidanceServiceServer(s grpc.ServiceRegistrar, srv GuidanceServiceServer) {
-	// If the following call panics, it indicates UnimplementedGuidanceServiceServer was
+func RegisterControlServiceServer(s grpc.ServiceRegistrar, srv ControlServiceServer) {
+	// If the following call panics, it indicates UnimplementedControlServiceServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&GuidanceService_ServiceDesc, srv)
+	s.RegisterService(&ControlService_ServiceDesc, srv)
 }
 
-func _GuidanceService_TakeOff_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ControlService_TakeOff_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(TakeOffRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GuidanceServiceServer).TakeOff(ctx, in)
+		return srv.(ControlServiceServer).TakeOff(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: GuidanceService_TakeOff_FullMethodName,
+		FullMethod: ControlService_TakeOff_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GuidanceServiceServer).TakeOff(ctx, req.(*TakeOffRequest))
+		return srv.(ControlServiceServer).TakeOff(ctx, req.(*TakeOffRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GuidanceService_Land_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ControlService_Land_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LandRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GuidanceServiceServer).Land(ctx, in)
+		return srv.(ControlServiceServer).Land(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: GuidanceService_Land_FullMethodName,
+		FullMethod: ControlService_Land_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GuidanceServiceServer).Land(ctx, req.(*LandRequest))
+		return srv.(ControlServiceServer).Land(ctx, req.(*LandRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GuidanceService_Hold_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ControlService_Hold_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(HoldRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GuidanceServiceServer).Hold(ctx, in)
+		return srv.(ControlServiceServer).Hold(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: GuidanceService_Hold_FullMethodName,
+		FullMethod: ControlService_Hold_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GuidanceServiceServer).Hold(ctx, req.(*HoldRequest))
+		return srv.(ControlServiceServer).Hold(ctx, req.(*HoldRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GuidanceService_Kill_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ControlService_Kill_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(KillRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GuidanceServiceServer).Kill(ctx, in)
+		return srv.(ControlServiceServer).Kill(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: GuidanceService_Kill_FullMethodName,
+		FullMethod: ControlService_Kill_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GuidanceServiceServer).Kill(ctx, req.(*KillRequest))
+		return srv.(ControlServiceServer).Kill(ctx, req.(*KillRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GuidanceService_ReturnToHome_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ControlService_ReturnToHome_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ReturnToHomeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GuidanceServiceServer).ReturnToHome(ctx, in)
+		return srv.(ControlServiceServer).ReturnToHome(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: GuidanceService_ReturnToHome_FullMethodName,
+		FullMethod: ControlService_ReturnToHome_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GuidanceServiceServer).ReturnToHome(ctx, req.(*ReturnToHomeRequest))
+		return srv.(ControlServiceServer).ReturnToHome(ctx, req.(*ReturnToHomeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GuidanceService_SetGlobalPositionTarget_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ControlService_SetGlobalPositionTarget_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SetGlobalPositionTargetRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GuidanceServiceServer).SetGlobalPositionTarget(ctx, in)
+		return srv.(ControlServiceServer).SetGlobalPositionTarget(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: GuidanceService_SetGlobalPositionTarget_FullMethodName,
+		FullMethod: ControlService_SetGlobalPositionTarget_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GuidanceServiceServer).SetGlobalPositionTarget(ctx, req.(*SetGlobalPositionTargetRequest))
+		return srv.(ControlServiceServer).SetGlobalPositionTarget(ctx, req.(*SetGlobalPositionTargetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GuidanceService_SetRelativePositionTarget_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ControlService_SetRelativePositionTarget_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SetRelativePositionTargetRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GuidanceServiceServer).SetRelativePositionTarget(ctx, in)
+		return srv.(ControlServiceServer).SetRelativePositionTarget(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: GuidanceService_SetRelativePositionTarget_FullMethodName,
+		FullMethod: ControlService_SetRelativePositionTarget_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GuidanceServiceServer).SetRelativePositionTarget(ctx, req.(*SetRelativePositionTargetRequest))
+		return srv.(ControlServiceServer).SetRelativePositionTarget(ctx, req.(*SetRelativePositionTargetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GuidanceService_SetVelocityTarget_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ControlService_SetVelocityTarget_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SetVelocityTargetRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GuidanceServiceServer).SetVelocityTarget(ctx, in)
+		return srv.(ControlServiceServer).SetVelocityTarget(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: GuidanceService_SetVelocityTarget_FullMethodName,
+		FullMethod: ControlService_SetVelocityTarget_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GuidanceServiceServer).SetVelocityTarget(ctx, req.(*SetVelocityTargetRequest))
+		return srv.(ControlServiceServer).SetVelocityTarget(ctx, req.(*SetVelocityTargetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GuidanceService_SetGimbalAngleTarget_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ControlService_SetGimbalAngleTarget_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SetGimbalAngleTargetRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GuidanceServiceServer).SetGimbalAngleTarget(ctx, in)
+		return srv.(ControlServiceServer).SetGimbalAngleTarget(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: GuidanceService_SetGimbalAngleTarget_FullMethodName,
+		FullMethod: ControlService_SetGimbalAngleTarget_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GuidanceServiceServer).SetGimbalAngleTarget(ctx, req.(*SetGimbalAngleTargetRequest))
+		return srv.(ControlServiceServer).SetGimbalAngleTarget(ctx, req.(*SetGimbalAngleTargetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GuidanceService_SetGimbalVelocityTarget_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ControlService_SetGimbalVelocityTarget_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SetGimbalVelocityTargetRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GuidanceServiceServer).SetGimbalVelocityTarget(ctx, in)
+		return srv.(ControlServiceServer).SetGimbalVelocityTarget(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: GuidanceService_SetGimbalVelocityTarget_FullMethodName,
+		FullMethod: ControlService_SetGimbalVelocityTarget_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GuidanceServiceServer).SetGimbalVelocityTarget(ctx, req.(*SetGimbalVelocityTargetRequest))
+		return srv.(ControlServiceServer).SetGimbalVelocityTarget(ctx, req.(*SetGimbalVelocityTargetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// GuidanceService_ServiceDesc is the grpc.ServiceDesc for GuidanceService service.
+// ControlService_ServiceDesc is the grpc.ServiceDesc for ControlService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var GuidanceService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "steeleagle_protocol.v1.services.driver.GuidanceService",
-	HandlerType: (*GuidanceServiceServer)(nil),
+var ControlService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "steeleagle_protocol.v1.services.driver.ControlService",
+	HandlerType: (*ControlServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "TakeOff",
-			Handler:    _GuidanceService_TakeOff_Handler,
+			Handler:    _ControlService_TakeOff_Handler,
 		},
 		{
 			MethodName: "Land",
-			Handler:    _GuidanceService_Land_Handler,
+			Handler:    _ControlService_Land_Handler,
 		},
 		{
 			MethodName: "Hold",
-			Handler:    _GuidanceService_Hold_Handler,
+			Handler:    _ControlService_Hold_Handler,
 		},
 		{
 			MethodName: "Kill",
-			Handler:    _GuidanceService_Kill_Handler,
+			Handler:    _ControlService_Kill_Handler,
 		},
 		{
 			MethodName: "ReturnToHome",
-			Handler:    _GuidanceService_ReturnToHome_Handler,
+			Handler:    _ControlService_ReturnToHome_Handler,
 		},
 		{
 			MethodName: "SetGlobalPositionTarget",
-			Handler:    _GuidanceService_SetGlobalPositionTarget_Handler,
+			Handler:    _ControlService_SetGlobalPositionTarget_Handler,
 		},
 		{
 			MethodName: "SetRelativePositionTarget",
-			Handler:    _GuidanceService_SetRelativePositionTarget_Handler,
+			Handler:    _ControlService_SetRelativePositionTarget_Handler,
 		},
 		{
 			MethodName: "SetVelocityTarget",
-			Handler:    _GuidanceService_SetVelocityTarget_Handler,
+			Handler:    _ControlService_SetVelocityTarget_Handler,
 		},
 		{
 			MethodName: "SetGimbalAngleTarget",
-			Handler:    _GuidanceService_SetGimbalAngleTarget_Handler,
+			Handler:    _ControlService_SetGimbalAngleTarget_Handler,
 		},
 		{
 			MethodName: "SetGimbalVelocityTarget",
-			Handler:    _GuidanceService_SetGimbalVelocityTarget_Handler,
+			Handler:    _ControlService_SetGimbalVelocityTarget_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

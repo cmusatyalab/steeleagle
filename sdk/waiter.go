@@ -1,5 +1,3 @@
-//go:build ignore
-
 package sdk
 
 import (
@@ -58,7 +56,7 @@ func (w *waiter[Resp]) Wait(options ...opt.WaitOption) (Resp, error) {
 	if w.err != nil {
 		return w.resp, w.err
 	} else {
-		return w.resp, poll(opts)
+		return w.resp, w.poll(opts)
 	}
 }
 
