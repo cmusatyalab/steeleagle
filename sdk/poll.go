@@ -83,6 +83,7 @@ func guidancePoller[S proto.Message, Resp isGuidance[S]](v *vehicleContext, resp
 							}
 						} else { // stall can be reset
 							stall.Stop()
+							activeStall = false
 						}
 					} else if err != nil {
 						if !activeStall { // only reset the timer if there is an active stall
@@ -145,6 +146,7 @@ func gimbalPoller[S proto.Message, Resp isGimbal[S]](v *vehicleContext, resp Res
 							}
 						} else { // stall can be reset
 							stall.Stop()
+							activeStall = false
 						}
 					} else if err != nil {
 						if !activeStall { // only reset the timer if there is an active stall
