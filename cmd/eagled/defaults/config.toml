@@ -55,9 +55,6 @@ dir = ""
 [[vehicles]]
 # Name of the vehicle.
 name = "harpy"
-# Name of the driver plugin to run for this vehicle. Ignored if simulate is
-# true.
-driver = "parrot_anafi"
 # If true, this vehicle connects to the shared aviary simulator instead of
 # spawning driver. Optional lat/lon/alt (origin) may also be set here.
 simulate = false
@@ -66,6 +63,13 @@ simulate = false
 lat = 40.413664
 lon = -79.949285
 alt = 0
+
+# Name of the driver plugin to run for this vehicle (installed via
+# InstallPlugin under PLUGIN_CATEGORY_DRIVER), and any command line args to
+# launch it with. Ignored if simulate is true.
+[vehicles.driver]
+name = "parrot_anafi"
+# args = ["--verbose"]
 
 # Optional per-vehicle video stream override. If omitted entirely, simulated
 # vehicles default to stream-type "frames" (aviary has no RTSP source to

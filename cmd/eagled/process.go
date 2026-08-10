@@ -61,9 +61,13 @@ func (d *daemon) GetStatus(ctx context.Context, req *eagledpb.GetStatusRequest) 
 		if running && rv != nil {
 			port = rv.port
 		}
+		driverName := ""
+		if cfg.Driver != nil {
+			driverName = cfg.Driver.Name
+		}
 		vehicles = append(vehicles, eagledpb.VehicleStatus_builder{
 			Name:    name,
-			Driver:  cfg.Driver,
+			Driver:  driverName,
 			Running: running && rv != nil,
 			Port:    int32(port),
 		}.Build())
