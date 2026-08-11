@@ -10,7 +10,6 @@ import { Toolbar } from 'primereact/toolbar';
 import { ButtonGroup } from 'primereact/buttongroup';
 import { Tooltip } from 'primereact/tooltip';
 import { FileUpload } from 'primereact/fileupload';
-import { MultiSelect } from 'primereact/multiselect';
 import { Dropdown } from 'primereact/dropdown';
 import { Image } from 'primereact/image';
 import { DataTable } from 'primereact/datatable';
@@ -29,7 +28,7 @@ const uploadOptions = { icon: 'pi pi-fw pi-cloud-upload', iconOnly: true, classN
 function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, setTracking, toast, onCommand,
   manualControl, setManualControl, squadList, setSquadList, basePlanarVelocity, setBasePlanarVelocity,
   baseAngularVelocity, setBaseAngularVelocity, gamepadDeadzone, setGamepadDeadzone, takeOffAltitude, setTakeOffAltitude,
-  showDetections, onToggleDetections, gimbalVelocity, setGimbalVelocity }) {
+  showDetections, onToggleDetections, gimbalVelocity, setGimbalVelocity, controlGroups }) {
   const [mapPanelSize] = useState(0);
   const op = useRef(null);
   const op2 = useRef(null);
@@ -131,25 +130,50 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
   ), [uploadHandler, onMissionStart, onProgress, onUploadComplete]);
 
   const controlButtons = useMemo(() => (
-    <>
-      <div className="flex flex-column justify-content-end gap-1">
-        <ButtonGroup className="w-full md:w-20rem flex align-content-center justify-content-center">
-          <Button className="w-6" outlined size="small" icon="pi pi-check-circle" label="Arm" onClick={() => onCommand({ arm: true })} />
-          <Button className="w-6" outlined size="small" iconPos="right" icon="pi pi-times-circle " label="Disarm" onClick={() => onCommand({ arm: false })} />
-        </ButtonGroup>
-        <ButtonGroup className="w-full md:w-20rem flex align-content-center justify-content-center">
-          <Button className="w-6" outlined size="small" icon="pi pi-arrow-up" label="Takeoff" onClick={() => onCommand({ takeoff: takeOffAltitude })} />
-          <Button className="w-6" outlined size="small" iconPos="right" icon="pi pi-arrow-down" label="Land" onClick={() => onCommand({ land: true })} />
-        </ButtonGroup>
-        <ButtonGroup className="w-full md:w-20rem flex align-content-center justify-content-center">
-          <Button className="w-6" outlined size="small" icon="pi pi-home" label="RTH" onClick={() => onCommand({ rth: true })} />
-          <Button className="w-6" outlined size="small" iconPos="right" icon="pi pi-stop-circle" label="Hold" onClick={() => onCommand({ hold: true })} />
-        </ButtonGroup>
-      </div>
-    </>
+    <div className="flex flex-row flex-wrap gap-2">
+      <ButtonGroup>
+        <Button outlined size="small" icon="pi pi-check-circle" label="Arm" onClick={() => onCommand({ arm: true })} />
+        <Button outlined size="small" iconPos="right" icon="pi pi-times-circle" label="Disarm" onClick={() => onCommand({ arm: false })} />
+      </ButtonGroup>
+      <ButtonGroup>
+        <Button outlined size="small" icon="pi pi-arrow-up" label="Takeoff" onClick={() => onCommand({ takeoff: takeOffAltitude })} />
+        <Button outlined size="small" iconPos="right" icon="pi pi-arrow-down" label="Land" onClick={() => onCommand({ land: true })} />
+      </ButtonGroup>
+      <ButtonGroup>
+        <Button outlined size="small" icon="pi pi-home" label="RTH" onClick={() => onCommand({ rth: true })} />
+        <Button outlined size="small" iconPos="right" icon="pi pi-stop-circle" label="Hold" onClick={() => onCommand({ hold: true })} />
+      </ButtonGroup>
+    </div>
   ), [onCommand, takeOffAltitude]);
 
   const vehicleNames = useMemo(() => vehicles.map(v => v.name), [vehicles]);
+
+  const controlGroupDigits = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
+
+  const onSelectAllSquad = () => setSquadList(vehicleNames);
+  const onClearSquad = () => setSquadList([]);
+  const onRecallGroup = (digit) => setSquadList(controlGroups[digit] ?? []);
+
+  const swarmCenterContent = useMemo(() => (
+    <div className="flex flex-row align-items-center gap-2 flex-wrap justify-content-center">
+      <Chip label={`${(squadList ?? []).length} vehicles selected`} icon="pi pi-users" />
+      <Button size="small" text label="Select All" icon="pi pi-check-square" onClick={onSelectAllSquad} />
+      <Button size="small" text label="Clear" icon="pi pi-times" onClick={onClearSquad} />
+      <ButtonGroup>
+        {controlGroupDigits.map((digit) => (
+          <Button
+            key={digit}
+            size="small"
+            outlined={!(controlGroups[digit]?.length > 0)}
+            label={digit}
+            tooltip={`Group ${digit}: ${(controlGroups[digit] ?? []).length} vehicles`}
+            tooltipOptions={{ position: 'bottom' }}
+            onClick={() => onRecallGroup(digit)}
+          />
+        ))}
+      </ButtonGroup>
+    </div>
+  ), [squadList, controlGroups, controlGroupDigits, onSelectAllSquad, onClearSquad, onRecallGroup]);
 
   const onToggleVehicle = (name) => {
     const current = squadList ?? [];
@@ -159,13 +183,6 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
       setSquadList([...current, name]);
     }
   };
-
-  const squadComponent = useMemo(() => (
-    <>
-      <MultiSelect className="flex justify-content-center w-full md:w-20rem" value={squadList} onChange={(e) => setSquadList(e.value)} options={vehicleNames} useOptionAsValue display="chip"
-        placeholder="Squad Selection" maxSelectedLabels={2} selectedItemsLabel="{0} vehicles selected." />
-    </>
-  ), [squadList, setSquadList, vehicleNames]);
 
   const overlayContent = useMemo(() => (
     <>
@@ -231,7 +248,6 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
         <div className="flex align-items-center gap-2" >
           {manualControl && <Message severity="success" text="Manual Control Enabled" />}
           {!manualControl && <Message severity="error" text="Manual Control Disabled" />}
-          {squadComponent}
           <Button size="small" rounded text label="" icon="pi pi-cog" onClick={(e) => op2.current.toggle(e)} />
           <OverlayPanel ref={op2}><span>Swarm Settings</span></OverlayPanel>
           {options.togglerElement}
@@ -278,7 +294,7 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
           </div>
         </Panel>
         <Panel headerTemplate={swarmHeaderTemplate} className="my-2 h-full">
-          <Toolbar className="w-full" start={controlButtons} end={missonControls} />
+          <Toolbar className="w-full" start={controlButtons} center={swarmCenterContent} end={missonControls} />
         </Panel>
       </div>
     </>
