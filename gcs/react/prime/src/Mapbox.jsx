@@ -6,15 +6,15 @@ import { vehicleColor } from './mapUtils.js'
 
 function createVehicleMarkerElement(color, selected) {
   const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  el.setAttribute('width', '28');
-  el.setAttribute('height', '28');
-  el.setAttribute('viewBox', '0 0 24 24');
+  el.setAttribute('width', '34');
+  el.setAttribute('height', '34');
+  el.setAttribute('viewBox', '0 0 34 34');
 
   if (selected) {
     const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    ring.setAttribute('cx', '12');
-    ring.setAttribute('cy', '12');
-    ring.setAttribute('r', '11');
+    ring.setAttribute('cx', '17');
+    ring.setAttribute('cy', '17');
+    ring.setAttribute('r', '15');
     ring.setAttribute('fill', 'none');
     ring.setAttribute('stroke', '#ffffff');
     ring.setAttribute('stroke-width', '2');
@@ -22,7 +22,7 @@ function createVehicleMarkerElement(color, selected) {
   }
 
   const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  path.setAttribute('d', 'M12 1 L21 22 L12 17 L3 22 Z');
+  path.setAttribute('d', 'M17 6 L26 27 L17 22 L8 27 Z');
   path.setAttribute('fill', color);
   path.setAttribute('stroke', '#ffffff');
   path.setAttribute('stroke-width', '1.5');
