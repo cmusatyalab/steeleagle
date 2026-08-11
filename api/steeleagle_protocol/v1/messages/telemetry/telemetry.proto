@@ -126,8 +126,8 @@ enum Mode {
   MODE_TAKEOFF = 1;
   // the vehicle is in land mode
   MODE_LAND = 2;
-  // the vehicle is in hold mode
-  MODE_HOLD = 3;
+  // the vehicle is in loiter mode
+  MODE_LOITER = 3;
   // the vehicle is in guided mode
   MODE_GUIDED = 4;
   // the vehicle is experiencing an emergency

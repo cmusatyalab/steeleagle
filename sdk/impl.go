@@ -156,12 +156,8 @@ func (v *vehicleContext) SetGimbalAngleTarget(
 }
 
 func (v *vehicleContext) SetGimbalVelocityTarget(
-	pitchVel, rollVel, yawVel float32,
-	options ...opt.Option[opt.SetGimbalVelocityTargetOption]) *waiter[SetGimbalVelocityTargetResponse] {
+	pitchVel, rollVel, yawVel float32) *waiter[SetGimbalVelocityTargetResponse] {
 	req := &driverpb.SetGimbalVelocityTargetRequest{}
-	for _, option := range options {
-		option(req)
-	}
 	req.GetPoseVelocity().SetPitchVel(pitchVel)
 	req.GetPoseVelocity().SetRollVel(rollVel)
 	req.GetPoseVelocity().SetYawVel(yawVel)
