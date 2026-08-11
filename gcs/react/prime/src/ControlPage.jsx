@@ -147,7 +147,7 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand,
   const onToggleVehicle = (name) => setSquadList((prev) => toggleVehicleInSquad(prev, name));
 
   const squadHeaderTemplate = (options) => (
-    <div className={options.className}>
+    <div className={`${options.className} flex-column align-items-stretch`}>
       <div className="flex align-items-center justify-content-between mb-2">
         <span className="font-bold">Squad</span>
         <Chip label={(squadList ?? []).length === 1 ? '1 selected' : `${(squadList ?? []).length} selected`} icon="pi pi-users" />
@@ -198,7 +198,7 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand,
       <div className="grid m-0">
         <div className="col-12 lg:col-3 p-2">
           <Panel headerTemplate={squadHeaderTemplate} className="h-full">
-            <div className="grid m-0" style={{ maxHeight: 'calc(100vh - 220px)', overflowY: 'auto' }}>
+            <div className="grid m-0" style={{ maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
               <VehicleGrid vehicles={vehicles} selectable squadList={squadList} onToggle={onToggleVehicle} cardColumnClass="col-12 p-2" />
             </div>
           </Panel>
