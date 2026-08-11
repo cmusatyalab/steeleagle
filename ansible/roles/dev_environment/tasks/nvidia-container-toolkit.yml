@@ -1,0 +1,41 @@
+---
+# SPDX-FileCopyrightText: 2026 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+- name: Download the NVIDIA Container Toolkit GPG key
+  ansible.builtin.get_url:
+    url: https://nvidia.github.io/libnvidia-container/gpgkey
+    dest: /tmp/nvidia-container-toolkit.gpg.key
+    mode: '0644'
+  become: true
+
+- name: Dearmor the NVIDIA Container Toolkit GPG key
+  ansible.builtin.command: >-
+    gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+    /tmp/nvidia-container-toolkit.gpg.key
+  args:
+    creates: /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+  become: true
+
+- name: Add the NVIDIA Container Toolkit apt repository
+  ansible.builtin.apt_repository:
+    repo: >-
+      deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg]
+      https://nvidia.github.io/libnvidia-container/stable/deb/$(ARCH) /
+    filename: nvidia-container-toolkit
+    state: present
+  become: true
+
+- name: Install the NVIDIA Container Toolkit
+  ansible.builtin.apt:
+    name: nvidia-container-toolkit
+    state: present
+    update_cache: true
+  become: true
+
+- name: Configure the Docker runtime for NVIDIA
+  ansible.builtin.command: nvidia-ctk runtime configure --runtime=docker
+  become: true
+  changed_when: true
+  notify: Restart Docker

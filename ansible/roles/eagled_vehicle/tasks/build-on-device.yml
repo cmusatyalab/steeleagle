@@ -1,0 +1,80 @@
+---
+# SPDX-FileCopyrightText: 2026 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+- name: Ensure git and acl are installed
+  # NOTE: `acl` is not a build dependency -- it is required by Ansible itself.
+  # The clone and build tasks below use become_user: {{ eagled_service_user }}
+  # while the connecting user is typically unprivileged (e.g. ansible_user=pi),
+  # and Ansible's unprivileged->unprivileged become path needs either
+  # `setfacl` (from the acl package) or pipelining to hand the temporary
+  # module files over to the target user. Pipelining is off by default
+  # (ANSIBLE_PIPELINING defaults to False), so without acl those tasks fail
+  # with "Failed to set permissions on the temporary files Ansible needs to
+  # create when becoming an unprivileged user."
+  ansible.builtin.apt:
+    name:
+      - git
+      - acl
+    state: present
+    update_cache: true
+  become: "{{ eagled_use_become }}"
+
+- name: Determine on-device Go architecture
+  ansible.builtin.set_fact:
+    eagled_device_goarch: "{{ eagled_go_arch_map[ansible_architecture] | default('') }}"  # noqa: var-naming[no-role-prefix]
+
+- name: Fail on unsupported device architecture
+  ansible.builtin.fail:
+    msg: >-
+      No Go architecture mapping for {{ ansible_architecture }}. Add it to
+      eagled_go_arch_map to support this host.
+  when: eagled_device_goarch == ''
+
+- name: Download the Go toolchain archive
+  ansible.builtin.get_url:
+    url: "https://go.dev/dl/go{{ eagled_go_version }}.linux-{{ eagled_device_goarch }}.tar.gz"
+    dest: "/tmp/go{{ eagled_go_version }}.linux-{{ eagled_device_goarch }}.tar.gz"
+    mode: '0644'
+  become: "{{ eagled_use_become }}"
+
+- name: Extract the Go toolchain
+  ansible.builtin.unarchive:
+    src: "/tmp/go{{ eagled_go_version }}.linux-{{ eagled_device_goarch }}.tar.gz"
+    dest: /usr/local
+    remote_src: true
+    creates: "{{ eagled_go_install_dir }}/bin/go"
+  become: "{{ eagled_use_become }}"
+
+- name: Clone the steeleagle repository onto the vehicle
+  # depth: 1 -- steeleagle is a large monorepo and only the checked-out tree
+  # is needed to build cmd/eagled, so a shallow clone is far more appropriate
+  # for a resource-constrained vehicle companion computer.
+  ansible.builtin.git:
+    repo: "{{ eagled_repo_url }}"
+    dest: "{{ eagled_install_dir }}/src"
+    version: "{{ eagled_repo_version }}"
+    depth: 1
+  become: "{{ eagled_use_become }}"
+  become_user: "{{ eagled_service_user }}"
+
+- name: Build eagled on-device
+  # NOTE: the eagled service user is created with create_home: false (see
+  # templates.yml), so it has no real home directory. Ansible's sudo become
+  # plugin passes `-H` by default (become_flags defaults to "-H -S -n"),
+  # which would set HOME=/home/eagled -- a path that does not exist -- and
+  # `go build` would fail trying to create its build cache under it. HOME and
+  # both Go caches are therefore pinned explicitly under eagled_install_dir,
+  # which templates.yml already creates owned by the service user.
+  ansible.builtin.command:
+    cmd: "{{ eagled_go_install_dir }}/bin/go build -o {{ eagled_install_dir }}/bin/eagled ./cmd/eagled"
+    chdir: "{{ eagled_install_dir }}/src"
+  become: "{{ eagled_use_become }}"
+  become_user: "{{ eagled_service_user }}"
+  environment:
+    CGO_ENABLED: "0"
+    HOME: "{{ eagled_install_dir }}"
+    GOCACHE: "{{ eagled_install_dir }}/.cache/go-build"
+    GOMODCACHE: "{{ eagled_install_dir }}/.cache/go-mod"
+  changed_when: true

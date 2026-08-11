@@ -1,0 +1,50 @@
+---
+# SPDX-FileCopyrightText: 2026 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+- name: Install Bubblewrap (sandbox isolation)
+  ansible.builtin.apt:
+    name: bubblewrap
+    state: present
+    update_cache: true
+  become: true
+  when: eagled_isolation_mode == 'sandbox'
+
+- name: Check whether the AppArmor unprivileged userns restriction exists on this kernel
+  # check_mode: false because this is a pure `sysctl` read. Unlike
+  # ansible.builtin.raw (which registers no `rc` at all under --check), the
+  # command module registers a stub with rc: 0 -- which is worse here than a
+  # missing key, because it makes the guard below evaluate TRUE under --check
+  # even on kernels that have no such sysctl, misrepresenting the probe.
+  # Executing it for real under --check is safe and gives a truthful answer.
+  ansible.builtin.command: sysctl kernel.apparmor_restrict_unprivileged_userns
+  register: eagled_apparmor_userns_check  # noqa: var-naming[no-role-prefix]
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: eagled_isolation_mode == 'sandbox'
+
+- name: Allow unprivileged user namespaces for Bubblewrap (Ubuntu AppArmor kernels)
+  ansible.builtin.lineinfile:
+    path: /etc/sysctl.d/99-steeleagle-bubblewrap.conf
+    line: "kernel.apparmor_restrict_unprivileged_userns=0"
+    create: true
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  when:
+    - eagled_isolation_mode == 'sandbox'
+    # default(1) => "sysctl key absent", the conservative branch, if the
+    # probe above ever registers no rc at all.
+    - eagled_apparmor_userns_check.rc | default(1) == 0
+  notify: Reload sysctl
+
+- name: Install Podman (container isolation)
+  ansible.builtin.apt:
+    name: podman
+    state: present
+    update_cache: true
+  become: true
+  when: eagled_isolation_mode == 'container'

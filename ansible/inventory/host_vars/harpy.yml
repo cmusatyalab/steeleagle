@@ -1,0 +1,8 @@
+---
+# SPDX-FileCopyrightText: 2026 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+eagled_vehicle_devices:
+  - name: harpy
+    id: parrot_anafi

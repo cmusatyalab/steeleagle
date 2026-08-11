@@ -1,0 +1,20 @@
+[Unit]
+Description=SteelEagle vehicle daemon (eagled)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# NOTE: cmd/eagled/main.go's func main() body is currently fully commented
+# out upstream -- eagled does not yet parse a config-path flag or env var.
+# Once config-path resolution is implemented, update ExecStart to pass
+# {{ eagled_config_dir }}/config.toml explicitly.
+ExecStart={{ eagled_install_dir }}/bin/eagled
+WorkingDirectory={{ eagled_install_dir }}
+User={{ eagled_service_user }}
+Group={{ eagled_service_user }}
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

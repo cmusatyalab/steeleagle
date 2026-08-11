@@ -1,0 +1,52 @@
+---
+# SPDX-FileCopyrightText: 2026 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+- name: Assert Go is available on the control host
+  ansible.builtin.command: go version
+  delegate_to: localhost
+  become: false
+  changed_when: false
+  register: eagled_control_go_check  # noqa: var-naming[no-role-prefix]
+  failed_when: eagled_control_go_check.rc != 0
+
+- name: Determine target GOARCH
+  ansible.builtin.set_fact:
+    eagled_target_goarch: "{{ eagled_go_arch_map[ansible_architecture] | default('') }}"  # noqa: var-naming[no-role-prefix]
+
+- name: Fail on unsupported target architecture
+  ansible.builtin.fail:
+    msg: >-
+      No GOARCH mapping for target architecture {{ ansible_architecture }}.
+      Add it to eagled_go_arch_map to support this host.
+  when: eagled_target_goarch == ''
+
+- name: Ensure the local build output directory exists
+  ansible.builtin.file:
+    path: "{{ eagled_local_build_dir }}/{{ inventory_hostname }}"
+    state: directory
+    mode: '0755'
+  delegate_to: localhost
+  become: false
+
+- name: Cross-compile eagled for this target
+  ansible.builtin.command:
+    cmd: "go build -o {{ eagled_local_build_dir }}/{{ inventory_hostname }}/eagled ./cmd/eagled"
+    chdir: "{{ eagled_repo_dir }}"
+  delegate_to: localhost
+  become: false
+  environment:
+    GOOS: linux
+    GOARCH: "{{ eagled_target_goarch }}"
+    CGO_ENABLED: "0"
+  changed_when: true
+
+- name: Copy the eagled binary to the target
+  ansible.builtin.copy:
+    src: "{{ eagled_local_build_dir }}/{{ inventory_hostname }}/eagled"
+    dest: "{{ eagled_install_dir }}/bin/eagled"
+    owner: "{{ eagled_service_user }}"
+    group: "{{ eagled_service_user }}"
+    mode: '0755'
+  become: "{{ eagled_use_become }}"

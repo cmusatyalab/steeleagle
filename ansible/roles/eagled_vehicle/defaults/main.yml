@@ -1,0 +1,47 @@
+---
+# SPDX-FileCopyrightText: 2026 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+# These variables intentionally use the bare eagled_ prefix (rather than
+# eagled_vehicle_) since they identify concepts shared with other
+# eagled-related roles/tasks (e.g. cross_compile mode consumed by later
+# provisioning tasks), matching the established dev_ pattern in
+# dev_environment/defaults/main.yml.
+eagled_install_mode: cross_compile  # noqa: var-naming[no-role-prefix]
+eagled_use_become: true  # noqa: var-naming[no-role-prefix]
+eagled_go_version: "1.26.5"  # noqa: var-naming[no-role-prefix]
+eagled_go_install_dir: /usr/local/go  # noqa: var-naming[no-role-prefix]
+eagled_go_arch_map:  # noqa: var-naming[no-role-prefix]
+  x86_64: amd64
+  aarch64: arm64
+eagled_repo_url: https://github.com/cmusatyalab/steeleagle.git  # noqa: var-naming[no-role-prefix]
+eagled_repo_version: v4.0-beta  # noqa: var-naming[no-role-prefix]
+eagled_repo_dir: "{{ playbook_dir }}/../.."  # noqa: var-naming[no-role-prefix]
+eagled_local_build_dir: "{{ playbook_dir }}/../.build"  # noqa: var-naming[no-role-prefix]
+eagled_install_dir: /opt/steeleagle  # noqa: var-naming[no-role-prefix]
+eagled_config_dir: /etc/steeleagle  # noqa: var-naming[no-role-prefix]
+eagled_service_user: eagled  # noqa: var-naming[no-role-prefix]
+eagled_systemd_unit_path: /etc/systemd/system/eagled.service  # noqa: var-naming[no-role-prefix]
+# Directories systemd actually reads unit files from. Used only to decide
+# whether the "Reload eagled systemd unit" handler has anything to reload --
+# the role's test workflow points eagled_systemd_unit_path at a scratch file,
+# where a daemon-reload would be meaningless (and fails outright when
+# unprivileged). Not intended to be overridden in normal use.
+eagled_systemd_unit_dirs:  # noqa: var-naming[no-role-prefix]
+  - /etc/systemd/system
+  - /run/systemd/system
+  - /usr/lib/systemd/system
+  - /lib/systemd/system
+eagled_service_enabled: false  # noqa: var-naming[no-role-prefix]
+eagled_isolation_mode: sandbox  # noqa: var-naming[no-role-prefix]
+eagled_vpn: true  # noqa: var-naming[no-role-prefix]
+eagled_port_base: 9000  # noqa: var-naming[no-role-prefix]
+eagled_log_mcap: true  # noqa: var-naming[no-role-prefix]
+eagled_log_filename: ""  # noqa: var-naming[no-role-prefix]
+eagled_log_mask: 4113  # noqa: var-naming[no-role-prefix]
+eagled_log_level: info  # noqa: var-naming[no-role-prefix]
+eagled_errors_failfast: true  # noqa: var-naming[no-role-prefix]
+eagled_vehicle_vpn: true
+eagled_backend_engines: []  # noqa: var-naming[no-role-prefix]
+eagled_vehicle_devices: []
