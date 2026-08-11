@@ -4,11 +4,22 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { MAPBOX_TOKEN } from './config.js';
 import { vehicleColor } from './mapUtils.js'
 
-function createVehicleMarkerElement(color) {
+function createVehicleMarkerElement(color, selected) {
   const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   el.setAttribute('width', '28');
   el.setAttribute('height', '28');
   el.setAttribute('viewBox', '0 0 24 24');
+
+  if (selected) {
+    const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    ring.setAttribute('cx', '12');
+    ring.setAttribute('cy', '12');
+    ring.setAttribute('r', '11');
+    ring.setAttribute('fill', 'none');
+    ring.setAttribute('stroke', '#ffffff');
+    ring.setAttribute('stroke-width', '2');
+    el.appendChild(ring);
+  }
 
   const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   path.setAttribute('d', 'M12 1 L21 22 L12 17 L3 22 Z');
@@ -21,7 +32,7 @@ function createVehicleMarkerElement(color) {
   return el;
 }
 
-function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObjects, mapHeight }) {
+function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObjects, mapHeight, squadList, onToggleVehicle }) {
   const mapRef = useRef()
   const mapContainerRef = useRef()
   const markerRefs = useRef([]); // To store references to all markers
@@ -90,7 +101,8 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObj
     markerRefs.current.forEach(marker => marker.remove());
     markerRefs.current = [];
     vehicles.forEach(v => {
-      let marker = new mapboxgl.Marker({ element: createVehicleMarkerElement(vehicleColor(v.name)), rotation: v.bearing, rotationAlignment: 'map' })
+      const isSelected = !!(squadList && squadList.includes(v.name));
+      let marker = new mapboxgl.Marker({ element: createVehicleMarkerElement(vehicleColor(v.name), isSelected), rotation: v.bearing, rotationAlignment: 'map' })
         .setLngLat([v.current.long, v.current.lat])
         .setPopup(new mapboxgl.Popup({ focusAfterOpen: false }).setHTML(`<strong style="color:black">${v.name} (${v.current.alt.toFixed(2)} m)</strong>`))
         .addTo(mapRef.current);
@@ -99,6 +111,10 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObj
 
       markerDiv.addEventListener('mouseenter', () => marker.togglePopup());
       markerDiv.addEventListener('mouseleave', () => marker.togglePopup());
+      if (onToggleVehicle) {
+        markerDiv.style.cursor = 'pointer';
+        markerDiv.addEventListener('click', () => onToggleVehicle(v.name));
+      }
 
       if (tracking && v.name === selectedVehicle) {
         mapRef.current.flyTo({
@@ -140,7 +156,7 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObj
       });
     }
 
-  }, [vehicles, detectedObjects]);
+  }, [vehicles, detectedObjects, squadList]);
 
   useEffect(() => {
     let v = vehicles.find(v => v.name === selectedVehicle);
