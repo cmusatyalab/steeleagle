@@ -10,6 +10,7 @@ import (
 	eagledpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/eagled"
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"github.com/cmusatyalab/steeleagle/internal/tailscale"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -80,6 +81,7 @@ func (d *daemon) Configure(ctx context.Context, req *eagledpb.ConfigureRequest) 
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "parsing config: %v", err)
 	}
+	log.Info().Int("vehicles", len(cfg.Vehicles)).Msg("Configure received")
 	if err := d.ensureConfigured(cfg); err != nil {
 		return nil, err
 	}
@@ -89,6 +91,11 @@ func (d *daemon) Configure(ctx context.Context, req *eagledpb.ConfigureRequest) 
 
 	results := d.startVehicles(cfg.Vehicles)
 	d.persist()
+	for _, r := range results {
+		if !r.GetOk() {
+			log.Warn().Str("vehicle", r.GetName()).Str("error", r.GetError()).Msg("vehicle failed to start")
+		}
+	}
 	return eagledpb.ConfigureResponse_builder{Vehicles: results}.Build(), nil
 }
 
@@ -96,9 +103,11 @@ func (d *daemon) Configure(ctx context.Context, req *eagledpb.ConfigureRequest) 
 // to the daemon, so RestartVehicles can bring it back. It comes back on a
 // subsequent eagled restart same as any other configured vehicle.
 func (d *daemon) StopVehicles(ctx context.Context, req *eagledpb.StopVehiclesRequest) (*eagledpb.StopVehiclesResponse, error) {
+	log.Info().Strs("vehicles", req.GetNames()).Msg("StopVehicles received")
 	results := make([]*eagledpb.VehicleResult, 0, len(req.GetNames()))
 	for _, name := range req.GetNames() {
 		if err := d.stopOne(name); err != nil {
+			log.Warn().Str("vehicle", name).Err(err).Msg("failed to stop vehicle")
 			results = append(results, eagledpb.VehicleResult_builder{Name: name, Ok: false, Error: err.Error()}.Build())
 			continue
 		}
@@ -110,9 +119,11 @@ func (d *daemon) StopVehicles(ctx context.Context, req *eagledpb.StopVehiclesReq
 // RestartVehicles stops and restarts each named vehicle using the
 // configuration it was last started or configured with.
 func (d *daemon) RestartVehicles(ctx context.Context, req *eagledpb.RestartVehiclesRequest) (*eagledpb.RestartVehiclesResponse, error) {
+	log.Info().Strs("vehicles", req.GetNames()).Msg("RestartVehicles received")
 	results := make([]*eagledpb.VehicleResult, 0, len(req.GetNames()))
 	for _, name := range req.GetNames() {
 		if err := d.restartOne(name); err != nil {
+			log.Warn().Str("vehicle", name).Err(err).Msg("failed to restart vehicle")
 			results = append(results, eagledpb.VehicleResult_builder{Name: name, Ok: false, Error: err.Error()}.Build())
 			continue
 		}
@@ -125,6 +136,7 @@ func (d *daemon) RestartVehicles(ctx context.Context, req *eagledpb.RestartVehic
 // not come back on RestartVehicles or a subsequent eagled restart unless
 // reconfigured.
 func (d *daemon) ForgetVehicles(ctx context.Context, req *eagledpb.ForgetVehiclesRequest) (*eagledpb.ForgetVehiclesResponse, error) {
+	log.Info().Strs("vehicles", req.GetNames()).Msg("ForgetVehicles received")
 	results := make([]*eagledpb.VehicleResult, 0, len(req.GetNames()))
 	for _, name := range req.GetNames() {
 		d.mu.Lock()
@@ -245,6 +257,7 @@ func (d *daemon) stopOne(name string) error {
 		delete(d.running, name)
 	}
 	d.mu.Unlock()
+	log.Info().Str("vehicle", name).Msg("vehicle stopped")
 	return nil
 }
 
@@ -363,6 +376,12 @@ func (d *daemon) ensureConfigured(cfg Config) error {
 	d.nextPort = cfg.PortBase
 	d.configured = true
 	d.mu.Unlock()
+	log.Info().
+		Str("daemon-name", daemonName).
+		Bool("vpn", cfg.VPN).
+		Bool("vehicle-vpn", cfg.VehicleVPN).
+		Str("swarm-controller", cfg.Backend.SwarmController.Address).
+		Msg("daemon-wide config established")
 	return nil
 }
 
@@ -396,6 +415,7 @@ func (d *daemon) ensureAviary(vehicleCfgs []VehicleConfig) error {
 	command, dir := d.aviaryCommand, d.aviaryDir
 	d.mu.Unlock()
 
+	log.Info().Int("vehicles", len(simulated)).Msg("starting shared aviary simulator")
 	if err := spawnAviary(d.ctx, command, dir, simulated); err != nil {
 		return status.Errorf(codes.Internal, "starting aviary: %v", err)
 	}

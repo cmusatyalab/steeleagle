@@ -12,6 +12,7 @@ import (
 	"slices"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/google/uuid"
@@ -171,6 +172,12 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 		p.log.Error().Err(err).Msg("insufficient arguments to start plugin")
 		p.cleanup()
 		return nil, nil, err
+	}
+	// Run in its own process group and kill the whole group on shutdown, not
+	// just the immediate child
+	p.cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	p.cmd.Cancel = func() error {
+		return syscall.Kill(-p.cmd.Process.Pid, syscall.SIGKILL)
 	}
 	if p.script != "" {
 		// Set the working directory for the command
