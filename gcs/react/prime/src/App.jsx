@@ -518,10 +518,9 @@ function App() {
     <>
       <Menubar model={items} start={menuBarStart} end={menuBarEnd} />
       <Divider />
-      {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} tracking={tracking} setTracking={setTracking} toast={toast} onCommand={onCommand}
-        manualControl={manualControl} setManualControl={setManualControl} squadList={squadList} setSquadList={setSquadList} basePlanarVelocity={basePlanarVelocity} setBasePlanarVelocity={setBasePlanarVelocity}
-        baseAngularVelocity={baseAngularVelocity} setBaseAngularVelocity={setBaseAngularVelocity} gamepadDeadzone={gamepadDeadzone} setGamepadDeadzone={setGamepadDeadzone}
-        takeOffAltitude={takeOffAltitude} setTakeOffAltitude={setTakeOffAltitude} showDetections={showDetections} onToggleDetections={onToggleDetections} gimbalVelocity={gimbalVelocity} setGimbalVelocity={setGimbalVelocity}
+      {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} tracking={tracking} toast={toast} onCommand={onCommand}
+        manualControl={manualControl} setManualControl={setManualControl} squadList={squadList} setSquadList={setSquadList}
+        takeOffAltitude={takeOffAltitude}
         controlGroups={controlGroups} />}
       {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} detectedObjects={detectedObjects} />}
       <div style={{ display: selectedMenu === 'Plan' ? '' : 'none' }}>

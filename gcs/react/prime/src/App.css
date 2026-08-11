@@ -58,6 +58,7 @@
   background: transparent;
   box-shadow: none;
   padding: 0;
+  pointer-events: none;
 }
 .vehicle-label-popup .mapboxgl-popup-tip {
   display: none;
