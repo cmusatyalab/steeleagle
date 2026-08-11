@@ -18,7 +18,7 @@ import { Column } from 'primereact/column';
 import { Divider } from 'primereact/divider';
 import React from 'react';
 import { getApiUrl } from './urls.js';
-import Status from './Status.jsx';
+import VehicleGrid from './VehicleGrid.jsx';
 import Mapbox from './Mapbox.jsx';
 import { CONTROL_MAPPINGS } from './controlMappings.js';
 
@@ -151,6 +151,15 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
 
   const vehicleNames = useMemo(() => vehicles.map(v => v.name), [vehicles]);
 
+  const onToggleVehicle = (name) => {
+    const current = squadList ?? [];
+    if (current.includes(name)) {
+      setSquadList(current.filter((n) => n !== name));
+    } else {
+      setSquadList([...current, name]);
+    }
+  };
+
   const squadComponent = useMemo(() => (
     <>
       <MultiSelect className="flex justify-content-center w-full md:w-20rem" value={squadList} onChange={(e) => setSquadList(e.value)} options={vehicleNames} useOptionAsValue display="chip"
@@ -240,7 +249,7 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
         </div>
         <div className="flex align-items-center gap-2">
           <Dropdown value={selectedVehicle} checkmark={true} onChange={(e) => setSelectedVehicle(e.value)} options={vehicleNames} useOptionAsValue optionLabel="name"
-            placeholder="Select a Vehicle" className="w-full md:w-14rem" />
+            placeholder="Select Video Feed" className="w-full md:w-14rem" />
           <Button size="small" rounded text label="" icon="pi pi-cog" onClick={(e) => op.current.toggle(e)} />
           <OverlayPanel ref={op}>{overlayContent}</OverlayPanel>
           {options.togglerElement}
@@ -249,25 +258,23 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
     );
   };
 
-  const selectedVehicleData = useMemo(
-    () => vehicles.find(v => v.name === selectedVehicle),
-    [vehicles, selectedVehicle]
-  );
-
   return (
     <>
       <div className="flex flex-column">
         <Panel headerTemplate={headerTemplate} className="h-full" >
           <div className="grid m-0">
-            <div className="col-12 lg:col-5 p-2">
-              <Mapbox selectedVehicle={selectedVehicle} vehicles={vehicles} mapPanelSize={mapPanelSize} tracking={tracking} />
+            <div className="col-12 lg:col-6 p-2">
+              <Mapbox selectedVehicle={selectedVehicle} vehicles={vehicles} mapPanelSize={mapPanelSize} tracking={tracking}
+                squadList={squadList} onToggleVehicle={onToggleVehicle} />
             </div>
-            <div className="col-12 lg:col-4 p-2">
+            <div className="col-12 lg:col-6 p-2">
               <Image height="100%" width="100%" pt={{ image: { id: 'image_stream' } }} src="nostream.png" />
             </div>
-            <div className="col-12 lg:col-3 p-2">
-              <Status vehicle={selectedVehicleData} />
-            </div>
+          </div>
+        </Panel>
+        <Panel header="Squad" className="my-2 h-full">
+          <div className="grid m-0">
+            <VehicleGrid vehicles={vehicles} selectable squadList={squadList} onToggle={onToggleVehicle} />
           </div>
         </Panel>
         <Panel headerTemplate={swarmHeaderTemplate} className="my-2 h-full">
