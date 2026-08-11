@@ -157,7 +157,7 @@ function App() {
       onCommand({ hold: true });
       setManualControl(true);
     }
-    const digitMatch = e.code.match(/^Digit([1-9])$/);
+    const digitMatch = e.code.match(/^Digit([1-3])$/);
     if (digitMatch) {
       const digit = digitMatch[1];
       const noOtherModifiers = !e.altKey && !e.metaKey && !e.ctrlKey;

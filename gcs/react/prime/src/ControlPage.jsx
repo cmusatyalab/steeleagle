@@ -18,7 +18,7 @@ import { toggleVehicleInSquad, recallControlGroup } from './squadUtils.js';
 const cancelOptions = { icon: 'pi pi-fw pi-times', iconOnly: true, className: 'custom-cancel-btn p-button-danger' };
 const chooseOptions = { label: 'Select...', icon: 'pi pi-fw pi-file', iconOnly: false, className: 'custom-choose-btn p-button-primary' };
 const uploadOptions = { icon: 'pi pi-fw pi-cloud-upload', iconOnly: true, className: 'custom-upload-btn p-button-info' };
-const controlGroupDigits = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
+const controlGroupDigits = ['1', '2', '3'];
 
 function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand,
   manualControl, setManualControl, squadList, setSquadList, takeOffAltitude, controlGroups }) {
@@ -144,28 +144,35 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand,
   const onClearSquad = useCallback(() => setSquadList([]), [setSquadList]);
   const onRecallGroup = useCallback((digit) => setSquadList(recallControlGroup(controlGroups, digit)), [controlGroups, setSquadList]);
 
-  const swarmCenterContent = useMemo(() => (
-    <div className="flex flex-row align-items-center gap-2 flex-wrap justify-content-center">
-      <Chip label={(squadList ?? []).length === 1 ? '1 vehicle selected' : `${(squadList ?? []).length} vehicles selected`} icon="pi pi-users" />
-      <Button size="small" text label="Select All" icon="pi pi-check-square" onClick={onSelectAllSquad} />
-      <Button size="small" text label="Clear" icon="pi pi-times" onClick={onClearSquad} />
-      <ButtonGroup>
-        {controlGroupDigits.map((digit) => (
-          <Button
-            key={digit}
-            size="small"
-            outlined={!(controlGroups[digit]?.length > 0)}
-            label={digit}
-            tooltip={`Group ${digit}: ${(controlGroups[digit] ?? []).length} vehicles`}
-            tooltipOptions={{ position: 'bottom' }}
-            onClick={() => onRecallGroup(digit)}
-          />
-        ))}
-      </ButtonGroup>
-    </div>
-  ), [squadList, controlGroups, onSelectAllSquad, onClearSquad, onRecallGroup]);
-
   const onToggleVehicle = (name) => setSquadList((prev) => toggleVehicleInSquad(prev, name));
+
+  const squadHeaderTemplate = (options) => (
+    <div className={options.className}>
+      <div className="flex align-items-center justify-content-between mb-2">
+        <span className="font-bold">Squad</span>
+        <Chip label={(squadList ?? []).length === 1 ? '1 selected' : `${(squadList ?? []).length} selected`} icon="pi pi-users" />
+      </div>
+      <div className="flex align-items-center justify-content-between flex-wrap gap-2">
+        <div className="flex align-items-center gap-2">
+          <Button size="small" text label="Select All" icon="pi pi-check-square" onClick={onSelectAllSquad} />
+          <Button size="small" text label="Clear" icon="pi pi-times" onClick={onClearSquad} />
+        </div>
+        <ButtonGroup>
+          {controlGroupDigits.map((digit) => (
+            <Button
+              key={digit}
+              size="small"
+              outlined={!(controlGroups[digit]?.length > 0)}
+              label={digit}
+              tooltip={`Group ${digit}: ${(controlGroups[digit] ?? []).length} vehicles`}
+              tooltipOptions={{ position: 'bottom' }}
+              onClick={() => onRecallGroup(digit)}
+            />
+          ))}
+        </ButtonGroup>
+      </div>
+    </div>
+  );
 
   const swarmHeaderTemplate = (options) => {
     const className = `${options.className} justify-content-space-between`;
@@ -190,7 +197,7 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand,
     <>
       <div className="grid m-0">
         <div className="col-12 lg:col-3 p-2">
-          <Panel header="Squad" className="h-full">
+          <Panel headerTemplate={squadHeaderTemplate} className="h-full">
             <div className="grid m-0" style={{ maxHeight: 'calc(100vh - 220px)', overflowY: 'auto' }}>
               <VehicleGrid vehicles={vehicles} selectable squadList={squadList} onToggle={onToggleVehicle} cardColumnClass="col-12 p-2" />
             </div>
@@ -208,7 +215,7 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand,
               </div>
             </div>
             <Panel headerTemplate={swarmHeaderTemplate} className="my-2 h-full">
-              <Toolbar className="w-full" start={controlButtons} center={swarmCenterContent} end={missonControls} />
+              <Toolbar className="w-full" start={controlButtons} end={missonControls} />
             </Panel>
           </div>
         </div>
