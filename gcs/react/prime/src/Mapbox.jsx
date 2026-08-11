@@ -105,8 +105,8 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObj
       let marker = new mapboxgl.Marker({ element: createVehicleMarkerElement(vehicleColor(v.name), isSelected), rotation: v.bearing, rotationAlignment: 'map' })
         .setLngLat([v.current.long, v.current.lat])
         .setPopup(
-          new mapboxgl.Popup({ offset: 20, focusAfterOpen: false, closeButton: false, closeOnClick: false, className: 'vehicle-label-popup' })
-            .setHTML(`<strong>${v.name} (${v.current.alt.toFixed(2)} m)</strong>`)
+          new mapboxgl.Popup({ offset: 20, anchor: 'top', focusAfterOpen: false, closeButton: false, closeOnClick: false, className: 'vehicle-label-popup' })
+            .setHTML(`<strong>${v.name}<br>${v.current.alt.toFixed(2)} m</strong>`)
         )
         .addTo(mapRef.current);
       marker.togglePopup();
