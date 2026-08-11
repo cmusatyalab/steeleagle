@@ -10,8 +10,13 @@ import { Toast } from 'primereact/toast';
 import { Sidebar } from 'primereact/sidebar';
 import { Dropdown } from 'primereact/dropdown';
 import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
 import { InputSwitch } from 'primereact/inputswitch';
 import { Knob } from 'primereact/knob';
+import { Button } from 'primereact/button';
+import { OverlayPanel } from 'primereact/overlaypanel';
+import { ToggleButton } from 'primereact/togglebutton';
+import { Chip } from 'primereact/chip';
 import 'primereact/resources/primereact.min.css';        // Core PrimeReact CSS
 import 'primeicons/primeicons.css';                     // Icons
 import 'primeflex/primeflex.css';                       // PrimeFlex utilities
@@ -23,6 +28,7 @@ import MonitorPage from './MonitorPage.jsx';
 import PlanPage from './PlanPage.jsx';
 import { getWebSocketUrl, getApiUrl } from './urls.js';
 import { assignControlGroup, recallControlGroup } from './squadUtils.js';
+import { CONTROL_MAPPINGS } from './controlMappings.js';
 
 
 function App() {
@@ -30,6 +36,7 @@ function App() {
   const [vehicles, setVehicles] = useState([]);
   const [detectedObjects, setDetectedObjects] = useState([]);
   const toast = useRef(null);
+  const op = useRef(null);
   const [selectedMenu, setSeletectedMenu] = useState('Control');
   const [planMounted, setPlanMounted] = useState(false);
   const [, setKeyPressed] = useState(false);
@@ -409,16 +416,6 @@ function App() {
     </div>
   ), [appName]);
 
-  const menuBarEnd = useMemo(() => (
-    <div className="flex align-items-center gap-2 mr-2">
-      <GameControls setAxis={setGamePadAxis} setButton={setGamePadButton} deadzone={gamepadDeadzone} />
-      <i className="pi pi-moon" />
-      <InputSwitch checked={theme === 'light'} onChange={(e) => setTheme(e.value ? 'light' : 'dark')} />
-      <i className="pi pi-sun" />
-    </div>
-  ), [theme, gamepadDeadzone]);
-
-
   const onToggleDetections = useCallback(async (value) => {
     setShowDetections(value);
 
@@ -447,6 +444,75 @@ function App() {
       });
     }
   }, []);
+
+  const vehicleNames = useMemo(() => vehicles.map(v => v.name), [vehicles]);
+
+  const overlayContent = useMemo(() => (
+    <>
+      <div className="flex flex-row gap-2">
+        <div className="flex flex-column flex-wrap align-content-center m-2">
+          <Knob className="flex align-items-center justify-content-center" value={basePlanarVelocity} onChange={(e) => setBasePlanarVelocity(e.value)} min={1} max={10} valueTemplate={'{value}m/s'} />
+          <Chip className="flex align-items-center justify-content-center" label="Base Planar Velocity" icon="pi pi-sliders-v" />
+        </div>
+        <div className="flex flex-column flex-wrap align-content-center m-2">
+          <Knob className="flex align-items-center justify-content-center" value={baseAngularVelocity} onChange={(e) => setBaseAngularVelocity(e.value)} min={15} max={180} step={15} valueTemplate={'{value}°/s'} />
+          <Chip className="flex align-items-center justify-content-center" label="Base Angular Velocity" icon="pi pi-chart-pie" />
+        </div>
+        <div className="flex flex-column flex-wrap align-content-center m-2">
+          <Knob className="flex align-items-center justify-content-center" value={gimbalVelocity} onChange={(e) => setGimbalVelocity(e.value)} min={5} max={45} step={5} valueTemplate={'{value}°/s'} />
+          <Chip className="flex align-items-center justify-content-center" label="Gimbal Velocity" icon="pi pi-expand" />
+        </div>
+      </div>
+      <div className="flex flex-row gap-2">
+        <div className="flex flex-column flex-wrap align-content-center m-2">
+          <Knob className="flex align-items-center justify-content-center" value={gamepadDeadzone} onChange={(e) => setGamepadDeadzone(e.value)} min={5} max={50} step={5} valueTemplate={'{value}%'} />
+          <Chip className="flex align-items-center justify-content-center" label="Gamepad Deadzone" icon="pi pi-bullseye" />
+        </div>
+        <div className="flex flex-column flex-wrap align-content-center m-2">
+          <Knob className="flex align-items-center justify-content-center" value={takeOffAltitude} onChange={(e) => setTakeOffAltitude(e.value)} min={1} max={10} step={1} valueTemplate={'{value}m'} />
+          <Chip className="flex align-items-center justify-content-center" label="Takeoff Altitude" icon="pi pi-sort-numeric-up-alt" />
+        </div>
+      </div>
+      <div className="flex flex-row gap-2">
+        <div className="flex flex-column flex-wrap justify-content-center align-content-center m-2">
+          <ToggleButton onLabel="Tracking On" offLabel="Tracking Off" onIcon="pi pi-bullseye" offIcon="pi pi-map"
+            checked={tracking} onChange={(e) => setTracking(e.value)} className="flex" tooltip="When enabled, the map will recenter on the selected vehicle." />
+        </div>
+        <div className="flex flex-column flex-wrap justify-content-center align-content-center m-2">
+          <ToggleButton onLabel="Show Detections" offLabel="Hide Detections" onIcon="pi pi-expand" offIcon="pi pi-expand"
+            checked={showDetections} onChange={(e) => onToggleDetections(e.value)} className="flex" tooltip="When enabled, the video stream will show detection bounding boxes." />
+        </div>
+      </div>
+      <Divider />
+      <div className="flex flex-column m-2">
+        <span className="font-bold mb-2">Control Mappings</span>
+        <DataTable value={CONTROL_MAPPINGS} size="small" scrollable scrollHeight="300px">
+          <Column field="action" header="Action" />
+          <Column field="keyboard" header="Keyboard" />
+          <Column field="gamepad" header="Gamepad" />
+        </DataTable>
+      </div>
+    </>
+  ), [baseAngularVelocity, setBaseAngularVelocity, basePlanarVelocity, setBasePlanarVelocity,
+    gamepadDeadzone, setGamepadDeadzone, tracking, setTracking, takeOffAltitude, setTakeOffAltitude,
+    showDetections, onToggleDetections, gimbalVelocity, setGimbalVelocity]);
+
+  const menuBarEnd = useMemo(() => (
+    <div className="flex align-items-center gap-2 mr-2">
+      {selectedMenu === 'Control' && (
+        <>
+          <Dropdown value={selectedVehicle} checkmark={true} onChange={(e) => setSelectedVehicle(e.value)} options={vehicleNames} useOptionAsValue optionLabel="name"
+            placeholder="Select Video Feed" className="w-full md:w-14rem" />
+          <Button size="small" rounded text label="" icon="pi pi-cog" onClick={(e) => op.current.toggle(e)} />
+          <OverlayPanel ref={op}>{overlayContent}</OverlayPanel>
+        </>
+      )}
+      <GameControls setAxis={setGamePadAxis} setButton={setGamePadButton} deadzone={gamepadDeadzone} />
+      <i className="pi pi-moon" />
+      <InputSwitch checked={theme === 'light'} onChange={(e) => setTheme(e.value ? 'light' : 'dark')} />
+      <i className="pi pi-sun" />
+    </div>
+  ), [theme, gamepadDeadzone, selectedMenu, selectedVehicle, setSelectedVehicle, vehicleNames, overlayContent]);
 
   return (
     <>
