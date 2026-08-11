@@ -13,7 +13,7 @@ dependencies = [
     "redis",
     "fastapi",
     "uvicorn",
-    "steeleagle-protocol>=0.1.16",
+    "steeleagle-protocol>=0.1.18",
     "websockets",
     "rich",
     "opencv-python",

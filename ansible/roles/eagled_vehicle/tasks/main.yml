@@ -1,0 +1,39 @@
+---
+# SPDX-FileCopyrightText: 2026 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+- name: Fail on unsupported OS family
+  ansible.builtin.fail:
+    msg: >-
+      eagled_vehicle only supports Debian-family targets (Debian/Ubuntu).
+      Detected OS family: {{ ansible_os_family }}.
+  when: ansible_os_family != 'Debian'
+  tags: always
+
+- name: Fail on unsupported eagled_install_mode
+  ansible.builtin.fail:
+    msg: >-
+      eagled_install_mode must be 'cross_compile' or 'build_on_device', got:
+      {{ eagled_install_mode }}.
+  when: eagled_install_mode not in ['cross_compile', 'build_on_device']
+  tags: always
+
+# Without this guard a typo (e.g. eagled_isolation_mode: sandbxo) silently
+# installs NO isolation runtime at all -- every task in isolation.yml is
+# `when`-gated on an exact string match -- and writes the typo'd value
+# straight into the deployed config.toml's `isolation` field. For a variable
+# that decides whether mission code runs sandboxed, containerized, or with no
+# isolation at all, failing silently is dangerous.
+- name: Fail on unsupported eagled_isolation_mode
+  ansible.builtin.fail:
+    msg: >-
+      eagled_isolation_mode must be 'sandbox', 'container', or 'process',
+      got: {{ eagled_isolation_mode }}.
+  when: eagled_isolation_mode not in ['sandbox', 'container', 'process']
+  tags: always
+
+- name: Include Debian-family tasks
+  ansible.builtin.include_tasks: Debian.yml
+  when: ansible_os_family == 'Debian'
+  tags: always

@@ -1,0 +1,29 @@
+---
+# SPDX-FileCopyrightText: 2026 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+- name: Install base development packages
+  ansible.builtin.apt:
+    name: "{{ dev_apt_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  become: true
+
+- name: Download the uv install script
+  ansible.builtin.get_url:
+    url: https://astral.sh/uv/install.sh
+    dest: /tmp/uv-install.sh
+    mode: '0755'
+  become: false
+
+# No changed_when here: the `creates:` guard already makes this idempotent,
+# and the command module reports changed only when it actually executes. An
+# unconditional `changed_when: true` would report changed on every run even
+# when `creates:` skipped the command entirely.
+- name: Install uv
+  ansible.builtin.command: /tmp/uv-install.sh
+  args:
+    creates: "{{ ansible_env.HOME }}/.local/bin/uv"
+  become: false

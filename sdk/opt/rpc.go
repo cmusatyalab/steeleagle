@@ -46,11 +46,6 @@ type SetGimbalAngleTargetOption interface {
 	SetFrame(driverpb.ReferenceFrame)
 }
 
-// SetGimbalVelocityTargetOption represents an option for a SetGimbalVelocityTarget RPC.
-type SetGimbalVelocityTargetOption interface {
-	SetFrame(driverpb.ReferenceFrame)
-}
-
 // hasAltitude checks that the base interface supports an optional altitude.
 type hasAltitude interface {
 	SetAltitude(float32)

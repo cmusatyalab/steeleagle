@@ -81,28 +81,27 @@ class SwarmClient:
         z_vel: float,
         angular_vel: float,
     ) -> list[VehicleResult]:
-        request = swarm_pb2.SwarmSetVelocityRequest(
+        request = swarm_pb2.SwarmSetVelocityTargetRequest(
             vehicles=vehicles,
-            request=control_pb2.SetVelocityRequest(
+            request=control_pb2.SetVelocityTargetRequest(
                 velocity=common_pb2.Velocity(
                     x_vel=x_vel, y_vel=y_vel, z_vel=z_vel, angular_vel=angular_vel
                 )
             ),
         )
-        return await _collect_stream(self._stub.SwarmSetVelocity(request))
+        return await _collect_stream(self._stub.SwarmSetVelocityTarget(request))
 
     async def set_gimbal_pose(
         self, vehicles: list[str], pitch: float, yaw: float, roll: float
     ) -> list[VehicleResult]:
-        request = swarm_pb2.SwarmSetGimbalPoseRequest(
+        request = swarm_pb2.SwarmSetGimbalAngleTargetRequest(
             vehicles=vehicles,
-            request=control_pb2.SetGimbalPoseRequest(
-                gimbal_id=0,
+            request=control_pb2.SetGimbalAngleTargetRequest(
                 pose=common_pb2.Pose(pitch=pitch, yaw=yaw, roll=roll),
-                pose_mode=control_pb2.POSE_MODE_OFFSET,
+                angle_mode=control_pb2.ANGLE_MODE_OFFSET,
             ),
         )
-        return await _collect_stream(self._stub.SwarmSetGimbalPose(request))
+        return await _collect_stream(self._stub.SwarmSetGimbalAngleTarget(request))
 
     async def upload_mission(
         self, vehicles: list[str], mission_json: str, kml_map: bytes

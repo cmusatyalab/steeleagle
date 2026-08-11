@@ -3,7 +3,7 @@ name: Publish steeleagle-protocol to PyPI
 on:
   push:
     tags:
-      - "protocol/python/v*"
+      - "api/python/v*"
 
 jobs:
   build:

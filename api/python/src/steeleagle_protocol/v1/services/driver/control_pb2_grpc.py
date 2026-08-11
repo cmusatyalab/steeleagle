@@ -170,8 +170,8 @@ class ControlServiceServicer:
         - `HOVER` -> hover at `final_altitude` above home position
         - `LAND` -> land at home position
 
-        Returns an _Action_ style response with `expected_mode` set to either LOITER 
-        or LAND and `expected_status` set to `MOTION_STATUS_HOLDING` or 
+        Returns an _Action_ style response with `expected_mode` set to either LOITER
+        or LAND and `expected_status` set to `MOTION_STATUS_HOLDING` or
         `MOTION_STATUS_STOPPED`.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -222,8 +222,9 @@ class ControlServiceServicer:
         the specified `angular_speed` until the device has reached its destination.
         If neither are provided, the device will choose hardware defaults.
 
-        Returns a _Guidance_ style response with `setpoint` set to the target `RelativePosition` in
-        the NEU frame, and `expected_status` set to `MOTION_STATUS_HOLDING`.
+        Returns a _Guidance_ style response with `setpoint` set to the target
+        `RelativePosition` in the NEU frame, and `expected_status` set to
+        `MOTION_STATUS_HOLDING`.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -238,8 +239,9 @@ class ControlServiceServicer:
         - `BODY` -> (`x_vel`, `y_vel`, `z_vel`) = (forward velocity, right velocity, up velocity)
         - `NEU` -> (`x_vel`, `y_vel`, `z_vel`) = (north velocity, east velocity, up velocity)
 
-        Returns a _Guidance_ style response, with `setpoint` set to the target `Velocity` in
-        the NEU frame, and `expected_status` set to `MOTION_STATUS_IN_TRANSIT`.
+        Returns a _Guidance_ style response, with `setpoint` set to the target
+        `Velocity` in the NEU frame, and `expected_status` set to
+        `MOTION_STATUS_IN_TRANSIT`.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -254,8 +256,8 @@ class ControlServiceServicer:
         - `BODY` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, body yaw)
         - `NEU` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, global yaw)
 
-        Returns a _Gimbal_ style response, with `setpoint` set to the target `Pose` in
-        the NEU frame.
+        Returns a _Gimbal_ style response, with `setpoint` set to the target
+        `Pose` in the NEU frame.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -265,13 +267,8 @@ class ControlServiceServicer:
         """
         Order the device to set the velocity of the gimbal _(Gimbal)_.
 
-        The device will interpret the new pose angles according to `frame`
-        as follows:
-        - `BODY` -> (`pitch_vel`, `roll_vel`, `yaw_vel`) = (body pitch velocity, body roll velocity, body yaw velocity)
-        - `NEU` -> (`pitch_vel`, `roll_vel`, `yaw_vel`) = (body pitch velocity, body roll velocity, global yaw velocity)
-
-        Returns a _Gimbal_ style response, with `setpoint` set to the target `PoseVelocity` in
-        the NEU frame.
+        Returns a _Gimbal_ style response, with `setpoint` set to the target
+        `PoseVelocity` in the NEU frame.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')

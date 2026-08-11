@@ -1,0 +1,10 @@
+---
+# SPDX-FileCopyrightText: 2026 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+- name: Restart Docker
+  ansible.builtin.systemd_service:
+    name: docker
+    state: restarted
+  become: true

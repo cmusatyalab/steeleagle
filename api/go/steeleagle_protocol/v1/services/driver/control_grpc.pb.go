@@ -139,8 +139,9 @@ type ControlServiceClient interface {
 	// the specified `angular_speed` until the device has reached its destination.
 	// If neither are provided, the device will choose hardware defaults.
 	//
-	// Returns a _Guidance_ style response with `setpoint` set to the target `RelativePosition` in
-	// the NEU frame, and `expected_status` set to `MOTION_STATUS_HOLDING`.
+	// Returns a _Guidance_ style response with `setpoint` set to the target
+	// `RelativePosition` in the NEU frame, and `expected_status` set to
+	// `MOTION_STATUS_HOLDING`.
 	SetRelativePositionTarget(ctx context.Context, in *SetRelativePositionTargetRequest, opts ...grpc.CallOption) (*SetRelativePositionTargetResponse, error)
 	// Order the device to accelerate to a velocity target _(Guidance)_.
 	//
@@ -149,8 +150,9 @@ type ControlServiceClient interface {
 	// - `BODY` -> (`x_vel`, `y_vel`, `z_vel`) = (forward velocity, right velocity, up velocity)
 	// - `NEU` -> (`x_vel`, `y_vel`, `z_vel`) = (north velocity, east velocity, up velocity)
 	//
-	// Returns a _Guidance_ style response, with `setpoint` set to the target `Velocity` in
-	// the NEU frame, and `expected_status` set to `MOTION_STATUS_IN_TRANSIT`.
+	// Returns a _Guidance_ style response, with `setpoint` set to the target
+	// `Velocity` in the NEU frame, and `expected_status` set to
+	// `MOTION_STATUS_IN_TRANSIT`.
 	SetVelocityTarget(ctx context.Context, in *SetVelocityTargetRequest, opts ...grpc.CallOption) (*SetVelocityTargetResponse, error)
 	// Order the device to set the angle pose of the gimbal _(Gimbal)_.
 	//
@@ -159,18 +161,13 @@ type ControlServiceClient interface {
 	// - `BODY` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, body yaw)
 	// - `NEU` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, global yaw)
 	//
-	// Returns a _Gimbal_ style response, with `setpoint` set to the target `Pose` in
-	// the NEU frame.
+	// Returns a _Gimbal_ style response, with `setpoint` set to the target
+	// `Pose` in the NEU frame.
 	SetGimbalAngleTarget(ctx context.Context, in *SetGimbalAngleTargetRequest, opts ...grpc.CallOption) (*SetGimbalAngleTargetResponse, error)
 	// Order the device to set the velocity of the gimbal _(Gimbal)_.
 	//
-	// The device will interpret the new pose angles according to `frame`
-	// as follows:
-	// - `BODY` -> (`pitch_vel`, `roll_vel`, `yaw_vel`) = (body pitch velocity, body roll velocity, body yaw velocity)
-	// - `NEU` -> (`pitch_vel`, `roll_vel`, `yaw_vel`) = (body pitch velocity, body roll velocity, global yaw velocity)
-	//
-	// Returns a _Gimbal_ style response, with `setpoint` set to the target `PoseVelocity` in
-	// the NEU frame.
+	// Returns a _Gimbal_ style response, with `setpoint` set to the target
+	// `PoseVelocity` in the NEU frame.
 	SetGimbalVelocityTarget(ctx context.Context, in *SetGimbalVelocityTargetRequest, opts ...grpc.CallOption) (*SetGimbalVelocityTargetResponse, error)
 }
 
@@ -386,8 +383,9 @@ type ControlServiceServer interface {
 	// the specified `angular_speed` until the device has reached its destination.
 	// If neither are provided, the device will choose hardware defaults.
 	//
-	// Returns a _Guidance_ style response with `setpoint` set to the target `RelativePosition` in
-	// the NEU frame, and `expected_status` set to `MOTION_STATUS_HOLDING`.
+	// Returns a _Guidance_ style response with `setpoint` set to the target
+	// `RelativePosition` in the NEU frame, and `expected_status` set to
+	// `MOTION_STATUS_HOLDING`.
 	SetRelativePositionTarget(context.Context, *SetRelativePositionTargetRequest) (*SetRelativePositionTargetResponse, error)
 	// Order the device to accelerate to a velocity target _(Guidance)_.
 	//
@@ -396,8 +394,9 @@ type ControlServiceServer interface {
 	// - `BODY` -> (`x_vel`, `y_vel`, `z_vel`) = (forward velocity, right velocity, up velocity)
 	// - `NEU` -> (`x_vel`, `y_vel`, `z_vel`) = (north velocity, east velocity, up velocity)
 	//
-	// Returns a _Guidance_ style response, with `setpoint` set to the target `Velocity` in
-	// the NEU frame, and `expected_status` set to `MOTION_STATUS_IN_TRANSIT`.
+	// Returns a _Guidance_ style response, with `setpoint` set to the target
+	// `Velocity` in the NEU frame, and `expected_status` set to
+	// `MOTION_STATUS_IN_TRANSIT`.
 	SetVelocityTarget(context.Context, *SetVelocityTargetRequest) (*SetVelocityTargetResponse, error)
 	// Order the device to set the angle pose of the gimbal _(Gimbal)_.
 	//
@@ -406,18 +405,13 @@ type ControlServiceServer interface {
 	// - `BODY` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, body yaw)
 	// - `NEU` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, global yaw)
 	//
-	// Returns a _Gimbal_ style response, with `setpoint` set to the target `Pose` in
-	// the NEU frame.
+	// Returns a _Gimbal_ style response, with `setpoint` set to the target
+	// `Pose` in the NEU frame.
 	SetGimbalAngleTarget(context.Context, *SetGimbalAngleTargetRequest) (*SetGimbalAngleTargetResponse, error)
 	// Order the device to set the velocity of the gimbal _(Gimbal)_.
 	//
-	// The device will interpret the new pose angles according to `frame`
-	// as follows:
-	// - `BODY` -> (`pitch_vel`, `roll_vel`, `yaw_vel`) = (body pitch velocity, body roll velocity, body yaw velocity)
-	// - `NEU` -> (`pitch_vel`, `roll_vel`, `yaw_vel`) = (body pitch velocity, body roll velocity, global yaw velocity)
-	//
-	// Returns a _Gimbal_ style response, with `setpoint` set to the target `PoseVelocity` in
-	// the NEU frame.
+	// Returns a _Gimbal_ style response, with `setpoint` set to the target
+	// `PoseVelocity` in the NEU frame.
 	SetGimbalVelocityTarget(context.Context, *SetGimbalVelocityTargetRequest) (*SetGimbalVelocityTargetResponse, error)
 	mustEmbedUnimplementedControlServiceServer()
 }

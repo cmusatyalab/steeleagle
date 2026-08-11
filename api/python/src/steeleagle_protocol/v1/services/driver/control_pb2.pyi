@@ -196,12 +196,10 @@ class SetGimbalAngleTargetResponse(_message.Message):
     def __init__(self, setpoint: _Optional[_Union[_common_pb2.Pose, _Mapping]] = ...) -> None: ...
 
 class SetGimbalVelocityTargetRequest(_message.Message):
-    __slots__ = ("pose_velocity", "frame")
+    __slots__ = ("pose_velocity",)
     POSE_VELOCITY_FIELD_NUMBER: _ClassVar[int]
-    FRAME_FIELD_NUMBER: _ClassVar[int]
     pose_velocity: _common_pb2.PoseVelocity
-    frame: ReferenceFrame
-    def __init__(self, pose_velocity: _Optional[_Union[_common_pb2.PoseVelocity, _Mapping]] = ..., frame: _Optional[_Union[ReferenceFrame, str]] = ...) -> None: ...
+    def __init__(self, pose_velocity: _Optional[_Union[_common_pb2.PoseVelocity, _Mapping]] = ...) -> None: ...
 
 class SetGimbalVelocityTargetResponse(_message.Message):
     __slots__ = ("setpoint",)

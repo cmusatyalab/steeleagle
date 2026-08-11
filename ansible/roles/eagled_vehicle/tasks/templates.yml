@@ -1,0 +1,76 @@
+---
+# SPDX-FileCopyrightText: 2026 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+- name: Ensure the eagled system group exists
+  ansible.builtin.group:
+    name: "{{ eagled_service_user }}"
+    system: true
+    state: present
+  become: "{{ eagled_use_become }}"
+  tags: [service-user]
+
+- name: Ensure the eagled system user exists
+  ansible.builtin.user:
+    name: "{{ eagled_service_user }}"
+    group: "{{ eagled_service_user }}"
+    system: true
+    create_home: false
+    shell: /usr/sbin/nologin
+    state: present
+  become: "{{ eagled_use_become }}"
+  tags: [service-user]
+
+- name: Ensure the eagled install directory exists
+  ansible.builtin.file:
+    path: "{{ eagled_install_dir }}"
+    state: directory
+    owner: "{{ eagled_service_user }}"
+    group: "{{ eagled_service_user }}"
+    mode: '0755'
+  become: "{{ eagled_use_become }}"
+  tags: [templates]
+
+- name: Ensure the eagled bin directory exists
+  ansible.builtin.file:
+    path: "{{ eagled_install_dir }}/bin"
+    state: directory
+    owner: "{{ eagled_service_user }}"
+    group: "{{ eagled_service_user }}"
+    mode: '0755'
+  become: "{{ eagled_use_become }}"
+  tags: [templates]
+
+- name: Ensure the eagled config directory exists
+  ansible.builtin.file:
+    path: "{{ eagled_config_dir }}"
+    state: directory
+    owner: "{{ eagled_service_user }}"
+    group: "{{ eagled_service_user }}"
+    mode: '0750'
+  become: "{{ eagled_use_become }}"
+  tags: [templates]
+
+- name: Template the eagled configuration file
+  ansible.builtin.template:
+    src: config.toml.j2
+    dest: "{{ eagled_config_dir }}/config.toml"
+    owner: "{{ eagled_service_user }}"
+    group: "{{ eagled_service_user }}"
+    mode: '0640'
+  become: "{{ eagled_use_become }}"
+  tags: [templates]
+
+- name: Template the eagled systemd unit
+  ansible.builtin.template:
+    src: eagled.service.j2
+    dest: "{{ eagled_systemd_unit_path }}"
+    mode: '0644'
+  become: "{{ eagled_use_become }}"
+  notify: Reload eagled systemd unit
+  tags: [templates]
+
+# NOTE: "Manage the eagled service state" used to live here. It moved to
+# tasks/service.yml so Debian.yml can include it LAST, after the binary is
+# actually provisioned -- see the comment at the top of that file.

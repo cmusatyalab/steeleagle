@@ -1,0 +1,31 @@
+---
+# SPDX-FileCopyrightText: 2026 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+# These variables are intentionally shared (bare dev_ prefix) across multiple
+# task files within this role per the Ansible provisioning plan.
+dev_go_version: "1.26.5"  # noqa: var-naming[no-role-prefix]
+dev_go_install_dir: /usr/local/go  # noqa: var-naming[no-role-prefix]
+dev_arch_map:  # noqa: var-naming[no-role-prefix]
+  x86_64: amd64
+  aarch64: arm64
+# git is required by repo.yml's ansible.builtin.git module and by
+# precommit.yml's hook install; curl is required by the uv installer script
+# in packages.yml. Neither is guaranteed present on a minimal Debian/Ubuntu
+# image, which is exactly the target this role is meant to support.
+dev_apt_packages:  # noqa: var-naming[no-role-prefix]
+  - ffmpeg
+  - bubblewrap
+  - gnupg
+  - ca-certificates
+  - git
+  - curl
+dev_node_version: "20"  # noqa: var-naming[no-role-prefix]
+dev_buf_version: "1.47.2"  # noqa: var-naming[no-role-prefix]
+dev_install_docker: true  # noqa: var-naming[no-role-prefix]
+dev_install_nvidia_container_toolkit: false  # noqa: var-naming[no-role-prefix]
+dev_clone_repo: true  # noqa: var-naming[no-role-prefix]
+dev_repo_url: https://github.com/cmusatyalab/steeleagle.git  # noqa: var-naming[no-role-prefix]
+dev_repo_version: v4.0-beta  # noqa: var-naming[no-role-prefix]
+dev_repo_dest: "{{ ansible_env.HOME }}/steeleagle"  # noqa: var-naming[no-role-prefix]

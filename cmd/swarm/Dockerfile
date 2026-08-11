@@ -8,6 +8,7 @@ WORKDIR /src
 
 # Cache module downloads separately from source changes
 COPY go.mod go.sum ./
+COPY api/go/go.mod api/go/go.sum api/go/
 RUN --mount=type=cache,target=/root/go/pkg/mod go mod download
 
 COPY . .

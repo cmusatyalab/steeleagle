@@ -1,0 +1,34 @@
+---
+# SPDX-FileCopyrightText: 2026 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+- name: Reload sysctl
+  ansible.builtin.command: sysctl --system
+  become: true
+  changed_when: true
+
+# Notified by templates.yml's "Template the eagled systemd unit" task, so a
+# unit-file change on its own (e.g. a `--tags templates` run, which never
+# reaches tasks/service.yml) still makes systemd re-read the unit. Full runs
+# are covered by the inline daemon_reload on service.yml's own task.
+#
+# The `when` gate matters: reloading systemd's view of a unit only means
+# anything if the unit was actually written where systemd looks for it. The
+# role's documented test workflow overrides eagled_systemd_unit_path to a
+# scratch file (see the plan's Task 7/Task 9 verification steps), and firing
+# daemon-reload there is not merely pointless but actively fails -- verified
+# on this dev box, where an unprivileged `systemctl daemon-reload` reliably
+# returns "Failed to reload daemon: Method call timed out" (polkit has no
+# interactive agent to authenticate against). Gating on the destination
+# directory keeps both paths correct without reference to become, so it also
+# holds for an operator already running as root with eagled_use_become=false.
+#
+# become follows eagled_use_become to match the notifying task in
+# templates.yml.
+- name: Reload eagled systemd unit
+  ansible.builtin.systemd_service:
+    name: eagled
+    daemon_reload: true
+  become: "{{ eagled_use_become }}"
+  when: eagled_systemd_unit_path | dirname in eagled_systemd_unit_dirs

@@ -64,15 +64,21 @@ class FakeSwarmServicer(swarm_pb2_grpc.SwarmServiceServicer):
         ):
             yield r
 
-    async def SwarmSetVelocity(self, request, context):
+    async def SwarmSetVelocityTarget(self, request, context):
         async for r in self._run(
-            "SwarmSetVelocity", swarm_pb2.SwarmSetVelocityResponse, request, context
+            "SwarmSetVelocityTarget",
+            swarm_pb2.SwarmSetVelocityTargetResponse,
+            request,
+            context,
         ):
             yield r
 
-    async def SwarmSetGimbalPose(self, request, context):
+    async def SwarmSetGimbalAngleTarget(self, request, context):
         async for r in self._run(
-            "SwarmSetGimbalPose", swarm_pb2.SwarmSetGimbalPoseResponse, request, context
+            "SwarmSetGimbalAngleTarget",
+            swarm_pb2.SwarmSetGimbalAngleTargetResponse,
+            request,
+            context,
         ):
             yield r
 
@@ -190,14 +196,14 @@ async def test_stop_mission(swarm_client_factory):
 
 async def test_set_velocity_sends_velocity_and_default_frame(swarm_client_factory):
     client, servicer = await swarm_client_factory(
-        {"SwarmSetVelocity": [("drone1", 0, "")]}
+        {"SwarmSetVelocityTarget": [("drone1", 0, "")]}
     )
 
     await client.set_velocity(
         ["drone1"], x_vel=1.0, y_vel=-2.0, z_vel=0.5, angular_vel=10.0
     )
 
-    sent = servicer.received["SwarmSetVelocity"][0]
+    sent = servicer.received["SwarmSetVelocityTarget"][0]
     assert list(sent.vehicles) == ["drone1"]
     v = sent.request.velocity
     assert (v.x_vel, v.y_vel, v.z_vel, v.angular_vel) == pytest.approx(
@@ -208,16 +214,15 @@ async def test_set_velocity_sends_velocity_and_default_frame(swarm_client_factor
     assert sent.request.frame == control_pb2.REFERENCE_FRAME_UNSPECIFIED
 
 
-async def test_set_gimbal_pose_sends_offset_pose_on_gimbal_zero(swarm_client_factory):
+async def test_set_gimbal_pose_sends_offset_pose(swarm_client_factory):
     client, servicer = await swarm_client_factory(
-        {"SwarmSetGimbalPose": [("drone1", 0, "")]}
+        {"SwarmSetGimbalAngleTarget": [("drone1", 0, "")]}
     )
 
     await client.set_gimbal_pose(["drone1"], pitch=5.0, yaw=-10.0, roll=0.0)
 
-    sent = servicer.received["SwarmSetGimbalPose"][0]
-    assert sent.request.gimbal_id == 0
-    assert sent.request.pose_mode == control_pb2.POSE_MODE_OFFSET
+    sent = servicer.received["SwarmSetGimbalAngleTarget"][0]
+    assert sent.request.angle_mode == control_pb2.ANGLE_MODE_OFFSET
     p = sent.request.pose
     assert (p.pitch, p.yaw, p.roll) == pytest.approx((5.0, -10.0, 0.0))
 

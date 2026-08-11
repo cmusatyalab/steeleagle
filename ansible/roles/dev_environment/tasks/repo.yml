@@ -1,0 +1,18 @@
+---
+# SPDX-FileCopyrightText: 2026 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+- name: Check whether the repository is already cloned
+  ansible.builtin.stat:
+    path: "{{ dev_repo_dest }}/.git"
+  register: dev_repo_check  # noqa: var-naming[no-role-prefix]
+  when: dev_clone_repo | bool
+
+- name: Clone the steeleagle repository
+  ansible.builtin.git:
+    repo: "{{ dev_repo_url }}"
+    dest: "{{ dev_repo_dest }}"
+    version: "{{ dev_repo_version }}"
+  become: false
+  when: dev_clone_repo | bool and not dev_repo_check.stat.exists

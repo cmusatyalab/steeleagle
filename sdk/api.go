@@ -32,7 +32,6 @@ type Vehicle interface {
 	) *waiter[SetGimbalAngleTargetResponse]
 	SetGimbalVelocityTarget(
 		pitchVel, rollVel, yawVel float32,
-		options ...opt.Option[opt.SetGimbalVelocityTargetOption],
 	) *waiter[SetGimbalVelocityTargetResponse]
 	GetTelemetry() *waiter[Telemetry]
 }
