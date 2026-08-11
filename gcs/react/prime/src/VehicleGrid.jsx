@@ -1,10 +1,10 @@
 import Status from './Status.jsx';
 
-function VehicleGrid({ vehicles, selectable, squadList, onToggle }) {
+function VehicleGrid({ vehicles, selectable, squadList, onToggle, cardColumnClass = 'col-12 lg:col-3 p-2' }) {
     return (
         <>
             {vehicles.map((v) => (
-                <div className="col-12 lg:col-3 p-2" key={v.name}>
+                <div className={cardColumnClass} key={v.name}>
                     <Status
                         vehicle={v}
                         selectable={selectable}
