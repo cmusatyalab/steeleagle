@@ -772,7 +772,7 @@
           "description": "Name of compute stream to get results from",
           "enum": null,
           "ref_kind": null,
-          "default": "aruco_detector_engine"
+          "default": "aruco-detector-engine"
         },
         {
           "name": "v_tol",

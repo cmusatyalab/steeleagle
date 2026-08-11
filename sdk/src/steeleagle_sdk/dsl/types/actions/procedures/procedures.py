@@ -834,16 +834,16 @@ class Map(Action):
     num_trials: int = Field(1, gt=0, description="Number of trials for iterative flights")
 
     @staticmethod
-    def _latest_area(results: list[tuple[float, FrameResult]]):
-        """Return the raw next-flight area from the latest navigation result, if any."""
-        for _ts, res in reversed(results):
+    def _oldest_area(results: list[tuple[float, FrameResult]]):
+        """Pop the oldest navigation result with a usable area from `results`."""
+        for ts, res in results:
             if not res or not res.result:
                 continue
             for compute in res.result:
                 nav = compute.navigation_result
                 if nav and nav.area and nav.area.points:
-                    return nav.area
-        return None
+                    return ts, nav.area
+        return None, None
 
     # Main logic
     async def execute(self):
@@ -855,7 +855,7 @@ class Map(Action):
 
         for trial in range(self.num_trials - 1):
             results = await fetch_results_range(self.compute_stream, t0, time.time())
-            next_area = self._latest_area(results)
+            ts, next_area = self._oldest_area(results)
             if next_area is None:
                 logger.info(
                     "[Map] No navigation result on %s during trial %d; stopping.",
@@ -863,6 +863,7 @@ class Map(Action):
                     trial,
                 )
                 return
+            t0 = ts
 
             try:
                 current_map.update(next_area)
@@ -875,7 +876,6 @@ class Map(Action):
                 )
                 return
 
-            t0 = time.time()
             await _fly(next_trial_locations, self.iterative_plan.alt, self.hover_time, self.max_velocity)
 
 

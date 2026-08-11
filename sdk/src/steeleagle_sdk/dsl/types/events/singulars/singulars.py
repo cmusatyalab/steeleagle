@@ -356,7 +356,7 @@ class BoundingBoxCentered(Event):
     """
 
     target: Detection = Field(description="Detection to check if centered")
-    compute_stream: str = Field("aruco_detector_engine", description="Name of compute stream to get results from")
+    compute_stream: str = Field("aruco-detector-engine", description="Name of compute stream to get results from")
     v_tol: float = Field(1.0, ge=0.0, description="Vertical tolerance")
     h_tol: float = Field(1.0, ge=0.0, description="Horizontal tolerance")
 

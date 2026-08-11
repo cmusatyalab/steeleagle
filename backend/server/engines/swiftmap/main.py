@@ -35,7 +35,7 @@ def main():
     )
 
     parser.add_argument(
-        "-src", "--engine_id", default="swiftmap_engine", help="Engine identifier."
+        "-src", "--engine_id", default="swiftmap-engine", help="Engine identifier."
     )
 
     parser.add_argument(
