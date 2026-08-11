@@ -52,6 +52,7 @@ function App() {
   const [showDetections, setShowDetections] = useState(true);
   const [gamepadDeadzone, setGamepadDeadzone] = useState(10);
   const [squadList, setSquadList] = useState(null);
+  const [controlGroups, setControlGroups] = useState({});
   const [socketUrl, setSocketUrl] = useState('');
   // Keep a ref to the last-known vehicles JSON so we can skip setVehicles when
   // the server returns identical data, preventing needless re-renders.
@@ -147,6 +148,15 @@ function App() {
     if (e.code === 'Escape') {
       onCommand({ hold: true });
       setManualControl(true);
+    }
+    const digitMatch = e.code.match(/^Digit([1-9])$/);
+    if (digitMatch) {
+      const digit = digitMatch[1];
+      if (e.ctrlKey) {
+        setControlGroups((prev) => ({ ...prev, [digit]: squadList ?? [] }));
+      } else {
+        setSquadList(controlGroups[digit] ?? []);
+      }
     }
     if (manualControl) {
       setKeyPressed(true);
@@ -437,7 +447,8 @@ function App() {
       {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} setSelectedVehicle={setSelectedVehicle} tracking={tracking} setTracking={setTracking} toast={toast} onCommand={onCommand}
         manualControl={manualControl} setManualControl={setManualControl} squadList={squadList} setSquadList={setSquadList} basePlanarVelocity={basePlanarVelocity} setBasePlanarVelocity={setBasePlanarVelocity}
         baseAngularVelocity={baseAngularVelocity} setBaseAngularVelocity={setBaseAngularVelocity} gamepadDeadzone={gamepadDeadzone} setGamepadDeadzone={setGamepadDeadzone}
-        takeOffAltitude={takeOffAltitude} setTakeOffAltitude={setTakeOffAltitude} showDetections={showDetections} onToggleDetections={onToggleDetections} gimbalVelocity={gimbalVelocity} setGimbalVelocity={setGimbalVelocity} />}
+        takeOffAltitude={takeOffAltitude} setTakeOffAltitude={setTakeOffAltitude} showDetections={showDetections} onToggleDetections={onToggleDetections} gimbalVelocity={gimbalVelocity} setGimbalVelocity={setGimbalVelocity}
+        controlGroups={controlGroups} />}
       {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} detectedObjects={detectedObjects} />}
       <div style={{ display: selectedMenu === 'Plan' ? '' : 'none' }}>
         {planMounted && <PlanPage vehicles={vehicles} squadList={squadList} theme={theme} />}
