@@ -22,6 +22,7 @@ import ControlPage from './ControlPage.jsx';
 import MonitorPage from './MonitorPage.jsx';
 import PlanPage from './PlanPage.jsx';
 import { getWebSocketUrl, getApiUrl } from './urls.js';
+import { assignControlGroup, recallControlGroup } from './squadUtils.js';
 
 
 function App() {
@@ -152,11 +153,14 @@ function App() {
     const digitMatch = e.code.match(/^Digit([1-9])$/);
     if (digitMatch) {
       const digit = digitMatch[1];
-      if (e.ctrlKey) {
-        setControlGroups((prev) => ({ ...prev, [digit]: squadList ?? [] }));
-      } else {
-        setSquadList(controlGroups[digit] ?? []);
+      const noOtherModifiers = !e.altKey && !e.metaKey && !e.ctrlKey;
+      if (e.shiftKey && noOtherModifiers) {
+        setControlGroups((prev) => assignControlGroup(prev, digit, squadList));
+      } else if (!e.shiftKey && noOtherModifiers) {
+        setSquadList(recallControlGroup(controlGroups, digit));
       }
+      // Any other modifier combination (e.g. Ctrl+1, a reserved tab-switch
+      // shortcut, or Shift+Ctrl+1) falls through and does nothing.
     }
     if (manualControl) {
       setKeyPressed(true);
@@ -289,6 +293,10 @@ function App() {
     }
   }, [gamePadAxis, manualControl]);
 
+  // Re-binding on every render (via bindKeyDown/unbindKeyDown's identity
+  // changing each render) is load-bearing: it's what lets onKeyDown close
+  // over fresh squadList/controlGroups state. Don't "optimize" this to a
+  // stable dependency array without also fixing that closure staleness.
   useEffect(() => {
     if (selectedMenu == 'Control') {
       bindKeyDown();

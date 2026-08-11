@@ -9,7 +9,7 @@ function VehicleGrid({ vehicles, selectable, squadList, onToggle }) {
                         vehicle={v}
                         selectable={selectable}
                         selected={!!(squadList && squadList.includes(v.name))}
-                        onToggle={() => onToggle(v.name)}
+                        onToggle={onToggle ? () => onToggle(v.name) : undefined}
                     />
                 </div>
             ))}

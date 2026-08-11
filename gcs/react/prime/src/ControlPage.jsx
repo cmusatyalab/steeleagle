@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo } from 'react';
+import { useRef, useState, useMemo, useCallback } from 'react';
 import { Knob } from 'primereact/knob';
 import { Button } from 'primereact/button';
 import { ToggleButton } from 'primereact/togglebutton';
@@ -20,10 +20,12 @@ import { getApiUrl } from './urls.js';
 import VehicleGrid from './VehicleGrid.jsx';
 import Mapbox from './Mapbox.jsx';
 import { CONTROL_MAPPINGS } from './controlMappings.js';
+import { toggleVehicleInSquad, recallControlGroup } from './squadUtils.js';
 
 const cancelOptions = { icon: 'pi pi-fw pi-times', iconOnly: true, className: 'custom-cancel-btn p-button-danger' };
 const chooseOptions = { label: 'Select...', icon: 'pi pi-fw pi-file', iconOnly: false, className: 'custom-choose-btn p-button-primary' };
 const uploadOptions = { icon: 'pi pi-fw pi-cloud-upload', iconOnly: true, className: 'custom-upload-btn p-button-info' };
+const controlGroupDigits = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
 function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, setTracking, toast, onCommand,
   manualControl, setManualControl, squadList, setSquadList, basePlanarVelocity, setBasePlanarVelocity,
@@ -148,15 +150,13 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
 
   const vehicleNames = useMemo(() => vehicles.map(v => v.name), [vehicles]);
 
-  const controlGroupDigits = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
-
-  const onSelectAllSquad = () => setSquadList(vehicleNames);
-  const onClearSquad = () => setSquadList([]);
-  const onRecallGroup = (digit) => setSquadList(controlGroups[digit] ?? []);
+  const onSelectAllSquad = useCallback(() => setSquadList([...vehicleNames]), [vehicleNames, setSquadList]);
+  const onClearSquad = useCallback(() => setSquadList([]), [setSquadList]);
+  const onRecallGroup = useCallback((digit) => setSquadList(recallControlGroup(controlGroups, digit)), [controlGroups, setSquadList]);
 
   const swarmCenterContent = useMemo(() => (
     <div className="flex flex-row align-items-center gap-2 flex-wrap justify-content-center">
-      <Chip label={`${(squadList ?? []).length} vehicles selected`} icon="pi pi-users" />
+      <Chip label={(squadList ?? []).length === 1 ? '1 vehicle selected' : `${(squadList ?? []).length} vehicles selected`} icon="pi pi-users" />
       <Button size="small" text label="Select All" icon="pi pi-check-square" onClick={onSelectAllSquad} />
       <Button size="small" text label="Clear" icon="pi pi-times" onClick={onClearSquad} />
       <ButtonGroup>
@@ -173,16 +173,9 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
         ))}
       </ButtonGroup>
     </div>
-  ), [squadList, controlGroups, controlGroupDigits, onSelectAllSquad, onClearSquad, onRecallGroup]);
+  ), [squadList, controlGroups, onSelectAllSquad, onClearSquad, onRecallGroup]);
 
-  const onToggleVehicle = (name) => {
-    const current = squadList ?? [];
-    if (current.includes(name)) {
-      setSquadList(current.filter((n) => n !== name));
-    } else {
-      setSquadList([...current, name]);
-    }
-  };
+  const onToggleVehicle = (name) => setSquadList((prev) => toggleVehicleInSquad(prev, name));
 
   const overlayContent = useMemo(() => (
     <>
