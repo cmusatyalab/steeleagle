@@ -850,17 +850,26 @@ class Map(Action):
 
         current_map = MissionMap()  # init the map object without the area parameter will spawn the mission map
         first_trial_locations = self.initial_plan.apply(current_map)
+        logger.info(
+            "[Map] trial 1/%d (%d left): flying %d waypoints: %s",
+            self.num_trials,
+            self.num_trials - 1,
+            len(first_trial_locations),
+            [(loc.latitude, loc.longitude) for loc in first_trial_locations],
+        )
         t0 = time.time()
         await _fly(first_trial_locations, self.initial_plan.alt, self.hover_time, self.max_velocity)
 
         for trial in range(self.num_trials - 1):
+            trial_no = trial + 2
             results = await fetch_results_range(self.compute_stream, t0, time.time())
             ts, next_area = self._oldest_area(results)
             if next_area is None:
                 logger.info(
-                    "[Map] No navigation result on %s during trial %d; stopping.",
+                    "[Map] No navigation result on %s for trial %d/%d; stopping.",
                     self.compute_stream,
-                    trial,
+                    trial_no,
+                    self.num_trials,
                 )
                 return
             t0 = ts
@@ -870,12 +879,21 @@ class Map(Action):
                 next_trial_locations = self.iterative_plan.apply(current_map)
             except ValueError:
                 logger.warning(
-                    "[Map] Navigation result on %s during trial %d had no area name; stopping.",
+                    "[Map] Navigation result on %s for trial %d/%d had no area name; stopping.",
                     self.compute_stream,
-                    trial,
+                    trial_no,
+                    self.num_trials,
                 )
                 return
 
+            logger.info(
+                "[Map] trial %d/%d (%d left): flying %d waypoints: %s",
+                trial_no,
+                self.num_trials,
+                self.num_trials - trial_no,
+                len(next_trial_locations),
+                [(loc.latitude, loc.longitude) for loc in next_trial_locations],
+            )
             await _fly(next_trial_locations, self.iterative_plan.alt, self.hover_time, self.max_velocity)
 
 
