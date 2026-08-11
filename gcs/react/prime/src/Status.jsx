@@ -1,22 +1,21 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Tag } from 'primereact/tag';
 import { Card } from 'primereact/card';
 import { Avatar } from 'primereact/avatar';
 import { Knob } from 'primereact/knob';
 import { Badge } from 'primereact/badge';
 import { ProgressBar } from 'primereact/progressbar';
+import { vehicleColor } from './mapUtils.js';
 
-function Status({ vehicle }) {
+function Status({ vehicle, selectable, selected, onToggle }) {
     if (vehicle) {
-        let last_updated = `${Math.ceil(vehicle.last_updated)} sec` || 'Unknown'
+        const color = vehicleColor(vehicle.name);
         let disconnected = false;
         if (vehicle.last_updated > 5) {
             disconnected = true;
         }
 
         let battery_severity = "info";
-        let gps_severity = "info";
-        let compass_severity = "info";
 
         //consult protocol/telemetry.proto for enum mappings
         if (vehicle.battery <= 25) {
@@ -27,34 +26,23 @@ function Status({ vehicle }) {
             battery_severity = "green-500";
         }
 
-        switch (vehicle.mag) {
-            case 0:
-                compass_severity = "success";
-                break;
-            case 1:
-                compass_severity = "danger";
-                break;
-        };
-
-        switch (vehicle.sats) {
-            case 0:
-                gps_severity = "success";
-                break;
-            case 1:
-                gps_severity = "warning";
-                break;
-            case 2:
-                gps_severity = "danger";
-                break;
-        };
-
         return (
             <>
-                <Card style={{ backgroundColor: 'var(--surface-0)', width: '100%' }} subTitle={`${vehicle.name} (${vehicle.model})`}>
+                <Card
+                    style={{
+                        backgroundColor: 'var(--surface-0)',
+                        width: '100%',
+                        cursor: selectable ? 'pointer' : 'default',
+                        border: selected ? `2px solid ${color}` : '2px solid transparent'
+                    }}
+                    subTitle={`${vehicle.name} (${vehicle.model})`}
+                    onClick={selectable ? onToggle : undefined}
+                >
                     <div className="flex flex-row gap-2 m-2">
                         <ProgressBar color={`var(--${battery_severity})`} className="w-full flex align-items-center justify-content-center" value={vehicle.battery} />
                         {disconnected && <Tag icon="pi pi-times" severity="danger" value="Disconnected"></Tag>}
                         {!disconnected && <Tag icon="pi pi-link" severity="info" value="Online"></Tag>}
+                        {selectable && selected && <Tag icon="pi pi-check" value="Selected" style={{ backgroundColor: color, color: '#ffffff' }}></Tag>}
                     </div>
                     <div className="flex flex-row flex-wrap justify-content-center gap-2 m-2">
                         <div className="flex flex-column align-items-center">
