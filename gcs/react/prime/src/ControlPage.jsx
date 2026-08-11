@@ -1,8 +1,6 @@
-import { useRef, useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Button } from 'primereact/button';
-import { Message } from 'primereact/message';
 import { Chip } from 'primereact/chip';
-import { OverlayPanel } from 'primereact/overlaypanel';
 import { Panel } from 'primereact/panel';
 import { Toolbar } from 'primereact/toolbar';
 import { ButtonGroup } from 'primereact/buttongroup';
@@ -20,10 +18,15 @@ const chooseOptions = { label: 'Select...', icon: 'pi pi-fw pi-file', iconOnly: 
 const uploadOptions = { icon: 'pi pi-fw pi-cloud-upload', iconOnly: true, className: 'custom-upload-btn p-button-info' };
 const controlGroupDigits = ['1', '2', '3'];
 
+// Shared between the map and the video panel next to it so they're always
+// the same height (passed to Mapbox as mapHeight, overriding its own
+// '20rem' default) -- bumped up from that default now that removing the
+// Swarm Controls Panel wrapper below frees up the vertical room for it.
+const videoPanelHeight = '26rem';
+
 function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand,
-  manualControl, setManualControl, squadList, setSquadList, takeOffAltitude, controlGroups }) {
+  setManualControl, squadList, setSquadList, takeOffAltitude, controlGroups }) {
   const [mapPanelSize] = useState(0);
-  const op2 = useRef(null);
   const onProgress = () => {
     toast.current.show({ severity: 'info', summary: 'In Progress', detail: 'Uploading files...' });
   };
@@ -174,25 +177,6 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand,
     </div>
   );
 
-  const swarmHeaderTemplate = (options) => {
-    const className = `${options.className} justify-content-space-between`;
-
-    return (
-      <div className={className}>
-        <div className="flex align-items-center gap-2">
-          <span className="font-bold">Swarm Controls</span>
-        </div>
-        <div className="flex align-items-center gap-2" >
-          {manualControl && <Message severity="success" text="Manual Control Enabled" />}
-          {!manualControl && <Message severity="error" text="Manual Control Disabled" />}
-          <Button size="small" rounded text label="" icon="pi pi-cog" onClick={(e) => op2.current.toggle(e)} />
-          <OverlayPanel ref={op2}><span>Swarm Settings</span></OverlayPanel>
-          {options.togglerElement}
-        </div>
-      </div>
-    );
-  };
-
   return (
     <>
       <div className="grid m-0">
@@ -208,17 +192,17 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand,
             <div className="grid m-0">
               <div className="col-12 lg:col-6 p-2">
                 <Mapbox selectedVehicle={selectedVehicle} vehicles={vehicles} mapPanelSize={mapPanelSize} tracking={tracking}
-                  squadList={squadList} onToggleVehicle={onToggleVehicle} />
+                  mapHeight={videoPanelHeight} squadList={squadList} onToggleVehicle={onToggleVehicle} />
               </div>
               <div className="col-12 lg:col-6 p-2">
-                <Image height="100%" width="100%" pt={{ image: { id: 'image_stream' } }} src="nostream.png" />
+                <div style={{ height: videoPanelHeight, backgroundColor: '#000' }}>
+                  <Image imageStyle={{ width: '100%', height: '100%', objectFit: 'contain' }} pt={{ image: { id: 'image_stream' } }} src="nostream.png" />
+                </div>
               </div>
             </div>
-            <Panel headerTemplate={swarmHeaderTemplate} className="my-2 h-full">
-              <div style={{ overflowX: 'auto' }}>
-                <Toolbar className="w-full flex-nowrap" start={controlButtons} end={missonControls} />
-              </div>
-            </Panel>
+            <div className="my-2" style={{ overflowX: 'auto' }}>
+              <Toolbar className="w-full flex-nowrap" start={controlButtons} end={missonControls} />
+            </div>
           </div>
         </div>
       </div>

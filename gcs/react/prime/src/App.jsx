@@ -501,6 +501,8 @@ function App() {
     <div className="flex align-items-center gap-2 mr-2">
       {selectedMenu === 'Control' && (
         <>
+          {manualControl && <Message severity="success" text="Manual Control Enabled" />}
+          {!manualControl && <Message severity="error" text="Manual Control Disabled" />}
           <Dropdown value={selectedVehicle} checkmark={true} onChange={(e) => setSelectedVehicle(e.value)} options={vehicleNames} useOptionAsValue optionLabel="name"
             placeholder="Select Video Feed" className="w-full md:w-14rem" />
           <Button size="small" rounded text label="" icon="pi pi-cog" onClick={(e) => op.current.toggle(e)} />
@@ -512,14 +514,14 @@ function App() {
       <InputSwitch checked={theme === 'light'} onChange={(e) => setTheme(e.value ? 'light' : 'dark')} />
       <i className="pi pi-sun" />
     </div>
-  ), [theme, gamepadDeadzone, selectedMenu, selectedVehicle, setSelectedVehicle, vehicleNames, overlayContent]);
+  ), [theme, gamepadDeadzone, selectedMenu, selectedVehicle, setSelectedVehicle, vehicleNames, overlayContent, manualControl]);
 
   return (
     <>
       <Menubar model={items} start={menuBarStart} end={menuBarEnd} />
       <Divider />
       {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} tracking={tracking} toast={toast} onCommand={onCommand}
-        manualControl={manualControl} setManualControl={setManualControl} squadList={squadList} setSquadList={setSquadList}
+        setManualControl={setManualControl} squadList={squadList} setSquadList={setSquadList}
         takeOffAltitude={takeOffAltitude}
         controlGroups={controlGroups} />}
       {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} detectedObjects={detectedObjects} />}
