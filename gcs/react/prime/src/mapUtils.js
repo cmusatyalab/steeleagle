@@ -9,6 +9,7 @@ export function vehicleColor(name) {
 }
 
 export function vehicleSpeed(velocity) {
+    if (!velocity) return 0;
     return Math.sqrt(velocity.x_vel ** 2 + velocity.y_vel ** 2 + velocity.z_vel ** 2);
 }
 

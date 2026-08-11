@@ -31,17 +31,17 @@ function Status({ vehicle, selectable, selected, onToggle }) {
         <Card
             style={{
                 position: 'relative',
-                backgroundColor: selected ? `color-mix(in srgb, ${color} 12%, var(--surface-0))` : 'var(--surface-0)',
+                backgroundColor: showCheck ? `color-mix(in srgb, ${color} 12%, var(--surface-0))` : 'var(--surface-0)',
                 width: '100%',
                 cursor: selectable ? 'pointer' : 'default',
-                border: selected ? `2px solid ${color}` : '2px solid transparent'
+                border: showCheck ? `2px solid ${color}` : '2px solid transparent'
             }}
             onClick={selectable ? onToggle : undefined}
         >
             {showCheck && (
                 <Badge
                     value={<i className="pi pi-check" style={{ fontSize: '0.6rem' }} />}
-                    style={{ position: 'absolute', top: '-6px', right: '-6px', backgroundColor: color }}
+                    style={{ position: 'absolute', top: '-6px', right: '-6px', backgroundColor: color, color: '#ffffff' }}
                 />
             )}
             <div className="flex align-items-center gap-2">

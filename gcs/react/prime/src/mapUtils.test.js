@@ -160,4 +160,9 @@ describe('vehicleSpeed', () => {
     it('treats negative components the same as positive (speed has no direction)', () => {
         expect(vehicleSpeed({ x_vel: -3, y_vel: -4, z_vel: 0 })).toBe(5);
     });
+
+    it('returns 0 for a null or undefined velocity', () => {
+        expect(vehicleSpeed(null)).toBe(0);
+        expect(vehicleSpeed(undefined)).toBe(0);
+    });
 });
