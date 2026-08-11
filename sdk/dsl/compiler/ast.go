@@ -63,7 +63,7 @@ type ArrayValue struct {
 }
 
 // InlineCtor is a positional constructor call used as a value, e.g.
-// `Foo(1.0, bar)` inside `Bar bar(foo = Foo(1.0, bar))`.
+// `Foo(1.0, bar)` inside `Bar bar(foo = Foo(1.0, bar))`
 type InlineCtor struct {
 	Type string   `parser:"@Ident"`
 	Args []*Value `parser:"\"(\" (@@ (\",\" @@)*)? \")\""`

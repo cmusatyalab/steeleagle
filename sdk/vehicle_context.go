@@ -7,7 +7,8 @@ import (
 	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
 )
 
-// VehicleContext holds the context object for the task and the RPC stubs.
+// vehicleContext is the underlying structure that is passed to user code underneath
+// a Vehicle interface.
 type vehicleContext struct {
 	ctx     context.Context
 	control driverpb.ControlServiceClient

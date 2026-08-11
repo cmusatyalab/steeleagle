@@ -4,6 +4,10 @@ import (
 	"github.com/cmusatyalab/steeleagle/sdk/opt"
 )
 
+// Vehicle is the interface that all SDK code interacts with. It provides
+// wrappers over SteelEagle API RPC calls, and provides waiter objects that
+// can wait for the command to complete. This interface can be selectively
+// masked out when drivers do not support certain RPC methods.
 type Vehicle interface {
 	TakeOff(options ...opt.Option[opt.TakeOffOption]) *waiter[TakeOffResponse]
 	Land() *waiter[LandResponse]

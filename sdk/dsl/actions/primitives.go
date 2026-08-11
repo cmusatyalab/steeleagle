@@ -2,6 +2,7 @@ package actions
 
 import (
 	"github.com/cmusatyalab/steeleagle/sdk"
+	"github.com/cmusatyalab/steeleagle/sdk/dsl/types"
 	"github.com/cmusatyalab/steeleagle/sdk/opt"
 )
 
@@ -31,11 +32,8 @@ func (i *ReturnToHome) Execute(v sdk.Vehicle) error {
 }
 
 type GoToGlobalPosition struct {
-	Latitude  float64
-	Longitude float64
-	Altitude  float32
-	Heading   float32
-	Options   []opt.Option[opt.SetGlobalPositionTargetOption]
+	types.GlobalPosition
+	Options []opt.Option[opt.SetGlobalPositionTargetOption]
 }
 
 func (i *GoToGlobalPosition) Execute(v sdk.Vehicle) error {
@@ -44,10 +42,7 @@ func (i *GoToGlobalPosition) Execute(v sdk.Vehicle) error {
 }
 
 type GoToRelativePosition struct {
-	X       float32
-	Y       float32
-	Z       float32
-	Angle   float32
+	types.RelativePosition
 	Options []opt.Option[opt.SetRelativePositionTargetOption]
 }
 
@@ -57,9 +52,7 @@ func (i *GoToRelativePosition) Execute(v sdk.Vehicle) error {
 }
 
 type SetGimbalPose struct {
-	Pitch   float32
-	Roll    float32
-	Yaw     float32
+	types.Pose
 	Options []opt.Option[opt.SetGimbalAngleTargetOption]
 }
 

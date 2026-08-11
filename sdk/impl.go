@@ -6,6 +6,7 @@ import (
 	"github.com/cmusatyalab/steeleagle/sdk/opt"
 )
 
+// TakeOff implements Vehicle.TakeOff for a vehicleContext.
 func (v *vehicleContext) TakeOff(options ...opt.Option[opt.TakeOffOption]) *waiter[TakeOffResponse] {
 	req := &driverpb.TakeOffRequest{}
 	for _, option := range options {
@@ -21,6 +22,7 @@ func (v *vehicleContext) TakeOff(options ...opt.Option[opt.TakeOffOption]) *wait
 	)
 }
 
+// Land implements Vehicle.Land for a vehicleContext.
 func (v *vehicleContext) Land() *waiter[LandResponse] {
 	req := &driverpb.LandRequest{}
 	resp, err := v.control.Land(v.ctx, req)
@@ -33,6 +35,7 @@ func (v *vehicleContext) Land() *waiter[LandResponse] {
 	)
 }
 
+// Hold implements Vehicle.Hold for a vehicleContext.
 func (v *vehicleContext) Hold() *waiter[HoldResponse] {
 	req := &driverpb.HoldRequest{}
 	resp, err := v.control.Hold(v.ctx, req)
@@ -45,6 +48,7 @@ func (v *vehicleContext) Hold() *waiter[HoldResponse] {
 	)
 }
 
+// Kill implements Vehicle.Kill for a vehicleContext.
 func (v *vehicleContext) Kill() *waiter[KillResponse] {
 	req := &driverpb.KillRequest{}
 	resp, err := v.control.Kill(v.ctx, req)
@@ -57,6 +61,7 @@ func (v *vehicleContext) Kill() *waiter[KillResponse] {
 	)
 }
 
+// ReturnToHome implements Vehicle.ReturnToHome for a vehicleContext.
 func (v *vehicleContext) ReturnToHome(options ...opt.Option[opt.ReturnToHomeOption]) *waiter[ReturnToHomeResponse] {
 	req := &driverpb.ReturnToHomeRequest{}
 	for _, option := range options {
@@ -72,6 +77,7 @@ func (v *vehicleContext) ReturnToHome(options ...opt.Option[opt.ReturnToHomeOpti
 	)
 }
 
+// SetGlobalPositionTarget implements Vehicle.SetGlobalPositionTarget for a vehicleContext.
 func (v *vehicleContext) SetGlobalPositionTarget(
 	latitude float64, longitude float64, altitude, heading float32,
 	options ...opt.Option[opt.SetGlobalPositionTargetOption]) *waiter[SetGlobalPositionTargetResponse] {
@@ -93,6 +99,7 @@ func (v *vehicleContext) SetGlobalPositionTarget(
 	)
 }
 
+// SetRelativePositionTarget implements Vehicle.SetRelativePositionTarget for a vehicleContext.
 func (v *vehicleContext) SetRelativePositionTarget(
 	x, y, z, angle float32,
 	options ...opt.Option[opt.SetRelativePositionTargetOption]) *waiter[SetRelativePositionTargetResponse] {
@@ -114,6 +121,7 @@ func (v *vehicleContext) SetRelativePositionTarget(
 	)
 }
 
+// SetVelocityTarget implements Vehicle.SetVelocityTarget for a vehicleContext.
 func (v *vehicleContext) SetVelocityTarget(
 	xVel, yVel, zVel, angularVel float32,
 	options ...opt.Option[opt.SetVelocityTargetOption]) *waiter[SetVelocityTargetResponse] {
@@ -135,6 +143,7 @@ func (v *vehicleContext) SetVelocityTarget(
 	)
 }
 
+// SetGimbalAngleTarget implements Vehicle.SetGimbalAngleTarget for a vehicleContext.
 func (v *vehicleContext) SetGimbalAngleTarget(
 	pitch, roll, yaw float32,
 	options ...opt.Option[opt.SetGimbalAngleTargetOption]) *waiter[SetGimbalAngleTargetResponse] {
@@ -155,6 +164,7 @@ func (v *vehicleContext) SetGimbalAngleTarget(
 	)
 }
 
+// SetGimbalVelocityTarget implements Vehicle.SetGimbalVelocityTarget for a vehicleContext.
 func (v *vehicleContext) SetGimbalVelocityTarget(
 	pitchVel, rollVel, yawVel float32,
 	options ...opt.Option[opt.SetGimbalVelocityTargetOption]) *waiter[SetGimbalVelocityTargetResponse] {
@@ -175,6 +185,7 @@ func (v *vehicleContext) SetGimbalVelocityTarget(
 	)
 }
 
+// GetTelemetry implements Vehicle.GetTelemetry for a vehicleContext.
 func (v *vehicleContext) GetTelemetry() *waiter[Telemetry] {
 	req := &vehiclepb.GetTelemetryRequest{}
 	resp, err := v.data.GetTelemetry(v.ctx, req)
