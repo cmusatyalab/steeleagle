@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature } from './mapUtils.js';
+import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature, vehicleColor } from './mapUtils.js';
 
 const SAMPLE_FC = {
     type: 'FeatureCollection',
@@ -126,5 +126,19 @@ describe('bboxFromFeature', () => {
         expect(bbox[1]).toBeCloseTo(39.999);
         expect(bbox[2]).toBeCloseTo(-79.999);
         expect(bbox[3]).toBeCloseTo(40.001);
+    });
+});
+
+describe('vehicleColor', () => {
+    it('returns a hex color string', () => {
+        expect(vehicleColor('vehicle-1')).toMatch(/^#[0-9a-f]{6}$/i);
+    });
+
+    it('is deterministic for the same name', () => {
+        expect(vehicleColor('vehicle-1')).toBe(vehicleColor('vehicle-1'));
+    });
+
+    it('differs for different names', () => {
+        expect(vehicleColor('vehicle-1')).not.toBe(vehicleColor('vehicle-2'));
     });
 });

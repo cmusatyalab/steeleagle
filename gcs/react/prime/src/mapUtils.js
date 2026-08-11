@@ -1,5 +1,12 @@
 import tokml from 'tokml';
 import { kml as kmlToGeoJson } from '@tmcw/togeojson';
+import ColorHash from 'color-hash';
+
+const colorHash = new ColorHash();
+
+export function vehicleColor(name) {
+    return colorHash.hex(name);
+}
 
 export function featuresToGeoJson(featuresJson) {
     return JSON.stringify(JSON.parse(featuresJson), null, 2);
