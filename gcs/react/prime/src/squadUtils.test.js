@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toggleVehicleInSquad, assignControlGroup, recallControlGroup } from './squadUtils.js';
+import { toggleVehicleInSquad, assignControlGroup, recallControlGroup, squadMatchesGroup } from './squadUtils.js';
 
 describe('toggleVehicleInSquad', () => {
     it('adds a name not present', () => {
@@ -56,5 +56,35 @@ describe('recallControlGroup', () => {
 
     it('recalling a never-assigned slot returns [] rather than undefined', () => {
         expect(recallControlGroup({}, '1')).toEqual([]);
+    });
+});
+
+describe('squadMatchesGroup', () => {
+    it('is true when the current squad exactly matches the group, same order', () => {
+        expect(squadMatchesGroup(['a', 'b'], { '1': ['a', 'b'] }, '1')).toBe(true);
+    });
+
+    it('is true when the current squad matches the group in a different order', () => {
+        expect(squadMatchesGroup(['b', 'a'], { '1': ['a', 'b'] }, '1')).toBe(true);
+    });
+
+    it('is false when the squad has an extra vehicle the group does not', () => {
+        expect(squadMatchesGroup(['a', 'b', 'c'], { '1': ['a', 'b'] }, '1')).toBe(false);
+    });
+
+    it('is false when the squad is missing a vehicle the group has', () => {
+        expect(squadMatchesGroup(['a'], { '1': ['a', 'b'] }, '1')).toBe(false);
+    });
+
+    it('is false when the group has never been assigned', () => {
+        expect(squadMatchesGroup(['a'], {}, '1')).toBe(false);
+    });
+
+    it('treats a null squadList as empty', () => {
+        expect(squadMatchesGroup(null, { '1': [] }, '1')).toBe(true);
+    });
+
+    it('treats an empty squad and a never-assigned (empty) group as matching sets -- callers gate the "unset" case separately via whether the group has any vehicles at all', () => {
+        expect(squadMatchesGroup([], {}, '1')).toBe(true);
     });
 });

@@ -11,7 +11,7 @@ import React from 'react';
 import { getApiUrl } from './urls.js';
 import VehicleGrid from './VehicleGrid.jsx';
 import Mapbox from './Mapbox.jsx';
-import { toggleVehicleInSquad, recallControlGroup } from './squadUtils.js';
+import { toggleVehicleInSquad, recallControlGroup, squadMatchesGroup } from './squadUtils.js';
 
 const cancelOptions = { icon: 'pi pi-fw pi-times', iconOnly: true, className: 'custom-cancel-btn p-button-danger' };
 const chooseOptions = { label: 'Select...', icon: 'pi pi-fw pi-file', iconOnly: false, className: 'custom-choose-btn p-button-primary' };
@@ -161,17 +161,22 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand,
           <Button size="small" rounded text label="" icon="pi pi-times" tooltip="Clear" tooltipOptions={{ position: 'bottom' }} onClick={onClearSquad} aria-label="Clear" />
         </div>
         <ButtonGroup>
-          {controlGroupDigits.map((digit) => (
+          {controlGroupDigits.map((digit) => {
+            const hasVehicles = controlGroups[digit]?.length > 0;
+            const isActive = hasVehicles && squadMatchesGroup(squadList, controlGroups, digit);
+            return (
             <Button
               key={digit}
               size="small"
-              outlined={!(controlGroups[digit]?.length > 0)}
+              outlined={!hasVehicles}
+              severity={!hasVehicles ? 'secondary' : isActive ? 'success' : undefined}
               label={digit}
-              tooltip={`Group ${digit}: ${(controlGroups[digit] ?? []).length} vehicles`}
+              tooltip={`Group ${digit}: ${(controlGroups[digit] ?? []).length} vehicles${isActive ? ' (currently selected)' : ''}`}
               tooltipOptions={{ position: 'bottom' }}
               onClick={() => onRecallGroup(digit)}
             />
-          ))}
+            );
+          })}
         </ButtonGroup>
       </div>
     </div>

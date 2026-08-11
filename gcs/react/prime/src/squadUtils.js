@@ -17,3 +17,16 @@ export function assignControlGroup(controlGroups, digit, squadList) {
 export function recallControlGroup(controlGroups, digit) {
     return controlGroups[digit] ?? [];
 }
+
+// Set-equality (order-insensitive) between the current squad and a control
+// group's saved snapshot -- lets the UI highlight whichever group button
+// (if any) matches what's currently selected. Two empty arrays match; it's
+// the caller's job to separately treat a never-assigned group as "unset"
+// rather than "matches the current (possibly also empty) squad".
+export function squadMatchesGroup(squadList, controlGroups, digit) {
+    const squad = squadList ?? [];
+    const group = controlGroups[digit] ?? [];
+    if (squad.length !== group.length) return false;
+    const groupSet = new Set(group);
+    return squad.every((name) => groupSet.has(name));
+}
