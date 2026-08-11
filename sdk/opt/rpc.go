@@ -43,7 +43,6 @@ type SetVelocityTargetOption interface {
 // SetGimbalAngleTargetOption represents an option for a SetGimbalAngleTarget RPC.
 type SetGimbalAngleTargetOption interface {
 	SetAngleMode(driverpb.AngleMode)
-	SetFrame(driverpb.ReferenceFrame)
 }
 
 // SetGimbalVelocityTargetOption represents an option for a SetGimbalVelocityTarget RPC.

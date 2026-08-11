@@ -85,8 +85,8 @@ service ControlService {
    * - `HOVER` -> hover at `final_altitude` above home position
    * - `LAND` -> land at home position
    *
-   * Returns an _Action_ style response with `expected_mode` set to either LOITER 
-   * or LAND and `expected_status` set to `MOTION_STATUS_HOLDING` or 
+   * Returns an _Action_ style response with `expected_mode` set to either LOITER
+   * or LAND and `expected_status` set to `MOTION_STATUS_HOLDING` or
    * `MOTION_STATUS_STOPPED`.
    */
   rpc ReturnToHome (ReturnToHomeRequest)
@@ -156,7 +156,7 @@ service ControlService {
    * as follows:
    * - `BODY` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, body yaw)
    * - `NEU` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, global yaw)
-   * 
+   *
    * Returns a _Gimbal_ style response, with `setpoint` set to the target `Pose` in
    * the NEU frame.
    */
@@ -306,7 +306,6 @@ message SetVelocityTargetResponse {
 message SetGimbalAngleTargetRequest {
   common.Pose pose = 1; // target pose
   optional AngleMode angle_mode = 2; // specifies how to interpret the target pose
-  optional ReferenceFrame frame = 3; // frame of reference
 }
 
 message SetGimbalAngleTargetResponse {
