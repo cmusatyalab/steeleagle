@@ -63,6 +63,7 @@ func spawnVehicle(
 		vehicle.WithName(vehicleCfg.Name),
 		vehicle.WithServerListener(ln, nil),
 		vehicle.WithVideoStreamConfig(videoCfg),
+		vehicle.WithLogger(log.With().Str("vehicle", vehicleCfg.Name).Logger()),
 	}
 	if gabrielCfg.ServerEndpoint != "" {
 		opts = append(opts, vehicle.WithGabrielConfig(vehicle.GabrielConfig{
