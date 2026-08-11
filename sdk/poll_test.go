@@ -16,7 +16,7 @@ import (
 // TestFetchTelemetrySuccess tests to make sure fetchTelemetry works on a mock
 // vehicle.
 func TestFetchTelemetrySuccess(t *testing.T) {
-	want := telemetrypb.Telemetry_builder{Mode: modeP(telemetrypb.Mode_MODE_LOITER)}.Build()
+	want := telemetrypb.Telemetry_builder{Mode: modeP(telemetrypb.Mode_MODE_HOLD)}.Build()
 	v := testVehicleContext(context.Background(), constantTelemetry(want))
 
 	got, err := fetchTelemetry(v)

@@ -37,8 +37,8 @@ const (
 	Mode_MODE_TAKEOFF Mode = 1
 	// the vehicle is in land mode
 	Mode_MODE_LAND Mode = 2
-	// the vehicle is in loiter mode
-	Mode_MODE_LOITER Mode = 3
+	// the vehicle is in hold mode
+	Mode_MODE_HOLD Mode = 3
 	// the vehicle is in guided mode
 	Mode_MODE_GUIDED Mode = 4
 	// the vehicle is experiencing an emergency
@@ -51,7 +51,7 @@ var (
 		0: "MODE_UNSPECIFIED",
 		1: "MODE_TAKEOFF",
 		2: "MODE_LAND",
-		3: "MODE_LOITER",
+		3: "MODE_HOLD",
 		4: "MODE_GUIDED",
 		5: "MODE_EMERGENCY",
 	}
@@ -59,7 +59,7 @@ var (
 		"MODE_UNSPECIFIED": 0,
 		"MODE_TAKEOFF":     1,
 		"MODE_LAND":        2,
-		"MODE_LOITER":      3,
+		"MODE_HOLD":        3,
 		"MODE_GUIDED":      4,
 		"MODE_EMERGENCY":   5,
 	}
@@ -1795,12 +1795,12 @@ const file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDesc = "
 	"\vgimbal_info\x18\x04 \x01(\v25.steeleagle_protocol.v1.messages.telemetry.GimbalInfoR\n" +
 	"gimbalInfo\x12\\\n" +
 	"\rposition_info\x18\x05 \x01(\v27.steeleagle_protocol.v1.messages.telemetry.PositionInfoR\fpositionInfo\x12\x1b\n" +
-	"\tcamera_id\x18\x06 \x01(\x04R\bcameraId*s\n" +
+	"\tcamera_id\x18\x06 \x01(\x04R\bcameraId*q\n" +
 	"\x04Mode\x12\x14\n" +
 	"\x10MODE_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fMODE_TAKEOFF\x10\x01\x12\r\n" +
-	"\tMODE_LAND\x10\x02\x12\x0f\n" +
-	"\vMODE_LOITER\x10\x03\x12\x0f\n" +
+	"\tMODE_LAND\x10\x02\x12\r\n" +
+	"\tMODE_HOLD\x10\x03\x12\x0f\n" +
 	"\vMODE_GUIDED\x10\x04\x12\x12\n" +
 	"\x0eMODE_EMERGENCY\x10\x05*\x81\x01\n" +
 	"\fMotionStatus\x12\x1d\n" +

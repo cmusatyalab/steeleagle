@@ -8,7 +8,7 @@ const (
 	ModeUnspecified Mode = 0
 	ModeTakeoff     Mode = 1
 	ModeLand        Mode = 2
-	ModeLoiter      Mode = 3
+	ModeHold        Mode = 3
 	ModeGuided      Mode = 4
 	ModeEmergency   Mode = 5
 )

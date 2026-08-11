@@ -180,12 +180,14 @@ class SetVelocityTargetResponse(_message.Message):
     def __init__(self, setpoint: _Optional[_Union[_common_pb2.Velocity, _Mapping]] = ..., expected_status: _Optional[_Union[_telemetry_pb2.MotionStatus, str]] = ...) -> None: ...
 
 class SetGimbalAngleTargetRequest(_message.Message):
-    __slots__ = ("pose", "angle_mode")
+    __slots__ = ("pose", "angle_mode", "frame")
     POSE_FIELD_NUMBER: _ClassVar[int]
     ANGLE_MODE_FIELD_NUMBER: _ClassVar[int]
+    FRAME_FIELD_NUMBER: _ClassVar[int]
     pose: _common_pb2.Pose
     angle_mode: AngleMode
-    def __init__(self, pose: _Optional[_Union[_common_pb2.Pose, _Mapping]] = ..., angle_mode: _Optional[_Union[AngleMode, str]] = ...) -> None: ...
+    frame: ReferenceFrame
+    def __init__(self, pose: _Optional[_Union[_common_pb2.Pose, _Mapping]] = ..., angle_mode: _Optional[_Union[AngleMode, str]] = ..., frame: _Optional[_Union[ReferenceFrame, str]] = ...) -> None: ...
 
 class SetGimbalAngleTargetResponse(_message.Message):
     __slots__ = ("setpoint",)

@@ -170,8 +170,8 @@ class ControlServiceServicer:
         - `HOVER` -> hover at `final_altitude` above home position
         - `LAND` -> land at home position
 
-        Returns an _Action_ style response with `expected_mode` set to either LOITER
-        or LAND and `expected_status` set to `MOTION_STATUS_HOLDING` or
+        Returns an _Action_ style response with `expected_mode` set to either LOITER 
+        or LAND and `expected_status` set to `MOTION_STATUS_HOLDING` or 
         `MOTION_STATUS_STOPPED`.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
