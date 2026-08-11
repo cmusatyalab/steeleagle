@@ -104,13 +104,14 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObj
       const isSelected = !!(squadList && squadList.includes(v.name));
       let marker = new mapboxgl.Marker({ element: createVehicleMarkerElement(vehicleColor(v.name), isSelected), rotation: v.bearing, rotationAlignment: 'map' })
         .setLngLat([v.current.long, v.current.lat])
-        .setPopup(new mapboxgl.Popup({ focusAfterOpen: false }).setHTML(`<strong style="color:black">${v.name} (${v.current.alt.toFixed(2)} m)</strong>`))
+        .setPopup(
+          new mapboxgl.Popup({ focusAfterOpen: false, closeButton: false, closeOnClick: false, className: 'vehicle-label-popup' })
+            .setHTML(`<strong>${v.name} (${v.current.alt.toFixed(2)} m)</strong>`)
+        )
         .addTo(mapRef.current);
       marker.togglePopup();
       const markerDiv = marker.getElement();
 
-      markerDiv.addEventListener('mouseenter', () => marker.togglePopup());
-      markerDiv.addEventListener('mouseleave', () => marker.togglePopup());
       if (onToggleVehicle) {
         markerDiv.style.cursor = 'pointer';
         markerDiv.addEventListener('click', () => onToggleVehicle(v.name));
