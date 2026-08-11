@@ -8,12 +8,16 @@ on:
       - '**/*.go'
       - 'go.mod'
       - 'go.sum'
+      - 'api/go/go.mod'
+      - 'api/go/go.sum'
   pull_request:
     paths:
       - '.github/workflows/go-ci.yml'
       - '**/*.go'
       - 'go.mod'
       - 'go.sum'
+      - 'api/go/go.mod'
+      - 'api/go/go.sum'
 
 jobs:
   test:
@@ -49,6 +53,14 @@ jobs:
         run: go build ./...
 
       - name: Test
+        run: go test ./...
+
+      - name: Build api/go module
+        working-directory: api/go
+        run: go build ./...
+
+      - name: Test api/go module
+        working-directory: api/go
         run: go test ./...
 
       - uses: gwatts/go-coverage-action@v2
