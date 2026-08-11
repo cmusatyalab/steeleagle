@@ -1,16 +1,30 @@
-import { useState } from 'react'
 import { useRef, useEffect } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { MAPBOX_TOKEN } from './config.js';
-import ColorHash from 'color-hash'
+import { vehicleColor } from './mapUtils.js'
+
+function createVehicleMarkerElement(color) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  el.setAttribute('width', '28');
+  el.setAttribute('height', '28');
+  el.setAttribute('viewBox', '0 0 24 24');
+
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', 'M12 1 L21 22 L12 17 L3 22 Z');
+  path.setAttribute('fill', color);
+  path.setAttribute('stroke', '#ffffff');
+  path.setAttribute('stroke-width', '1.5');
+  path.setAttribute('stroke-linejoin', 'round');
+  el.appendChild(path);
+
+  return el;
+}
 
 function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObjects, mapHeight }) {
   const mapRef = useRef()
   const mapContainerRef = useRef()
-  const [currentLoc, setCurrentLoc] = useState(null);
   const markerRefs = useRef([]); // To store references to all markers
-  var colorHash = new ColorHash();
   useEffect(() => {
     mapboxgl.accessToken = `${MAPBOX_TOKEN}`;
 
@@ -76,7 +90,7 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObj
     markerRefs.current.forEach(marker => marker.remove());
     markerRefs.current = [];
     vehicles.forEach(v => {
-      let marker = new mapboxgl.Marker({ "color": colorHash.hex(v.name), rotation: v.bearing, rotationAlignment: 'map' })
+      let marker = new mapboxgl.Marker({ element: createVehicleMarkerElement(vehicleColor(v.name)), rotation: v.bearing, rotationAlignment: 'map' })
         .setLngLat([v.current.long, v.current.lat])
         .setPopup(new mapboxgl.Popup({ focusAfterOpen: false }).setHTML(`<strong style="color:black">${v.name} (${v.current.alt.toFixed(2)} m)</strong>`))
         .addTo(mapRef.current);
@@ -108,7 +122,7 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObj
         circle.setAttribute('cx', '8');
         circle.setAttribute('cy', '8');
         circle.setAttribute('r', '7');
-        circle.setAttribute('fill', colorHash.hex(d.cls));
+        circle.setAttribute('fill', vehicleColor(d.cls));
         circle.setAttribute('stroke', '#fff');
         circle.setAttribute('stroke-width', '2');
 
