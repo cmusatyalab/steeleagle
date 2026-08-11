@@ -150,12 +150,12 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand,
     <div className={`${options.className} flex-column align-items-stretch`}>
       <div className="flex align-items-center justify-content-between mb-2">
         <span className="font-bold">Squad</span>
-        <Chip label={(squadList ?? []).length === 1 ? '1 selected' : `${(squadList ?? []).length} selected`} icon="pi pi-users" />
+        <Chip label={`${(squadList ?? []).length}/${vehicleNames.length} selected`} icon="pi pi-users" />
       </div>
       <div className="flex align-items-center justify-content-between flex-wrap gap-2">
-        <div className="flex align-items-center gap-2">
-          <Button size="small" text label="Select All" icon="pi pi-check-square" onClick={onSelectAllSquad} />
-          <Button size="small" text label="Clear" icon="pi pi-times" onClick={onClearSquad} />
+        <div className="flex align-items-center gap-1">
+          <Button size="small" rounded text label="" icon="pi pi-check-square" tooltip="Select All" tooltipOptions={{ position: 'bottom' }} onClick={onSelectAllSquad} aria-label="Select All" />
+          <Button size="small" rounded text label="" icon="pi pi-times" tooltip="Clear" tooltipOptions={{ position: 'bottom' }} onClick={onClearSquad} aria-label="Clear" />
         </div>
         <ButtonGroup>
           {controlGroupDigits.map((digit) => (
@@ -215,7 +215,9 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand,
               </div>
             </div>
             <Panel headerTemplate={swarmHeaderTemplate} className="my-2 h-full">
-              <Toolbar className="w-full" start={controlButtons} end={missonControls} />
+              <div style={{ overflowX: 'auto' }}>
+                <Toolbar className="w-full flex-nowrap" start={controlButtons} end={missonControls} />
+              </div>
             </Panel>
           </div>
         </div>
