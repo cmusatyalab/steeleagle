@@ -15,10 +15,10 @@ import (
 // InstallTimeout bounds how long a plugin's install.sh is allowed to run.
 const InstallTimeout = 5 * time.Minute
 
-// installPlugin fetches repo at ref, extracts subpath, and runs the
-// resulting install.sh. Only on a zero exit does it atomically replace
-// whatever was previously installed under installDir/<name>. A failed
-// install leaves the existing plugin, if any, untouched.
+// installPlugin fetches repo at ref, extracts subpath, moves it into place
+// under installDir/<name>, and then runs install.sh. A failed install rolls
+// the move back, leaving whatever was previously installed, if anything,
+// untouched.
 func installPlugin(ctx context.Context, installDir, name, repo, ref, subpath string) error {
 	if err := os.MkdirAll(installDir, 0755); err != nil {
 		return fmt.Errorf("creating install directory: %w", err)
@@ -56,46 +56,55 @@ func installPlugin(ctx context.Context, installDir, name, repo, ref, subpath str
 	if info, err := os.Stat(srcDir); err != nil || !info.IsDir() {
 		return fmt.Errorf("subpath %q not found in %s@%s", subpath, repo, ref)
 	}
-
-	installScript := filepath.Join(srcDir, "install.sh")
-	if _, err := os.Stat(installScript); err != nil {
+	if _, err := os.Stat(filepath.Join(srcDir, "install.sh")); err != nil {
 		return fmt.Errorf("install.sh not found: %w", err)
+	}
+
+	targetDir := filepath.Join(installDir, name)
+	backupDir := targetDir + ".old"
+	replaced, err := swapIn(srcDir, targetDir, backupDir)
+	if err != nil {
+		return err
 	}
 
 	installCtx, cancel := context.WithTimeout(ctx, InstallTimeout)
 	defer cancel()
 	cmd := exec.CommandContext(installCtx, "sh", "install.sh")
-	cmd.Dir = srcDir
+	cmd.Dir = targetDir
 	if output, err := cmd.CombinedOutput(); err != nil {
+		os.RemoveAll(targetDir)
+		if replaced {
+			os.Rename(backupDir, targetDir) // best-effort rollback
+		}
 		return fmt.Errorf("install.sh failed: %w\n%s", err, output)
 	}
 
-	return swapIn(srcDir, filepath.Join(installDir, name))
+	if replaced {
+		os.RemoveAll(backupDir)
+	}
+	return nil
 }
 
-// swapIn moves srcDir into targetDir, backing up and restoring whatever was
-// previously at targetDir if the final rename fails.
-func swapIn(srcDir, targetDir string) error {
-	backup := targetDir + ".old"
-	os.RemoveAll(backup) // clear any leftover from a previous failed swap
+// swapIn moves srcDir into targetDir, backing up whatever was previously at
+// targetDir into backupDir (clearing any stale backup first) and restoring
+// it if the rename itself fails. replaced reports whether there was an
+// existing install to back up, so the caller knows whether backupDir needs
+// cleaning up (on success) or restoring (if a later step fails).
+func swapIn(srcDir, targetDir, backupDir string) (replaced bool, err error) {
+	os.RemoveAll(backupDir) // clear any leftover from a previous failed swap
 
-	replaced := false
 	if _, err := os.Stat(targetDir); err == nil {
-		if err := os.Rename(targetDir, backup); err != nil {
-			return fmt.Errorf("backing up existing plugin: %w", err)
+		if err := os.Rename(targetDir, backupDir); err != nil {
+			return false, fmt.Errorf("backing up existing plugin: %w", err)
 		}
 		replaced = true
 	}
 
 	if err := os.Rename(srcDir, targetDir); err != nil {
 		if replaced {
-			os.Rename(backup, targetDir) // best-effort rollback
+			os.Rename(backupDir, targetDir) // best-effort rollback
 		}
-		return fmt.Errorf("installing plugin: %w", err)
+		return false, fmt.Errorf("installing plugin: %w", err)
 	}
-
-	if replaced {
-		os.RemoveAll(backup)
-	}
-	return nil
+	return replaced, nil
 }

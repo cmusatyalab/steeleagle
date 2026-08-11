@@ -5,6 +5,7 @@ import (
 	"os"
 
 	eagledpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/eagled"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -13,6 +14,7 @@ import (
 // on the process supervisor to restart it unconfigured. Installed drivers are
 // untouched.
 func (d *daemon) ResetConfig(ctx context.Context, req *eagledpb.ResetConfigRequest) (*eagledpb.ResetConfigResponse, error) {
+	log.Warn().Msg("ResetConfig received: clearing persisted config and shutting down")
 	path, err := persistedConfigPath()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "determining config persistence path: %v", err)
@@ -29,6 +31,7 @@ func (d *daemon) ResetConfig(ctx context.Context, req *eagledpb.ResetConfigReque
 // clearing the persisted config, so the process supervisor brings it back up
 // already configured, with its vehicles restarted from applied-config.toml.
 func (d *daemon) RestartDaemon(ctx context.Context, req *eagledpb.RestartDaemonRequest) (*eagledpb.RestartDaemonResponse, error) {
+	log.Info().Msg("RestartDaemon received: shutting down for restart")
 	d.shutdown()
 	return eagledpb.RestartDaemonResponse_builder{}.Build(), nil
 }
