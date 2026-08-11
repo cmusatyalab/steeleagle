@@ -8,6 +8,10 @@ export function vehicleColor(name) {
     return colorHash.hex(name);
 }
 
+export function vehicleSpeed(velocity) {
+    return Math.sqrt(velocity.x_vel ** 2 + velocity.y_vel ** 2 + velocity.z_vel ** 2);
+}
+
 export function featuresToGeoJson(featuresJson) {
     return JSON.stringify(JSON.parse(featuresJson), null, 2);
 }

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature, vehicleColor } from './mapUtils.js';
+import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature, vehicleColor, vehicleSpeed } from './mapUtils.js';
 
 const SAMPLE_FC = {
     type: 'FeatureCollection',
@@ -140,5 +140,24 @@ describe('vehicleColor', () => {
 
     it('differs for different names', () => {
         expect(vehicleColor('vehicle-1')).not.toBe(vehicleColor('vehicle-2'));
+    });
+});
+
+describe('vehicleSpeed', () => {
+    it('returns 0 for a stationary vehicle', () => {
+        expect(vehicleSpeed({ x_vel: 0, y_vel: 0, z_vel: 0 })).toBe(0);
+    });
+
+    it('returns the magnitude for a single-axis velocity', () => {
+        expect(vehicleSpeed({ x_vel: 3, y_vel: 0, z_vel: 0 })).toBe(3);
+    });
+
+    it('computes the Euclidean norm across all three axes', () => {
+        // 3-4-12 generalizes the 3-4-5 triple to three dimensions: sqrt(9+16+144) = 13
+        expect(vehicleSpeed({ x_vel: 3, y_vel: 4, z_vel: 12 })).toBe(13);
+    });
+
+    it('treats negative components the same as positive (speed has no direction)', () => {
+        expect(vehicleSpeed({ x_vel: -3, y_vel: -4, z_vel: 0 })).toBe(5);
     });
 });
