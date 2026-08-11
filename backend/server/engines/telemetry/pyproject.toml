@@ -11,6 +11,6 @@ dependencies = [
    "pytz",
    "Pillow",
    "gabriel-server>=5.1.0",
-   "steeleagle-protocol>=0.1.15",
+   "steeleagle-protocol>=0.1.18",
    "foxglove-sdk",
 ]
