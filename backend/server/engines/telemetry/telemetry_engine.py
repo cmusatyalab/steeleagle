@@ -137,14 +137,25 @@ class TelemetryEngine(cognitive_engine.Engine):
             ),
             log_time=time.time_ns(),
         )
-        foxglove.log(
-            f"/{vehicle_id}/telemetry",
-            json_format.MessageToJson(
+        try:
+            telemetry_json = json_format.MessageToJson(
                 extras,
                 always_print_fields_with_no_presence=True,
-            ),
-            log_time=time.time_ns(),
-        )
+            )
+        except TypeError as e:
+            logger.warning(
+                f"Could not serialize telemetry for {vehicle_id} to JSON, "
+                f"likely an unrecognized Any payload in position_info.setpoint "
+                f"or gimbal_info.gimbal_setpoint: {e}"
+            )
+            telemetry_json = None
+
+        if telemetry_json is not None:
+            foxglove.log(
+                f"/{vehicle_id}/telemetry",
+                telemetry_json,
+                log_time=time.time_ns(),
+            )
 
         vehicle_key = f"vehicle:{vehicle_id}"
         self.r.hset(vehicle_key, "last_seen", f"{time.time()}")
