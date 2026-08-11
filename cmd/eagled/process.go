@@ -12,7 +12,9 @@ import (
 
 // ResetConfig deletes the persisted config and shuts the daemon down, relying
 // on the process supervisor to restart it unconfigured. Installed drivers are
-// untouched.
+// untouched, and so is the persisted [tailscale] network config (see
+// PersistedNetworkFile) — a reset daemon still rejoins the tailnet and stays
+// reachable there for the Configure call that reconfigures it.
 func (d *daemon) ResetConfig(ctx context.Context, req *eagledpb.ResetConfigRequest) (*eagledpb.ResetConfigResponse, error) {
 	log.Warn().Msg("ResetConfig received: clearing persisted config and shutting down")
 	path, err := persistedConfigPath()

@@ -218,10 +218,12 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		}
 	}
 
-	// Monitor plugins in case they exit unexpectedly
+	// Monitor plugins in case they exit unexpectedly, restarting them with
+	// backoff so a crashed driver or mission plugin comes back on its own
+	// instead of leaving the vehicle running against a dead plugin.
 	v.pluginMonitor = &pluginMonitor{
 		pluginCfg:     v.pluginCfg,
-		restartPolicy: noRestart,
+		restartPolicy: alwaysRestart,
 		log:           v.log,
 		pluginResetCb: pluginResetCb,
 	}

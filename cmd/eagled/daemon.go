@@ -11,6 +11,7 @@ import (
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"github.com/cmusatyalab/steeleagle/internal/tailscale"
 	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -39,21 +40,31 @@ type daemon struct {
 	ctx      context.Context    // canceled on daemon shutdown, stops every vehicle and its registration stream
 	shutdown context.CancelFunc // cancels ctx, ResetConfig calls this itself to trigger the same shutdown a signal would
 
-	mu             sync.Mutex
-	configured     bool
-	baseCfg        Config // last-applied config, minus Vehicles
-	daemonName     string // resolved from baseCfg
-	pluginDir      string // plugin runtime directory
-	vehicleAuthKey string // tsnet auth key every vehicle joins with
-	vehicleVPN     bool   // resolved from baseCfg.VehicleVPN
-	gabrielCfg     GabrielConfig
-	swarmCfg       SwarmControllerConfig
-	nextPort       int                                // next port to assign to a vehicle
-	running        map[string]*runningVehicle         // name -> running vehicle; nil value means "reserved, spawn in progress"
-	vehicleCfgs    map[string]VehicleConfig           // vehicle configurations
-	installed      map[string]installedPluginRecord   // plugin name -> {ref, category}
-	aviaryCommand  []string                           // resolved from baseCfg.Aviary.Command
-	aviaryDir      string                             // resolved from baseCfg.Aviary.Dir
+	// grpcServer and controlPort let ensureNetwork also serve DaemonService
+	// over eagled's own tsnet node once it's up, alongside the plain-TCP
+	// listener main.go always binds. Set once by main.go before any Configure
+	// call can arrive; never mutated after, so unguarded reads are safe.
+	grpcServer  *grpc.Server
+	controlPort int
+
+	mu                sync.Mutex
+	configured        bool
+	networkConfigured bool              // whether eagled's own tsnet node has been started; set independently of configured, see ensureNetwork
+	tsServer          *tailscale.Server // eagled's own tsnet node, if networkConfigured
+	tsHostname        string            // hostname tsServer is currently running under
+	baseCfg           Config            // last-applied config, minus Vehicles
+	daemonName        string            // resolved from baseCfg
+	pluginDir         string            // plugin runtime directory
+	vehicleAuthKey    string            // tsnet auth key every vehicle joins with
+	vehicleVPN        bool              // resolved from baseCfg.VehicleVPN
+	gabrielCfg        GabrielConfig
+	swarmCfg          SwarmControllerConfig
+	nextPort          int                              // next port to assign to a vehicle
+	running           map[string]*runningVehicle       // name -> running vehicle; nil value means "reserved, spawn in progress"
+	vehicleCfgs       map[string]VehicleConfig         // vehicle configurations
+	installed         map[string]installedPluginRecord // plugin name -> {ref, category}
+	aviaryCommand     []string                         // resolved from baseCfg.Aviary.Command
+	aviaryDir         string                           // resolved from baseCfg.Aviary.Dir
 
 	// configMu and aviaryMu each serialize their own slow, one-time setup
 	// call (tailscale.NewServer, spawnAviary) across concurrent RPCs, without
@@ -82,6 +93,9 @@ func (d *daemon) Configure(ctx context.Context, req *eagledpb.ConfigureRequest) 
 		return nil, status.Errorf(codes.InvalidArgument, "parsing config: %v", err)
 	}
 	log.Info().Int("vehicles", len(cfg.Vehicles)).Msg("Configure received")
+	if err := d.ensureNetwork(cfg); err != nil {
+		return nil, err
+	}
 	if err := d.ensureConfigured(cfg); err != nil {
 		return nil, err
 	}
@@ -298,12 +312,90 @@ func (d *daemon) reserve(name string) (int, error) {
 	return port, nil
 }
 
+// ensureNetwork starts or, if the hostname changed, restarts eagled's own
+// tsnet node so it matches cfg's [tailscale] settings, and serves
+// DaemonService over it (in addition to main.go's plain-TCP listener) so
+// eagled is reachable over Tailscale for RPCs. This is independent of
+// ensureConfigured below and, unlike it, can run again on a later Configure
+// call even after the daemon is otherwise fully configured — that's what
+// lets the hostname be changed at runtime. A no-op if cfg.VPN is false, or
+// if VPN is on but the node is already running under the requested hostname.
+// configMu also serializes this against ensureConfigured, since both are
+// slow, one-time(-ish) setup paths.
+func (d *daemon) ensureNetwork(cfg Config) error {
+	d.configMu.Lock()
+	defer d.configMu.Unlock()
+
+	if !cfg.VPN {
+		return nil
+	}
+
+	d.mu.Lock()
+	networkConfigured := d.networkConfigured
+	currentHostname := d.tsHostname
+	d.mu.Unlock()
+	if networkConfigured && currentHostname == cfg.Tailscale.Hostname {
+		return nil
+	}
+
+	daemonAuthKey := ""
+	if cfg.Tailscale.AuthKeyEnv != "" {
+		daemonAuthKey = os.Getenv(cfg.Tailscale.AuthKeyEnv)
+	}
+	ts, err := tailscale.NewServer(cfg.Tailscale.Hostname, daemonAuthKey, true)
+	if err != nil {
+		return status.Errorf(codes.Internal, "starting tailscale: %v", err)
+	}
+
+	// Also serve the control plane through the new node, alongside the
+	// plain-TCP listener main.go already runs. grpcServer.Serve returns (with
+	// an error we just log) once this specific listener closes — which
+	// happens on its own when ts.Close() tears the node down below, so no
+	// separate signal is needed to stop it.
+	if d.grpcServer != nil {
+		tsLn, err := ts.Listen("tcp", d.controlPort)
+		if err != nil {
+			ts.Close()
+			return status.Errorf(codes.Internal, "listening for control plane over tailscale: %v", err)
+		}
+		go func() {
+			if err := d.grpcServer.Serve(tsLn); err != nil {
+				log.Warn().Err(err).Msg("DaemonService over tailscale stopped")
+			}
+		}()
+	}
+
+	d.mu.Lock()
+	oldTS := d.tsServer
+	d.tsServer = ts
+	d.tsHostname = cfg.Tailscale.Hostname
+	firstJoin := !d.networkConfigured
+	d.networkConfigured = true
+	d.mu.Unlock()
+
+	if oldTS != nil {
+		oldTS.Close() // hostname changed: drop the old node, its control-plane listener included
+	}
+	if firstJoin {
+		go func() {
+			<-d.ctx.Done()
+			d.mu.Lock()
+			current := d.tsServer
+			d.mu.Unlock()
+			current.Close()
+		}()
+	}
+
+	d.persistNetwork(cfg)
+	log.Info().Str("hostname", cfg.Tailscale.Hostname).Msg("eagled's tsnet node ready")
+	return nil
+}
+
 // ensureConfigured establishes daemon-wide settings from cfg on the first call
 // only. Later calls are no-ops. configMu serializes concurrent calls so only
-// one ever does the actual setup (including the slow tailscale.NewServer
-// call below); mu itself is only held briefly, for the configured check and
-// the final field writes, so other RPCs needing mu aren't blocked for the
-// whole duration.
+// one ever does the actual setup; mu itself is only held briefly, for the
+// configured check and the final field writes, so other RPCs needing mu
+// aren't blocked for the whole duration.
 func (d *daemon) ensureConfigured(cfg Config) error {
 	d.configMu.Lock()
 	defer d.configMu.Unlock()
@@ -334,10 +426,8 @@ func (d *daemon) ensureConfigured(cfg Config) error {
 		}
 	}
 
-	daemonAuthKey := ""
-	if cfg.Tailscale.AuthKeyEnv != "" {
-		daemonAuthKey = os.Getenv(cfg.Tailscale.AuthKeyEnv)
-	}
+	// Vehicles each get their own tsnet node, joined with vehicleAuthKey, when
+	// spawned below — separate from eagled's own node started above.
 	vehicleAuthKeyEnv := cfg.Tailscale.VehicleAuthKeyEnv
 	if vehicleAuthKeyEnv == "" {
 		vehicleAuthKeyEnv = cfg.Tailscale.AuthKeyEnv
@@ -345,19 +435,6 @@ func (d *daemon) ensureConfigured(cfg Config) error {
 	vehicleAuthKey := ""
 	if vehicleAuthKeyEnv != "" {
 		vehicleAuthKey = os.Getenv(vehicleAuthKeyEnv)
-	}
-
-	// eagled's own tsnet node, separate from any vehicle's. Vehicles each get
-	// their own node, joined with vehicleAuthKey, when spawned below.
-	if cfg.VPN {
-		ts, err := tailscale.NewServer(cfg.Tailscale.Hostname, daemonAuthKey, true)
-		if err != nil {
-			return status.Errorf(codes.Internal, "starting tailscale: %v", err)
-		}
-		go func() {
-			<-d.ctx.Done()
-			ts.Close()
-		}()
 	}
 
 	// Vehicles are tracked separately in vehicleCfgs

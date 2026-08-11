@@ -16,6 +16,19 @@ import (
 // without another Configure call.
 const PersistedConfigFile = "applied-config.toml"
 
+// PersistedNetworkFile is the name of the last-applied [tailscale] settings,
+// kept in core/util.GetDataDir() separately from PersistedConfigFile so
+// ResetConfig (which only clears the latter) doesn't strand a restarted
+// eagled off the tailnet.
+const PersistedNetworkFile = "network-config.toml"
+
+// networkConfig is the [tailscale]-only subset of Config persisted to
+// PersistedNetworkFile.
+type networkConfig struct {
+	VPN       bool            `toml:"vpn"`
+	Tailscale TailscaleConfig `toml:"tailscale"`
+}
+
 // PersistedPluginsFile is the name of the last-installed-plugin record, kept
 // in core/util.GetDataDir() so a restarted eagled knows which plugins are
 // installed.
@@ -40,6 +53,41 @@ func (d *daemon) persist() {
 	persistToml(path, cfg, "config")
 }
 
+// persistNetwork writes cfg's [tailscale] settings to PersistedNetworkFile,
+// separately from persist()'s applied-config.toml, so they survive
+// ResetConfig.
+func (d *daemon) persistNetwork(cfg Config) {
+	path, err := networkConfigPath()
+	if err != nil {
+		log.Warn().Err(err).Msg("could not determine network config persistence path")
+		return
+	}
+	persistToml(path, networkConfig{VPN: cfg.VPN, Tailscale: cfg.Tailscale}, "network config")
+}
+
+// loadPersistedNetwork reads and applies the last-persisted [tailscale]
+// settings, if any, so eagled rejoins the tailnet before (and independently
+// of) loadPersisted below.
+func (d *daemon) loadPersistedNetwork() error {
+	path, err := networkConfigPath()
+	if err != nil {
+		return err
+	}
+	data, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("reading %s: %w", path, err)
+	}
+
+	var nc networkConfig
+	if _, err := toml.Decode(string(data), &nc); err != nil {
+		return fmt.Errorf("parsing %s: %w", path, err)
+	}
+	return d.ensureNetwork(Config{VPN: nc.VPN, Tailscale: nc.Tailscale})
+}
+
 // loadPersisted reads and applies the last-persisted config, if any.
 func (d *daemon) loadPersisted() error {
 	path, err := persistedConfigPath()
@@ -57,6 +105,9 @@ func (d *daemon) loadPersisted() error {
 	cfg, err := decodeConfig(string(data))
 	if err != nil {
 		return fmt.Errorf("parsing %s: %w", path, err)
+	}
+	if err := d.ensureNetwork(cfg); err != nil {
+		return err
 	}
 	if err := d.ensureConfigured(cfg); err != nil {
 		return err
@@ -164,6 +215,15 @@ func persistedConfigPath() (string, error) {
 		return "", err
 	}
 	return filepath.Join(dataDir, PersistedConfigFile), nil
+}
+
+// networkConfigPath returns the path of the persisted [tailscale] settings.
+func networkConfigPath() (string, error) {
+	dataDir, err := util.GetDataDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dataDir, PersistedNetworkFile), nil
 }
 
 // persistToml encodes v as TOML and atomically writes it to path, warning

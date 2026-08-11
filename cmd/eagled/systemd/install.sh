@@ -70,8 +70,67 @@ fi
 
 mkdir -p "$ENV_DIR"
 if [[ ! -f "$ENV_FILE" ]]; then
+	# Get the tailscale auth key before writing the env file: from TS_AUTHKEY
+	# in the installer's environment (the non-interactive path, e.g. scripted
+	# fleet installs), or prompted for if stdin is a tty. With neither
+	# available there's no way to fill it in, so refuse to proceed rather
+	# than silently install with no key.
+	if [[ -z "${TS_AUTHKEY:-}" ]]; then
+		if [[ -t 0 ]]; then
+			read -rsp "Tailscale auth key (TS_AUTHKEY, leave blank to fall back to tsnet's interactive login): " TS_AUTHKEY
+			echo
+		else
+			echo "TS_AUTHKEY is not set and stdin is not a tty; export TS_AUTHKEY before running install.sh non-interactively" >&2
+			exit 1
+		fi
+	fi
+
+	# TS_VEHICLE_AUTHKEY is optional: config.go falls back to TS_AUTHKEY for
+	# vehicles when it's unset, so there's nothing to require or error on here
+	# — just pick it up from the environment, or offer a prompt on a tty.
+	if [[ -z "${TS_VEHICLE_AUTHKEY:-}" && -t 0 ]]; then
+		read -rsp "Tailscale vehicle auth key (TS_VEHICLE_AUTHKEY, optional, leave blank to reuse TS_AUTHKEY): " TS_VEHICLE_AUTHKEY
+		echo
+	fi
+
 	install -m 640 -o root -g "$SERVICE_USER" "$SCRIPT_DIR/eagled.env.example" "$ENV_FILE"
-	echo "wrote default env file to $ENV_FILE (edit TS_AUTHKEY there if needed)"
+	if [[ -n "$TS_AUTHKEY" ]]; then
+		echo "TS_AUTHKEY=$TS_AUTHKEY" >>"$ENV_FILE"
+	fi
+	if [[ -n "${TS_VEHICLE_AUTHKEY:-}" ]]; then
+		echo "TS_VEHICLE_AUTHKEY=$TS_VEHICLE_AUTHKEY" >>"$ENV_FILE"
+	fi
+	echo "wrote default env file to $ENV_FILE"
+fi
+
+# Seed a minimal network-config.toml so eagled joins the tailnet on its very
+# first start and is reachable there for RPCs, without waiting for an
+# `eagle configure` call over LAN. eagled starts its tsnet node from this file
+# independently of the rest of Configure (see ensureNetwork in daemon.go), so
+# the real config (controller address, vehicles, ...) can then be pushed with
+# `eagle configure` over the tailnet itself. This file also survives
+# ResetConfig (unlike applied-config.toml), so a reset daemon stays reachable
+# on the tailnet for the Configure call that reconfigures it. Guarded by its
+# own existence, separately from the env file above, so re-running install.sh
+# later doesn't clobber a hostname that's since been changed via Configure.
+DATA_DIR="$STATE_DIR/.local/share/steeleagle" # matches eagled.service's HOME=$STATE_DIR with XDG_DATA_HOME unset
+NETWORK_CONFIG="$DATA_DIR/network-config.toml"
+if [[ ! -f "$NETWORK_CONFIG" ]]; then
+	install -d -m 755 -o "$SERVICE_USER" -g "$SERVICE_USER" "$DATA_DIR"
+	TS_HOSTNAME="${TS_HOSTNAME:-$(hostname)}"
+	cat >"$NETWORK_CONFIG" <<-EOF
+		vpn = true
+
+		[tailscale]
+		hostname = "$TS_HOSTNAME"
+		authkey-env = "TS_AUTHKEY"
+	EOF
+	if [[ -n "${TS_VEHICLE_AUTHKEY:-}" ]]; then
+		echo 'vehicle-authkey-env = "TS_VEHICLE_AUTHKEY"' >>"$NETWORK_CONFIG"
+	fi
+	chown "$SERVICE_USER:$SERVICE_USER" "$NETWORK_CONFIG"
+	chmod 600 "$NETWORK_CONFIG"
+	echo "seeded $NETWORK_CONFIG (hostname=$TS_HOSTNAME) so eagled joins the tailnet on start"
 fi
 
 install -m 644 "$SCRIPT_DIR/eagled.service" "$UNIT_PATH"

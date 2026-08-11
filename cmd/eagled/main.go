@@ -37,15 +37,24 @@ func main() {
 	}
 
 	d := newDaemon(ctx, cancel)
+
+	grpcServer := grpc.NewServer()
+	eagledpb.RegisterDaemonServiceServer(grpcServer, d)
+	// Set before any persisted config is loaded below, so ensureNetwork can
+	// also serve DaemonService over eagled's own tsnet node as soon as it
+	// joins the tailnet, not just main's plain-TCP listener.
+	d.grpcServer = grpcServer
+	d.controlPort = *controlPort
+
 	if err := d.loadPersistedInstalled(); err != nil {
 		log.Error().Err(err).Msg("could not reload persisted plugin refs")
+	}
+	if err := d.loadPersistedNetwork(); err != nil {
+		log.Error().Err(err).Msg("could not reload persisted network config")
 	}
 	if err := d.loadPersisted(); err != nil {
 		log.Error().Err(err).Msg("could not reload persisted config")
 	}
-
-	grpcServer := grpc.NewServer()
-	eagledpb.RegisterDaemonServiceServer(grpcServer, d)
 
 	go func() {
 		log.Info().Int("port", *controlPort).Msgf("DaemonService listening on port %d", *controlPort)
