@@ -1,7 +1,5 @@
 import { useRef, useState, useMemo, useCallback } from 'react';
-import { Knob } from 'primereact/knob';
 import { Button } from 'primereact/button';
-import { ToggleButton } from 'primereact/togglebutton';
 import { Message } from 'primereact/message';
 import { Chip } from 'primereact/chip';
 import { OverlayPanel } from 'primereact/overlaypanel';
@@ -10,16 +8,11 @@ import { Toolbar } from 'primereact/toolbar';
 import { ButtonGroup } from 'primereact/buttongroup';
 import { Tooltip } from 'primereact/tooltip';
 import { FileUpload } from 'primereact/fileupload';
-import { Dropdown } from 'primereact/dropdown';
 import { Image } from 'primereact/image';
-import { DataTable } from 'primereact/datatable';
-import { Column } from 'primereact/column';
-import { Divider } from 'primereact/divider';
 import React from 'react';
 import { getApiUrl } from './urls.js';
 import VehicleGrid from './VehicleGrid.jsx';
 import Mapbox from './Mapbox.jsx';
-import { CONTROL_MAPPINGS } from './controlMappings.js';
 import { toggleVehicleInSquad, recallControlGroup } from './squadUtils.js';
 
 const cancelOptions = { icon: 'pi pi-fw pi-times', iconOnly: true, className: 'custom-cancel-btn p-button-danger' };
@@ -27,12 +20,9 @@ const chooseOptions = { label: 'Select...', icon: 'pi pi-fw pi-file', iconOnly: 
 const uploadOptions = { icon: 'pi pi-fw pi-cloud-upload', iconOnly: true, className: 'custom-upload-btn p-button-info' };
 const controlGroupDigits = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
-function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, setTracking, toast, onCommand,
-  manualControl, setManualControl, squadList, setSquadList, basePlanarVelocity, setBasePlanarVelocity,
-  baseAngularVelocity, setBaseAngularVelocity, gamepadDeadzone, setGamepadDeadzone, takeOffAltitude, setTakeOffAltitude,
-  showDetections, onToggleDetections, gimbalVelocity, setGimbalVelocity, controlGroups }) {
+function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand,
+  manualControl, setManualControl, squadList, setSquadList, takeOffAltitude, controlGroups }) {
   const [mapPanelSize] = useState(0);
-  const op = useRef(null);
   const op2 = useRef(null);
   const onProgress = () => {
     toast.current.show({ severity: 'info', summary: 'In Progress', detail: 'Uploading files...' });
@@ -177,59 +167,6 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
 
   const onToggleVehicle = (name) => setSquadList((prev) => toggleVehicleInSquad(prev, name));
 
-  const overlayContent = useMemo(() => (
-    <>
-      <div className="flex flex-row gap-2">
-        <div className="flex flex-column flex-wrap align-content-center m-2">
-          <Knob className="flex align-items-center justify-content-center" value={basePlanarVelocity} onChange={(e) => setBasePlanarVelocity(e.value)} min={1} max={10} valueTemplate={'{value}m/s'} />
-          <Chip className="flex align-items-center justify-content-center" label="Base Planar Velocity" icon="pi pi-sliders-v" />
-        </div>
-        <div className="flex flex-column flex-wrap align-content-center m-2">
-          <Knob className="flex align-items-center justify-content-center" value={baseAngularVelocity} onChange={(e) => setBaseAngularVelocity(e.value)} min={15} max={180} step={15} valueTemplate={'{value}°/s'} />
-          <Chip className="flex align-items-center justify-content-center" label="Base Angular Velocity" icon="pi pi-chart-pie" />
-        </div>
-        <div className="flex flex-column flex-wrap align-content-center m-2">
-          <Knob className="flex align-items-center justify-content-center" value={gimbalVelocity} onChange={(e) => setGimbalVelocity(e.value)} min={5} max={45} step={5} valueTemplate={'{value}°/s'} />
-          <Chip className="flex align-items-center justify-content-center" label="Gimbal Velocity" icon="pi pi-expand" />
-        </div>
-      </div>
-      <div className="flex flex-row gap-2">
-        <div className="flex flex-column flex-wrap align-content-center m-2">
-          <Knob className="flex align-items-center justify-content-center" value={gamepadDeadzone} onChange={(e) => setGamepadDeadzone(e.value)} min={5} max={50} step={5} valueTemplate={'{value}%'} />
-          <Chip className="flex align-items-center justify-content-center" label="Gamepad Deadzone" icon="pi pi-bullseye" />
-        </div>
-        <div className="flex flex-column flex-wrap align-content-center m-2">
-          <Knob className="flex align-items-center justify-content-center" value={takeOffAltitude} onChange={(e) => setTakeOffAltitude(e.value)} min={1} max={10} step={1} valueTemplate={'{value}m'} />
-          <Chip className="flex align-items-center justify-content-center" label="Takeoff Altitude" icon="pi pi-sort-numeric-up-alt" />
-        </div>
-      </div>
-      <div className="flex flex-row gap-2">
-        <div className="flex flex-column flex-wrap justify-content-center align-content-center m-2">
-          <ToggleButton onLabel="Tracking On" offLabel="Tracking Off" onIcon="pi pi-bullseye" offIcon="pi pi-map"
-            checked={tracking} onChange={(e) => setTracking(e.value)} className="flex" tooltip="When enabled, the map will recenter on the selected vehicle." />
-        </div>
-        <div className="flex flex-column flex-wrap justify-content-center align-content-center m-2">
-          <ToggleButton onLabel="Show Detections" offLabel="Hide Detections" onIcon="pi pi-expand" offIcon="pi pi-expand"
-            checked={showDetections} onChange={(e) => onToggleDetections(e.value)} className="flex" tooltip="When enabled, the video stream will show detection bounding boxes." />
-        </div>
-
-
-      </div>
-      <Divider />
-      <div className="flex flex-column m-2">
-        <span className="font-bold mb-2">Control Mappings</span>
-        <DataTable value={CONTROL_MAPPINGS} size="small" scrollable scrollHeight="300px">
-          <Column field="action" header="Action" />
-          <Column field="keyboard" header="Keyboard" />
-          <Column field="gamepad" header="Gamepad" />
-        </DataTable>
-      </div>
-    </>
-
-  ), [baseAngularVelocity, setBaseAngularVelocity, basePlanarVelocity, setBasePlanarVelocity,
-    gamepadDeadzone, setGamepadDeadzone, tracking, setTracking, takeOffAltitude, setTakeOffAltitude,
-    showDetections, onToggleDetections, gimbalVelocity, setGimbalVelocity]);
-
   const swarmHeaderTemplate = (options) => {
     const className = `${options.className} justify-content-space-between`;
 
@@ -248,47 +185,33 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
       </div>
     );
   };
-  const headerTemplate = (options) => {
-    const className = `${options.className} justify-content-space-between`;
-
-    return (
-      <div className={className}>
-        <div className="flex align-items-center gap-2">
-          <span className="font-bold">Vehicle Details</span>
-        </div>
-        <div className="flex align-items-center gap-2">
-          <Dropdown value={selectedVehicle} checkmark={true} onChange={(e) => setSelectedVehicle(e.value)} options={vehicleNames} useOptionAsValue optionLabel="name"
-            placeholder="Select Video Feed" className="w-full md:w-14rem" />
-          <Button size="small" rounded text label="" icon="pi pi-cog" onClick={(e) => op.current.toggle(e)} />
-          <OverlayPanel ref={op}>{overlayContent}</OverlayPanel>
-          {options.togglerElement}
-        </div>
-      </div>
-    );
-  };
 
   return (
     <>
-      <div className="flex flex-column">
-        <Panel headerTemplate={headerTemplate} className="h-full" >
-          <div className="grid m-0">
-            <div className="col-12 lg:col-6 p-2">
-              <Mapbox selectedVehicle={selectedVehicle} vehicles={vehicles} mapPanelSize={mapPanelSize} tracking={tracking}
-                squadList={squadList} onToggleVehicle={onToggleVehicle} />
+      <div className="grid m-0">
+        <div className="col-12 lg:col-3 p-2">
+          <Panel header="Squad" className="h-full">
+            <div className="grid m-0" style={{ maxHeight: 'calc(100vh - 220px)', overflowY: 'auto' }}>
+              <VehicleGrid vehicles={vehicles} selectable squadList={squadList} onToggle={onToggleVehicle} cardColumnClass="col-12 p-2" />
             </div>
-            <div className="col-12 lg:col-6 p-2">
-              <Image height="100%" width="100%" pt={{ image: { id: 'image_stream' } }} src="nostream.png" />
+          </Panel>
+        </div>
+        <div className="col-12 lg:col-9 p-2">
+          <div className="flex flex-column">
+            <div className="grid m-0">
+              <div className="col-12 lg:col-6 p-2">
+                <Mapbox selectedVehicle={selectedVehicle} vehicles={vehicles} mapPanelSize={mapPanelSize} tracking={tracking}
+                  squadList={squadList} onToggleVehicle={onToggleVehicle} />
+              </div>
+              <div className="col-12 lg:col-6 p-2">
+                <Image height="100%" width="100%" pt={{ image: { id: 'image_stream' } }} src="nostream.png" />
+              </div>
             </div>
+            <Panel headerTemplate={swarmHeaderTemplate} className="my-2 h-full">
+              <Toolbar className="w-full" start={controlButtons} center={swarmCenterContent} end={missonControls} />
+            </Panel>
           </div>
-        </Panel>
-        <Panel header="Squad" className="my-2 h-full">
-          <div className="grid m-0">
-            <VehicleGrid vehicles={vehicles} selectable squadList={squadList} onToggle={onToggleVehicle} />
-          </div>
-        </Panel>
-        <Panel headerTemplate={swarmHeaderTemplate} className="my-2 h-full">
-          <Toolbar className="w-full" start={controlButtons} center={swarmCenterContent} end={missonControls} />
-        </Panel>
+        </div>
       </div>
     </>
   );
