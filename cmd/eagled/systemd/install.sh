@@ -68,40 +68,39 @@ if ! id "$SERVICE_USER" &>/dev/null; then
 	useradd --system --home-dir "$STATE_DIR" --create-home --shell /usr/sbin/nologin "$SERVICE_USER"
 fi
 
-mkdir -p "$ENV_DIR"
-if [[ ! -f "$ENV_FILE" ]]; then
-	# Get the tailscale auth key before writing the env file: from TS_AUTHKEY
-	# in the installer's environment (the non-interactive path, e.g. scripted
-	# fleet installs), or prompted for if stdin is a tty. With neither
-	# available there's no way to fill it in, so refuse to proceed rather
-	# than silently install with no key.
-	if [[ -z "${TS_AUTHKEY:-}" ]]; then
-		if [[ -t 0 ]]; then
-			read -rsp "Tailscale auth key (TS_AUTHKEY, leave blank to fall back to tsnet's interactive login): " TS_AUTHKEY
-			echo
-		else
-			echo "TS_AUTHKEY is not set and stdin is not a tty; export TS_AUTHKEY before running install.sh non-interactively" >&2
-			exit 1
-		fi
-	fi
-
-	# TS_VEHICLE_AUTHKEY is optional: config.go falls back to TS_AUTHKEY for
-	# vehicles when it's unset, so there's nothing to require or error on here
-	# — just pick it up from the environment, or offer a prompt on a tty.
-	if [[ -z "${TS_VEHICLE_AUTHKEY:-}" && -t 0 ]]; then
-		read -rsp "Tailscale vehicle auth key (TS_VEHICLE_AUTHKEY, optional, leave blank to reuse TS_AUTHKEY): " TS_VEHICLE_AUTHKEY
+# Get the tailscale auth keys and (re)write the env file every run, same as
+# network-config.toml below — not guarded by the file's own existence, so
+# re-running install.sh always lets you rotate the keys rather than only ever
+# setting them once. From TS_AUTHKEY/TS_VEHICLE_AUTHKEY in the installer's
+# environment (the non-interactive path, e.g. scripted fleet installs), or
+# prompted for if stdin is a tty.
+if [[ -z "${TS_AUTHKEY:-}" ]]; then
+	if [[ -t 0 ]]; then
+		read -rsp "Tailscale auth key (TS_AUTHKEY, leave blank to fall back to tsnet's interactive login): " TS_AUTHKEY
 		echo
+	else
+		echo "TS_AUTHKEY is not set and stdin is not a tty; export TS_AUTHKEY before running install.sh non-interactively" >&2
+		exit 1
 	fi
-
-	install -m 640 -o root -g "$SERVICE_USER" "$SCRIPT_DIR/eagled.env.example" "$ENV_FILE"
-	if [[ -n "$TS_AUTHKEY" ]]; then
-		echo "TS_AUTHKEY=$TS_AUTHKEY" >>"$ENV_FILE"
-	fi
-	if [[ -n "${TS_VEHICLE_AUTHKEY:-}" ]]; then
-		echo "TS_VEHICLE_AUTHKEY=$TS_VEHICLE_AUTHKEY" >>"$ENV_FILE"
-	fi
-	echo "wrote default env file to $ENV_FILE"
 fi
+
+# TS_VEHICLE_AUTHKEY is optional: config.go falls back to TS_AUTHKEY for
+# vehicles when it's unset, so there's nothing to require or error on here —
+# just pick it up from the environment, or offer a prompt on a tty.
+if [[ -z "${TS_VEHICLE_AUTHKEY:-}" && -t 0 ]]; then
+	read -rsp "Tailscale vehicle auth key (TS_VEHICLE_AUTHKEY, optional, leave blank to reuse TS_AUTHKEY): " TS_VEHICLE_AUTHKEY
+	echo
+fi
+
+mkdir -p "$ENV_DIR"
+install -m 640 -o root -g "$SERVICE_USER" "$SCRIPT_DIR/eagled.env.example" "$ENV_FILE"
+if [[ -n "$TS_AUTHKEY" ]]; then
+	echo "TS_AUTHKEY=$TS_AUTHKEY" >>"$ENV_FILE"
+fi
+if [[ -n "${TS_VEHICLE_AUTHKEY:-}" ]]; then
+	echo "TS_VEHICLE_AUTHKEY=$TS_VEHICLE_AUTHKEY" >>"$ENV_FILE"
+fi
+echo "wrote $ENV_FILE"
 
 # Seed network-config.toml so eagled joins the tailnet on its very first
 # start and is reachable there for RPCs, without waiting for an
@@ -112,11 +111,11 @@ fi
 # ResetConfig (unlike applied-config.toml), so a reset daemon stays reachable
 # on the tailnet for the Configure call that reconfigures it.
 #
-# Always rewritten (not guarded by its own existence, unlike the env file
-# above): every run of install.sh resets it to whatever hostname is given
-# here, even overwriting a hostname since changed live via Configure. If
-# you've moved the hostname off what install.sh would pick and don't want
-# that touched, don't re-run install.sh without passing the same TS_HOSTNAME.
+# Always rewritten, same as the env file above: every run of install.sh
+# resets it to whatever hostname is given here, even overwriting a hostname
+# since changed live via Configure. If you've moved the hostname off what
+# install.sh would pick and don't want that touched, don't re-run install.sh
+# without passing the same TS_HOSTNAME.
 DATA_DIR="$STATE_DIR/.local/share/steeleagle" # matches eagled.service's HOME=$STATE_DIR with XDG_DATA_HOME unset
 NETWORK_CONFIG="$DATA_DIR/network-config.toml"
 
@@ -134,11 +133,7 @@ cat >"$NETWORK_CONFIG" <<-EOF
 	hostname = "$TS_HOSTNAME"
 	authkey-env = "TS_AUTHKEY"
 EOF
-# Checked against the env file's actual contents, not the TS_VEHICLE_AUTHKEY
-# variable: that's only populated when this run just wrote eagled.env fresh,
-# but the seed below now runs unconditionally on every install.sh run,
-# including ones where eagled.env already existed from an earlier run.
-if grep -qE '^TS_VEHICLE_AUTHKEY=.' "$ENV_FILE"; then
+if [[ -n "${TS_VEHICLE_AUTHKEY:-}" ]]; then
 	echo 'vehicle-authkey-env = "TS_VEHICLE_AUTHKEY"' >>"$NETWORK_CONFIG"
 fi
 chown "$SERVICE_USER:$SERVICE_USER" "$NETWORK_CONFIG"
