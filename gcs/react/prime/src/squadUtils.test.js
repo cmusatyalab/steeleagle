@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toggleVehicleInSquad, assignControlGroup, recallControlGroup, squadMatchesGroup } from './squadUtils.js';
+import { toggleVehicleInSquad, assignControlGroup, recallControlGroup, squadMatchesGroup, vehicleControlGroupDigits } from './squadUtils.js';
 
 describe('toggleVehicleInSquad', () => {
     it('adds a name not present', () => {
@@ -86,5 +86,23 @@ describe('squadMatchesGroup', () => {
 
     it('treats an empty squad and a never-assigned (empty) group as matching sets -- callers gate the "unset" case separately via whether the group has any vehicles at all', () => {
         expect(squadMatchesGroup([], {}, '1')).toBe(true);
+    });
+});
+
+describe('vehicleControlGroupDigits', () => {
+    it('returns an empty array when the vehicle is in no group', () => {
+        expect(vehicleControlGroupDigits({ '1': ['a'] }, 'b')).toEqual([]);
+    });
+
+    it('returns the one digit the vehicle belongs to', () => {
+        expect(vehicleControlGroupDigits({ '1': ['a'], '2': ['b'] }, 'a')).toEqual(['1']);
+    });
+
+    it('returns every digit when the vehicle belongs to more than one group', () => {
+        expect(vehicleControlGroupDigits({ '1': ['a'], '2': ['a'], '3': ['b'] }, 'a')).toEqual(['1', '2']);
+    });
+
+    it('returns [] for an empty controlGroups object', () => {
+        expect(vehicleControlGroupDigits({}, 'a')).toEqual([]);
     });
 });

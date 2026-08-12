@@ -30,3 +30,13 @@ export function squadMatchesGroup(squadList, controlGroups, digit) {
     const groupSet = new Set(group);
     return squad.every((name) => groupSet.has(name));
 }
+
+// Which quick-select squad digits (if any) a vehicle is a saved member of.
+// A vehicle can belong to more than one control group at once, since
+// groups are independent saved snapshots rather than a partition -- lets
+// the popup show every applicable digit rather than picking one.
+export function vehicleControlGroupDigits(controlGroups, name) {
+    return Object.keys(controlGroups)
+        .filter((digit) => (controlGroups[digit] ?? []).includes(name))
+        .sort();
+}
