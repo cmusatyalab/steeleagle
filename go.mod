@@ -10,7 +10,6 @@ require (
 	github.com/cmusatyalab/gabriel/protocol/go v0.3.0
 	github.com/cmusatyalab/steeleagle/api/go v0.0.0
 	github.com/go-git/go-git/v5 v5.19.2
-	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.6.0
 	github.com/mwitkow/grpc-proxy v0.0.0-20250813121105-2866842de9a5
 	github.com/open-policy-agent/opa v1.19.0
