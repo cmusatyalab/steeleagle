@@ -127,15 +127,8 @@ TS_HOSTNAME="${TS_HOSTNAME:-$(hostname)}"
 install -d -m 755 -o "$SERVICE_USER" -g "$SERVICE_USER" "$DATA_DIR"
 rm -f "$NETWORK_CONFIG"
 cat >"$NETWORK_CONFIG" <<-EOF
-	vpn = true
-
-	[tailscale]
 	hostname = "$TS_HOSTNAME"
-	authkey-env = "TS_AUTHKEY"
 EOF
-if [[ -n "${TS_VEHICLE_AUTHKEY:-}" ]]; then
-	echo 'vehicle-authkey-env = "TS_VEHICLE_AUTHKEY"' >>"$NETWORK_CONFIG"
-fi
 chown "$SERVICE_USER:$SERVICE_USER" "$NETWORK_CONFIG"
 chmod 600 "$NETWORK_CONFIG"
 echo "seeded $NETWORK_CONFIG (hostname=$TS_HOSTNAME) so eagled joins the tailnet on start"

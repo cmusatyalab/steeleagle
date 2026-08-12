@@ -40,9 +40,6 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 	eagledpb.RegisterDaemonServiceServer(grpcServer, d)
-	// Set before any persisted config is loaded below, so ensureNetwork can
-	// also serve DaemonService over eagled's own tsnet node as soon as it
-	// joins the tailnet, not just main's plain-TCP listener.
 	d.grpcServer = grpcServer
 	d.controlPort = *controlPort
 

@@ -19,6 +19,11 @@ import (
 	"google.golang.org/grpc"
 )
 
+// Dialer sources an outbound connection from a specific network identity —
+// matches (*tailscale.Server).Dial's signature, so a vehicle's own tsnet node
+// can be passed straight in. A nil Dialer falls back to gRPC's default dialer.
+type Dialer func(ctx context.Context, network, addr string) (net.Conn, error)
+
 type Vehicle struct {
 	Name          string                  // vehicle name
 	Model         string                  // vehicle hardware model, reported by the driver
@@ -28,6 +33,7 @@ type Vehicle struct {
 	policyCfg     PolicyConfig            // policy configuration
 	videoCfg      VideoStreamConfig       // video stream config
 	gabrielCfg    GabrielConfig           // Gabriel config
+	dialer        Dialer                  // sources outbound connections (e.g. to Gabriel); nil uses gRPC's default dialer
 	policy        policyState             // active policy state
 	driver        *grpc.ClientConn        // driver gRPC client connection
 	mission       *grpc.ClientConn        // mission gRPC client connection

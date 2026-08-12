@@ -21,7 +21,16 @@ const DefaultControlPort = 9090
 
 // StopTimeout bounds how long StopVehicles/RestartVehicles wait for a vehicle
 // to actually finish tearing down before reporting failure.
-const StopTimeout = 15 * time.Second
+const StopTimeout = 30 * time.Second
+
+// installedPluginKey identifies one installed plugin. The same name can be
+// installed independently under different categories (each category is its
+// own directory, see util.GetInstalledPluginDir), so category is part of the
+// key rather than side metadata.
+type installedPluginKey struct {
+	Name     string
+	Category string
+}
 
 // runningVehicle tracks one currently-running (or being-torn-down) vehicle.
 type runningVehicle struct {
@@ -30,46 +39,36 @@ type runningVehicle struct {
 	port   int // port its listener is bound on
 }
 
-// daemon implements eagledpb.DaemonServiceServer. It holds no configuration
-// until the first Configure call. That call's daemon-wide settings (such as
-// gabriel and swarm-controller) are established once and reused by every later
-// call, which only start whatever new vehicles that call lists.
+// daemon implements eagledpb.DaemonServiceServer.
 type daemon struct {
 	eagledpb.UnimplementedDaemonServiceServer
 
 	ctx      context.Context    // canceled on daemon shutdown, stops every vehicle and its registration stream
 	shutdown context.CancelFunc // cancels ctx, ResetConfig calls this itself to trigger the same shutdown a signal would
 
-	// grpcServer and controlPort let ensureNetwork also serve DaemonService
-	// over eagled's own tsnet node once it's up, alongside the plain-TCP
-	// listener main.go always binds. Set once by main.go before any Configure
-	// call can arrive; never mutated after, so unguarded reads are safe.
-	grpcServer  *grpc.Server
-	controlPort int
+	grpcServer  *grpc.Server // gRPC server to serve DaemonService on
+	controlPort int          // port gRPC server listens on
 
-	mu                sync.Mutex
-	configured        bool
-	networkConfigured bool              // whether eagled's own tsnet node has been started; set independently of configured, see ensureNetwork
-	tsServer          *tailscale.Server // eagled's own tsnet node, if networkConfigured
-	tsHostname        string            // hostname tsServer is currently running under
-	baseCfg           Config            // last-applied config, minus Vehicles
-	daemonName        string            // resolved from baseCfg
-	pluginDir         string            // plugin runtime directory
-	vehicleAuthKey    string            // tsnet auth key every vehicle joins with
-	vehicleVPN        bool              // resolved from baseCfg.VehicleVPN
-	gabrielCfg        GabrielConfig
-	swarmCfg          SwarmControllerConfig
-	nextPort          int                              // next port to assign to a vehicle
-	running           map[string]*runningVehicle       // name -> running vehicle; nil value means "reserved, spawn in progress"
-	vehicleCfgs       map[string]VehicleConfig         // vehicle configurations
-	installed         map[string]installedPluginRecord // plugin name -> {ref, category}
-	aviaryCommand     []string                         // resolved from baseCfg.Aviary.Command
-	aviaryDir         string                           // resolved from baseCfg.Aviary.Dir
+	mu             sync.Mutex
+	configured     bool
+	tsServer       *tailscale.Server // eagled's own tsnet node, once started; nil until then
+	tsHostname     string            // hostname tsServer is currently running under
+	baseCfg        Config            // last-applied config, minus Vehicles
+	daemonName     string            // resolved from baseCfg
+	pluginDir      string            // plugin runtime directory
+	vehicleAuthKey string            // tsnet auth key every vehicle joins with
+	gabrielCfg     GabrielConfig
+	swarmCfg       SwarmControllerConfig
+	nextPort       int                           // next port to assign to a vehicle
+	running        map[string]*runningVehicle    // name -> running vehicle; nil value means "reserved, spawn in progress"
+	vehicleCfgs    map[string]VehicleConfig      // vehicle configurations
+	installed      map[installedPluginKey]string // {name, category} -> ref
+	aviaryCommand  []string                      // resolved from baseCfg.Aviary.Command
+	aviaryDir      string                        // resolved from baseCfg.Aviary.Dir
 
 	// configMu and aviaryMu each serialize their own slow, one-time setup
 	// call (tailscale.NewServer, spawnAviary) across concurrent RPCs, without
-	// forcing every other RPC to wait on mu for that same duration. Guard
-	// only the field(s) named after them; every other field stays under mu.
+	// forcing every other RPC to wait on mu for that same duration.
 	configMu      sync.Mutex
 	aviaryMu      sync.Mutex
 	aviaryStarted bool // whether the shared aviary simulator has been spawned; guarded by aviaryMu
@@ -82,7 +81,7 @@ func newDaemon(ctx context.Context, shutdown context.CancelFunc) *daemon {
 		shutdown:    shutdown,
 		running:     make(map[string]*runningVehicle),
 		vehicleCfgs: make(map[string]VehicleConfig),
-		installed:   make(map[string]installedPluginRecord),
+		installed:   make(map[installedPluginKey]string),
 	}
 }
 
@@ -113,9 +112,9 @@ func (d *daemon) Configure(ctx context.Context, req *eagledpb.ConfigureRequest) 
 	return eagledpb.ConfigureResponse_builder{Vehicles: results}.Build(), nil
 }
 
-// StopVehicles stops each named vehicle without forgetting it: it stays known
-// to the daemon, so RestartVehicles can bring it back. It comes back on a
-// subsequent eagled restart same as any other configured vehicle.
+// StopVehicles stops each named vehicle without forgetting it. These vehicles
+// stay known to the daemon, so RestartVehicles can bring it back. They come
+// back on a subsequent eagled restart same as any other configured vehicle.
 func (d *daemon) StopVehicles(ctx context.Context, req *eagledpb.StopVehiclesRequest) (*eagledpb.StopVehiclesResponse, error) {
 	log.Info().Strs("vehicles", req.GetNames()).Msg("StopVehicles received")
 	results := make([]*eagledpb.VehicleResult, 0, len(req.GetNames()))
@@ -146,9 +145,9 @@ func (d *daemon) RestartVehicles(ctx context.Context, req *eagledpb.RestartVehic
 	return eagledpb.RestartVehiclesResponse_builder{Vehicles: results}.Build(), nil
 }
 
-// ForgetVehicles stops each named vehicle (if running) and forgets it: it will
-// not come back on RestartVehicles or a subsequent eagled restart unless
-// reconfigured.
+// ForgetVehicles stops each named vehicle (if running) and forgets it. These
+// vehicles will not come back on RestartVehicles or a subsequent eagled
+// restart unless reconfigured.
 func (d *daemon) ForgetVehicles(ctx context.Context, req *eagledpb.ForgetVehiclesRequest) (*eagledpb.ForgetVehiclesResponse, error) {
 	log.Info().Strs("vehicles", req.GetNames()).Msg("ForgetVehicles received")
 	results := make([]*eagledpb.VehicleResult, 0, len(req.GetNames()))
@@ -190,7 +189,7 @@ func (d *daemon) ForgetVehicles(ctx context.Context, req *eagledpb.ForgetVehicle
 // rather than aborting the whole batch on one failure.
 func (d *daemon) startVehicles(vehicleCfgs []VehicleConfig) []*eagledpb.VehicleResult {
 	d.mu.Lock()
-	pluginDir, authKey, vehicleVPN := d.pluginDir, d.vehicleAuthKey, d.vehicleVPN
+	pluginDir, authKey := d.pluginDir, d.vehicleAuthKey
 	gabrielCfg, swarmCfg, daemonName := d.gabrielCfg, d.swarmCfg, d.daemonName
 	d.mu.Unlock()
 
@@ -215,7 +214,7 @@ func (d *daemon) startVehicles(vehicleCfgs []VehicleConfig) []*eagledpb.VehicleR
 			continue
 		}
 
-		cancel, done, err := spawnVehicle(d.ctx, vehicleCfg, port, driverPlugin, missionPlugin, extraPlugins, authKey, vehicleVPN, gabrielCfg, swarmCfg, daemonName)
+		cancel, done, err := spawnVehicle(d.ctx, vehicleCfg, port, driverPlugin, missionPlugin, extraPlugins, authKey, gabrielCfg, swarmCfg, daemonName)
 		if err != nil {
 			d.mu.Lock()
 			delete(d.running, vehicleCfg.Name)
@@ -312,46 +311,45 @@ func (d *daemon) reserve(name string) (int, error) {
 	return port, nil
 }
 
-// ensureNetwork starts or, if the hostname changed, restarts eagled's own
-// tsnet node so it matches cfg's [tailscale] settings, and serves
-// DaemonService over it (in addition to main.go's plain-TCP listener) so
-// eagled is reachable over Tailscale for RPCs. This is independent of
-// ensureConfigured below and, unlike it, can run again on a later Configure
-// call even after the daemon is otherwise fully configured — that's what
-// lets the hostname be changed at runtime. A no-op if cfg.VPN is false, or
-// if VPN is on but the node is already running under the requested hostname.
-// configMu also serializes this against ensureConfigured, since both are
-// slow, one-time(-ish) setup paths.
+// resolveHostname returns hostname if set, otherwise the OS hostname.
+func resolveHostname(hostname string) (string, error) {
+	if hostname != "" {
+		return hostname, nil
+	}
+	return os.Hostname()
+}
+
+// ensureNetwork starts eagled's tsnet node and serves DaemonService over it.
+// This method is also invoked when the hostname is changed.
 func (d *daemon) ensureNetwork(cfg Config) error {
 	d.configMu.Lock()
 	defer d.configMu.Unlock()
 
-	if !cfg.VPN {
+	authKey := os.Getenv(TSAuthKeyEnv)
+	if authKey == "" {
+		// tailscale not configured
 		return nil
+	}
+
+	hostname, err := resolveHostname(cfg.Hostname)
+	if err != nil {
+		return status.Errorf(codes.Internal, "determining hostname: %v", err)
 	}
 
 	d.mu.Lock()
-	networkConfigured := d.networkConfigured
+	networkConfigured := d.tsServer != nil
 	currentHostname := d.tsHostname
 	d.mu.Unlock()
-	if networkConfigured && currentHostname == cfg.Tailscale.Hostname {
+	if networkConfigured && currentHostname == hostname {
 		return nil
 	}
 
-	daemonAuthKey := ""
-	if cfg.Tailscale.AuthKeyEnv != "" {
-		daemonAuthKey = os.Getenv(cfg.Tailscale.AuthKeyEnv)
-	}
-	ts, err := tailscale.NewServer(cfg.Tailscale.Hostname, daemonAuthKey, true)
+	ts, err := tailscale.NewServer(hostname, authKey, true)
 	if err != nil {
 		return status.Errorf(codes.Internal, "starting tailscale: %v", err)
 	}
 
-	// Also serve the control plane through the new node, alongside the
-	// plain-TCP listener main.go already runs. grpcServer.Serve returns (with
-	// an error we just log) once this specific listener closes — which
-	// happens on its own when ts.Close() tears the node down below, so no
-	// separate signal is needed to stop it.
+	// Also serve the control plane through tailscale
 	if d.grpcServer != nil {
 		tsLn, err := ts.Listen("tcp", d.controlPort)
 		if err != nil {
@@ -367,10 +365,9 @@ func (d *daemon) ensureNetwork(cfg Config) error {
 
 	d.mu.Lock()
 	oldTS := d.tsServer
+	firstJoin := oldTS == nil
 	d.tsServer = ts
-	d.tsHostname = cfg.Tailscale.Hostname
-	firstJoin := !d.networkConfigured
-	d.networkConfigured = true
+	d.tsHostname = hostname
 	d.mu.Unlock()
 
 	if oldTS != nil {
@@ -386,16 +383,13 @@ func (d *daemon) ensureNetwork(cfg Config) error {
 		}()
 	}
 
-	d.persistNetwork(cfg)
-	log.Info().Str("hostname", cfg.Tailscale.Hostname).Msg("eagled's tsnet node ready")
+	d.persistNetwork(hostname)
+	log.Info().Str("hostname", hostname).Msg("eagled's tsnet node ready")
 	return nil
 }
 
 // ensureConfigured establishes daemon-wide settings from cfg on the first call
-// only. Later calls are no-ops. configMu serializes concurrent calls so only
-// one ever does the actual setup; mu itself is only held briefly, for the
-// configured check and the final field writes, so other RPCs needing mu
-// aren't blocked for the whole duration.
+// only. Later calls are no-ops.
 func (d *daemon) ensureConfigured(cfg Config) error {
 	d.configMu.Lock()
 	defer d.configMu.Unlock()
@@ -410,12 +404,9 @@ func (d *daemon) ensureConfigured(cfg Config) error {
 	if cfg.Backend.SwarmController.Address == "" {
 		return status.Error(codes.InvalidArgument, "backend.swarm-controller.address must be set")
 	}
-	daemonName := cfg.Backend.SwarmController.DaemonName
-	if daemonName == "" {
-		var err error
-		if daemonName, err = os.Hostname(); err != nil {
-			return status.Errorf(codes.Internal, "determining daemon name: %v", err)
-		}
+	daemonName, err := resolveHostname(cfg.Hostname)
+	if err != nil {
+		return status.Errorf(codes.Internal, "determining daemon name: %v", err)
 	}
 
 	pluginDir := cfg.PluginDir
@@ -426,15 +417,10 @@ func (d *daemon) ensureConfigured(cfg Config) error {
 		}
 	}
 
-	// Vehicles each get their own tsnet node, joined with vehicleAuthKey, when
-	// spawned below — separate from eagled's own node started above.
-	vehicleAuthKeyEnv := cfg.Tailscale.VehicleAuthKeyEnv
-	if vehicleAuthKeyEnv == "" {
-		vehicleAuthKeyEnv = cfg.Tailscale.AuthKeyEnv
-	}
-	vehicleAuthKey := ""
-	if vehicleAuthKeyEnv != "" {
-		vehicleAuthKey = os.Getenv(vehicleAuthKeyEnv)
+	// Vehicles each get their own tsnet node
+	vehicleAuthKey := os.Getenv(TSVehicleAuthKeyEnv)
+	if vehicleAuthKey == "" {
+		vehicleAuthKey = os.Getenv(TSAuthKeyEnv)
 	}
 
 	// Vehicles are tracked separately in vehicleCfgs
@@ -445,7 +431,6 @@ func (d *daemon) ensureConfigured(cfg Config) error {
 	d.daemonName = daemonName
 	d.pluginDir = pluginDir
 	d.vehicleAuthKey = vehicleAuthKey
-	d.vehicleVPN = cfg.VehicleVPN
 	d.gabrielCfg = cfg.Gabriel
 	d.swarmCfg = cfg.Backend.SwarmController
 	d.aviaryCommand = cfg.Aviary.Command
@@ -455,8 +440,7 @@ func (d *daemon) ensureConfigured(cfg Config) error {
 	d.mu.Unlock()
 	log.Info().
 		Str("daemon-name", daemonName).
-		Bool("vpn", cfg.VPN).
-		Bool("vehicle-vpn", cfg.VehicleVPN).
+		Bool("vehicle-vpn", vehicleAuthKey != "").
 		Str("swarm-controller", cfg.Backend.SwarmController.Address).
 		Msg("daemon-wide config established")
 	return nil

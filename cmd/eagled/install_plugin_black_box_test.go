@@ -64,8 +64,6 @@ func TestInstallPlugin(t *testing.T) {
 	// InstallPlugin requires a configured daemon (it needs plugin-dir)
 	cfgResp, err := inst.Client.Configure(ctx, eagledpb.ConfigureRequest_builder{
 		ConfigToml: `
-vpn = false
-vehicle-vpn = false
 port-base = 0
 plugin-dir = "` + inst.PluginDir + `"
 

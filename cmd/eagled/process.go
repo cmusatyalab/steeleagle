@@ -12,7 +12,7 @@ import (
 
 // ResetConfig deletes the persisted config and shuts the daemon down, relying
 // on the process supervisor to restart it unconfigured. Installed drivers are
-// untouched, and so is the persisted [tailscale] network config (see
+// untouched, and so is the persisted tailscale network config (see
 // PersistedNetworkFile) — a reset daemon still rejoins the tailnet and stays
 // reachable there for the Configure call that reconfigures it.
 func (d *daemon) ResetConfig(ctx context.Context, req *eagledpb.ResetConfigRequest) (*eagledpb.ResetConfigResponse, error) {
@@ -47,12 +47,12 @@ func (d *daemon) GetStatus(ctx context.Context, req *eagledpb.GetStatusRequest) 
 	resp := eagledpb.GetStatusResponse_builder{Configured: d.configured}
 	if d.configured {
 		resp.Config = eagledpb.DaemonConfig_builder{
-			Vpn:                    d.baseCfg.VPN,
-			VehicleVpn:             d.vehicleVPN,
+			Vpn:                    d.tsServer != nil,
+			VehicleVpn:             d.vehicleAuthKey != "",
 			PortBase:               int32(d.baseCfg.PortBase),
 			PluginDir:              d.pluginDir,
-			TailscaleHostname:      d.baseCfg.Tailscale.Hostname,
-			TailscaleAuthkeyEnv:    d.baseCfg.Tailscale.AuthKeyEnv,
+			TailscaleHostname:      d.daemonName,
+			TailscaleAuthkeyEnv:    TSAuthKeyEnv,
 			SwarmControllerAddress: d.swarmCfg.Address,
 			DaemonName:             d.daemonName,
 			GabrielServerEndpoint:  d.gabrielCfg.ServerEndpoint,

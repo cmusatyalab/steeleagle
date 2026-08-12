@@ -33,6 +33,14 @@ func WithGabrielConfig(gabrielCfg GabrielConfig) VehicleOption {
 	}
 }
 
+// WithDialer sets the Dialer outbound connections (e.g. to Gabriel) are
+// sourced from. Leave unset to use gRPC's default dialer.
+func WithDialer(dialer Dialer) VehicleOption {
+	return func(v *Vehicle) {
+		v.dialer = dialer
+	}
+}
+
 func WithServerListener(ln net.Listener, acl *util.ACL) VehicleOption {
 	return func(v *Vehicle) {
 		codedLn := util.NewCodedListener(ln, util.ServerCode, acl)
