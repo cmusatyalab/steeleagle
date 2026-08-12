@@ -4,7 +4,7 @@ toc_max_heading_level: 3
 
 import Link from '@docusaurus/Link';
 
-# result 
+# result
 ---
 
 ## <><code class="docs-func">message</code></> BoundingBox

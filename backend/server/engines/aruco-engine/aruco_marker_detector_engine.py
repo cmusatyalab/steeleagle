@@ -11,6 +11,7 @@ import json
 
 logger = logging.getLogger(__name__)
 
+
 class ArucoMarkerDetectorEngine(cognitive_engine.Engine):
     def __init__(self, args):
         self.r = redis.Redis(
@@ -22,7 +23,6 @@ class ArucoMarkerDetectorEngine(cognitive_engine.Engine):
         )
         self.r.ping()
         logger.info(f"Connected to redis on port {args.redis}...")
-
 
     def store_latest_drone_detection_db(self, detections):
         vehicle_name = detections[0]["id"]
@@ -70,13 +70,13 @@ class ArucoMarkerDetectorEngine(cognitive_engine.Engine):
             c = corner[0]
 
             bbox = result_pb2.BoundingBox(
-                x_min = np.min(c[:, 0]) / width,
-                y_min = np.min(c[:, 1]) / height,
-                x_max = np.max(c[:, 0]) / width,
-                y_max = np.max(c[:, 1]) / height,
+                x_min=np.min(c[:, 0]) / width,
+                y_min=np.min(c[:, 1]) / height,
+                x_max=np.max(c[:, 0]) / width,
+                y_max=np.max(c[:, 1]) / height,
             )
 
-            logger.info(f'{bbox=}')
+            logger.info(f"{bbox=}")
             det_object.bbox.CopyFrom(bbox)
             detection_result.detections.append(det_object)
             box = [bbox.y_min, bbox.x_min, bbox.y_max, bbox.x_max]

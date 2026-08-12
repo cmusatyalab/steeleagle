@@ -7,4 +7,3 @@ import Link from '@docusaurus/Link';
 # events
 
 ---
-

@@ -4,7 +4,7 @@ toc_max_heading_level: 3
 
 import Link from '@docusaurus/Link';
 
-# report_service 
+# report_service
 ---
 ## <><code class="docs-class">service</code></> Report
 

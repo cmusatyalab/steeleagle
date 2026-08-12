@@ -21,9 +21,9 @@ Response types for RPC functions.
     - `IN_PROGRESS` &#8594; in progress
     - `COMPLETED` &#8594; completed
 
-    These intermediate phases are generally not exposed to user-facing code and are only used 
+    These intermediate phases are generally not exposed to user-facing code and are only used
     for streaming methods. In contrast to normal gRPC procedure, a call is only considered complete
-    on a response of `COMPLETED` instead of `OK`. If an error occurs, SteelEagle defers to gRPC error 
+    on a response of `COMPLETED` instead of `OK`. If an error occurs, SteelEagle defers to gRPC error
     codes, 3-18. More details on these codes can be found [here](https://grpc.github.io/grpc/core/md_doc_statuscodes.html).
     Note that the value of these codes is offset by 2 from their original form (e.g. `CANCELLED` = 3 vs = 1).
     Therefore, for error codes, the transformation from gRPC to SteelEagle response code is to add
@@ -81,9 +81,9 @@ class ResponseStatus(int, Enum):
         - `IN_PROGRESS` -> in progress
         - `COMPLETED` -> completed
 
-        These intermediate phases are generally not exposed to user-facing code and are only used 
+        These intermediate phases are generally not exposed to user-facing code and are only used
         for streaming methods. In contrast to normal gRPC procedure, a call is only considered complete
-        on a response of `COMPLETED` instead of `OK`. If an error occurs, SteelEagle defers to gRPC error 
+        on a response of `COMPLETED` instead of `OK`. If an error occurs, SteelEagle defers to gRPC error
         codes, 3-18. More details on these codes can be found [here](https://grpc.github.io/grpc/core/md_doc_statuscodes.html).
         Note that the value of these codes is offset by 2 from their original form (e.g. `CANCELLED` = 3 vs = 1).
         Therefore, for error codes, the transformation from gRPC to SteelEagle response code is to add
@@ -110,25 +110,25 @@ class ResponseStatus(int, Enum):
         DATA_LOSS (17): unrecoverable data loss or corruption
         UNAUTHENTICATED (18): the client failed to provide an identity (unique to SteelEagle)
     """
-    OK = 0 
-    IN_PROGRESS = 1 
-    COMPLETED = 2 
-    CANCELLED = 3 
-    UNKNOWN = 4 
-    INVALID_ARGUMENT = 5 
-    DEADLINE_EXCEEDED = 6 
-    NOT_FOUND = 7 
-    ALREADY_EXISTS = 8 
-    PERMISSION_DENIED = 9 
-    RESOURCE_EXHAUSTED = 10 
-    FAILED_PRECONDITION = 11 
-    ABORTED = 12 
-    OUT_OF_RANGE = 13 
-    UNIMPLEMENTED = 14 
-    INTERNAL = 15 
-    UNAVAILABLE = 16 
-    DATA_LOSS = 17 
-    UNAUTHENTICATED = 18 
+    OK = 0
+    IN_PROGRESS = 1
+    COMPLETED = 2
+    CANCELLED = 3
+    UNKNOWN = 4
+    INVALID_ARGUMENT = 5
+    DEADLINE_EXCEEDED = 6
+    NOT_FOUND = 7
+    ALREADY_EXISTS = 8
+    PERMISSION_DENIED = 9
+    RESOURCE_EXHAUSTED = 10
+    FAILED_PRECONDITION = 11
+    ABORTED = 12
+    OUT_OF_RANGE = 13
+    UNIMPLEMENTED = 14
+    INTERNAL = 15
+    UNAVAILABLE = 16
+    DATA_LOSS = 17
+    UNAUTHENTICATED = 18
 
 ```
 </details>
@@ -139,11 +139,11 @@ class ResponseStatus(int, Enum):
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
-Global response message returned by all core services.    
+Global response message returned by all core services.
 #### Attributes
-**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;status**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-responsestatus">ResponseStatus</Link></code>) <text>&#8212;</text> response status    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;status**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-responsestatus">ResponseStatus</Link></code>) <text>&#8212;</text> response status
 
-**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;response_string**&nbsp;&nbsp;(<code>Optional[str]</code>) <text>&#8212;</text> detailed message on reason for response    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;response_string**&nbsp;&nbsp;(<code>Optional[str]</code>) <text>&#8212;</text> detailed message on reason for response
 
 **<><code class="docs-attr">attr</code></>&nbsp;&nbsp;timestamp**&nbsp;&nbsp;(<code>google.protobuf.timestamp_pb2.Timestamp</code>) <text>&#8212;</text> response timestamp
 
@@ -154,12 +154,12 @@ Global response message returned by all core services.
 ```python
 @register_data
 class Response(Datatype):
-    """Global response message returned by all core services.    
-    
+    """Global response message returned by all core services.
+
     Attributes:
-        status (ResponseStatus): response status    
-        response_string (Optional[str]): detailed message on reason for response    
-        timestamp (Timestamp): response timestamp    
+        status (ResponseStatus): response status
+        response_string (Optional[str]): detailed message on reason for response
+        timestamp (Timestamp): response timestamp
     """
     status: ResponseStatus
     response_string: Optional[str]
@@ -174,11 +174,11 @@ class Response(Datatype):
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
-Angular offsets or poses in 3 dimensions.    
+Angular offsets or poses in 3 dimensions.
 #### Attributes
-**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;pitch**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> pitch [degrees]    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;pitch**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> pitch [degrees]
 
-**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;roll**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> roll [degrees]    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;roll**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> roll [degrees]
 
 **<><code class="docs-attr">attr</code></>&nbsp;&nbsp;yaw**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> yaw [degrees]
 
@@ -189,12 +189,12 @@ Angular offsets or poses in 3 dimensions.
 ```python
 @register_data
 class Pose(Datatype):
-    """Angular offsets or poses in 3 dimensions.    
-    
+    """Angular offsets or poses in 3 dimensions.
+
     Attributes:
-        pitch (Optional[float]): pitch [degrees]    
-        roll (Optional[float]): roll [degrees]    
-        yaw (Optional[float]): yaw [degrees]    
+        pitch (Optional[float]): pitch [degrees]
+        roll (Optional[float]): roll [degrees]
+        yaw (Optional[float]): yaw [degrees]
     """
     pitch: Optional[float]
     roll: Optional[float]
@@ -209,13 +209,13 @@ class Pose(Datatype):
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
-Representation of velocity in 3-dimensions.    
+Representation of velocity in 3-dimensions.
 #### Attributes
-**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;x_vel**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> forward/north velocity [meters/s]    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;x_vel**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> forward/north velocity [meters/s]
 
-**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;y_vel**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> right/east velocity [meters/s]    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;y_vel**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> right/east velocity [meters/s]
 
-**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;z_vel**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> up velocity [meters/s]    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;z_vel**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> up velocity [meters/s]
 
 **<><code class="docs-attr">attr</code></>&nbsp;&nbsp;angular_vel**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> angular velocity [degrees/s]
 
@@ -226,13 +226,13 @@ Representation of velocity in 3-dimensions.
 ```python
 @register_data
 class Velocity(Datatype):
-    """Representation of velocity in 3-dimensions.    
-    
+    """Representation of velocity in 3-dimensions.
+
     Attributes:
-        x_vel (Optional[float]): forward/north velocity [meters/s]    
-        y_vel (Optional[float]): right/east velocity [meters/s]    
-        z_vel (Optional[float]): up velocity [meters/s]    
-        angular_vel (Optional[float]): angular velocity [degrees/s]    
+        x_vel (Optional[float]): forward/north velocity [meters/s]
+        y_vel (Optional[float]): right/east velocity [meters/s]
+        z_vel (Optional[float]): up velocity [meters/s]
+        angular_vel (Optional[float]): angular velocity [degrees/s]
     """
     x_vel: Optional[float]
     y_vel: Optional[float]
@@ -248,13 +248,13 @@ class Velocity(Datatype):
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
-Position offset relative to home or current location.    
+Position offset relative to home or current location.
 #### Attributes
-**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;x**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> forward/north offset [meters]    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;x**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> forward/north offset [meters]
 
-**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;y**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> right/east offset [meters]    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;y**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> right/east offset [meters]
 
-**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;z**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> up offset [meters]    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;z**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> up offset [meters]
 
 **<><code class="docs-attr">attr</code></>&nbsp;&nbsp;angle**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> angular offset [degrees]
 
@@ -265,13 +265,13 @@ Position offset relative to home or current location.
 ```python
 @register_data
 class Position(Datatype):
-    """Position offset relative to home or current location.    
-    
+    """Position offset relative to home or current location.
+
     Attributes:
-        x (Optional[float]): forward/north offset [meters]    
-        y (Optional[float]): right/east offset [meters]    
-        z (Optional[float]): up offset [meters]    
-        angle (Optional[float]): angular offset [degrees]    
+        x (Optional[float]): forward/north offset [meters]
+        y (Optional[float]): right/east offset [meters]
+        z (Optional[float]): up offset [meters]
+        angle (Optional[float]): angular offset [degrees]
     """
     x: Optional[float]
     y: Optional[float]
@@ -287,13 +287,13 @@ class Position(Datatype):
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
-Location in global coordinates.    
+Location in global coordinates.
 #### Attributes
-**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;latitude**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> global latitude [degrees]    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;latitude**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> global latitude [degrees]
 
-**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;longitude**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> global longitude [degrees]    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;longitude**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> global longitude [degrees]
 
-**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;altitude**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> altitude above MSL or takeoff [meters]    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;altitude**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> altitude above MSL or takeoff [meters]
 
 **<><code class="docs-attr">attr</code></>&nbsp;&nbsp;heading**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> global heading [degrees]
 
@@ -304,13 +304,13 @@ Location in global coordinates.
 ```python
 @register_data
 class Location(Datatype):
-    """Location in global coordinates.    
-    
+    """Location in global coordinates.
+
     Attributes:
-        latitude (Optional[float]): global latitude [degrees]    
-        longitude (Optional[float]): global longitude [degrees]    
-        altitude (Optional[float]): altitude above MSL or takeoff [meters]    
-        heading (Optional[float]): global heading [degrees]    
+        latitude (Optional[float]): global latitude [degrees]
+        longitude (Optional[float]): global longitude [degrees]
+        altitude (Optional[float]): altitude above MSL or takeoff [meters]
+        heading (Optional[float]): global heading [degrees]
     """
     latitude: Optional[float]
     longitude: Optional[float]

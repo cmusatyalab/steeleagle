@@ -58,7 +58,7 @@ def main():
         type=float,
         default=float(os.environ.get("SWIFTMAP_SEND_DISTANCE", "5.0")),
         help="Forward at most one frame+GPS pair per this many meters of travel "
-             "(0 = forward every frame).",
+        "(0 = forward every frame).",
     )
 
     args, _ = parser.parse_known_args()

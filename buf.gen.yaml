@@ -13,7 +13,7 @@ plugins:
   - local: [go, run, ./sdk/protoc_plugin]
     out: sdk/
     strategy: all
-    opt: 
+    opt:
       - paths=source_relative
       - default_api_level=API_OPAQUE
   - remote: buf.build/grpc/go

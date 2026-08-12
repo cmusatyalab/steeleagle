@@ -153,7 +153,7 @@ _Call Type: normal_
 
 
 Transit the vehicle to a target position relative to
-the global ENU (East, North, Up) or vehicle frame of 
+the global ENU (East, North, Up) or vehicle frame of
 reference, in meters
 ### <><code style={{color: '#10c45b'}}>method</code></> SetVelocity
 
@@ -161,7 +161,7 @@ _Call Type: normal_
 
 
 Transit the vehicle at a target velocity in the global
-ENU (East, North, Up) or vehicle frame of reference, 
+ENU (East, North, Up) or vehicle frame of reference,
 in meters per second
 ### <><code style={{color: '#10c45b'}}>method</code></> SetHeading
 
@@ -276,7 +276,7 @@ class ControlServicer(object):
 
     def SetRelativePosition(self, request, context):
         """Transit the vehicle to a target position relative to
-        the global ENU (East, North, Up) or vehicle frame of 
+        the global ENU (East, North, Up) or vehicle frame of
         reference, in meters
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -285,7 +285,7 @@ class ControlServicer(object):
 
     def SetVelocity(self, request, context):
         """Transit the vehicle at a target velocity in the global
-        ENU (East, North, Up) or vehicle frame of reference, 
+        ENU (East, North, Up) or vehicle frame of reference,
         in meters per second
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)

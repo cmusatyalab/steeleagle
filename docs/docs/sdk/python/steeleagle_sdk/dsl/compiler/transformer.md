@@ -170,7 +170,7 @@ class DroneDSLTransformer(Transformer):
     # ===== Attributes / Values =====
     def attr(self, k: Token, _sep, v):
         return (str(k), v)
-    
+
     def value(self, v):
         if isinstance(v, Dict):      # from datum_inline()
             return v
@@ -187,7 +187,7 @@ class DroneDSLTransformer(Transformer):
                 return None
         return v
 
-    def array(self, *items):        
+    def array(self, *items):
         return [it for it in items if not isinstance(it, Token)]
 
     def datum_args(self, *items):
@@ -254,7 +254,7 @@ class DroneDSLTransformer(Transformer):
         logger.info("loader: loading SDK registries")
         load_summaries = loader.load_all()
         loader.print_report(load_summaries)
-        
+
         logger.info("resolver: resolving symbol references")
         mir = resolver.resolve_symbols(mir)
 
@@ -262,7 +262,7 @@ class DroneDSLTransformer(Transformer):
         mir = validator.validate_mission_ir(mir)
 
         logger.info("transform: done (transitions=%d)", len(transitions))
-        
+
         # print the final IR nicely, from data to actions to events
         self.print_mir(mir)
         return mir

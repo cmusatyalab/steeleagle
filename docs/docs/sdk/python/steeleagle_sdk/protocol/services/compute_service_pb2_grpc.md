@@ -34,9 +34,9 @@ def add_ComputeServicer_to_server(servicer, server):
 
 Used to configure datasinks for sensor streams.
 
-This service is used to configure datasink endpoints for frames and 
-telemetry post-processing. It maintains an internal consumer list of 
-datasinks that the kernel broadcasts frames and telemetry to. RPC 
+This service is used to configure datasink endpoints for frames and
+telemetry post-processing. It maintains an internal consumer list of
+datasinks that the kernel broadcasts frames and telemetry to. RPC
 methods within this service allow for manipulation of this list.
 
 
@@ -48,9 +48,9 @@ class ComputeStub(object):
     """
     Used to configure datasinks for sensor streams.
 
-    This service is used to configure datasink endpoints for frames and 
-    telemetry post-processing. It maintains an internal consumer list of 
-    datasinks that the kernel broadcasts frames and telemetry to. RPC 
+    This service is used to configure datasink endpoints for frames and
+    telemetry post-processing. It maintains an internal consumer list of
+    datasinks that the kernel broadcasts frames and telemetry to. RPC
     methods within this service allow for manipulation of this list.
     """
 
@@ -75,9 +75,9 @@ class ComputeStub(object):
 
 Used to configure datasinks for sensor streams.
 
-This service is used to configure datasink endpoints for frames and 
-telemetry post-processing. It maintains an internal consumer list of 
-datasinks that the kernel broadcasts frames and telemetry to. RPC 
+This service is used to configure datasink endpoints for frames and
+telemetry post-processing. It maintains an internal consumer list of
+datasinks that the kernel broadcasts frames and telemetry to. RPC
 methods within this service allow for manipulation of this list.
 
 
@@ -113,9 +113,9 @@ class ComputeServicer(object):
     """
     Used to configure datasinks for sensor streams.
 
-    This service is used to configure datasink endpoints for frames and 
-    telemetry post-processing. It maintains an internal consumer list of 
-    datasinks that the kernel broadcasts frames and telemetry to. RPC 
+    This service is used to configure datasink endpoints for frames and
+    telemetry post-processing. It maintains an internal consumer list of
+    datasinks that the kernel broadcasts frames and telemetry to. RPC
     methods within this service allow for manipulation of this list.
     """
 
@@ -160,9 +160,9 @@ class ComputeServicer(object):
 
 Used to configure datasinks for sensor streams.
 
-This service is used to configure datasink endpoints for frames and 
-telemetry post-processing. It maintains an internal consumer list of 
-datasinks that the kernel broadcasts frames and telemetry to. RPC 
+This service is used to configure datasink endpoints for frames and
+telemetry post-processing. It maintains an internal consumer list of
+datasinks that the kernel broadcasts frames and telemetry to. RPC
 methods within this service allow for manipulation of this list.
 
 
@@ -186,9 +186,9 @@ class Compute(object):
     """
     Used to configure datasinks for sensor streams.
 
-    This service is used to configure datasink endpoints for frames and 
-    telemetry post-processing. It maintains an internal consumer list of 
-    datasinks that the kernel broadcasts frames and telemetry to. RPC 
+    This service is used to configure datasink endpoints for frames and
+    telemetry post-processing. It maintains an internal consumer list of
+    datasinks that the kernel broadcasts frames and telemetry to. RPC
     methods within this service allow for manipulation of this list.
     """
 
