@@ -89,14 +89,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 13px;
-  height: 13px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: #1f2937;
   color: #ffffff;
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 700;
-  margin-right: 3px;
+  margin-right: 4px;
   vertical-align: middle;
   text-shadow: none;
 }

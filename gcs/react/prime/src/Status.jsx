@@ -51,26 +51,30 @@ function Status({ vehicle, selectable, selected, onToggle }) {
                     style={{ position: 'absolute', top: '-6px', right: '-6px', backgroundColor: statusColor, color: '#ffffff' }}
                 />
             )}
-            <div className="flex align-items-center gap-2 flex-wrap">
-                <i
-                    className={disconnected ? "pi pi-times" : "pi pi-link"}
-                    style={{ color: statusColor, fontSize: '0.8rem' }}
-                    title={disconnected ? "Disconnected" : "Online"}
-                />
-                <span className="font-semibold text-sm">{vehicle.name}</span>
-                <span className="text-color-secondary text-xs">{vehicle.model}</span>
-                <span className="flex-1" />
-                <ProgressBar color={`var(--${battery_severity})`} style={{ width: '3rem', height: '4px' }} value={vehicle.battery} showValue={false} />
-                <span className="text-xs font-semibold" style={{ minWidth: '2rem', textAlign: 'right' }}>{Math.round(vehicle.battery)}%</span>
-                <span className="text-xs text-color-secondary flex align-items-center gap-1">
-                    <i className="pi pi-arrow-up" style={{ display: 'inline-block', transform: `rotate(${vehicle.bearing}deg)`, fontSize: '0.65rem' }} />
-                    {Math.round(vehicle.bearing)}°
-                </span>
-                <span className="text-xs text-color-secondary">{speed.toFixed(1)} m/s</span>
-                <span className="text-xs text-color-secondary flex align-items-center gap-1">
-                    <i className="pi pi-wifi" style={{ fontSize: '0.65rem' }} />
-                    {vehicle.sats}
-                </span>
+            <div className="flex flex-column gap-1">
+                <div className="flex align-items-center gap-2">
+                    <i
+                        className={disconnected ? "pi pi-times" : "pi pi-link"}
+                        style={{ color: statusColor, fontSize: '0.8rem' }}
+                        title={disconnected ? "Disconnected" : "Online"}
+                    />
+                    <span className="font-semibold text-sm">{vehicle.name}</span>
+                    <span className="text-color-secondary text-xs">{vehicle.model}</span>
+                </div>
+                <div className="flex align-items-center gap-2">
+                    <ProgressBar color={`var(--${battery_severity})`} style={{ width: '3rem', height: '4px' }} value={vehicle.battery} showValue={false} />
+                    <span className="text-xs font-semibold" style={{ minWidth: '2rem', textAlign: 'right' }}>{Math.round(vehicle.battery)}%</span>
+                    <span className="flex-1" />
+                    <span className="text-xs text-color-secondary flex align-items-center gap-1">
+                        <i className="pi pi-arrow-up" style={{ display: 'inline-block', transform: `rotate(${vehicle.bearing}deg)`, fontSize: '0.65rem' }} />
+                        {Math.round(vehicle.bearing)}°
+                    </span>
+                    <span className="text-xs text-color-secondary">{speed.toFixed(1)} m/s</span>
+                    <span className="text-xs text-color-secondary flex align-items-center gap-1">
+                        <i className="pi pi-wifi" style={{ fontSize: '0.65rem' }} />
+                        {vehicle.sats}
+                    </span>
+                </div>
             </div>
         </Card>
     );

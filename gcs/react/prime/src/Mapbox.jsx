@@ -71,11 +71,21 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObj
       }
     }, 100);
 
-
-
+    // The map container's width changes whenever the squad sidebar
+    // collapses/expands (or the window resizes). Mapbox GL doesn't detect
+    // that on its own -- it only repaints the canvas at whatever size it
+    // measured on creation -- so without this the map stays the old size
+    // and the freed-up space just shows as empty grey padding.
+    const resizeObserver = new ResizeObserver(() => {
+      if (mapRef.current) {
+        mapRef.current.resize();
+      }
+    });
+    resizeObserver.observe(mapContainerRef.current);
 
     return () => {
       clearTimeout(timer);
+      resizeObserver.disconnect();
       mapRef.current.remove();
     }
   }, []);
