@@ -12,6 +12,7 @@ import { getApiUrl } from './urls.js';
 import VehicleGrid from './VehicleGrid.jsx';
 import Mapbox from './Mapbox.jsx';
 import { toggleVehicleInSquad, recallControlGroup, squadMatchesGroup } from './squadUtils.js';
+import { sortVehiclesForDisplay, vehicleStatus, vehicleStatusColor, isVehicleDisconnected } from './mapUtils.js';
 
 const cancelOptions = { icon: 'pi pi-fw pi-times', iconOnly: true, className: 'custom-cancel-btn p-button-danger' };
 const chooseOptions = { label: 'Select...', icon: 'pi pi-fw pi-file', iconOnly: false, className: 'custom-choose-btn p-button-primary' };
@@ -27,6 +28,8 @@ const videoPanelHeight = '26rem';
 function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand,
   setManualControl, squadList, setSquadList, takeOffAltitude, controlGroups }) {
   const [mapPanelSize] = useState(0);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const sortedVehicles = useMemo(() => sortVehiclesForDisplay(vehicles, squadList), [vehicles, squadList]);
   const onProgress = () => {
     toast.current.show({ severity: 'info', summary: 'In Progress', detail: 'Uploading files...' });
   };
@@ -152,7 +155,10 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand,
   const squadHeaderTemplate = (options) => (
     <div className={`${options.className} flex-column align-items-stretch`}>
       <div className="flex align-items-center justify-content-between mb-2">
-        <span className="font-bold">Squad</span>
+        <div className="flex align-items-center gap-1">
+          <Button size="small" rounded text label="" icon="pi pi-chevron-left" tooltip="Collapse" tooltipOptions={{ position: 'bottom' }} onClick={() => setSidebarCollapsed(true)} aria-label="Collapse squad list" />
+          <span className="font-bold">Squad</span>
+        </div>
         <Chip label={`${(squadList ?? []).length}/${vehicleNames.length} selected`} icon="pi pi-users" />
       </div>
       <div className="flex align-items-center justify-content-between flex-wrap gap-2">
@@ -184,20 +190,43 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand,
 
   return (
     <>
-      <div className="grid m-0">
-        <div className="col-12 lg:col-3 p-2">
-          <Panel headerTemplate={squadHeaderTemplate} className="h-full">
-            <div className="grid m-0" style={{ maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
-              <VehicleGrid vehicles={vehicles} selectable squadList={squadList} onToggle={onToggleVehicle} cardColumnClass="col-12 p-2" />
+      <div className="flex flex-column lg:flex-row m-0">
+        <div
+          className="p-2"
+          style={sidebarCollapsed ? { width: '56px', flexShrink: 0 } : { width: '100%' }}
+        >
+          {sidebarCollapsed ? (
+            <div className="flex flex-column align-items-center gap-3 pt-2">
+              <Button size="small" rounded text label="" icon="pi pi-chevron-right" tooltip="Expand" tooltipOptions={{ position: 'right' }} onClick={() => setSidebarCollapsed(false)} aria-label="Expand squad list" />
+              {sortedVehicles.map((v) => {
+                const status = vehicleStatus(isVehicleDisconnected(v), !!(squadList && squadList.includes(v.name)));
+                return (
+                  <span
+                    key={v.name}
+                    title={`${v.name} (${status})`}
+                    onClick={() => onToggleVehicle(v.name)}
+                    style={{
+                      width: '12px', height: '12px', borderRadius: '50%', cursor: 'pointer',
+                      backgroundColor: vehicleStatusColor(status),
+                    }}
+                  />
+                );
+              })}
             </div>
-          </Panel>
+          ) : (
+            <Panel headerTemplate={squadHeaderTemplate} className="h-full">
+              <div className="grid m-0" style={{ maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
+                <VehicleGrid vehicles={sortedVehicles} selectable squadList={squadList} onToggle={onToggleVehicle} cardColumnClass="col-12 p-2" />
+              </div>
+            </Panel>
+          )}
         </div>
-        <div className="col-12 lg:col-9 p-2">
+        <div className="p-2 flex-1" style={{ minWidth: 0 }}>
           <div className="flex flex-column">
             <div className="grid m-0">
               <div className="col-12 lg:col-6 p-2">
                 <Mapbox selectedVehicle={selectedVehicle} vehicles={vehicles} mapPanelSize={mapPanelSize} tracking={tracking}
-                  mapHeight={videoPanelHeight} squadList={squadList} onToggleVehicle={onToggleVehicle} />
+                  mapHeight={videoPanelHeight} squadList={squadList} onToggleVehicle={onToggleVehicle} controlGroups={controlGroups} />
               </div>
               <div className="col-12 lg:col-6 p-2">
                 <div style={{ height: videoPanelHeight, backgroundColor: '#000' }}>
