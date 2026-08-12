@@ -192,8 +192,8 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand,
     <>
       <div className="flex flex-column lg:flex-row m-0">
         <div
-          className="p-2"
-          style={sidebarCollapsed ? { width: '56px', flexShrink: 0 } : { width: '100%' }}
+          className={sidebarCollapsed ? "p-2" : "p-2 w-full lg:w-3"}
+          style={sidebarCollapsed ? { width: '56px', flexShrink: 0 } : undefined}
         >
           {sidebarCollapsed ? (
             <div className="flex flex-column align-items-center gap-3 pt-2">
