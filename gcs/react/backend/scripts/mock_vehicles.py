@@ -15,9 +15,12 @@ No swarm-controller or vehicle driver needs to be running for this --
 separately (`uv run main.py` in gcs/react/backend) to see these vehicles
 in the UI.
 
-Vehicle names are all prefixed (default "mock-drone-") so --cleanup can
-safely remove only the keys this script created, without ever touching
-real vehicle data.
+Vehicle names are all prefixed (default "mock-") so --cleanup can safely
+remove only the keys this script created, without ever touching real
+vehicle data. Each name gets a random color-bird suffix (e.g.
+mock-silver-falcon) instead of a numeric one, so distinct vehicles also
+get visibly distinct marker colors (see mapUtils.js's vehicleColor, which
+hashes the name).
 
 Usage:
     cd gcs/react/backend
@@ -35,6 +38,7 @@ import sys
 import time
 from pathlib import Path
 
+import randomname
 import redis
 import toml
 
@@ -135,6 +139,23 @@ class MockVehicle:
         }
 
 
+def generate_names(prefix: str, count: int) -> list[str]:
+    """Random color-bird mock vehicle names, e.g. "mock-silver-falcon".
+
+    75 colors x 65 birds = 4875 combinations, so rejecting and retrying on
+    a same-batch collision is enough to guarantee uniqueness without a
+    global registry.
+    """
+    names: list[str] = []
+    seen: set[str] = set()
+    while len(names) < count:
+        candidate = f"{prefix}{randomname.get_name(adj=('colors',), noun=('birds',))}"
+        if candidate not in seen:
+            seen.add(candidate)
+            names.append(candidate)
+    return names
+
+
 def write_vehicle(r: redis.Redis, v: MockVehicle) -> None:
     r.hset(f"vehicle:{v.name}", mapping=v.hash_fields())
     r.xadd(f"telemetry:{v.name}", v.stream_fields(), maxlen=1000, approximate=True)
@@ -171,8 +192,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--prefix",
-        default="mock-drone-",
-        help="Vehicle name prefix (default: mock-drone-)",
+        default="mock-",
+        help="Vehicle name prefix (default: mock-)",
     )
     parser.add_argument("--center-lat", type=float, default=DEFAULT_CENTER_LAT)
     parser.add_argument("--center-long", type=float, default=DEFAULT_CENTER_LONG)
@@ -210,9 +231,10 @@ def main() -> None:
         cleanup(r, args.prefix)
         return
 
+    names = generate_names(args.prefix, args.count)
     vehicles = [
-        MockVehicle(f"{args.prefix}{i + 1}", i, args.center_lat, args.center_long)
-        for i in range(args.count)
+        MockVehicle(name, i, args.center_lat, args.center_long)
+        for i, name in enumerate(names)
     ]
     print(
         f"Writing {len(vehicles)} mock vehicle(s) to Redis: {', '.join(v.name for v in vehicles)}"
