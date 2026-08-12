@@ -2,6 +2,7 @@ package vehicle
 
 import (
 	"context"
+	"fmt"
 	"net"
 
 	gabrielclient "github.com/cmusatyalab/gabriel/go-client"
@@ -63,18 +64,26 @@ func getGabrielProducer[T Data](
 }
 
 // Create a Gabriel client with telemetry and video frame input producers.
+// Either producer is left out entirely if its target engine list is empty.
 func (v *Vehicle) createGabrielClient() error {
-	telCh := v.store.subscribeToTelemetry()
-	telProducer := getGabrielProducer(
-		"telemetry",
-		telCh,
-		v.gabrielCfg.TelemetryTargetEngines)
-
-	frameCh := v.store.subscribeToFrames()
-	frameProducer := getGabrielProducer(
-		"frames",
-		frameCh,
-		v.gabrielCfg.VideoFramesTargetEngines)
+	var producers []*gabrielclient.InputProducer
+	if len(v.gabrielCfg.TelemetryTargetEngines) > 0 {
+		telCh := v.store.subscribeToTelemetry()
+		producers = append(producers, getGabrielProducer(
+			"telemetry",
+			telCh,
+			v.gabrielCfg.TelemetryTargetEngines))
+	}
+	if len(v.gabrielCfg.VideoFramesTargetEngines) > 0 {
+		frameCh := v.store.subscribeToFrames()
+		producers = append(producers, getGabrielProducer(
+			"frames",
+			frameCh,
+			v.gabrielCfg.VideoFramesTargetEngines))
+	}
+	if len(producers) == 0 {
+		return fmt.Errorf("gabriel.server-endpoint is set but neither telemetry-target-engines nor video-frames-target-engines names an engine")
+	}
 
 	consumer := func(res *gabrielpb.Result) {
 		cmpRes := resultpb.ComputeResult_builder{
@@ -100,7 +109,7 @@ func (v *Vehicle) createGabrielClient() error {
 
 	client, err := gabrielclient.NewGrpcClient(
 		v.gabrielCfg.ServerEndpoint,
-		[]*gabrielclient.InputProducer{telProducer, frameProducer},
+		producers,
 		consumer,
 		opts...)
 	if err != nil {
