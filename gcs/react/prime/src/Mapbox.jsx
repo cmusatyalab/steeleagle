@@ -2,28 +2,25 @@ import { useRef, useEffect } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { MAPBOX_TOKEN } from './config.js';
-import { vehicleColor } from './mapUtils.js'
+import { vehicleColor, isVehicleDisconnected, vehicleStatus, vehicleStatusMapColor, vehicleStatusTextColor } from './mapUtils.js'
+import { vehicleControlGroupDigits } from './squadUtils.js'
 
-function createVehicleMarkerElement(color, selected) {
+// No ring/badge here anymore -- the whole marker element rotates with
+// `rotation: v.bearing` below, so anything drawn on it would visibly spin
+// as the vehicle turns. Status is carried by fill color alone, which
+// rotating doesn't affect. Quick-squad membership moved to the popup
+// label instead (see the .setHTML call below).
+function createVehicleMarkerElement(color) {
   const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   el.setAttribute('width', '34');
   el.setAttribute('height', '34');
   el.setAttribute('viewBox', '0 0 34 34');
 
-  if (selected) {
-    const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    ring.setAttribute('cx', '17');
-    ring.setAttribute('cy', '17');
-    ring.setAttribute('r', '15');
-    ring.setAttribute('fill', 'none');
-    ring.setAttribute('stroke', '#ffffff');
-    ring.setAttribute('stroke-width', '2');
-    el.appendChild(ring);
-  }
-
   const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   path.setAttribute('d', 'M17 6 L26 27 L17 22 L8 27 Z');
-  path.setAttribute('fill', color);
+  // Assigned via style rather than the fill attribute so the CSS
+  // var(--...) status color resolves against the page's theme tokens.
+  path.style.fill = color;
   path.setAttribute('stroke', '#ffffff');
   path.setAttribute('stroke-width', '1.5');
   path.setAttribute('stroke-linejoin', 'round');
@@ -32,7 +29,7 @@ function createVehicleMarkerElement(color, selected) {
   return el;
 }
 
-function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObjects, mapHeight, squadList, onToggleVehicle }) {
+function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObjects, mapHeight, squadList, onToggleVehicle, controlGroups }) {
   const mapRef = useRef()
   const mapContainerRef = useRef()
   const markerRefs = useRef([]); // To store references to all markers
@@ -102,11 +99,14 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObj
     markerRefs.current = [];
     vehicles.forEach(v => {
       const isSelected = !!(squadList && squadList.includes(v.name));
-      let marker = new mapboxgl.Marker({ element: createVehicleMarkerElement(vehicleColor(v.name), isSelected), rotation: v.bearing, rotationAlignment: 'map' })
+      const status = vehicleStatus(isVehicleDisconnected(v), isSelected);
+      const groupDigits = vehicleControlGroupDigits(controlGroups ?? {}, v.name);
+      const chipsHtml = groupDigits.map((d) => `<span class="squad-chip">${d}</span>`).join('');
+      let marker = new mapboxgl.Marker({ element: createVehicleMarkerElement(vehicleStatusMapColor(status)), rotation: v.bearing, rotationAlignment: 'map' })
         .setLngLat([v.current.long, v.current.lat])
         .setPopup(
           new mapboxgl.Popup({ offset: 20, anchor: 'top', focusAfterOpen: false, closeButton: false, closeOnClick: false, className: 'vehicle-label-popup' })
-            .setHTML(`<strong>${v.name}<br>${v.current.alt.toFixed(2)} m</strong>`)
+            .setHTML(`<strong style="color:${vehicleStatusTextColor(status)}">${chipsHtml}${v.name}<br>${v.current.alt.toFixed(2)} m</strong>`)
         )
         .addTo(mapRef.current);
       marker.togglePopup();
@@ -157,7 +157,7 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObj
       });
     }
 
-  }, [vehicles, detectedObjects, squadList]);
+  }, [vehicles, detectedObjects, squadList, controlGroups]);
 
   useEffect(() => {
     let v = vehicles.find(v => v.name === selectedVehicle);

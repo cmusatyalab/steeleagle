@@ -76,10 +76,27 @@
   display: none;
 }
 .vehicle-label-popup strong {
-  color: #ffffff;
+  /* color is set inline per-vehicle in Mapbox.jsx to match its marker's
+     status (vehicleStatusTextColor) */
   text-shadow: 0 0 3px #000000, 0 0 3px #000000, 0 1px 2px #000000;
   font-size: 0.85rem;
   white-space: nowrap;
   text-align: center;
   display: block;
+}
+
+.vehicle-label-popup .squad-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #1f2937;
+  color: #ffffff;
+  font-size: 8px;
+  font-weight: 700;
+  margin-right: 3px;
+  vertical-align: middle;
+  text-shadow: none;
 }
