@@ -23,7 +23,7 @@ _Call Type: normal_
 <summary>View Source</summary>
 ```python
 class EdgePartition(Partition):
-    
+
     def generate_partitioned_geopoints(self, polygon: Polygon) -> List[GeoPoints]:
         coords = list(polygon.exterior.coords)
         pairs = []

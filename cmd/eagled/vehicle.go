@@ -14,8 +14,9 @@ import (
 )
 
 // spawnVehicle builds the vehicle's driver plugin, binds its listener on port
-// (on its own tsnet node if useVPN), starts the vehicle, and once it's running
-// registers it with the swarm controller for exactly as long as it stays up.
+// (on its own tsnet node if authKey is set), starts the vehicle, and once
+// it's running registers it with the swarm controller for exactly as long as
+// it stays up.
 //
 // The returned stop cancels the vehicle, tearing it down. done is closed once
 // that teardown (including the vehicle's own process exit) finishes.
@@ -27,7 +28,6 @@ func spawnVehicle(
 	missionPlugin util.Plugin,
 	extraPlugins []util.Plugin,
 	authKey string,
-	useVPN bool,
 	gabrielCfg GabrielConfig,
 	swarmCfg SwarmControllerConfig,
 	daemonName string,
@@ -35,7 +35,7 @@ func spawnVehicle(
 	var ln net.Listener
 	var dial dialFunc
 	var vehicleTS *tailscale.Server
-	if useVPN {
+	if authKey != "" {
 		vehicleTS, err = tailscale.NewServer(vehicleCfg.Name, authKey, true)
 		if err != nil {
 			return nil, nil, fmt.Errorf("starting tailscale for vehicle %s: %w", vehicleCfg.Name, err)
@@ -63,6 +63,13 @@ func spawnVehicle(
 		vehicle.WithName(vehicleCfg.Name),
 		vehicle.WithServerListener(ln, nil),
 		vehicle.WithVideoStreamConfig(videoCfg),
+		vehicle.WithLogger(log.With().Str("vehicle", vehicleCfg.Name).Logger()),
+	}
+	if dial != nil {
+		// So a MagicDNS gabriel.server-endpoint resolves via the vehicle's own
+		// tsnet node, same as swarm-controller registration does, instead of
+		// depending on the host's own DNS setup.
+		opts = append(opts, vehicle.WithDialer(vehicle.Dialer(dial)))
 	}
 	if gabrielCfg.ServerEndpoint != "" {
 		opts = append(opts, vehicle.WithGabrielConfig(vehicle.GabrielConfig{

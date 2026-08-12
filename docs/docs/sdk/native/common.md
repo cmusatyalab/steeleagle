@@ -4,7 +4,7 @@ toc_max_heading_level: 3
 
 import Link from '@docusaurus/Link';
 
-# common 
+# common
 ---
 
 ## <><code class="docs-func">enum</code></> ResponseStatus
@@ -18,9 +18,9 @@ They determine what phase an RPC call is in:
 - `IN_PROGRESS` -> in progress
 - `COMPLETED` -> completed
 
-These intermediate phases are generally not exposed to user-facing code and are only used 
+These intermediate phases are generally not exposed to user-facing code and are only used
 for streaming methods. In contrast to normal gRPC procedure, a call is only considered complete
-on a response of `COMPLETED` instead of `OK`. If an error occurs, SteelEagle defers to gRPC error 
+on a response of `COMPLETED` instead of `OK`. If an error occurs, SteelEagle defers to gRPC error
 codes, 3-18. More details on these codes can be found [here](https://grpc.github.io/grpc/core/md_doc_statuscodes.html).
 Note that the value of these codes is offset by 2 from their original form (e.g. `CANCELLED` = 3 vs = 1).
 Therefore, for error codes, the transformation from gRPC to SteelEagle response code is to add

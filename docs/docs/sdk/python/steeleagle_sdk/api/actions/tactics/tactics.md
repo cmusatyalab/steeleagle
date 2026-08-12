@@ -8,4 +8,3 @@ import { GoFileSymlinkFile } from "react-icons/go";
 # tactics
 
 ---
-

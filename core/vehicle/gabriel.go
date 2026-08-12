@@ -2,6 +2,7 @@ package vehicle
 
 import (
 	"context"
+	"net"
 
 	gabrielclient "github.com/cmusatyalab/gabriel/go-client"
 	gabrielpb "github.com/cmusatyalab/gabriel/protocol/go"
@@ -9,6 +10,7 @@ import (
 	resultpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/result"
 	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
 	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -81,14 +83,29 @@ func (v *Vehicle) createGabrielClient() error {
 		v.store.addResult(res.TargetEngineId, cmpRes)
 	}
 
+	opts := []gabrielclient.Option{
+		gabrielclient.WithClientInfo(commonpb.VehicleInfo_builder{
+			VehicleId: v.Name,
+			Model:     v.Model,
+		}.Build()),
+	}
+	if v.dialer != nil {
+		// Sources the connection from the vehicle's own tsnet node (if any),
+		// so a MagicDNS server-endpoint resolves the same way it does for
+		// swarm-controller registration, rather than depending on the host's
+		// own DNS setup.
+		opts = append(opts, gabrielclient.WithDialOptions(grpc.WithContextDialer(
+			func(ctx context.Context, addr string) (net.Conn, error) {
+				return v.dialer(ctx, "tcp", addr)
+			},
+		)))
+	}
+
 	client, err := gabrielclient.NewGrpcClient(
 		v.gabrielCfg.ServerEndpoint,
 		[]*gabrielclient.InputProducer{telProducer, frameProducer},
 		consumer,
-		gabrielclient.WithClientInfo(commonpb.VehicleInfo_builder{
-			VehicleId: v.Name,
-			Model:     v.Model,
-		}.Build()))
+		opts...)
 	if err != nil {
 		return err
 	}

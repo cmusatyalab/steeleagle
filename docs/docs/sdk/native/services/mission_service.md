@@ -4,7 +4,7 @@ toc_max_heading_level: 3
 
 import Link from '@docusaurus/Link';
 
-# mission_service 
+# mission_service
 ---
 ## <><code class="docs-class">service</code></> Mission
 

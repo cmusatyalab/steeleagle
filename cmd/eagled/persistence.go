@@ -16,6 +16,17 @@ import (
 // without another Configure call.
 const PersistedConfigFile = "applied-config.toml"
 
+// PersistedNetworkFile is the name of the last-applied tailscale settings,
+// kept in core/util.GetDataDir() separately from PersistedConfigFile so
+// ResetConfig does not erase it.
+const PersistedNetworkFile = "network-config.toml"
+
+// networkConfig is persisted to PersistedNetworkFile: the resolved hostname
+// eagled's tsnet node last joined under (see resolveHostname).
+type networkConfig struct {
+	Hostname string `toml:"hostname"`
+}
+
 // PersistedPluginsFile is the name of the last-installed-plugin record, kept
 // in core/util.GetDataDir() so a restarted eagled knows which plugins are
 // installed.
@@ -40,6 +51,40 @@ func (d *daemon) persist() {
 	persistToml(path, cfg, "config")
 }
 
+// persistNetwork writes hostname to PersistedNetworkFile, separately from
+// persist()'s applied-config.toml, so it survives ResetConfig.
+func (d *daemon) persistNetwork(hostname string) {
+	path, err := networkConfigPath()
+	if err != nil {
+		log.Warn().Err(err).Msg("could not determine network config persistence path")
+		return
+	}
+	persistToml(path, networkConfig{Hostname: hostname}, "network config")
+}
+
+// loadPersistedNetwork reads and applies the last-persisted hostname, if any,
+// so eagled rejoins the tailnet before (and independently of) loadPersisted
+// below.
+func (d *daemon) loadPersistedNetwork() error {
+	path, err := networkConfigPath()
+	if err != nil {
+		return err
+	}
+	data, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("reading %s: %w", path, err)
+	}
+
+	var nc networkConfig
+	if _, err := toml.Decode(string(data), &nc); err != nil {
+		return fmt.Errorf("parsing %s: %w", path, err)
+	}
+	return d.ensureNetwork(Config{Hostname: nc.Hostname})
+}
+
 // loadPersisted reads and applies the last-persisted config, if any.
 func (d *daemon) loadPersisted() error {
 	path, err := persistedConfigPath()
@@ -58,6 +103,9 @@ func (d *daemon) loadPersisted() error {
 	if err != nil {
 		return fmt.Errorf("parsing %s: %w", path, err)
 	}
+	if err := d.ensureNetwork(cfg); err != nil {
+		return err
+	}
 	if err := d.ensureConfigured(cfg); err != nil {
 		return err
 	}
@@ -73,24 +121,28 @@ func (d *daemon) loadPersisted() error {
 	return nil
 }
 
-// installedPluginRecord is one entry in installedPluginsDoc.
+// installedPluginRecord is one entry in installedPluginsDoc. Name and
+// Category together identify an installed plugin -- see installedPluginKey --
+// since the same name can be installed independently under different
+// categories (see util.GetInstalledPluginDir).
 type installedPluginRecord struct {
-	Ref      string `toml:"ref"`      // commit SHA, branch, or tag last installed
+	Name     string `toml:"name"`
 	Category string `toml:"category"` // "driver", "mission", or "extra"
+	Ref      string `toml:"ref"`      // commit SHA, branch, or tag last installed
 }
 
 // installedPluginsDoc is persisted to PersistedPluginsFile.
 type installedPluginsDoc struct {
-	Plugins map[string]installedPluginRecord `toml:"plugins"` // plugin name -> {ref, category}
+	Plugins []installedPluginRecord `toml:"plugins"`
 }
 
-// persistInstalled writes the daemon's current name->{ref,category} record to
+// persistInstalled writes the daemon's current installed-plugin records to
 // disk.
 func (d *daemon) persistInstalled() {
 	d.mu.Lock()
-	installed := make(map[string]installedPluginRecord, len(d.installed))
-	for name, rec := range d.installed {
-		installed[name] = rec
+	plugins := make([]installedPluginRecord, 0, len(d.installed))
+	for key, ref := range d.installed {
+		plugins = append(plugins, installedPluginRecord{Name: key.Name, Category: key.Category, Ref: ref})
 	}
 	d.mu.Unlock()
 
@@ -99,11 +151,11 @@ func (d *daemon) persistInstalled() {
 		log.Warn().Err(err).Msg("could not determine plugin persistence path")
 		return
 	}
-	persistToml(path, installedPluginsDoc{Plugins: installed}, "installed plugins")
+	persistToml(path, installedPluginsDoc{Plugins: plugins}, "installed plugins")
 }
 
-// loadPersistedInstalled reads the last-persisted name->{ref,category}
-// record, if any.
+// loadPersistedInstalled reads the last-persisted installed-plugin records,
+// if any.
 func (d *daemon) loadPersistedInstalled() error {
 	path, err := persistedPluginsPath()
 	if err != nil {
@@ -123,8 +175,8 @@ func (d *daemon) loadPersistedInstalled() error {
 	}
 
 	d.mu.Lock()
-	for name, rec := range doc.Plugins {
-		d.installed[name] = rec
+	for _, rec := range doc.Plugins {
+		d.installed[installedPluginKey{Name: rec.Name, Category: rec.Category}] = rec.Ref
 	}
 	d.mu.Unlock()
 	return nil
@@ -164,6 +216,15 @@ func persistedConfigPath() (string, error) {
 		return "", err
 	}
 	return filepath.Join(dataDir, PersistedConfigFile), nil
+}
+
+// networkConfigPath returns the path of the persisted tailscale hostname.
+func networkConfigPath() (string, error) {
+	dataDir, err := util.GetDataDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dataDir, PersistedNetworkFile), nil
 }
 
 // persistToml encodes v as TOML and atomically writes it to path, warning

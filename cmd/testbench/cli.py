@@ -35,7 +35,7 @@ def vehicle_socket_address(name: str) -> str:
     layout defined by core/util.GetVehicleDirByName (steeleagle/vehicles/<name>).
     """
     path = os.path.join(runtime_dir(), "steeleagle", "vehicles", name, "server")
-    print(f'using socket {path}')
+    print(f"using socket {path}")
     return f"unix://{path}"
 
 
@@ -53,6 +53,7 @@ def resolve_address(value: str) -> str:
 @dataclass
 class DroneConnection:
     """Represents a connection to a single drone."""
+
     name: str
     address: str
     channel: grpc.aio.Channel = None
@@ -65,6 +66,7 @@ class DroneConnection:
 @dataclass
 class DroneManager:
     """Manages multiple drone connections and tracks which ones are currently selected."""
+
     drones: Dict[str, DroneConnection] = field(default_factory=dict)
     selected_indices: Set[int] = field(default_factory=set)
 
@@ -75,7 +77,9 @@ class DroneManager:
     def get_selected_drones(self) -> List[DroneConnection]:
         """Return currently selected drones."""
         drone_list = self.get_drone_list()
-        return [drone_list[i] for i in sorted(self.selected_indices) if i < len(drone_list)]
+        return [
+            drone_list[i] for i in sorted(self.selected_indices) if i < len(drone_list)
+        ]
 
     def select_drones(self, indices: Set[int]):
         """Update the set of selected drones by index."""
@@ -90,7 +94,9 @@ class DroneManager:
         for i, drone in enumerate(drone_list):
             selected = "✓" if i in self.selected_indices else " "
             connected = "connected" if drone.connected else "disconnected"
-            lines.append(f"  [{selected}] {i}: {drone.name} ({drone.address}) - {connected}")
+            lines.append(
+                f"  [{selected}] {i}: {drone.name} ({drone.address}) - {connected}"
+            )
         return "\n".join(lines)
 
 
@@ -304,7 +310,9 @@ async def consume_keys(
                     manager.select_drones(indices)
                     selected = manager.get_selected_drones()
                     if selected:
-                        print(f"\nNow controlling: {', '.join(d.name for d in selected)}")
+                        print(
+                            f"\nNow controlling: {', '.join(d.name for d in selected)}"
+                        )
                     else:
                         print("\nNo valid drones selected.")
                 else:
@@ -416,7 +424,9 @@ async def main(args):
     await asyncio.gather(*connect_tasks)
 
     # Select all connected drones by default
-    connected_indices = {i for i, d in enumerate(manager.get_drone_list()) if d.connected}
+    connected_indices = {
+        i for i, d in enumerate(manager.get_drone_list()) if d.connected
+    }
     manager.select_drones(connected_indices)
 
     if not any(d.connected for d in manager.get_drone_list()):
@@ -465,7 +475,9 @@ def load_drones_from_toml(config_path: str) -> List[Dict]:
     drones = []
     for drone in config.get("drones", []):
         name = drone["name"]
-        drones.append({"name": name, "address": resolve_address(drone.get("address", name))})
+        drones.append(
+            {"name": name, "address": resolve_address(drone.get("address", name))}
+        )
     return drones
 
 
@@ -478,8 +490,7 @@ if __name__ == "__main__":
         "-c",
         "--config",
         default=None,
-        help="Path to TOML config file with drone definitions. "
-             "Example: -c drones.toml",
+        help="Path to TOML config file with drone definitions. Example: -c drones.toml",
     )
     parser.add_argument(
         "-a",
@@ -487,12 +498,12 @@ if __name__ == "__main__":
         nargs="+",
         default=None,
         help="Drones to connect to (alternative to config file). "
-             "Format: 'name=address', 'name=vehicle_name', or a bare "
-             "vehicle_name/address. A value without a URI scheme is treated "
-             "as the name of a locally-running vehicle and its socket "
-             "address is resolved automatically. "
-             "Examples: -a test-vehicle other-vehicle "
-             "-a drone1=test-vehicle drone2=tcp://otherhost:50000",
+        "Format: 'name=address', 'name=vehicle_name', or a bare "
+        "vehicle_name/address. A value without a URI scheme is treated "
+        "as the name of a locally-running vehicle and its socket "
+        "address is resolved automatically. "
+        "Examples: -a test-vehicle other-vehicle "
+        "-a drone1=test-vehicle drone2=tcp://otherhost:50000",
     )
     args = parser.parse_args()
 
@@ -517,10 +528,12 @@ if __name__ == "__main__":
             drone_configs.append({"name": name, "address": resolve_address(target)})
     else:
         # Default to the vehicle launched by `cmd/testbench/main.go`
-        drone_configs.append({
-            "name": DEFAULT_VEHICLE_NAME,
-            "address": vehicle_socket_address(DEFAULT_VEHICLE_NAME),
-        })
+        drone_configs.append(
+            {
+                "name": DEFAULT_VEHICLE_NAME,
+                "address": vehicle_socket_address(DEFAULT_VEHICLE_NAME),
+            }
+        )
 
     # Store parsed configs in args for main()
     args.drone_configs = drone_configs

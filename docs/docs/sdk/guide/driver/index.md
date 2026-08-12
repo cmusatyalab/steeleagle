@@ -5,13 +5,13 @@ sidebar_position: 2
 # Adding a Vehicle Driver
 
 SteelEagle vehicle drivers are _wrappers_ over an existing robot control SDK, with the goal of providing a
-unified abstraction layer that the rest of the system can understand and interact with. In practice, 
+unified abstraction layer that the rest of the system can understand and interact with. In practice,
 this means creating a middleware, represented in the system as a [gRPC server](https://grpc.io/docs/what-is-grpc/introduction/)
 that translates the SteelEagle specification into vehicle-specific SDK commands.
 
 By implementing this translation layer, many disparate robot control SDKs can be
 abstracted away under a single interface. This is the foundational element of SteelEagle's hardware-agnostic
-design. Any robot with an open SDK, within reason, can be integrated into the SteelEagle pipeline and 
+design. Any robot with an open SDK, within reason, can be integrated into the SteelEagle pipeline and
 controlled via the SteelEagle DSL. Adding a new vehicle driver to SteelEagle is a mostly straightforward process,
 but a few caveats should be noted:
 1. SteelEagle makes a _best effort_ attempt at compatibility. Because of how varied robot control schemes are,
@@ -37,4 +37,4 @@ it to access the native protocol bindings in the [`protocol` module](/sdk/python
 If using a different language than Python, you will need to generate the gRPC bindings in your language of choice.
 You can learn about generating gRPC bindings [here](https://grpc.io/docs/languages/). In general, gRPC
 supports most major languages including Python, C++, Java, and Go. Feel free to choose any gRPC compatible
-language, especially if the robot interface SDK is designed for it! 
+language, especially if the robot interface SDK is designed for it!

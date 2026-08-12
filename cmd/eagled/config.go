@@ -1,13 +1,12 @@
 package main
 
-// TailscaleConfig models the [tailscale] table. eagled's own tsnet node and
-// every vehicle's tsnet node can join under separate auth keys. If
-// VehicleAuthKeyEnv is left blank, vehicles fall back to AuthKeyEnv.
-type TailscaleConfig struct {
-	AuthKeyEnv        string `toml:"authkey-env,omitempty"`         // env var holding eagled's own tsnet auth key
-	VehicleAuthKeyEnv string `toml:"vehicle-authkey-env,omitempty"` // env var holding every vehicle's tsnet auth key; defaults to AuthKeyEnv
-	Hostname          string `toml:"hostname"`                      // eagled's own tsnet hostname
-}
+// TSAuthKeyEnv and TSVehicleAuthKeyEnv are the fixed env var names eagled
+// reads its own and every vehicle's tsnet auth key from. If
+// TSVehicleAuthKeyEnv is unset, vehicles fall back to TSAuthKeyEnv.
+const (
+	TSAuthKeyEnv        = "TS_AUTHKEY"
+	TSVehicleAuthKeyEnv = "TS_VEHICLE_AUTHKEY"
+)
 
 // GabrielConfig models the [gabriel] table.
 type GabrielConfig struct {
@@ -18,8 +17,7 @@ type GabrielConfig struct {
 
 // SwarmControllerConfig models the [backend.swarm-controller] table.
 type SwarmControllerConfig struct {
-	Address    string `toml:"address"`               // host:port of the controller's RegistryService
-	DaemonName string `toml:"daemon-name,omitempty"` // reported to the controller for logging
+	Address string `toml:"address"` // host:port of the controller's RegistryService
 }
 
 // BackendConfig models the [backend] table.
@@ -43,8 +41,8 @@ type PluginRef struct {
 	Args []string `toml:"args,omitempty"`
 }
 
-// VehicleConfig models a single [[vehicles]] entry — one vehicle this daemon
-// hosts.
+// VehicleConfig models a single [[vehicles]] entry, a single vehicle this
+// daemon hosts.
 type VehicleConfig struct {
 	Name      string  `toml:"name"`
 	Simulate  bool    `toml:"simulate,omitempty"`  // connect vehicle to shared aviary simulator
@@ -74,9 +72,9 @@ type VehicleConfig struct {
 
 // VideoConfig models a [vehicles.video] table.
 type VideoConfig struct {
-	// StreamType is "rtsp" (forward the driver's own RTSP stream) or
-	// "frames" (encode individually sent frames). Defaults per VehicleConfig
-	// above if left blank.
+	// StreamType is "rtsp" (forward the driver's own RTSP stream) or "frames"
+	// (encode individually sent frames). Defaults per VehicleConfig above if
+	// left blank.
 	StreamType string `toml:"stream-type,omitempty"`
 	// Resolution is one of "480p", "720p" (default), "1080p", "4k".
 	Resolution string `toml:"resolution,omitempty"`
@@ -88,13 +86,11 @@ type VideoConfig struct {
 // Config models the TOML document pushed to eagled via
 // DaemonService.Configure. eagled keeps no such file on disk itself.
 type Config struct {
-	VPN        bool            `toml:"vpn"`                  // whether eagled's own tsnet node is started
-	VehicleVPN bool            `toml:"vehicle-vpn"`          // whether every vehicle gets its own tsnet node
-	PortBase   int             `toml:"port-base"`            // starting port to assign to vehicles
-	PluginDir  string          `toml:"plugin-dir,omitempty"` // runtime-dir-backed; aviary socket lookup only, not installed plugins (see util.GetInstalledPluginDir)
-	Tailscale  TailscaleConfig `toml:"tailscale"`
-	Gabriel    GabrielConfig   `toml:"gabriel"`
-	Backend    BackendConfig   `toml:"backend"`
-	Aviary     AviaryConfig    `toml:"aviary,omitempty"`
-	Vehicles   []VehicleConfig `toml:"vehicles"`
+	PortBase  int             `toml:"port-base"`            // starting port to assign to vehicles
+	PluginDir string          `toml:"plugin-dir,omitempty"` // runtime plugin directory
+	Hostname  string          `toml:"hostname,omitempty"`   // eagled's identity
+	Gabriel   GabrielConfig   `toml:"gabriel"`
+	Backend   BackendConfig   `toml:"backend"`
+	Aviary    AviaryConfig    `toml:"aviary,omitempty"`
+	Vehicles  []VehicleConfig `toml:"vehicles"`
 }

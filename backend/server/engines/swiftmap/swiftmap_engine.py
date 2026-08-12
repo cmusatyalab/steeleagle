@@ -30,21 +30,25 @@ def _haversine_m(a, b) -> float:
     lat1, lon1 = math.radians(a[0]), math.radians(a[1])
     lat2, lon2 = math.radians(b[0]), math.radians(b[1])
     dlat, dlon = lat2 - lat1, lon2 - lon1
-    h = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
+    h = (
+        math.sin(dlat / 2) ** 2
+        + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
+    )
     return 2 * _EARTH_RADIUS_M * math.asin(min(1.0, math.sqrt(h)))
+
 
 # Wire: client sends [BE uint32 size][JPEG][24-byte GPS]; server replies with 3
 # float64 (status, keyframe_count, total).
 # TODO: mirror of swift_map's swiftmap/core/protocol.py; import it once swift_map
 # ships an installable lib (keep in sync until then).
 DEFAULT_PORT = 43322
-SIZE_FMT = "!I"    # image-size header
-GPS_FMT = "!3d"    # lat, lon, alt (NaN triple = no GPS)
-REPLY_FMT = "3d"   # status, keyframe_count, total_frames
+SIZE_FMT = "!I"  # image-size header
+GPS_FMT = "!3d"  # lat, lon, alt (NaN triple = no GPS)
+REPLY_FMT = "3d"  # status, keyframe_count, total_frames
 REPLY_NBYTES = struct.calcsize(REPLY_FMT)
 STATUS_KEYFRAME = 1.0
 
-RETRY_INTERVAL = 5   # seconds between blocking reconnect attempts
+RETRY_INTERVAL = 5  # seconds between blocking reconnect attempts
 SOCKET_TIMEOUT = 15  # seconds before a connect/send/recv is dead
 
 
@@ -76,10 +80,14 @@ class SwiftMapClient:
             self._close()
             try:
                 self.sock = socket.create_connection(
-                    (self.server_ip, self.server_port), timeout=SOCKET_TIMEOUT)
+                    (self.server_ip, self.server_port), timeout=SOCKET_TIMEOUT
+                )
                 self.connected = True
-                logger.info("Connected to SwiftMap server at %s:%s",
-                            self.server_ip, self.server_port)
+                logger.info(
+                    "Connected to SwiftMap server at %s:%s",
+                    self.server_ip,
+                    self.server_port,
+                )
                 return True
             except OSError as e:
                 logger.error("Failed to connect to SwiftMap server: %s", e)
@@ -109,8 +117,11 @@ class SwiftMapClient:
             return "error"
         img_bytes = cv2.imencode(".jpg", img)[1].tobytes()
         lat, lon, alt = gps if gps is not None else (float("nan"),) * 3
-        payload = (struct.pack(SIZE_FMT, len(img_bytes)) + img_bytes
-                   + struct.pack(GPS_FMT, lat, lon, alt))
+        payload = (
+            struct.pack(SIZE_FMT, len(img_bytes))
+            + img_bytes
+            + struct.pack(GPS_FMT, lat, lon, alt)
+        )
 
         # Send; if the socket is dead, reconnect once and resend (frames are
         # length-prefixed, so a resend on a fresh socket is clean).
@@ -126,7 +137,9 @@ class SwiftMapClient:
                 return "keyframe" if status == STATUS_KEYFRAME else "skipped"
             except OSError as e:
                 retrying = " and retrying frame" if attempt == 0 else ""
-                logger.warning("SwiftMap connection lost (%s); reconnecting%s", e, retrying)
+                logger.warning(
+                    "SwiftMap connection lost (%s); reconnecting%s", e, retrying
+                )
                 self._close()
         return "error"
 
@@ -144,18 +157,23 @@ class SwiftMapEngine(cognitive_engine.Engine):
         # Best-effort only: don't block startup on the mapping server. The engine
         # registers with Gabriel and reconnects per-frame in process_frame.
         if not self.client.connect(max_retries=1):
-            logger.warning("SwiftMap server at %s:%s not reachable yet; engine is up "
-                           "and will connect on the first frame.",
-                           args.server, args.server_port)
+            logger.warning(
+                "SwiftMap server at %s:%s not reachable yet; engine is up "
+                "and will connect on the first frame.",
+                args.server,
+                args.server_port,
+            )
         # Forward at most one pair per this many meters of travel (0 = every frame).
         self.send_distance = float(getattr(args, "send_distance", 5.0))
         self._last_sent_gps = None
-        self.count = 0        # frames received
-        self.sent = 0         # frames forwarded to the server
+        self.count = 0  # frames received
+        self.sent = 0  # frames forwarded to the server
         self.last_count = 0
         self.last_stats = time.time()
-        logger.info("SwiftMap engine: forwarding one pair per %.1f m of travel",
-                    self.send_distance)
+        logger.info(
+            "SwiftMap engine: forwarding one pair per %.1f m of travel",
+            self.send_distance,
+        )
 
     @staticmethod
     def _extract_gps(frame):
@@ -177,8 +195,11 @@ class SwiftMapEngine(cognitive_engine.Engine):
             status.code = gabriel_pb2.StatusCode.WRONG_INPUT_FORMAT
             status.message = f"Ignoring non-image payload: {input_frame.payload_type}"
             return cognitive_engine.Result(status, b"")
-        if (input_frame.WhichOneof("payload") != "any_payload"
-                or not input_frame.any_payload.Is(telemetry.Frame.DESCRIPTOR)):
+        if input_frame.WhichOneof(
+            "payload"
+        ) != "any_payload" or not input_frame.any_payload.Is(
+            telemetry.Frame.DESCRIPTOR
+        ):
             status.code = gabriel_pb2.StatusCode.WRONG_INPUT_FORMAT
             status.message = "Expected an any_payload telemetry.Frame"
             return cognitive_engine.Result(status, b"")
@@ -193,9 +214,13 @@ class SwiftMapEngine(cognitive_engine.Engine):
         # gating on, a frame must carry GPS (the pair is what the server maps from).
         if self.send_distance > 0:
             if gps is None:
-                return cognitive_engine.Result(status, "skipped")  # no GPS -> can't pair
-            if (self._last_sent_gps is not None
-                    and _haversine_m(self._last_sent_gps, gps) < self.send_distance):
+                return cognitive_engine.Result(
+                    status, "skipped"
+                )  # no GPS -> can't pair
+            if (
+                self._last_sent_gps is not None
+                and _haversine_m(self._last_sent_gps, gps) < self.send_distance
+            ):
                 return cognitive_engine.Result(status, "skipped")  # too close -> drop
 
         send_status = self.client.process_frame(frame.data, gps)
@@ -215,7 +240,11 @@ class SwiftMapEngine(cognitive_engine.Engine):
         elapsed = time.time() - self.last_stats
         if elapsed > self.STATS_INTERVAL:
             fps = (self.count - self.last_count) / elapsed
-            logger.info("swiftmap engine avg fps: %.2f (received: %d, forwarded: %d)",
-                        fps, self.count, self.sent)
+            logger.info(
+                "swiftmap engine avg fps: %.2f (received: %d, forwarded: %d)",
+                fps,
+                self.count,
+                self.sent,
+            )
             self.last_count = self.count
             self.last_stats += elapsed

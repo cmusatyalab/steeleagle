@@ -19,6 +19,7 @@ import (
 var (
 	eagledBinary     string
 	mockDriverBinary string
+	mockAviaryBinary string
 )
 
 // TestMain builds the real eagled binary and the fixture driver once for every
@@ -39,6 +40,11 @@ func TestMain(m *testing.M) {
 	mockDriverBinary = filepath.Join(dir, "mockdriver")
 	if out, err := exec.Command("go", "build", "-o", mockDriverBinary, "./testdata/mockdriver").CombinedOutput(); err != nil {
 		panic(fmt.Sprintf("building mockdriver: %v\n%s", err, out))
+	}
+
+	mockAviaryBinary = filepath.Join(dir, "mockaviary")
+	if out, err := exec.Command("go", "build", "-o", mockAviaryBinary, "./testdata/mockaviary").CombinedOutput(); err != nil {
+		panic(fmt.Sprintf("building mockaviary: %v\n%s", err, out))
 	}
 
 	os.Exit(m.Run())
@@ -90,7 +96,7 @@ type eagledInstance struct {
 }
 
 // WaitExit blocks until the eagled process has actually exited, failing the
-// test if it doesn't within timeout.  Needed before starting a second instance
+// test if it doesn't within timeout. Needed before starting a second instance
 // against the same persisted state, so the first one has actually released its
 // ports.
 func (inst *eagledInstance) WaitExit(t *testing.T, timeout time.Duration) {
@@ -104,7 +110,7 @@ func (inst *eagledInstance) WaitExit(t *testing.T, timeout time.Duration) {
 
 // startEagled launches eagled as a real subprocess with an isolated data
 // directory and control port, and waits for its DaemonService to accept
-// connections. It's torn down (SIGTERM, graceful shutdown) via t.Cleanup.
+// connections. It's torn down via t.Cleanup.
 func startEagled(t *testing.T, dataDir string) *eagledInstance {
 	t.Helper()
 
@@ -118,6 +124,8 @@ func startEagled(t *testing.T, dataDir string) *eagledInstance {
 	cmd.Env = append(os.Environ(),
 		"XDG_DATA_HOME="+dataDir,
 		"XDG_RUNTIME_DIR="+t.TempDir(),
+		"TS_AUTHKEY=",
+		"TS_VEHICLE_AUTHKEY=",
 	)
 	cmd.Stdout = testWriter{t}
 	cmd.Stderr = testWriter{t}
@@ -185,18 +193,16 @@ func waitForReady(t *testing.T, client eagledpb.DaemonServiceClient) {
 	t.Fatalf("eagled never became ready: %v", lastErr)
 }
 
-// baseConfig is a minimal, offline (vpn = false, vehicle-vpn = false) config
-// document with one vehicle bound to the mock driver.
+// baseConfig is a minimal, offline config document with one vehicle bound to
+// the mock driver.
 func baseConfig(inst *eagledInstance, vehiclePort int, vehicleName, driverName string) string {
 	return fmt.Sprintf(`
-vpn = false
-vehicle-vpn = false
 port-base = %d
 plugin-dir = %q
+hostname = "test-daemon"
 
 [backend.swarm-controller]
 address = "127.0.0.1:1"
-daemon-name = "test-daemon"
 
 [[vehicles]]
 name = %q

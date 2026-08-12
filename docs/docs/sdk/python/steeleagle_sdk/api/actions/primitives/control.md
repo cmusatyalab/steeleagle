@@ -36,7 +36,7 @@ for this service can connect to grpc.
 
 Connect to the vehicle.
 
-Connects to the underlying vehicle hardware. Generally, this 
+Connects to the underlying vehicle hardware. Generally, this
 method is called by the law authority on startup and is not
 called by user code.
 
@@ -59,7 +59,7 @@ Execute the Connect action.
 class Connect(Action):
     """Connect to the vehicle.
 
-    Connects to the underlying vehicle hardware. Generally, this 
+    Connects to the underlying vehicle hardware. Generally, this
     method is called by the law authority on startup and is not
     called by user code.
     """
@@ -235,8 +235,8 @@ class Disarm(Action):
 Send a joystick command to the vehicle.
 
 Causes the vehicle to accelerate towards a provided velocity
-setpoint over a provided duration. This is useful for fine-grained 
-control based on streamed datasink results or for tele-operating 
+setpoint over a provided duration. This is useful for fine-grained
+control based on streamed datasink results or for tele-operating
 the vehicle from a remote commander.
 #### Attributes
 **<><code class="docs-attr">attr</code></>&nbsp;&nbsp;velocity**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-velocity">Velocity</Link></code>) <text>&#8212;</text> target velocity to move towards
@@ -264,8 +264,8 @@ class Joystick(Action):
     """Send a joystick command to the vehicle.
 
     Causes the vehicle to accelerate towards a provided velocity
-    setpoint over a provided duration. This is useful for fine-grained 
-    control based on streamed datasink results or for tele-operating 
+    setpoint over a provided duration. This is useful for fine-grained
+    control based on streamed datasink results or for tele-operating
     the vehicle from a remote commander.
 
     Attributes:
@@ -350,7 +350,7 @@ class TakeOff(Action):
 
 Order the vehicle to land.
 
-Causes the vehicle to land at its current location. If the 
+Causes the vehicle to land at its current location. If the
 vehicle is not a UAV, this method will be unimplemented.
 
 
@@ -372,7 +372,7 @@ Execute the Land action.
 class Land(Action):
     """Order the vehicle to land.
 
-    Causes the vehicle to land at its current location. If the 
+    Causes the vehicle to land at its current location. If the
     vehicle is not a UAV, this method will be unimplemented.
     """
 
@@ -444,7 +444,7 @@ class Hold(Action):
 
 Orders an emergency shutdown of the vehicle motors.
 
-Causes the vehicle to immediately turn off its motors. _If the 
+Causes the vehicle to immediately turn off its motors. _If the
 vehicle is a UAV, this will result in a freefall_. Use this
 method only in emergency situations.
 
@@ -467,7 +467,7 @@ Execute the Kill action.
 class Kill(Action):
     """Orders an emergency shutdown of the vehicle motors.
 
-    Causes the vehicle to immediately turn off its motors. _If the 
+    Causes the vehicle to immediately turn off its motors. _If the
     vehicle is a UAV, this will result in a freefall_. Use this
     method only in emergency situations.
     """
@@ -549,10 +549,10 @@ class SetHome(Action):
 
 Order the vehicle to return to its home position.
 
-Causes the vehicle to return to its home position. If the home position 
-has not been explicitly set, this will be its start position (defined 
-as its takeoff position for UAVs). If the home position has been 
-explicitly set, by `SetHome`, the vehicle will return to that 
+Causes the vehicle to return to its home position. If the home position
+has not been explicitly set, this will be its start position (defined
+as its takeoff position for UAVs). If the home position has been
+explicitly set, by `SetHome`, the vehicle will return to that
 position instead.
 
 
@@ -574,10 +574,10 @@ Execute the ReturnToHome action.
 class ReturnToHome(Action):
     """Order the vehicle to return to its home position.
 
-    Causes the vehicle to return to its home position. If the home position 
-    has not been explicitly set, this will be its start position (defined 
-    as its takeoff position for UAVs). If the home position has been 
-    explicitly set, by `SetHome`, the vehicle will return to that 
+    Causes the vehicle to return to its home position. If the home position
+    has not been explicitly set, this will be its start position (defined
+    as its takeoff position for UAVs). If the home position has been
+    explicitly set, by `SetHome`, the vehicle will return to that
     position instead.
     """
 
@@ -605,22 +605,22 @@ Order the vehicle to move to a global position.
 Causes the vehicle to transit to the provided global position. The vehicle
 will interpret the heading of travel according to `heading_mode`:
 - `TO_TARGET` &#8594; turn to face the target position bearing
-- `HEADING_START` &#8594; turn to face the provided heading in the global position object. 
+- `HEADING_START` &#8594; turn to face the provided heading in the global position object.
 
-This will be the heading the vehicle maintains for the duration of transit. 
+This will be the heading the vehicle maintains for the duration of transit.
 Generally only UAVs will support `HEADING_START`.
 
-The vehicle will move towards the target at the specified maximum velocity 
-until the vehicle has reached its destination. Error tolerance is determined 
+The vehicle will move towards the target at the specified maximum velocity
+until the vehicle has reached its destination. Error tolerance is determined
 by the driver. Maximum velocity is interpreted from `max_velocity` as follows:
 - `x_vel` &#8594; maximum _horizontal_ velocity
 - `y_vel` &#8594; ignored
 - `z_vel` &#8594; maximum _vertical_ velocity _(UAV only)_
 
-If no maximum velocity is provided, the driver will use a preset speed usually 
+If no maximum velocity is provided, the driver will use a preset speed usually
 determined by the manufacturer or hardware settings.
 
-_(UAV only)_ During motion, the vehicle will also ascend or descend towards the 
+_(UAV only)_ During motion, the vehicle will also ascend or descend towards the
 target altitude, linearly interpolating this movement over the duration of
 travel. The vehicle will interpret altitude from `altitude_mode` as follows:
 - `ABSOLUTE` &#8594; altitude is relative to MSL (Mean Sea Level)
@@ -657,22 +657,22 @@ class SetGlobalPosition(Action):
     Causes the vehicle to transit to the provided global position. The vehicle
     will interpret the heading of travel according to `heading_mode`:
     - `TO_TARGET` -> turn to face the target position bearing
-    - `HEADING_START` -> turn to face the provided heading in the global position object. 
+    - `HEADING_START` -> turn to face the provided heading in the global position object.
 
-    This will be the heading the vehicle maintains for the duration of transit. 
+    This will be the heading the vehicle maintains for the duration of transit.
     Generally only UAVs will support `HEADING_START`.
 
-    The vehicle will move towards the target at the specified maximum velocity 
-    until the vehicle has reached its destination. Error tolerance is determined 
+    The vehicle will move towards the target at the specified maximum velocity
+    until the vehicle has reached its destination. Error tolerance is determined
     by the driver. Maximum velocity is interpreted from `max_velocity` as follows:
     - `x_vel` -> maximum _horizontal_ velocity
     - `y_vel` -> ignored
     - `z_vel` -> maximum _vertical_ velocity _(UAV only)_
 
-    If no maximum velocity is provided, the driver will use a preset speed usually 
+    If no maximum velocity is provided, the driver will use a preset speed usually
     determined by the manufacturer or hardware settings.
 
-    _(UAV only)_ During motion, the vehicle will also ascend or descend towards the 
+    _(UAV only)_ During motion, the vehicle will also ascend or descend towards the
     target altitude, linearly interpolating this movement over the duration of
     travel. The vehicle will interpret altitude from `altitude_mode` as follows:
     - `ABSOLUTE` -> altitude is relative to MSL (Mean Sea Level)
@@ -715,14 +715,14 @@ will interpret the input position according to `frame` as follows:
 - `BODY` &#8594; (`x`, `y`, `z`) = (forward offset, right offset, up offset) _from current position_
 - `NEU` &#8594; (`x`, `y`, `z`) = (north offset, east offset, up offset) _from start position_
 
-The vehicle will move towards the target at the specified maximum velocity 
-until the vehicle has reached its destination. Error tolerance is determined 
+The vehicle will move towards the target at the specified maximum velocity
+until the vehicle has reached its destination. Error tolerance is determined
 by the driver. Maximum velocity is interpreted from `max_velocity` as follows:
 - `x_vel` &#8594; maximum _horizontal_ velocity
 - `y_vel` &#8594; ignored
 - `z_vel` &#8594; maximum _vertical_ velocity _(UAV only)_
 
-If no maximum velocity is provided, the driver will use a preset speed usually 
+If no maximum velocity is provided, the driver will use a preset speed usually
 determined by the manufacturer or hardware settings.
 #### Attributes
 **<><code class="docs-attr">attr</code></>&nbsp;&nbsp;position**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-position">Position</Link></code>) <text>&#8212;</text> target relative position
@@ -756,14 +756,14 @@ class SetRelativePosition(Action):
     - `BODY` -> (`x`, `y`, `z`) = (forward offset, right offset, up offset) _from current position_
     - `NEU` -> (`x`, `y`, `z`) = (north offset, east offset, up offset) _from start position_
 
-    The vehicle will move towards the target at the specified maximum velocity 
-    until the vehicle has reached its destination. Error tolerance is determined 
+    The vehicle will move towards the target at the specified maximum velocity
+    until the vehicle has reached its destination. Error tolerance is determined
     by the driver. Maximum velocity is interpreted from `max_velocity` as follows:
     - `x_vel` -> maximum _horizontal_ velocity
     - `y_vel` -> ignored
     - `z_vel` -> maximum _vertical_ velocity _(UAV only)_
 
-    If no maximum velocity is provided, the driver will use a preset speed usually 
+    If no maximum velocity is provided, the driver will use a preset speed usually
     determined by the manufacturer or hardware settings.
 
     Attributes:
@@ -797,7 +797,7 @@ class SetRelativePosition(Action):
 Order the vehicle to accelerate to a velocity.
 
 Causes the vehicle to accelerate until it reaches a provided velocity.
-Error tolerance is determined by the driver. The vehicle will interpret 
+Error tolerance is determined by the driver. The vehicle will interpret
 the input velocity according to `frame` as follows:
 - `BODY` &#8594; (`x_vel`, `y_vel`, `z_vel`) = (forward velocity, right velocity, up velocity)
 - `NEU` &#8594; (`x_vel`, `y_vel`, `z_vel`) = (north velocity, east velocity, up velocity)
@@ -827,7 +827,7 @@ class SetVelocity(Action):
     """Order the vehicle to accelerate to a velocity.
 
     Causes the vehicle to accelerate until it reaches a provided velocity.
-    Error tolerance is determined by the driver. The vehicle will interpret 
+    Error tolerance is determined by the driver. The vehicle will interpret
     the input velocity according to `frame` as follows:
     - `BODY` -> (`x_vel`, `y_vel`, `z_vel`) = (forward velocity, right velocity, up velocity)
     - `NEU` -> (`x_vel`, `y_vel`, `z_vel`) = (north velocity, east velocity, up velocity)
@@ -923,12 +923,12 @@ class SetHeading(Action):
 Order the vehicle to set the pose of a gimbal.
 
 Causes the vehicle to actuate a gimbal to a new pose. The vehicle
-will interpret the new pose type from `pose_mode` as follows: 
+will interpret the new pose type from `pose_mode` as follows:
 - `ABSOLUTE` &#8594; absolute angle
 - `RELATIVE` &#8594; angle relative to current position
 - `VELOCITY` &#8594; angular velocities
 
-The vehicle will interpret the new pose angles according to `frame` 
+The vehicle will interpret the new pose angles according to `frame`
 as follows:
 - `BODY` &#8594; (`pitch`, `roll`, `yaw`) = (body pitch, body roll, body yaw)
 - `NEU` &#8594; (`pitch`, `roll`, `yaw`) = (body pitch, body roll, global yaw)
@@ -962,12 +962,12 @@ class SetGimbalPose(Action):
     """Order the vehicle to set the pose of a gimbal.
 
     Causes the vehicle to actuate a gimbal to a new pose. The vehicle
-    will interpret the new pose type from `pose_mode` as follows: 
+    will interpret the new pose type from `pose_mode` as follows:
     - `ABSOLUTE` -> absolute angle
     - `RELATIVE` -> angle relative to current position
     - `VELOCITY` -> angular velocities
 
-    The vehicle will interpret the new pose angles according to `frame` 
+    The vehicle will interpret the new pose angles according to `frame`
     as follows:
     - `BODY` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, body yaw)
     - `NEU` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, global yaw)

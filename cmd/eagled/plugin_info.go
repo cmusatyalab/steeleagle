@@ -31,7 +31,7 @@ func (d *daemon) InstallPlugin(ctx context.Context, req *eagledpb.InstallPluginR
 	}
 
 	d.mu.Lock()
-	d.installed[req.GetName()] = installedPluginRecord{Ref: req.GetRef(), Category: category}
+	d.installed[installedPluginKey{Name: req.GetName(), Category: category}] = req.GetRef()
 	d.mu.Unlock()
 	d.persistInstalled()
 
@@ -46,11 +46,11 @@ func (d *daemon) GetInstalledPlugins(ctx context.Context, req *eagledpb.GetInsta
 	defer d.mu.Unlock()
 
 	plugins := make([]*eagledpb.InstalledPlugin, 0, len(d.installed))
-	for name, rec := range d.installed {
+	for key, ref := range d.installed {
 		plugins = append(plugins, eagledpb.InstalledPlugin_builder{
-			Name:     name,
-			Ref:      rec.Ref,
-			Category: protoCategory(rec.Category),
+			Name:     key.Name,
+			Ref:      ref,
+			Category: protoCategory(key.Category),
 		}.Build())
 	}
 	return eagledpb.GetInstalledPluginsResponse_builder{Plugins: plugins}.Build(), nil

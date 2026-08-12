@@ -38,7 +38,7 @@ class ElevateToAltitude(Action):
 
             if rel_alt + self.tolerance >= self.target_altitude:
                 break
-            
+
             set_vel = SetVelocity(
                 velocity=common.Velocity(
                     x_vel=0.0,

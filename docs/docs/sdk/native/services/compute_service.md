@@ -4,16 +4,16 @@ toc_max_heading_level: 3
 
 import Link from '@docusaurus/Link';
 
-# compute_service 
+# compute_service
 ---
 ## <><code class="docs-class">service</code></> Compute
 
 
 Used to configure datasinks for sensor streams.
 
-This service is used to configure datasink endpoints for frames and 
-telemetry post-processing. It maintains an internal consumer list of 
-datasinks that the kernel broadcasts frames and telemetry to. RPC 
+This service is used to configure datasink endpoints for frames and
+telemetry post-processing. It maintains an internal consumer list of
+datasinks that the kernel broadcasts frames and telemetry to. RPC
 methods within this service allow for manipulation of this list.
 
 ### <><code class="docs-method">rpc</code></> AddDatasinks

@@ -27,14 +27,14 @@ Compile DSL source text into a MissionIR object.
 ```python
 def build_mission(dsl_code: str) -> MissionIR:
     """Compile DSL source text into a MissionIR object.
-    
+
     Args:
         dsl_code (str): string representation of a DSL file
 
     Returns:
         MissionIR: a mission intermediate representation
     """
-    tree = _parser.parse(dsl_code) 
+    tree = _parser.parse(dsl_code)
     mission = DroneDSLTransformer().transform(tree)
     logger.info(
         "Compiled DSL: start=%s, actions=%d, events=%d",

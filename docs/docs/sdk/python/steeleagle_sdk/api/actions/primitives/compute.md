@@ -9,9 +9,9 @@ import { GoFileSymlinkFile } from "react-icons/go";
 
 Used to configure datasinks for sensor streams.
 
-This service is used to configure datasink endpoints for frames and 
-telemetry post-processing. It maintains an internal consumer list of 
-datasinks that the kernel broadcasts frames and telemetry to. RPC 
+This service is used to configure datasink endpoints for frames and
+telemetry post-processing. It maintains an internal consumer list of
+datasinks that the kernel broadcasts frames and telemetry to. RPC
 methods within this service allow for manipulation of this list.
 
 ---

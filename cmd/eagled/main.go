@@ -37,15 +37,21 @@ func main() {
 	}
 
 	d := newDaemon(ctx, cancel)
+
+	grpcServer := grpc.NewServer()
+	eagledpb.RegisterDaemonServiceServer(grpcServer, d)
+	d.grpcServer = grpcServer
+	d.controlPort = *controlPort
+
 	if err := d.loadPersistedInstalled(); err != nil {
 		log.Error().Err(err).Msg("could not reload persisted plugin refs")
+	}
+	if err := d.loadPersistedNetwork(); err != nil {
+		log.Error().Err(err).Msg("could not reload persisted network config")
 	}
 	if err := d.loadPersisted(); err != nil {
 		log.Error().Err(err).Msg("could not reload persisted config")
 	}
-
-	grpcServer := grpc.NewServer()
-	eagledpb.RegisterDaemonServiceServer(grpcServer, d)
 
 	go func() {
 		log.Info().Int("port", *controlPort).Msgf("DaemonService listening on port %d", *controlPort)

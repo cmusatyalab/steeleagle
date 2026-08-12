@@ -13,7 +13,7 @@ import { GoFileSymlinkFile } from "react-icons/go";
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
-Message container for a report.    
+Message container for a report.
 #### Attributes
 **<><code class="docs-attr">attr</code></>&nbsp;&nbsp;report_code**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> integer report code, interpreted by the backend
 
@@ -24,10 +24,10 @@ Message container for a report.
 ```python
 @register_data
 class ReportMessage(Datatype):
-    """Message container for a report.    
-    
+    """Message container for a report.
+
     Attributes:
-        report_code (int): integer report code, interpreted by the backend    
+        report_code (int): integer report code, interpreted by the backend
     """
     report_code: int
 

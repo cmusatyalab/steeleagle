@@ -253,6 +253,27 @@ func status(ctx context.Context, daemonAddr string) error {
 	})
 }
 
+// rejectExtraArgs exits with usage if fs has leftover positional arguments.
+func rejectExtraArgs(fs *flag.FlagSet) {
+	if fs.NArg() > 0 {
+		fmt.Fprintf(os.Stderr, "%s: unexpected argument(s): %s\n", fs.Name(), strings.Join(fs.Args(), " "))
+		usage()
+		os.Exit(2)
+	}
+}
+
+// rejectFlagLikeArgs exits with usage if any of names looks like a flag
+// (starts with "-").
+func rejectFlagLikeArgs(fs *flag.FlagSet, names []string) {
+	for _, name := range names {
+		if strings.HasPrefix(name, "-") {
+			fmt.Fprintf(os.Stderr, "%s: %q looks like a flag, not a vehicle name -- flags must come before the vehicle names, e.g. `eagle %s --daemon <host:port> %s`\n",
+				fs.Name(), name, fs.Name(), strings.Join(names, " "))
+			os.Exit(2)
+		}
+	}
+}
+
 func usage() {
 	fmt.Fprintf(os.Stderr, `usage:
   eagle configure --daemon <host:port> --config <path>
@@ -284,6 +305,7 @@ func main() {
 		daemonAddr := fs.String("daemon", DefaultDaemonAddr, "eagled's control-plane address")
 		configPath := fs.String("config", "config.toml", "path to the TOML config file to push")
 		fs.Parse(os.Args[2:])
+		rejectExtraArgs(fs)
 		err = configure(ctx, *daemonAddr, *configPath)
 	case "stop":
 		fs := flag.NewFlagSet("stop", flag.ExitOnError)
@@ -293,6 +315,7 @@ func main() {
 			usage()
 			os.Exit(2)
 		}
+		rejectFlagLikeArgs(fs, fs.Args())
 		err = stopVehicles(ctx, *daemonAddr, fs.Args())
 	case "restart":
 		fs := flag.NewFlagSet("restart", flag.ExitOnError)
@@ -302,6 +325,7 @@ func main() {
 			usage()
 			os.Exit(2)
 		}
+		rejectFlagLikeArgs(fs, fs.Args())
 		err = restartVehicles(ctx, *daemonAddr, fs.Args())
 	case "forget":
 		fs := flag.NewFlagSet("forget", flag.ExitOnError)
@@ -311,6 +335,7 @@ func main() {
 			usage()
 			os.Exit(2)
 		}
+		rejectFlagLikeArgs(fs, fs.Args())
 		err = forgetVehicles(ctx, *daemonAddr, fs.Args())
 	case "install-plugin":
 		fs := flag.NewFlagSet("install-plugin", flag.ExitOnError)
@@ -321,6 +346,7 @@ func main() {
 		subpath := fs.String("subpath", "", "subfolder containing install.sh/run.sh; empty means repo root")
 		category := fs.String("category", "", "one of driver, mission, extra")
 		fs.Parse(os.Args[2:])
+		rejectExtraArgs(fs)
 		if *name == "" || *repo == "" || *ref == "" || *category == "" {
 			usage()
 			os.Exit(2)
@@ -330,21 +356,25 @@ func main() {
 		fs := flag.NewFlagSet("plugins", flag.ExitOnError)
 		daemonAddr := fs.String("daemon", DefaultDaemonAddr, "eagled's control-plane address")
 		fs.Parse(os.Args[2:])
+		rejectExtraArgs(fs)
 		err = listPlugins(ctx, *daemonAddr)
 	case "status":
 		fs := flag.NewFlagSet("status", flag.ExitOnError)
 		daemonAddr := fs.String("daemon", DefaultDaemonAddr, "eagled's control-plane address")
 		fs.Parse(os.Args[2:])
+		rejectExtraArgs(fs)
 		err = status(ctx, *daemonAddr)
 	case "restart-daemon":
 		fs := flag.NewFlagSet("restart-daemon", flag.ExitOnError)
 		daemonAddr := fs.String("daemon", DefaultDaemonAddr, "eagled's control-plane address")
 		fs.Parse(os.Args[2:])
+		rejectExtraArgs(fs)
 		err = restartDaemon(ctx, *daemonAddr)
 	case "reset-config":
 		fs := flag.NewFlagSet("reset-config", flag.ExitOnError)
 		daemonAddr := fs.String("daemon", DefaultDaemonAddr, "eagled's control-plane address")
 		fs.Parse(os.Args[2:])
+		rejectExtraArgs(fs)
 		err = resetConfig(ctx, *daemonAddr)
 	default:
 		usage()

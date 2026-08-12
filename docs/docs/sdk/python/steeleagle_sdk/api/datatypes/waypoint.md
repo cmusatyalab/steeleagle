@@ -18,7 +18,7 @@ import { GoFileSymlinkFile } from "react-icons/go";
 <summary>View Source</summary>
 ```python
 class RelativeWaypoints(BaseModel):
-    pass 
+    pass
 
 ```
 </details>
@@ -101,11 +101,11 @@ class Waypoints(BaseModel):
             if not raw_map:
                 logger.warning("No valid areas found in mission map (KML).")
                 return {}
-    
+
             if self.area not in raw_map:
                 available = ", ".join(sorted(raw_map.keys()))
                 raise ValueError(f"Area '{self.area}' not found in mission map. Available areas: {available}")
-    
+
             raw = raw_map[self.area]
             if len(raw) < 3:
                 logger.warning("Area %s has < 3 points; skipping.", self.area)
@@ -138,7 +138,7 @@ class Waypoints(BaseModel):
         projected = raw.convert_to_projected()
         poly = projected.to_polygon()
 
-        parts_m = partition.generate_partitioned_geopoints(poly)  
+        parts_m = partition.generate_partitioned_geopoints(poly)
         parts_wgs = [GeoPoints(p).inverse_project_from(origin_wgs) for p in parts_m]
 
         # Flatten segments to per-point waypoints

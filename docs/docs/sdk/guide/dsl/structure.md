@@ -9,9 +9,9 @@ import TabItem from '@theme/TabItem';
 # Structure
 
 SteelEagle DSL files are a text representation of a [finite state machine](https://www.mathworks.com/discovery/state-machine.html).
-A finite state machine (FSM) is a computing model that contains three types, states, trigger events, and transition functions. States can represent anything, but in 
+A finite state machine (FSM) is a computing model that contains three types, states, trigger events, and transition functions. States can represent anything, but in
 SteelEagle, they represent the current task that the vehicle is executing. Trigger events are events that happen during execution, e.g. the current task is done or
-a person was detected. Transition functions are functions which determine which state the FSM should move to given a trigger event. 
+a person was detected. Transition functions are functions which determine which state the FSM should move to given a trigger event.
 
 In this way, the FSM can compactly model complex logic. Take for instance the following UAV mission: take off and patrol a provided area; if you see a person,
 track and follow them; if you lose the person, go back to patrolling. If battery levels drop below 50%, return to home.
@@ -64,7 +64,7 @@ Here is a representation of the accompanying FSM and an example SteelEagle DSL i
 
 ## Syntax
 
-The SteelEagle DSL is based on a [Pydantic](https://docs.pydantic.dev/latest/) model architecture. 
+The SteelEagle DSL is based on a [Pydantic](https://docs.pydantic.dev/latest/) model architecture.
 Pydantic is a Python library that introduces strong typing to Python, and allows for "compile-time"
 validation/type-checking. This is especially important for SteelEagle, since its core protocol is
 based on strongly-typed Protobuf which could cause runtime errors during vehicle motion if users
@@ -82,15 +82,15 @@ Actions represent actions or tasks which can be executed by the vehicle. For exa
 vehicle to take off, use the [`TakeOff`](/sdk/python/steeleagle_sdk/api/actions/primitives/control#class-takeoff) action.
 The fields of the action class represent its parameters. For the `TakeOff` example, it has one parameter, `take_off_altitude`
 which denotes the altitude the vehicle will ascend to. To modify this parameter, construct the object and set
-the field to the desired value: 
+the field to the desired value:
 
 ```python
 take_off = TakeOff(take_off_altitude = 10.0)
 ```
 
 Some actions have optional fields, like
-[`SetGlobalPosition`](/sdk/python/steeleagle_sdk/api/actions/primitives/control#class-setglobalposition) which has 
-the optional fields `frame` and `max_velocity`. These parameters can be safely excluded: 
+[`SetGlobalPosition`](/sdk/python/steeleagle_sdk/api/actions/primitives/control#class-setglobalposition) which has
+the optional fields `frame` and `max_velocity`. These parameters can be safely excluded:
 
 ```python
 go_to_global_pos = SetGlobalPosition(location = Location(latitude = 48.0, longitude = -79.0, altitude = 5.0))
@@ -152,7 +152,7 @@ Data: # Definitions of datatypes
     Bar bar(foo = Foo())
 ```
 
-The Data Stanza can contain special [`Waypoints`](/sdk/python/steeleagle_sdk/api/datatypes/waypoint#class-waypoint) objects. These types refer to a set of global coordinates (latitude, longitude) which represent a shape or line. This set of coordinates is contained in a KML file which is referenced by the waypoint object. More details on waypoint configuration can be found [in the next section](kml). 
+The Data Stanza can contain special [`Waypoints`](/sdk/python/steeleagle_sdk/api/datatypes/waypoint#class-waypoint) objects. These types refer to a set of global coordinates (latitude, longitude) which represent a shape or line. This set of coordinates is contained in a KML file which is referenced by the waypoint object. More details on waypoint configuration can be found [in the next section](kml).
 
 ```dsl
 Data: # Definitions of datatypes
@@ -238,10 +238,10 @@ During ACTION_NAME:
 ## Semantics
 
 The semantics of SteelEagle DSL are similar to those of equivalent FSM markup languages. On mission start, the runtime will call the `execute()`
-function of the `Start` action defined in the Mission Stanza. 
+function of the `Start` action defined in the Mission Stanza.
 
 When an action _A_ is running, if a `During` statement exists that is bound to _A_, a
-listener is started to check for listed transition conditions. For example, if `DetectionFound</span>(class_name = 'person')` is part of a transition bound to _A_, the listener will call its check method repeatedly on a fixed time interval. If an event triggers, 
+listener is started to check for listed transition conditions. For example, if `DetectionFound</span>(class_name = 'person')` is part of a transition bound to _A_, the listener will call its check method repeatedly on a fixed time interval. If an event triggers,
 it will immediately cancel the running action and transit to the target action.
 This repeats until the mission is stopped _or_ a `done` transition is not defined for an action that terminates.
 
@@ -298,7 +298,7 @@ action, and the vehicle starts to fly.
         Track --> Patrol: done
         Track --> ReturnToHome: BatteryReached(50)
         Patrol --> ReturnToHome: BatteryReached(50)
-        
+
         class TakeOff current
     ```
   </TabItem>
@@ -355,7 +355,7 @@ and the vehicle starts moving to each of the waypoints in sequence.
         Track --> Patrol: done
         Track --> ReturnToHome: BatteryReached(50)
         Patrol --> ReturnToHome: BatteryReached(50)
-        
+
         class Patrol current
     ```
   </TabItem>
@@ -413,7 +413,7 @@ These are checked at a fixed interval as the vehicle moves.
         Track --> Patrol: done
         Track --> ReturnToHome: BatteryReached(50)
         Patrol --> ReturnToHome: BatteryReached(50)
-        
+
         class Patrol current
     ```
   </TabItem>
@@ -470,7 +470,7 @@ and thus persists.
         Track --> Patrol: done
         Track --> ReturnToHome: BatteryReached(50)
         Patrol --> ReturnToHome: BatteryReached(50)
-        
+
         class Track current
     ```
   </TabItem>
@@ -525,7 +525,7 @@ This triggers a `done` transition back into `patrol`. The event listener for `pe
         Track --> Patrol: done
         Track --> ReturnToHome: BatteryReached(50)
         Patrol --> ReturnToHome: BatteryReached(50)
-        
+
         class Patrol current
     ```
   </TabItem>
@@ -582,7 +582,7 @@ from the `return_to_home` action, the mission ends.
         Track --> Patrol: done
         Track --> ReturnToHome: BatteryReached(50)
         Patrol --> ReturnToHome: BatteryReached(50)
-        
+
         class ReturnToHome current
     ```
   </TabItem>

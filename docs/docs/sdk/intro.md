@@ -21,4 +21,3 @@ read through that documentation before attempting to write new modules.
 
 SteelEagle was written and tested in Ubuntu Linux 24.04. It is recommended you develop in a Linux environment.
 The project theoretically supports, but is untested, on Mac and Windows.
-

@@ -4,28 +4,30 @@
 # (everything above [[vehicles]]) only take effect on the first call to a given
 # eagled instance.
 
-# Switch for using Tailscale VPN for the daemon.
-vpn = true
-# Switch for using Tailscale VPN for vehicles. Applies to every vehicle this
-# daemon hosts. Each joins under its own name, as its own separate tsnet node.
-vehicle-vpn = true
 # Vehicle ports are assigned in ascending order from this base port.
 port-base = 9000
 
-[tailscale]
-# Reusable Tailscale auth key, issued offline and provisioned onto this host
-# ahead of time, used to join eagled's own tsnet node non-interactively. If
-# left blank, the node falls back to tsnet's interactive login flow instead.
-authkey-env = "TS_AUTHKEY"
-# Env var holding the auth key every vehicle's tsnet node joins with. Defaults
-# to authkey-env if left blank, i.e. eagled and every vehicle share one
-# key.
-vehicle-authkey-env = "TS_VEHICLE_AUTHKEY"
-# Hostname eagled's own tsnet node joins the tailnet as.
+# eagled's identity: both the name its own tsnet node joins the tailnet as,
+# and the name it reports to the swarm controller so it can tell which eagled
+# instance a vehicle belongs to. Defaults to the OS hostname if left blank.
+#
+# There's no separate on/off switch for Tailscale VPN: it's used automatically
+# whenever an auth key is available, and skipped otherwise. eagled joins its
+# own tsnet node non-interactively using the reusable Tailscale auth key in
+# $TS_AUTHKEY (issued offline and provisioned onto this host ahead of time),
+# and joins every vehicle's tsnet node using $TS_VEHICLE_AUTHKEY, falling back
+# to $TS_AUTHKEY if that's unset. Neither env var name is configurable. If
+# $TS_AUTHKEY is unset, eagled skips starting its own tsnet node entirely
+# (stays reachable over plain TCP only) rather than hanging in tsnet's
+# interactive login flow, which nothing here can complete; likewise a vehicle
+# gets no tsnet node of its own if no key resolves for it either.
 hostname = "eagled"
 
 [gabriel]
-# If left blank, vehicles will not connect to Gabriel.
+# If left blank, vehicles will not connect to Gabriel. host:port, and (like
+# backend.swarm-controller.address below) supports a MagicDNS name: each
+# vehicle dials out through its own tsnet node when it has one, so a MagicDNS
+# name resolves the same way regardless of the host machine's own DNS setup.
 server-endpoint = ""
 telemetry-target-engines = ["telemetry"]
 video-frames-target-engines = ['telemetry']
@@ -35,9 +37,6 @@ video-frames-target-engines = ['telemetry']
 # and port, e.g. "swarmcontroller:5003". Required: eagled refuses to start
 # without it.
 address = "cloudlet033-swarm-controller:5003"
-# Reported to the controller for logging, to identify which eagled instance
-# a vehicle belongs to. Defaults to this host's hostname if left blank.
-daemon-name = ""
 
 [aviary]
 # Only consulted when a Configure call lists a vehicle with simulate = true.
@@ -50,8 +49,8 @@ dir = ""
 
 # Vehicles this daemon hosts. One eagled instance can host any number of
 # vehicles. Each gets its own port (ascending from port-base, in list order),
-# its own tailnet identity if vehicle-vpn is on, and its own registration with
-# the swarm controller.
+# its own tailnet identity if a vehicle auth key resolves (see above), and
+# its own registration with the swarm controller.
 [[vehicles]]
 # Name of the vehicle.
 name = "harpy"
