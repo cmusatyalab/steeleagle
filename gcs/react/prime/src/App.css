@@ -54,6 +54,18 @@
   color: #888;
 }
 
+/* Markers (vehicle chevrons, detection boxes) have no z-index of their own
+   and are DOM siblings of popups on the map, so later-inserted labels paint
+   over earlier icons by default -- most visible with vehicles close
+   together. Raise markers above the vehicle label popup so the icon is
+   always on top of any occluding text. */
+.mapboxgl-marker {
+  z-index: 3;
+}
+.vehicle-label-popup {
+  z-index: 2;
+}
+
 .vehicle-label-popup .mapboxgl-popup-content {
   background: transparent;
   box-shadow: none;
