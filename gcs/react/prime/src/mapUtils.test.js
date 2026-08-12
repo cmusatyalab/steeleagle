@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature, vehicleColor, vehicleSpeed } from './mapUtils.js';
+import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature, vehicleColor, vehicleSpeed, isVehicleDisconnected, vehicleStatus, vehicleStatusColor, vehicleStatusMapColor, vehicleStatusTextColor, sortVehiclesForDisplay } from './mapUtils.js';
 
 const SAMPLE_FC = {
     type: 'FeatureCollection',
@@ -164,5 +164,91 @@ describe('vehicleSpeed', () => {
     it('returns 0 for a null or undefined velocity', () => {
         expect(vehicleSpeed(null)).toBe(0);
         expect(vehicleSpeed(undefined)).toBe(0);
+    });
+});
+
+describe('isVehicleDisconnected', () => {
+    it('is false when telemetry was just seen', () => {
+        expect(isVehicleDisconnected({ last_updated: 0 })).toBe(false);
+    });
+
+    it('is false right at the boundary', () => {
+        expect(isVehicleDisconnected({ last_updated: 5 })).toBe(false);
+    });
+
+    it('is true once telemetry is stale beyond the boundary', () => {
+        expect(isVehicleDisconnected({ last_updated: 5.01 })).toBe(true);
+    });
+});
+
+describe('vehicleStatus', () => {
+    it('is "offline" when disconnected, regardless of selection', () => {
+        expect(vehicleStatus(true, false)).toBe('offline');
+        expect(vehicleStatus(true, true)).toBe('offline');
+    });
+
+    it('is "selected" when connected and selected', () => {
+        expect(vehicleStatus(false, true)).toBe('selected');
+    });
+
+    it('is "online" when connected and not selected', () => {
+        expect(vehicleStatus(false, false)).toBe('online');
+    });
+});
+
+describe('vehicleStatusColor', () => {
+    it('returns a distinct color per status', () => {
+        const colors = ['offline', 'online', 'selected'].map(vehicleStatusColor);
+        expect(new Set(colors).size).toBe(3);
+    });
+});
+
+describe('vehicleStatusMapColor', () => {
+    it('returns a distinct color per status', () => {
+        const colors = ['offline', 'online', 'selected'].map(vehicleStatusMapColor);
+        expect(new Set(colors).size).toBe(3);
+    });
+
+    it('uses a different "online" shade than vehicleStatusColor, tuned for the dark map background', () => {
+        expect(vehicleStatusMapColor('online')).not.toBe(vehicleStatusColor('online'));
+    });
+});
+
+describe('vehicleStatusTextColor', () => {
+    it('returns a distinct color per status', () => {
+        const colors = ['offline', 'online', 'selected'].map(vehicleStatusTextColor);
+        expect(new Set(colors).size).toBe(3);
+    });
+
+    it('uses white for the selected status, for contrast against its green marker', () => {
+        expect(vehicleStatusTextColor('selected')).toBe('#ffffff');
+    });
+});
+
+describe('sortVehiclesForDisplay', () => {
+    const v = (name, last_updated) => ({ name, last_updated });
+
+    it('puts selected vehicles before online, and online before offline', () => {
+        const vehicles = [v('offline-1', 10), v('online-1', 0), v('selected-1', 0)];
+        const result = sortVehiclesForDisplay(vehicles, ['selected-1']);
+        expect(result.map((x) => x.name)).toEqual(['selected-1', 'online-1', 'offline-1']);
+    });
+
+    it('sorts alphabetically by name within the same status group', () => {
+        const vehicles = [v('bravo', 0), v('alpha', 0), v('charlie', 0)];
+        const result = sortVehiclesForDisplay(vehicles, []);
+        expect(result.map((x) => x.name)).toEqual(['alpha', 'bravo', 'charlie']);
+    });
+
+    it('treats a null squadList as no selection', () => {
+        const vehicles = [v('a', 0), v('b', 0)];
+        const result = sortVehiclesForDisplay(vehicles, null);
+        expect(result.map((x) => x.name)).toEqual(['a', 'b']);
+    });
+
+    it('does not mutate the input array', () => {
+        const vehicles = [v('b', 0), v('a', 0)];
+        sortVehiclesForDisplay(vehicles, []);
+        expect(vehicles.map((x) => x.name)).toEqual(['b', 'a']);
     });
 });

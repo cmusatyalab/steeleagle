@@ -13,6 +13,78 @@ export function vehicleSpeed(velocity) {
     return Math.sqrt(velocity.x_vel ** 2 + velocity.y_vel ** 2 + velocity.z_vel ** 2);
 }
 
+// Matches the "Disconnected" threshold already used by the status card.
+export function isVehicleDisconnected(vehicle) {
+    return vehicle.last_updated > 5;
+}
+
+// A single source of truth for "what state is this vehicle in," reused by
+// every place that renders a vehicle's status. Offline overrides
+// selection -- a vehicle that stopped reporting isn't meaningfully
+// "selected" for control purposes.
+export function vehicleStatus(disconnected, selected) {
+    if (disconnected) return 'offline';
+    if (selected) return 'selected';
+    return 'online';
+}
+
+// For light UI surfaces: the sidebar card's connectivity icon, the
+// collapsed rail dots, and the selected-state border/tint/badge. "online"
+// is a mid grey (--gray-400) so it stays visible against a white/near-white
+// card or rail -- a near-white grey here would nearly vanish.
+const SURFACE_STATUS_COLORS = {
+    offline: 'var(--gray-700)',
+    online: 'var(--gray-400)',
+    selected: 'var(--green-500)',
+};
+
+export function vehicleStatusColor(status) {
+    return SURFACE_STATUS_COLORS[status];
+}
+
+// For the map marker fill, drawn against the dark "dusk" basemap. "online"
+// can go much closer to white (--gray-200) here since the dark background
+// gives it plenty of contrast, and that's the muted-but-visible look we
+// want for a not-currently-relevant vehicle.
+const MAP_STATUS_COLORS = {
+    offline: 'var(--gray-700)',
+    online: 'var(--gray-200)',
+    selected: 'var(--green-500)',
+};
+
+export function vehicleStatusMapColor(status) {
+    return MAP_STATUS_COLORS[status];
+}
+
+// Map popup label text. Mirrors vehicleStatusMapColor except "selected"
+// is white instead of green -- green text on a green marker would blend
+// into it rather than standing out.
+const TEXT_STATUS_COLORS = {
+    offline: 'var(--gray-700)',
+    online: 'var(--gray-200)',
+    selected: '#ffffff',
+};
+
+export function vehicleStatusTextColor(status) {
+    return TEXT_STATUS_COLORS[status];
+}
+
+const STATUS_SORT_RANK = { selected: 0, online: 1, offline: 2 };
+
+// Selected vehicles first, then online, then offline (sinks to the
+// bottom); alphabetical by name within each group. squadList may be
+// null/undefined (no manual selection yet).
+export function sortVehiclesForDisplay(vehicles, squadList) {
+    const squad = squadList ?? [];
+    return [...vehicles].sort((a, b) => {
+        const statusA = vehicleStatus(isVehicleDisconnected(a), squad.includes(a.name));
+        const statusB = vehicleStatus(isVehicleDisconnected(b), squad.includes(b.name));
+        const rankDiff = STATUS_SORT_RANK[statusA] - STATUS_SORT_RANK[statusB];
+        if (rankDiff !== 0) return rankDiff;
+        return a.name.localeCompare(b.name);
+    });
+}
+
 export function featuresToGeoJson(featuresJson) {
     return JSON.stringify(JSON.parse(featuresJson), null, 2);
 }
