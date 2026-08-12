@@ -31,9 +31,13 @@ export function vehicleStatus(disconnected, selected) {
 // For light UI surfaces: the sidebar card's connectivity icon, the
 // collapsed rail dots, and the selected-state border/tint/badge. "online"
 // is a mid grey (--gray-400) so it stays visible against a white/near-white
-// card or rail -- a near-white grey here would nearly vanish.
+// card or rail -- a near-white grey here would nearly vanish. "offline"
+// uses the theme-adaptive --text-color-secondary token (not a raw --gray-*
+// value) because this app's default theme is dark and PrimeReact's --gray-*
+// tokens don't adapt to theme -- a raw dark grey would sit at ~1.8:1
+// contrast on the dark theme's near-black card and be effectively invisible.
 const SURFACE_STATUS_COLORS = {
-    offline: 'var(--gray-700)',
+    offline: 'var(--text-color-secondary)',
     online: 'var(--gray-400)',
     selected: 'var(--green-500)',
 };
@@ -45,9 +49,13 @@ export function vehicleStatusColor(status) {
 // For the map marker fill, drawn against the dark "dusk" basemap. "online"
 // can go much closer to white (--gray-200) here since the dark background
 // gives it plenty of contrast, and that's the muted-but-visible look we
-// want for a not-currently-relevant vehicle.
+// want for a not-currently-relevant vehicle. "offline" uses the lighter
+// --gray-500 (not --gray-700) since the basemap is always dark regardless
+// of the app's own theme toggle -- --gray-700 is too dark to read clearly
+// against it. --gray-500 stays visibly dimmer than online's --gray-200 so
+// the two states remain distinguishable.
 const MAP_STATUS_COLORS = {
-    offline: 'var(--gray-700)',
+    offline: 'var(--gray-500)',
     online: 'var(--gray-200)',
     selected: 'var(--green-500)',
 };
@@ -56,11 +64,12 @@ export function vehicleStatusMapColor(status) {
     return MAP_STATUS_COLORS[status];
 }
 
-// Map popup label text. Mirrors vehicleStatusMapColor except "selected"
-// is white instead of green -- green text on a green marker would blend
-// into it rather than standing out.
+// Map popup label text. Mirrors vehicleStatusMapColor (including the
+// lighter --gray-500 for "offline", for the same dark-basemap-legibility
+// reasoning) except "selected" is white instead of green -- green text on
+// a green marker would blend into it rather than standing out.
 const TEXT_STATUS_COLORS = {
-    offline: 'var(--gray-700)',
+    offline: 'var(--gray-500)',
     online: 'var(--gray-200)',
     selected: '#ffffff',
 };

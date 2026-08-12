@@ -201,6 +201,13 @@ describe('vehicleStatusColor', () => {
         const colors = ['offline', 'online', 'selected'].map(vehicleStatusColor);
         expect(new Set(colors).size).toBe(3);
     });
+
+    it('uses the theme-adaptive secondary-text token for offline, not a raw (theme-invariant) gray', () => {
+        // The app defaults to the dark PrimeReact theme, where raw --gray-*
+        // tokens don't adapt and read as near-invisible against the dark
+        // --surface-0 card background. --text-color-secondary does adapt.
+        expect(vehicleStatusColor('offline')).toBe('var(--text-color-secondary)');
+    });
 });
 
 describe('vehicleStatusMapColor', () => {
