@@ -1,17 +1,23 @@
 import React from "react";
-import { Tag } from 'primereact/tag';
 import { Card } from 'primereact/card';
 import { Badge } from 'primereact/badge';
 import { ProgressBar } from 'primereact/progressbar';
-import { vehicleColor, vehicleSpeed } from './mapUtils.js';
+import { vehicleSpeed, isVehicleDisconnected, vehicleStatus, vehicleStatusColor } from './mapUtils.js';
+
+const cardPassthrough = {
+    body: { style: { padding: '0.4rem 0.75rem' } },
+    content: { style: { padding: 0 } },
+};
 
 function Status({ vehicle, selectable, selected, onToggle }) {
     if (!vehicle) {
         return (<>No vehicles connected.</>);
     }
 
-    const color = vehicleColor(vehicle.name);
-    const disconnected = vehicle.last_updated > 5;
+    const disconnected = isVehicleDisconnected(vehicle);
+    const showCheck = !!(selectable && selected);
+    const status = vehicleStatus(disconnected, showCheck);
+    const statusColor = vehicleStatusColor(status);
 
     let battery_severity = "info";
 
@@ -25,43 +31,44 @@ function Status({ vehicle, selectable, selected, onToggle }) {
     }
 
     const speed = vehicleSpeed(vehicle.velocity);
-    const showCheck = !!(selectable && selected);
 
     return (
         <Card
+            pt={cardPassthrough}
             style={{
                 position: 'relative',
-                backgroundColor: showCheck ? `color-mix(in srgb, ${color} 12%, var(--surface-0))` : 'var(--surface-0)',
+                backgroundColor: showCheck ? `color-mix(in srgb, ${statusColor} 12%, var(--surface-0))` : 'var(--surface-0)',
                 width: '100%',
                 cursor: selectable ? 'pointer' : 'default',
-                border: showCheck ? `2px solid ${color}` : '2px solid transparent'
+                border: showCheck ? `2px solid ${statusColor}` : '2px solid transparent',
+                opacity: disconnected ? 0.6 : 1,
             }}
             onClick={selectable ? onToggle : undefined}
         >
             {showCheck && (
                 <Badge
                     value={<i className="pi pi-check" style={{ fontSize: '0.6rem' }} />}
-                    style={{ position: 'absolute', top: '-6px', right: '-6px', backgroundColor: color, color: '#ffffff' }}
+                    style={{ position: 'absolute', top: '-6px', right: '-6px', backgroundColor: statusColor, color: '#ffffff' }}
                 />
             )}
-            <div className="flex align-items-center gap-2">
-                <span style={{ display: 'inline-block', width: '10px', height: '10px', minWidth: '10px', borderRadius: '50%', backgroundColor: color }} />
-                <span className="font-semibold">{vehicle.name}</span>
-                <span className="text-color-secondary text-sm">{vehicle.model}</span>
-            </div>
-            <div className="flex align-items-center gap-2 mt-2">
-                <ProgressBar color={`var(--${battery_severity})`} className="w-full" style={{ height: '6px' }} value={vehicle.battery} showValue={false} />
-                <span className="text-sm font-semibold" style={{ minWidth: '2.5rem', textAlign: 'right' }}>{Math.round(vehicle.battery)}%</span>
-                <Tag icon={disconnected ? "pi pi-times" : "pi pi-link"} severity={disconnected ? "danger" : "info"} value={disconnected ? "Disconnected" : "Online"} />
-            </div>
-            <div className="flex align-items-center gap-3 mt-2 text-sm text-color-secondary">
-                <span className="flex align-items-center gap-1">
-                    <i className="pi pi-arrow-up" style={{ display: 'inline-block', transform: `rotate(${vehicle.bearing}deg)` }} />
+            <div className="flex align-items-center gap-2 flex-wrap">
+                <i
+                    className={disconnected ? "pi pi-times" : "pi pi-link"}
+                    style={{ color: statusColor, fontSize: '0.8rem' }}
+                    title={disconnected ? "Disconnected" : "Online"}
+                />
+                <span className="font-semibold text-sm">{vehicle.name}</span>
+                <span className="text-color-secondary text-xs">{vehicle.model}</span>
+                <span className="flex-1" />
+                <ProgressBar color={`var(--${battery_severity})`} style={{ width: '3rem', height: '4px' }} value={vehicle.battery} showValue={false} />
+                <span className="text-xs font-semibold" style={{ minWidth: '2rem', textAlign: 'right' }}>{Math.round(vehicle.battery)}%</span>
+                <span className="text-xs text-color-secondary flex align-items-center gap-1">
+                    <i className="pi pi-arrow-up" style={{ display: 'inline-block', transform: `rotate(${vehicle.bearing}deg)`, fontSize: '0.65rem' }} />
                     {Math.round(vehicle.bearing)}°
                 </span>
-                <span>{speed.toFixed(1)} m/s</span>
-                <span className="flex align-items-center gap-1">
-                    <i className="pi pi-wifi" />
+                <span className="text-xs text-color-secondary">{speed.toFixed(1)} m/s</span>
+                <span className="text-xs text-color-secondary flex align-items-center gap-1">
+                    <i className="pi pi-wifi" style={{ fontSize: '0.65rem' }} />
                     {vehicle.sats}
                 </span>
             </div>
