@@ -32,6 +32,7 @@ type Vehicle struct {
 	pluginCfg     PluginConfig            // plugin configuration
 	policyCfg     PolicyConfig            // policy configuration
 	videoCfg      VideoStreamConfig       // video stream config
+	telemetryFps  uint32                  // target telemetry rate, 0 lets the driver choose
 	gabrielCfg    GabrielConfig           // Gabriel config
 	dialer        Dialer                  // sources outbound connections (e.g. to Gabriel); nil uses gRPC's default dialer
 	policy        policyState             // active policy state

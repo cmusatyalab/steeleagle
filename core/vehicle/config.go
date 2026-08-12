@@ -25,4 +25,7 @@ type VideoStreamConfig struct {
 	Codec      string
 	Resolution VideoResolution
 	StreamType VideoStreamType
+	// Fps is the desired frame rate. If zero, the vehicle stream runs
+	// unthrottled at whatever rate the driver (or FFmpeg) produces frames.
+	Fps uint32
 }

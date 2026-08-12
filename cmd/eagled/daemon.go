@@ -49,22 +49,23 @@ type daemon struct {
 	grpcServer  *grpc.Server // gRPC server to serve DaemonService on
 	controlPort int          // port gRPC server listens on
 
-	mu             sync.Mutex
-	configured     bool
-	tsServer       *tailscale.Server // eagled's own tsnet node, once started; nil until then
-	tsHostname     string            // hostname tsServer is currently running under
-	baseCfg        Config            // last-applied config, minus Vehicles
-	daemonName     string            // resolved from baseCfg
-	pluginDir      string            // plugin runtime directory
-	vehicleAuthKey string            // tsnet auth key every vehicle joins with
-	gabrielCfg     GabrielConfig
-	swarmCfg       SwarmControllerConfig
-	nextPort       int                           // next port to assign to a vehicle
-	running        map[string]*runningVehicle    // name -> running vehicle; nil value means "reserved, spawn in progress"
-	vehicleCfgs    map[string]VehicleConfig      // vehicle configurations
-	installed      map[installedPluginKey]string // {name, category} -> ref
-	aviaryCommand  []string                      // resolved from baseCfg.Aviary.Command
-	aviaryDir      string                        // resolved from baseCfg.Aviary.Dir
+	mu              sync.Mutex
+	configured      bool
+	tsServer        *tailscale.Server // eagled's own tsnet node, once started; nil until then
+	tsHostname      string            // hostname tsServer is currently running under
+	baseCfg         Config            // last-applied config, minus Vehicles
+	daemonName      string            // resolved from baseCfg
+	pluginDir       string            // plugin runtime directory
+	vehicleAuthKey  string            // tsnet auth key every vehicle joins with
+	vehicleMemStore bool              // whether vehicles keep tsnet state in memory instead of persisting it to disk
+	gabrielCfg      GabrielConfig
+	swarmCfg        SwarmControllerConfig
+	nextPort        int                           // next port to assign to a vehicle
+	running         map[string]*runningVehicle    // name -> running vehicle; nil value means "reserved, spawn in progress"
+	vehicleCfgs     map[string]VehicleConfig      // vehicle configurations
+	installed       map[installedPluginKey]string // {name, category} -> ref
+	aviaryCommand   []string                      // resolved from baseCfg.Aviary.Command
+	aviaryDir       string                        // resolved from baseCfg.Aviary.Dir
 
 	// configMu and aviaryMu each serialize their own slow, one-time setup
 	// call (tailscale.NewServer, spawnAviary) across concurrent RPCs, without
@@ -179,17 +180,34 @@ func (d *daemon) ForgetVehicles(ctx context.Context, req *eagledpb.ForgetVehicle
 		d.mu.Lock()
 		delete(d.vehicleCfgs, name)
 		d.mu.Unlock()
+		removeTsnetState(name)
 		results = append(results, eagledpb.VehicleResult_builder{Name: name, Ok: true}.Build())
 	}
 	d.persist()
 	return eagledpb.ForgetVehiclesResponse_builder{Vehicles: results}.Build(), nil
 }
 
+// removeTsnetState deletes a forgotten vehicle's persisted tsnet state, if
+// any, so a future vehicle reusing name doesn't inherit a stale node key for a
+// device that's already been reaped from the tailnet. Best-effort: a vehicle
+// that never joined the tailnet (no auth key, or memStore) has nothing to
+// remove, so errors here are only logged.
+func removeTsnetState(name string) {
+	dir, err := tailscale.StateDir(name)
+	if err != nil {
+		log.Warn().Err(err).Str("vehicle", name).Msg("could not determine tsnet state directory to clean up")
+		return
+	}
+	if err := os.RemoveAll(dir); err != nil {
+		log.Warn().Err(err).Str("vehicle", name).Msg("could not clean up tsnet state directory")
+	}
+}
+
 // startVehicles spawns each of vehicleCfgs, reporting a per-vehicle result
 // rather than aborting the whole batch on one failure.
 func (d *daemon) startVehicles(vehicleCfgs []VehicleConfig) []*eagledpb.VehicleResult {
 	d.mu.Lock()
-	pluginDir, authKey := d.pluginDir, d.vehicleAuthKey
+	pluginDir, authKey, memStore := d.pluginDir, d.vehicleAuthKey, d.vehicleMemStore
 	gabrielCfg, swarmCfg, daemonName := d.gabrielCfg, d.swarmCfg, d.daemonName
 	d.mu.Unlock()
 
@@ -214,7 +232,7 @@ func (d *daemon) startVehicles(vehicleCfgs []VehicleConfig) []*eagledpb.VehicleR
 			continue
 		}
 
-		cancel, done, err := spawnVehicle(d.ctx, vehicleCfg, port, driverPlugin, missionPlugin, extraPlugins, authKey, gabrielCfg, swarmCfg, daemonName)
+		cancel, done, err := spawnVehicle(d.ctx, vehicleCfg, port, driverPlugin, missionPlugin, extraPlugins, authKey, memStore, gabrielCfg, swarmCfg, daemonName)
 		if err != nil {
 			d.mu.Lock()
 			delete(d.running, vehicleCfg.Name)
@@ -254,7 +272,12 @@ func (d *daemon) stopOne(name string) error {
 	d.mu.Lock()
 	rv, exists := d.running[name]
 	d.mu.Unlock()
-	if !exists || rv == nil {
+	if exists && rv == nil {
+		// rv == nil means reserve() has claimed the name but startVehicles
+		// hasn't finished spawning it yet; see ForgetVehicles for the same race.
+		return fmt.Errorf("vehicle %q is still starting, try again", name)
+	}
+	if !exists {
 		return fmt.Errorf("vehicle %q not running", name)
 	}
 
@@ -311,12 +334,21 @@ func (d *daemon) reserve(name string) (int, error) {
 	return port, nil
 }
 
-// resolveHostname returns hostname if set, otherwise the OS hostname.
+// resolveHostname returns hostname if set, otherwise the OS hostname suffixed
+// with "-eagled".
 func resolveHostname(hostname string) (string, error) {
 	if hostname != "" {
 		return hostname, nil
 	}
-	return os.Hostname()
+	osHostname, err := os.Hostname()
+	return osHostname + "-eagled", err
+}
+
+// networked reports whether eagled's tsnet node is already up.
+func (d *daemon) networked() bool {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.tsServer != nil
 }
 
 // ensureNetwork starts eagled's tsnet node and serves DaemonService over it.
@@ -344,7 +376,7 @@ func (d *daemon) ensureNetwork(cfg Config) error {
 		return nil
 	}
 
-	ts, err := tailscale.NewServer(hostname, authKey, true)
+	ts, err := tailscale.NewServer(hostname, authKey, "daemon", false)
 	if err != nil {
 		return status.Errorf(codes.Internal, "starting tailscale: %v", err)
 	}
@@ -431,6 +463,7 @@ func (d *daemon) ensureConfigured(cfg Config) error {
 	d.daemonName = daemonName
 	d.pluginDir = pluginDir
 	d.vehicleAuthKey = vehicleAuthKey
+	d.vehicleMemStore = cfg.VehicleTsnetMemStore
 	d.gabrielCfg = cfg.Gabriel
 	d.swarmCfg = cfg.Backend.SwarmController
 	d.aviaryCommand = cfg.Aviary.Command

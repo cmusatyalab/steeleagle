@@ -103,8 +103,11 @@ func (d *daemon) loadPersisted() error {
 	if err != nil {
 		return fmt.Errorf("parsing %s: %w", path, err)
 	}
-	if err := d.ensureNetwork(cfg); err != nil {
-		return err
+	// Skip if loadPersistedNetwork already joined the tailnet.
+	if !d.networked() {
+		if err := d.ensureNetwork(cfg); err != nil {
+			return err
+		}
 	}
 	if err := d.ensureConfigured(cfg); err != nil {
 		return err

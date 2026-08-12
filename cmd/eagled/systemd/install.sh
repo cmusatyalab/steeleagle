@@ -120,9 +120,9 @@ DATA_DIR="$STATE_DIR/.local/share/steeleagle" # matches eagled.service's HOME=$S
 NETWORK_CONFIG="$DATA_DIR/network-config.toml"
 
 if [[ -z "${TS_HOSTNAME:-}" && -t 0 ]]; then
-	read -rp "Tailscale hostname [$(hostname)]: " TS_HOSTNAME
+	read -rp "Tailscale hostname [$(hostname)-eagled]: " TS_HOSTNAME
 fi
-TS_HOSTNAME="${TS_HOSTNAME:-$(hostname)}"
+TS_HOSTNAME="${TS_HOSTNAME:-$(hostname)-eagled}"
 
 install -d -m 755 -o "$SERVICE_USER" -g "$SERVICE_USER" "$DATA_DIR"
 rm -f "$NETWORK_CONFIG"

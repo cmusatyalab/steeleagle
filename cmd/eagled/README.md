@@ -110,8 +110,16 @@ inheriting anyone's interactive shell environment.
 ## Networking
 
 `TS_AUTHKEY`/`TS_VEHICLE_AUTHKEY` turn on tailscale. eagled and each vehicle
-get their own ephemeral tsnet identity. No auth key means we use plain TCP
-only.
+get their own tsnet identity. No auth key means we use plain TCP only.
+
+By default both eagled's own node and every vehicle's node persist their tsnet
+state to disk (under `internal/tailscale.StateDir`), so a restart reconnects
+under the same identity instead of registering a new one under the same
+hostname. Set `vehicle-tsnet-mem-store = true` in the config to keep vehicle
+tsnet state in memory instead (eagled's own node is always persisted). Each
+vehicle then gets a fresh identity every restart. `ForgetVehicles` deletes a
+forgotten vehicle's persisted tsnet state so a future vehicle reusing that name
+doesn't inherit a stale node key.
 
 Changing `hostname` on a later `Configure` call re-joins eagled's tsnet node
 under the new name, even though every other daemon-wide setting is frozen after

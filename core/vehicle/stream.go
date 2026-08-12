@@ -11,7 +11,11 @@ import (
 // Stream telemetry from the driver, updating the vehicle data store.
 func (v *Vehicle) streamTelemetry(ctx context.Context) error {
 	client := driverpb.NewStreamServiceClient(v.driver)
-	req := &driverpb.StreamTelemetryRequest{}
+	builder := driverpb.StreamTelemetryRequest_builder{}
+	if fps := v.telemetryFps; fps != 0 {
+		builder.TargetFps = &fps
+	}
+	req := builder.Build()
 	stream, err := client.StreamTelemetry(ctx, req)
 	if err != nil {
 		v.log.Error().Err(err).Msg("couldn't get telemetry stream from driver")

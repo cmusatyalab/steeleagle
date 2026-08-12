@@ -90,10 +90,7 @@ func (v *Vehicle) createGabrielClient() error {
 		}.Build()),
 	}
 	if v.dialer != nil {
-		// Sources the connection from the vehicle's own tsnet node (if any),
-		// so a MagicDNS server-endpoint resolves the same way it does for
-		// swarm-controller registration, rather than depending on the host's
-		// own DNS setup.
+		// Sources the connection from the vehicle's own tsnet node (if any)
 		opts = append(opts, gabrielclient.WithDialOptions(grpc.WithContextDialer(
 			func(ctx context.Context, addr string) (net.Conn, error) {
 				return v.dialer(ctx, "tcp", addr)

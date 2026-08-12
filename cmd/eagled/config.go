@@ -68,6 +68,10 @@ type VehicleConfig struct {
 	// simulated vehicles default to "frames" and every other vehicle defaults
 	// to "rtsp".
 	Video *VideoConfig `toml:"video,omitempty"`
+
+	// TelemetryFps, if set, requests this telemetry rate from the driver.
+	// Left unset (or 0), the driver picks its own default rate.
+	TelemetryFps uint32 `toml:"telemetry-fps,omitempty"`
 }
 
 // VideoConfig models a [vehicles.video] table.
@@ -81,16 +85,22 @@ type VideoConfig struct {
 	// Codec, if set, requests hardware decoding from FFmpeg (e.g.
 	// "h264_cuvid"). Left blank for software decoding.
 	Codec string `toml:"codec,omitempty"`
+	// Fps, if set, throttles the video stream to this frame rate. Left
+	// unset (or 0) to run unthrottled.
+	Fps uint32 `toml:"fps,omitempty"`
 }
 
 // Config models the TOML document pushed to eagled via
 // DaemonService.Configure. eagled keeps no such file on disk itself.
 type Config struct {
-	PortBase  int             `toml:"port-base"`            // starting port to assign to vehicles
-	PluginDir string          `toml:"plugin-dir,omitempty"` // runtime plugin directory
-	Hostname  string          `toml:"hostname,omitempty"`   // eagled's identity
-	Gabriel   GabrielConfig   `toml:"gabriel"`
-	Backend   BackendConfig   `toml:"backend"`
-	Aviary    AviaryConfig    `toml:"aviary,omitempty"`
-	Vehicles  []VehicleConfig `toml:"vehicles"`
+	PortBase  int    `toml:"port-base"`            // starting port to assign to vehicles
+	PluginDir string `toml:"plugin-dir,omitempty"` // runtime plugin directory
+	Hostname  string `toml:"hostname,omitempty"`   // eagled's identity
+	// VehicleTsnetMemStore, if true, keeps each vehicle's tsnet state in
+	// memory instead of persisting it to disk.
+	VehicleTsnetMemStore bool            `toml:"vehicle-tsnet-mem-store,omitempty"`
+	Gabriel              GabrielConfig   `toml:"gabriel"`
+	Backend              BackendConfig   `toml:"backend"`
+	Aviary               AviaryConfig    `toml:"aviary,omitempty"`
+	Vehicles             []VehicleConfig `toml:"vehicles"`
 }

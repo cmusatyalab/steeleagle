@@ -27,6 +27,14 @@ func WithVideoStreamConfig(videoCfg VideoStreamConfig) VehicleOption {
 	}
 }
 
+// WithTelemetryFps sets the target telemetry rate requested from the driver.
+// Left unset (0), the driver picks its own default rate.
+func WithTelemetryFps(fps uint32) VehicleOption {
+	return func(v *Vehicle) {
+		v.telemetryFps = fps
+	}
+}
+
 func WithGabrielConfig(gabrielCfg GabrielConfig) VehicleOption {
 	return func(v *Vehicle) {
 		v.gabrielCfg = gabrielCfg

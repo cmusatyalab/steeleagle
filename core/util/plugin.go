@@ -101,6 +101,8 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 		option(p)
 	}
 
+	p.log = p.log.With().Str("plugin", p.name).Logger()
+
 	// Create a new ACL if it isn't initialized
 	if p.acl == nil {
 		p.acl = GetACL([]string{}, []int{})

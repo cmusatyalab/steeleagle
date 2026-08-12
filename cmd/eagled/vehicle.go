@@ -28,6 +28,7 @@ func spawnVehicle(
 	missionPlugin util.Plugin,
 	extraPlugins []util.Plugin,
 	authKey string,
+	memStore bool,
 	gabrielCfg GabrielConfig,
 	swarmCfg SwarmControllerConfig,
 	daemonName string,
@@ -36,7 +37,7 @@ func spawnVehicle(
 	var dial dialFunc
 	var vehicleTS *tailscale.Server
 	if authKey != "" {
-		vehicleTS, err = tailscale.NewServer(vehicleCfg.Name, authKey, true)
+		vehicleTS, err = tailscale.NewServer(vehicleCfg.Name, authKey, vehicleCfg.Name, memStore)
 		if err != nil {
 			return nil, nil, fmt.Errorf("starting tailscale for vehicle %s: %w", vehicleCfg.Name, err)
 		}
@@ -63,6 +64,7 @@ func spawnVehicle(
 		vehicle.WithName(vehicleCfg.Name),
 		vehicle.WithServerListener(ln, nil),
 		vehicle.WithVideoStreamConfig(videoCfg),
+		vehicle.WithTelemetryFps(vehicleCfg.TelemetryFps),
 		vehicle.WithLogger(log.With().Str("vehicle", vehicleCfg.Name).Logger()),
 	}
 	if dial != nil {
@@ -122,6 +124,7 @@ func buildVideoStreamConfig(vehicleCfg VehicleConfig) (vehicle.VideoStreamConfig
 	}
 	resolution := vehicle.Res720P
 	var codec string
+	var fps uint32
 
 	if v := vehicleCfg.Video; v != nil {
 		if v.StreamType != "" {
@@ -149,12 +152,14 @@ func buildVideoStreamConfig(vehicleCfg VehicleConfig) (vehicle.VideoStreamConfig
 			}
 		}
 		codec = v.Codec
+		fps = v.Fps
 	}
 
 	return vehicle.VideoStreamConfig{
 		StreamType: streamType,
 		Resolution: resolution,
 		Codec:      codec,
+		Fps:        fps,
 	}, nil
 }
 
