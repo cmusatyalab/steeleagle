@@ -54,7 +54,20 @@ func getGabrielProducer[T Data](
 						PayloadType: payloadType,
 						Payload:     payload,
 					}
-					ch <- frame
+					select {
+					case ch <- frame:
+					default:
+						// drain frame already in channel, if any
+						select {
+						case <-ch:
+						default:
+						}
+						// now the channel should be empty
+						select {
+						case ch <- frame:
+						default:
+						}
+					}
 				}
 			}
 		}()
