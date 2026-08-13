@@ -7,9 +7,9 @@ import (
 	"github.com/alecthomas/participle/v2/lexer"
 )
 
-type File struct {
+type Ast struct {
 	Role    *RoleStanza    `parser:"@@?"`
-	Imports *ImportStanza  `parser:"@@?"`
+	Import  *ImportStanza  `parser:"@@?"`
 	Data    *DataStanza    `parser:"@@?"`
 	Actions *ActionsStanza `parser:"@@?"`
 	Events  *EventsStanza  `parser:"@@?"`
@@ -21,7 +21,17 @@ type RoleStanza struct {
 }
 
 type ImportStanza struct {
-	Paths []string `parser:"\"Import\" \":\" @Path*"`
+	Imports []*ImportSpec `parser:"\"Import\" \":\" @@*"`
+}
+
+// ImportSpec is a single imported package path, optionally preceded by an
+// alias Ident used to qualify types from that package (e.g. "basesdk
+// github.com/cmusatyalab/steeleagle/sdk"). When Alias is empty, the
+// package's own name is used as the qualifier.
+type ImportSpec struct {
+	Pos   lexer.Position
+	Alias string `parser:"(@Ident)?"`
+	Path  string `parser:"@Path"`
 }
 
 type DataStanza struct {
@@ -36,11 +46,16 @@ type EventsStanza struct {
 	Decls []*Decl `parser:"\"Events\" \":\" @@*"`
 }
 
+// TypeName is a dot-qualified type reference such as "actions.TakeOff". It
+// contains only letters, digits and underscores separated by single dots,
+// and cannot start or end with a dot (no path separators allowed).
+type TypeName string
+
 type Decl struct {
 	Pos   lexer.Position
-	Type  string  `parser:"@Ident"`
-	Name  string  `parser:"@Ident"`
-	Attrs []*Attr `parser:"\"(\" (@@ (\",\" @@)*)? \")\""`
+	Type  TypeName `parser:"@(Ident | QualIdent)"`
+	Name  string   `parser:"@Ident"`
+	Attrs []*Attr  `parser:"\"(\" (@@ (\",\" @@)*)? \")\""`
 }
 
 type Attr struct {
@@ -51,10 +66,11 @@ type Attr struct {
 type Value struct {
 	Pos    lexer.Position
 	Float  *float64    `parser:"@Float"`
-	Int    *int64      `parser:"@Int"`
+	Int    *int64      `parser:"| @Int"`
 	String *string     `parser:"| @String"`
 	Array  *ArrayValue `parser:"| @@"`
 	Inline *InlineCtor `parser:"| @@"`
+	Kml    *string     `parser:"| @KmlIdent"`
 	Ident  *string     `parser:"| @Ident"`
 }
 
@@ -62,24 +78,26 @@ type ArrayValue struct {
 	Elems []*Value `parser:"\"[\" (@@ (\",\" @@)*)? \"]\""`
 }
 
-// InlineCtor is a positional constructor call used as a value, e.g.
-// `Foo(1.0, bar)` inside `Bar bar(foo = Foo(1.0, bar))`
+// InlineCtor is a keyword-argument constructor call used as a value.
 type InlineCtor struct {
-	Type string   `parser:"@Ident"`
-	Args []*Value `parser:"\"(\" (@@ (\",\" @@)*)? \")\""`
+	Type TypeName `parser:"@(Ident | QualIdent)"`
+	Args []*Attr  `parser:"\"(\" (@@ (\",\" @@)*)? \")\""`
 }
 
 type MissionStanza struct {
+	Pos    lexer.Position
 	Start  string         `parser:"\"Mission\" \":\" \"Start\" @Ident"`
 	Blocks []*DuringBlock `parser:"@@*"`
 }
 
 type DuringBlock struct {
+	Pos    lexer.Position
 	Action string  `parser:"\"During\" @Ident \":\""`
 	Rules  []*Rule `parser:"@@*"`
 }
 
 type Rule struct {
+	Pos   lexer.Position
 	Event string `parser:"@Ident \"->\""`
 	Next  string `parser:"@Ident"`
 }
@@ -97,22 +115,24 @@ func (v *Value) StringValue() (s string, ok bool) {
 
 var dslLexer = lexer.MustSimple([]lexer.SimpleRule{
 	{Name: "Comment", Pattern: `#[^\n]*`},
-	{Name: "Path", Pattern: `[a-zA-Z][a-zA-Z_\d]*(?:[./][a-zA-Z_\d-]+)+`},
+	{Name: "Path", Pattern: `[a-zA-Z][a-zA-Z_\d]*(?:\.[a-zA-Z_\d-]+)*(?:/[a-zA-Z_\d.-]+)+`},
 	{Name: "Arrow", Pattern: `->`},
 	{Name: "Float", Pattern: `-?\d+(?:\.\d+)?`},
 	{Name: "Int", Pattern: `-?\d+`},
 	{Name: "String", Pattern: `'[^']*'|"[^"]*"`},
-	{Name: "Ident", Pattern: `[a-zA-Z][a-zA-Z_\d]`},
+	{Name: "QualIdent", Pattern: `[a-zA-Z][a-zA-Z_\d]*(?:\.[a-zA-Z][a-zA-Z_\d]*)+`},
+	{Name: "KmlIdent", Pattern: `kml:[a-zA-Z][a-zA-Z_\d]*`},
+	{Name: "Ident", Pattern: `[a-zA-Z][a-zA-Z_\d]*`},
 	{Name: "Punct", Pattern: `[:(),=\[\]]`},
 	{Name: "Whitespace", Pattern: `[ \t\r\n]+`},
 })
 
-var dslParser = participle.MustBuild[File](
+var dslParser = participle.MustBuild[Ast](
 	participle.Lexer(dslLexer),
 	participle.Elide("Whitespace", "Comment"),
 	participle.UseLookahead(2),
 )
 
-func Parse(filename string, r io.Reader) (*File, error) {
+func Parse(filename string, r io.Reader) (*Ast, error) {
 	return dslParser.Parse(filename, r)
 }
