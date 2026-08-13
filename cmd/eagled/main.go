@@ -7,12 +7,19 @@ import (
 	"net"
 	"os/signal"
 	"syscall"
+	"time"
 
 	eagledpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/eagled"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 )
+
+// shutdownGracePeriod bounds how long a shutdown waits for in-flight RPCs
+// (e.g. a Configure call still spawning a vehicle) to finish on their own
+// before forcing the gRPC server closed, so a single wedged RPC can't hang
+// RestartDaemon/ResetConfig or a systemd stop forever.
+const shutdownGracePeriod = 30 * time.Second
 
 func main() {
 	controlPort := flag.Int("control-port", DefaultControlPort, "port DaemonService listens on")
@@ -62,5 +69,17 @@ func main() {
 
 	<-ctx.Done()
 	log.Info().Msg("shutting down")
-	grpcServer.GracefulStop()
+
+	stopped := make(chan struct{})
+	go func() {
+		grpcServer.GracefulStop()
+		close(stopped)
+	}()
+	select {
+	case <-stopped:
+	case <-time.After(shutdownGracePeriod):
+		log.Warn().Dur("grace_period", shutdownGracePeriod).Msg("graceful stop timed out, forcing shutdown")
+		grpcServer.Stop()
+		<-stopped
+	}
 }

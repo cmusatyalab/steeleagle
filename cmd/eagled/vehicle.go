@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
+	"time"
 
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"github.com/cmusatyalab/steeleagle/core/vehicle"
@@ -14,16 +17,20 @@ import (
 )
 
 // spawnVehicle builds the vehicle's driver plugin, binds its listener on port
-// (on its own tsnet node if authKey is set), starts the vehicle, and once
-// it's running registers it with the swarm controller for exactly as long as
-// it stays up.
+// (on its own tsnet node if authKey is set), starts the vehicle, and once it's
+// running registers it with the swarm controller for exactly as long as it
+// stays up.
 //
-// The returned stop cancels the vehicle, tearing it down. done is closed once
-// that teardown (including the vehicle's own process exit) finishes.
+// ctx is owned by the caller (daemon.reserve creates it, scoped to this one
+// reservation) and used throughout, including the tsnet join and veh.Start:
+// canceling it interrupts spawnVehicle even before it returns, not just the
+// vehicle once running. done is closed once the vehicle (successfully started)
+// exits and finishes tearing down.
 func spawnVehicle(
 	ctx context.Context,
 	vehicleCfg VehicleConfig,
 	port int,
+	promPort int,
 	driverPlugin util.Plugin,
 	missionPlugin util.Plugin,
 	extraPlugins []util.Plugin,
@@ -32,14 +39,16 @@ func spawnVehicle(
 	gabrielCfg GabrielConfig,
 	swarmCfg SwarmControllerConfig,
 	daemonName string,
-) (stop context.CancelFunc, done <-chan struct{}, err error) {
+) (done <-chan struct{}, err error) {
 	var ln net.Listener
 	var dial dialFunc
 	var vehicleTS *tailscale.Server
 	if authKey != "" {
-		vehicleTS, err = tailscale.NewServer(vehicleCfg.Name, authKey, vehicleCfg.Name, memStore)
+		startCtx, cancel := context.WithTimeout(ctx, TailscaleStartTimeout)
+		defer cancel()
+		vehicleTS, err = tailscale.NewServer(startCtx, vehicleCfg.Name, authKey, vehicleCfg.Name, memStore)
 		if err != nil {
-			return nil, nil, fmt.Errorf("starting tailscale for vehicle %s: %w", vehicleCfg.Name, err)
+			return nil, fmt.Errorf("starting tailscale for vehicle %s: %w", vehicleCfg.Name, err)
 		}
 		defer func() {
 			if err != nil {
@@ -52,12 +61,12 @@ func spawnVehicle(
 		ln, err = net.Listen("tcp", fmt.Sprintf(":%d", port))
 	}
 	if err != nil {
-		return nil, nil, fmt.Errorf("listening on port %d: %w", port, err)
+		return nil, fmt.Errorf("listening on port %d: %w", port, err)
 	}
 
 	videoCfg, err := buildVideoStreamConfig(vehicleCfg)
 	if err != nil {
-		return nil, nil, fmt.Errorf("configuring video stream for vehicle %s: %w", vehicleCfg.Name, err)
+		return nil, fmt.Errorf("configuring video stream for vehicle %s: %w", vehicleCfg.Name, err)
 	}
 
 	opts := []vehicle.VehicleOption{
@@ -78,6 +87,7 @@ func spawnVehicle(
 			ServerEndpoint:           gabrielCfg.ServerEndpoint,
 			TelemetryTargetEngines:   gabrielCfg.TelemetryTargetEngines,
 			VideoFramesTargetEngines: gabrielCfg.VideoFramesTargetEngines,
+			PrometheusPort:           promPort,
 		}))
 	}
 
@@ -87,22 +97,19 @@ func spawnVehicle(
 		Plugins: extraPlugins,
 	}, opts...)
 	if err != nil {
-		return nil, nil, fmt.Errorf("creating vehicle: %w", err)
+		return nil, fmt.Errorf("creating vehicle: %w", err)
 	}
 
-	vCtx, vCancel := context.WithCancel(ctx)
-	if err := veh.Start(vCtx); err != nil {
-		vCancel()
-		return nil, nil, fmt.Errorf("starting vehicle: %w", err)
+	if err := veh.Start(ctx); err != nil {
+		return nil, fmt.Errorf("starting vehicle: %w", err)
 	}
 	log.Info().Str("vehicle", vehicleCfg.Name).Int("port", port).Msg("vehicle started")
 
-	go registerVehicle(vCtx, swarmCfg.Address, daemonName, vehicleCfg.Name, port, dial)
+	go registerVehicle(ctx, swarmCfg.Address, daemonName, vehicleCfg.Name, port, dial)
 
 	doneCh := make(chan struct{})
 	go func() {
 		defer close(doneCh)
-		defer vCancel()
 		if err := veh.Wait(); err != nil {
 			log.Error().Err(err).Str("vehicle", vehicleCfg.Name).Msg("vehicle exited with error")
 		}
@@ -111,7 +118,7 @@ func spawnVehicle(
 		}
 	}()
 
-	return vCancel, doneCh, nil
+	return doneCh, nil
 }
 
 // buildVideoStreamConfig turns vehicleCfg.Video into a
@@ -189,6 +196,68 @@ func installedPluginPath(name, category string) (string, error) {
 		return "", fmt.Errorf("plugin %q is not installed as %s: %w", name, category, err)
 	}
 	return path, nil
+}
+
+// driverIPFlag is the flag name convention driver plugins use for a real
+// drone's IP address (e.g. parrot_anafi's "--ip 192.168.42.1"). Drivers that
+// take their target some other way (serial, USB, ...) have no address here to
+// probe.
+const driverIPFlag = "--ip"
+
+// driverIP extracts the drone IP address from vehicleCfg's driver args, if
+// they follow the "--ip <address>" convention. Returns "" if none is found.
+func driverIP(vehicleCfg VehicleConfig) string {
+	if vehicleCfg.Driver == nil {
+		return ""
+	}
+	args := vehicleCfg.Driver.Args
+	for i, arg := range args {
+		if arg == driverIPFlag && i+1 < len(args) {
+			return args[i+1]
+		}
+	}
+	return ""
+}
+
+// droneProbeTimeout bounds how long probeDroneReachable waits for a drone to
+// answer an ICMP echo before giving up.
+const droneProbeTimeout = 3 * time.Second
+
+// probeDroneReachable pings ip once, returning an error if it doesn't answer
+// within droneProbeTimeout. This catches an unreachable drone before eagled
+// spends time spawning a driver plugin doomed to fail connecting to it.
+func probeDroneReachable(ctx context.Context, ip string) error {
+	probeCtx, cancel := context.WithTimeout(ctx, droneProbeTimeout)
+	defer cancel()
+	timeoutSecs := strconv.Itoa(int(droneProbeTimeout.Seconds()))
+	cmd := exec.CommandContext(probeCtx, "ping", "-c", "1", "-W", timeoutSecs, ip)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("drone at %s did not respond to ping: %w", ip, err)
+	}
+	return nil
+}
+
+// droneProbeRetryInterval is how long waitForDrone waits between retries while
+// a drone isn't reachable yet.
+const droneProbeRetryInterval = 2 * time.Second
+
+// waitForDrone blocks until ip responds to ping, retrying every
+// droneProbeRetryInterval, or until ctx is canceled (e.g. the vehicle is
+// stopped/forgotten, or the daemon shuts down), whichever comes first.
+func waitForDrone(ctx context.Context, vehicleName, ip string) error {
+	ticker := time.NewTicker(droneProbeRetryInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			if err := probeDroneReachable(ctx, ip); err == nil {
+				log.Info().Str("vehicle", vehicleName).Str("ip", ip).Msg("drone became reachable")
+				return nil
+			}
+		}
+	}
 }
 
 // newDriverPlugin builds the driver plugin for vehicleCfg: a shim attached

@@ -31,14 +31,9 @@ func StateDir(name string) (string, error) {
 	return dir, nil
 }
 
-// NewServer starts a tsnet node under the given hostname. If authKey is
-// non-empty it's used to join the tailnet non-interactively. Otherwise, tsnet
-// falls back to its interactive login flow. Tags, if any, should be baked
-// into authKey itself (created with those tags in the admin console) so the
-// node registers already-tagged in one step, rather than being set here via
-// a post-boot EditPrefs call. Whether the node is ephemeral (auto-removed
-// from the tailnet once it goes offline for good) is likewise determined by
-// authKey, not by anything set here.
+// NewServer starts a tsnet node under the given hostname and blocks until it
+// joins the tailnet or ctx is done, whichever comes first. If authKey
+// is non-empty it's used to join the tailnet non-interactively.
 //
 // If memStore is true, the node's state lives only in memory. Every call to
 // NewServer starts from a blank identity and re-registers under hostname from
@@ -46,7 +41,7 @@ func StateDir(name string) (string, error) {
 // StateDir(stateName), so a node restarting under the same hostname reconnects
 // with its existing identity instead of requesting a new one. stateName must
 // be unique per node and non-empty.
-func NewServer(hostname, authKey, stateName string, memStore bool) (*Server, error) {
+func NewServer(ctx context.Context, hostname, authKey, stateName string, memStore bool) (*Server, error) {
 	server := new(tsnet.Server)
 	server.Hostname = hostname
 	server.AuthKey = authKey
@@ -67,6 +62,11 @@ func NewServer(hostname, authKey, stateName string, memStore bool) (*Server, err
 	// Start the Tailscale server
 	if err := server.Start(); err != nil {
 		return nil, err
+	}
+
+	if _, err := server.Up(ctx); err != nil {
+		server.Close()
+		return nil, fmt.Errorf("waiting for tailscale node %q to come up: %w", hostname, err)
 	}
 
 	return &Server{

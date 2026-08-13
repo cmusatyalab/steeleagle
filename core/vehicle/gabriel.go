@@ -111,6 +111,9 @@ func (v *Vehicle) createGabrielClient() error {
 			Model:     v.Model,
 		}.Build()),
 	}
+	if v.gabrielCfg.PrometheusPort != 0 {
+		opts = append(opts, gabrielclient.WithPrometheusPort(v.gabrielCfg.PrometheusPort))
+	}
 	if v.dialer != nil {
 		// Sources the connection from the vehicle's own tsnet node (if any)
 		opts = append(opts, gabrielclient.WithDialOptions(grpc.WithContextDialer(

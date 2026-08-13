@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"runtime/debug"
 	"sync"
 	"time"
 
@@ -16,12 +17,43 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// gabrielModulePath and steeleagleProtocolModulePath are the module paths
+// whose resolved versions are logged on every Configure call.
+const (
+	gabrielModulePath            = "github.com/cmusatyalab/gabriel/go-client"
+	steeleagleProtocolModulePath = "github.com/cmusatyalab/steeleagle/api/go"
+)
+
+// moduleVersion returns the resolved version of the named dependency recorded
+// in this binary's build info (replace directives take priority over the
+// required version), or "unknown" if it can't be determined.
+func moduleVersion(path string) string {
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return "unknown"
+	}
+	for _, dep := range info.Deps {
+		if dep.Path != path {
+			continue
+		}
+		if dep.Replace != nil {
+			return dep.Replace.Version
+		}
+		return dep.Version
+	}
+	return "unknown"
+}
+
 // DefaultControlPort is the port eagled's control-plane API listens on.
 const DefaultControlPort = 9090
 
 // StopTimeout bounds how long StopVehicles/RestartVehicles wait for a vehicle
 // to actually finish tearing down before reporting failure.
 const StopTimeout = 30 * time.Second
+
+// TailscaleStartTimeout bounds how long we wait for a tsnet node to join the
+// tailnet.
+const TailscaleStartTimeout = 30 * time.Second
 
 // installedPluginKey identifies one installed plugin. The same name can be
 // installed independently under different categories (each category is its
@@ -32,11 +64,29 @@ type installedPluginKey struct {
 	Category string
 }
 
-// runningVehicle tracks one currently-running (or being-torn-down) vehicle.
+// runningVehicle tracks one vehicle from the moment its name is reserved
+// through spawning, running, and teardown. cancel is set as soon as the name
+// is reserved (before spawnVehicle is even called), so a stop/restart/reset
+// request can always interrupt it.
 type runningVehicle struct {
-	cancel context.CancelFunc
-	done   <-chan struct{}
-	port   int // port its listener is bound on
+	cancel   context.CancelFunc
+	ready    chan struct{}   // closed once the spawn attempt finishes, successfully or not
+	err      error           // set if the spawn attempt failed; only meaningful once ready is closed
+	done     <-chan struct{} // closed once a successfully-spawned vehicle exits; nil if the spawn failed
+	port     int             // port its listener is bound on
+	promPort int             // port its Gabriel client serves Prometheus metrics on; 0 if disabled
+}
+
+// running reports whether rv's spawn attempt finished successfully and the
+// vehicle hasn't exited yet. Safe to call whether or not the spawn attempt has
+// finished.
+func (rv *runningVehicle) running() bool {
+	select {
+	case <-rv.ready:
+		return rv.err == nil
+	default:
+		return false // still spawning
+	}
 }
 
 // daemon implements eagledpb.DaemonServiceServer.
@@ -49,23 +99,24 @@ type daemon struct {
 	grpcServer  *grpc.Server // gRPC server to serve DaemonService on
 	controlPort int          // port gRPC server listens on
 
-	mu              sync.Mutex
-	configured      bool
-	tsServer        *tailscale.Server // eagled's own tsnet node, once started; nil until then
-	tsHostname      string            // hostname tsServer is currently running under
-	baseCfg         Config            // last-applied config, minus Vehicles
-	daemonName      string            // resolved from baseCfg
-	pluginDir       string            // plugin runtime directory
-	vehicleAuthKey  string            // tsnet auth key every vehicle joins with
-	vehicleMemStore bool              // whether vehicles keep tsnet state in memory instead of persisting it to disk
-	gabrielCfg      GabrielConfig
-	swarmCfg        SwarmControllerConfig
-	nextPort        int                           // next port to assign to a vehicle
-	running         map[string]*runningVehicle    // name -> running vehicle; nil value means "reserved, spawn in progress"
-	vehicleCfgs     map[string]VehicleConfig      // vehicle configurations
-	installed       map[installedPluginKey]string // {name, category} -> ref
-	aviaryCommand   []string                      // resolved from baseCfg.Aviary.Command
-	aviaryDir       string                        // resolved from baseCfg.Aviary.Dir
+	mu                 sync.Mutex
+	configured         bool
+	tsServer           *tailscale.Server // eagled's own tsnet node, once started; nil until then
+	tsHostname         string            // hostname tsServer is currently running under
+	baseCfg            Config            // last-applied config, minus Vehicles
+	daemonName         string            // resolved from baseCfg
+	pluginDir          string            // plugin runtime directory
+	vehicleAuthKey     string            // tsnet auth key every vehicle joins with
+	vehicleMemStore    bool              // whether vehicles keep tsnet state in memory instead of persisting it to disk
+	gabrielCfg         GabrielConfig
+	swarmCfg           SwarmControllerConfig
+	nextPort           int                           // next port to assign to a vehicle
+	nextPrometheusPort int                           // next port to assign a vehicle's Gabriel client metrics endpoint; 0 if disabled
+	running            map[string]*runningVehicle    // name -> vehicle, from the moment its name is reserved through teardown
+	vehicleCfgs        map[string]VehicleConfig      // vehicle configurations
+	installed          map[installedPluginKey]string // {name, category} -> ref
+	aviaryCommand      []string                      // resolved from baseCfg.Aviary.Command
+	aviaryDir          string                        // resolved from baseCfg.Aviary.Dir
 
 	// configMu and aviaryMu each serialize their own slow, one-time setup
 	// call (tailscale.NewServer, spawnAviary) across concurrent RPCs, without
@@ -86,13 +137,35 @@ func newDaemon(ctx context.Context, shutdown context.CancelFunc) *daemon {
 	}
 }
 
+// logConfig logs the daemon-wide config (minus Vehicles, logged individually)
+// and each vehicle's config, along with the resolved gabriel and steeleagle
+// protocol module versions in use. msg distinguishes the caller (a Configure
+// RPC vs. reloading persisted config on daemon restart) in the log line.
+func logConfig(cfg Config, msg string) {
+	log.Info().
+		Int("port-base", cfg.PortBase).
+		Str("plugin-dir", cfg.PluginDir).
+		Str("hostname", cfg.Hostname).
+		Bool("vehicle-tsnet-mem-store", cfg.VehicleTsnetMemStore).
+		Str("gabriel-module-version", moduleVersion(gabrielModulePath)).
+		Str("steeleagle-protocol-version", moduleVersion(steeleagleProtocolModulePath)).
+		Interface("gabriel", cfg.Gabriel).
+		Interface("backend", cfg.Backend).
+		Interface("aviary", cfg.Aviary).
+		Int("vehicles", len(cfg.Vehicles)).
+		Msg(msg)
+	for _, vc := range cfg.Vehicles {
+		log.Info().Str("vehicle", vc.Name).Interface("config", vc).Msg("vehicle configured")
+	}
+}
+
 // Configure parses req's TOML document and starts the vehicles it describes.
 func (d *daemon) Configure(ctx context.Context, req *eagledpb.ConfigureRequest) (*eagledpb.ConfigureResponse, error) {
 	cfg, err := decodeConfig(req.GetConfigToml())
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "parsing config: %v", err)
 	}
-	log.Info().Int("vehicles", len(cfg.Vehicles)).Msg("Configure received")
+	logConfig(cfg, "Configure received")
 	if err := d.ensureNetwork(cfg); err != nil {
 		return nil, err
 	}
@@ -155,23 +228,18 @@ func (d *daemon) ForgetVehicles(ctx context.Context, req *eagledpb.ForgetVehicle
 	for _, name := range req.GetNames() {
 		d.mu.Lock()
 		_, known := d.vehicleCfgs[name]
-		rv, running := d.running[name]
+		_, running := d.running[name]
 		d.mu.Unlock()
 		if !known {
 			results = append(results, eagledpb.VehicleResult_builder{Name: name, Ok: false, Error: fmt.Sprintf("vehicle %q not configured", name)}.Build())
 			continue
 		}
-		if running && rv == nil {
-			// rv == nil means reserve() has claimed the name but startVehicles
-			// hasn't finished spawning it yet. Forgetting now would race: if
-			// we deleted vehicleCfgs here, startVehicles would just
-			// unconditionally re-add it once the spawn completes, silently
-			// undoing this call.
-			results = append(results, eagledpb.VehicleResult_builder{Name: name, Ok: false, Error: fmt.Sprintf("vehicle %q is still starting, try again", name)}.Build())
-			continue
-		}
 
-		if running && rv != nil {
+		if running {
+			// stopOne cancels and waits out the reservation whether it's still
+			// spawning or fully running, so by the time it returns name is
+			// fully clear of d.running — no race with startVehicles re-adding
+			// it underneath us.
 			if err := d.stopOne(name); err != nil {
 				results = append(results, eagledpb.VehicleResult_builder{Name: name, Ok: false, Error: err.Error()}.Build())
 				continue
@@ -213,7 +281,7 @@ func (d *daemon) startVehicles(vehicleCfgs []VehicleConfig) []*eagledpb.VehicleR
 
 	results := make([]*eagledpb.VehicleResult, 0, len(vehicleCfgs))
 	for _, vehicleCfg := range vehicleCfgs {
-		port, err := d.reserve(vehicleCfg.Name)
+		rv, vCtx, err := d.reserve(vehicleCfg.Name)
 		if err != nil {
 			results = append(results, eagledpb.VehicleResult_builder{
 				Name: vehicleCfg.Name, Ok: false, Error: err.Error(),
@@ -221,37 +289,99 @@ func (d *daemon) startVehicles(vehicleCfgs []VehicleConfig) []*eagledpb.VehicleR
 			continue
 		}
 
-		driverPlugin, missionPlugin, extraPlugins, err := resolvePlugins(vehicleCfg, pluginDir)
-		if err != nil {
-			d.mu.Lock()
-			delete(d.running, vehicleCfg.Name)
-			d.mu.Unlock()
+		spawn := func() error {
+			return d.startOne(vCtx, rv, vehicleCfg, pluginDir, authKey, memStore, gabrielCfg, swarmCfg, daemonName)
+		}
+
+		if !vehicleCfg.Simulate {
+			if ip := driverIP(vehicleCfg); ip == "" {
+				log.Warn().Str("vehicle", vehicleCfg.Name).
+					Msg("no drone IP found in driver args (expected \"--ip <address>\"), skipping reachability probe")
+			} else if err := probeDroneReachable(vCtx, ip); err != nil {
+				// Not reachable yet, say if the drone is still rebooting after
+				// a reset. Rather than fail Configure outright, remember the
+				// vehicle as desired (so it survives an eagled restart, and
+				// ForgetVehicles/StopVehicles can still cancel it) and keep
+				// retrying in the background until it comes up or is canceled.
+				log.Warn().Str("vehicle", vehicleCfg.Name).Str("ip", ip).Err(err).
+					Msg("drone not reachable yet, will keep retrying in the background")
+				d.mu.Lock()
+				d.vehicleCfgs[vehicleCfg.Name] = vehicleCfg
+				d.mu.Unlock()
+				go func() {
+					if err := waitForDrone(vCtx, vehicleCfg.Name, ip); err != nil {
+						d.failSpawn(vehicleCfg.Name, rv, err)
+						return
+					}
+					if err := spawn(); err != nil {
+						log.Warn().Str("vehicle", vehicleCfg.Name).Err(err).
+							Msg("vehicle failed to start after drone became reachable")
+					}
+				}()
+				results = append(results, eagledpb.VehicleResult_builder{Name: vehicleCfg.Name, Ok: true}.Build())
+				continue
+			}
+		}
+
+		if err := spawn(); err != nil {
 			results = append(results, eagledpb.VehicleResult_builder{
 				Name: vehicleCfg.Name, Ok: false, Error: err.Error(),
 			}.Build())
 			continue
 		}
-
-		cancel, done, err := spawnVehicle(d.ctx, vehicleCfg, port, driverPlugin, missionPlugin, extraPlugins, authKey, memStore, gabrielCfg, swarmCfg, daemonName)
-		if err != nil {
-			d.mu.Lock()
-			delete(d.running, vehicleCfg.Name)
-			d.mu.Unlock()
-			results = append(results, eagledpb.VehicleResult_builder{
-				Name: vehicleCfg.Name, Ok: false, Error: err.Error(),
-			}.Build())
-			continue
-		}
-
-		d.mu.Lock()
-		d.running[vehicleCfg.Name] = &runningVehicle{cancel: cancel, done: done, port: port}
-		d.vehicleCfgs[vehicleCfg.Name] = vehicleCfg
-		d.mu.Unlock()
-		d.watchExit(vehicleCfg.Name, done)
-
 		results = append(results, eagledpb.VehicleResult_builder{Name: vehicleCfg.Name, Ok: true}.Build())
 	}
 	return results
+}
+
+// startOne resolves vehicleCfg's plugins and spawns it on the already reserved
+// rv, recording it in d.vehicleCfgs and watching for its exit. On error, rv's
+// reservation is released via failSpawn so the name is free to retry.
+func (d *daemon) startOne(
+	vCtx context.Context,
+	rv *runningVehicle,
+	vehicleCfg VehicleConfig,
+	pluginDir, authKey string,
+	memStore bool,
+	gabrielCfg GabrielConfig,
+	swarmCfg SwarmControllerConfig,
+	daemonName string,
+) error {
+	driverPlugin, missionPlugin, extraPlugins, err := resolvePlugins(vehicleCfg, pluginDir)
+	if err != nil {
+		d.failSpawn(vehicleCfg.Name, rv, err)
+		return err
+	}
+
+	done, err := spawnVehicle(vCtx, vehicleCfg, rv.port, rv.promPort, driverPlugin, missionPlugin, extraPlugins, authKey, memStore, gabrielCfg, swarmCfg, daemonName)
+	if err != nil {
+		d.failSpawn(vehicleCfg.Name, rv, err)
+		return err
+	}
+
+	d.mu.Lock()
+	rv.done = done
+	close(rv.ready)
+	d.vehicleCfgs[vehicleCfg.Name] = vehicleCfg
+	d.mu.Unlock()
+	d.watchExit(vehicleCfg.Name, done)
+	return nil
+}
+
+// failSpawn records name's failed spawn attempt on rv (unblocking anything
+// waiting on rv.ready, e.g. a concurrent stopOne), releases rv's context
+// (never started, so nothing else will), and, unless a newer reservation has
+// already replaced rv, removes name from d.running so the name is free to try
+// again.
+func (d *daemon) failSpawn(name string, rv *runningVehicle, err error) {
+	rv.cancel()
+	d.mu.Lock()
+	if cur, ok := d.running[name]; ok && cur == rv {
+		delete(d.running, name)
+	}
+	d.mu.Unlock()
+	rv.err = err
+	close(rv.ready)
 }
 
 // watchExit clears name from d.running once done closes, unless a newer
@@ -260,7 +390,7 @@ func (d *daemon) watchExit(name string, done <-chan struct{}) {
 	go func() {
 		<-done
 		d.mu.Lock()
-		if rv, ok := d.running[name]; ok && rv != nil && rv.done == done {
+		if rv, ok := d.running[name]; ok && rv.done == done {
 			delete(d.running, name)
 		}
 		d.mu.Unlock()
@@ -268,24 +398,33 @@ func (d *daemon) watchExit(name string, done <-chan struct{}) {
 }
 
 // stopOne cancels name's vehicle and waits for it to finish tearing down.
+// This works whether the vehicle is fully running or still spawning (e.g.
+// stuck joining the tailnet): cancel is set as soon as the name is reserved,
+// so it always interrupts whatever's in progress instead of requiring the
+// caller to wait out a stuck spawn.
 func (d *daemon) stopOne(name string) error {
 	d.mu.Lock()
 	rv, exists := d.running[name]
 	d.mu.Unlock()
-	if exists && rv == nil {
-		// rv == nil means reserve() has claimed the name but startVehicles
-		// hasn't finished spawning it yet; see ForgetVehicles for the same race.
-		return fmt.Errorf("vehicle %q is still starting, try again", name)
-	}
 	if !exists {
 		return fmt.Errorf("vehicle %q not running", name)
 	}
 
 	rv.cancel()
+
 	select {
-	case <-rv.done:
+	case <-rv.ready:
 	case <-time.After(StopTimeout):
 		return fmt.Errorf("vehicle %q did not stop within %s", name, StopTimeout)
+	}
+	if rv.done != nil {
+		// The spawn succeeded before cancellation took effect: wait for the
+		// now-canceled vehicle to actually finish tearing down.
+		select {
+		case <-rv.done:
+		case <-time.After(StopTimeout):
+			return fmt.Errorf("vehicle %q did not stop within %s", name, StopTimeout)
+		}
 	}
 
 	d.mu.Lock()
@@ -295,6 +434,25 @@ func (d *daemon) stopOne(name string) error {
 	d.mu.Unlock()
 	log.Info().Str("vehicle", name).Msg("vehicle stopped")
 	return nil
+}
+
+// stopAll stops every vehicle currently reserved, spawning, or running
+// (canceling any still mid-spawn rather than waiting on it). Best-effort: used
+// by ResetConfig, which is shutting the whole daemon down regardless, so one
+// vehicle failing to stop within StopTimeout shouldn't block the rest.
+func (d *daemon) stopAll() {
+	d.mu.Lock()
+	names := make([]string, 0, len(d.running))
+	for name := range d.running {
+		names = append(names, name)
+	}
+	d.mu.Unlock()
+
+	for _, name := range names {
+		if err := d.stopOne(name); err != nil {
+			log.Warn().Str("vehicle", name).Err(err).Msg("failed to stop vehicle")
+		}
+	}
 }
 
 // restartOne stops a vehicle (if running) and starts it again using its
@@ -321,17 +479,27 @@ func (d *daemon) restartOne(name string) error {
 }
 
 // reserve claims the next available port for a vehicle, failing if a vehicle
-// by that name is already running or being started.
-func (d *daemon) reserve(name string) (int, error) {
+// by that name is already running or being started. The returned context is
+// canceled the moment rv.cancel is called (directly, or via d.ctx being
+// canceled on daemon shutdown) — spawnVehicle must use it throughout, so the
+// spawn can be interrupted even while it's still in progress.
+func (d *daemon) reserve(name string) (rv *runningVehicle, vCtx context.Context, err error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	if _, exists := d.running[name]; exists {
-		return 0, fmt.Errorf("vehicle %q already running", name)
+		return nil, nil, fmt.Errorf("vehicle %q already running", name)
 	}
 	port := d.nextPort
 	d.nextPort++
-	d.running[name] = nil // placeholder, reserves the name until spawn completes
-	return port, nil
+	promPort := 0
+	if d.nextPrometheusPort != 0 {
+		promPort = d.nextPrometheusPort
+		d.nextPrometheusPort++
+	}
+	vCtx, cancel := context.WithCancel(d.ctx)
+	rv = &runningVehicle{cancel: cancel, ready: make(chan struct{}), port: port, promPort: promPort}
+	d.running[name] = rv
+	return rv, vCtx, nil
 }
 
 // resolveHostname returns hostname if set, otherwise the OS hostname suffixed
@@ -376,7 +544,9 @@ func (d *daemon) ensureNetwork(cfg Config) error {
 		return nil
 	}
 
-	ts, err := tailscale.NewServer(hostname, authKey, "daemon", false)
+	startCtx, cancel := context.WithTimeout(d.ctx, TailscaleStartTimeout)
+	defer cancel()
+	ts, err := tailscale.NewServer(startCtx, hostname, authKey, "daemon", false)
 	if err != nil {
 		return status.Errorf(codes.Internal, "starting tailscale: %v", err)
 	}
@@ -469,6 +639,7 @@ func (d *daemon) ensureConfigured(cfg Config) error {
 	d.aviaryCommand = cfg.Aviary.Command
 	d.aviaryDir = cfg.Aviary.Dir
 	d.nextPort = cfg.PortBase
+	d.nextPrometheusPort = cfg.Gabriel.PrometheusPortBase
 	d.configured = true
 	d.mu.Unlock()
 	log.Info().

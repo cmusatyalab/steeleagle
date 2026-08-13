@@ -47,6 +47,8 @@ type Vehicle struct {
 	cancelFn      context.CancelFunc      // cancel function for vehicle context
 	err           error                   // vehicle error, populated exactly once when a fatal error occurs
 	shutdown      chan struct{}           // shutdown channel
+	telemetryRecv atomic.Uint64           // count of telemetry updates received from the driver
+	frameRecv     atomic.Uint64           // count of video frames received from the driver
 }
 
 // Create a new vehicle with the given plugins and options.

@@ -9,7 +9,9 @@ port-base = 9000
 # eagled's identity: both the name its own tsnet node joins the tailnet as,
 # and the name it reports to the swarm controller so it can tell which eagled
 # instance a vehicle belongs to. Defaults to the OS hostname if left blank.
-hostname = "eagled"
+#
+# If using the install.sh script, this is optional.
+# hostname = "eagled"
 
 [gabriel]
 # If left blank, vehicles will not connect to Gabriel. host:port, and (like
@@ -19,6 +21,11 @@ hostname = "eagled"
 server-endpoint = ""
 telemetry-target-engines = ["telemetry"]
 video-frames-target-engines = ["telemetry"]
+# If set, each vehicle's Gabriel client serves Prometheus metrics (input
+# counts, token counts, end-to-end input processing latency) on its own port,
+# assigned starting from this port in the same order vehicle ports are
+# assigned from port-base above. Left unset, no metrics endpoint is served.
+# prometheus-port-base = 9500
 
 [backend.swarm-controller]
 # host:port of the swarm controller's RegistryService. Supports a MagicDNS name

@@ -48,6 +48,7 @@ func (v *Vehicle) streamEncodedVideoFrames(ctx context.Context) error {
 			v.log.Debug().Msgf("got nil frame from driver")
 		}
 		v.store.addFrame(f.GetFrame())
+		v.frameRecv.Add(1)
 	}
 }
 
@@ -203,6 +204,7 @@ func (v *Vehicle) consumeFrames(ctx context.Context, frameCh chan []byte) error 
 				EncodedData: frame,
 			}.Build()
 			v.store.addFrame(f)
+			v.frameRecv.Add(1)
 			if count%30 == 0 {
 				v.log.Debug().Msgf("processed frame %d (%d bytes)\n", count, len(frame))
 			}

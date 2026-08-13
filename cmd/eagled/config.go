@@ -13,6 +13,12 @@ type GabrielConfig struct {
 	ServerEndpoint           string   `toml:"server-endpoint"`
 	TelemetryTargetEngines   []string `toml:"telemetry-target-engines,omitempty"`
 	VideoFramesTargetEngines []string `toml:"video-frames-target-engines,omitempty"`
+	// PrometheusPortBase, if set, has each vehicle's Gabriel client serve
+	// Prometheus metrics (input counts, token counts, end-to-end input
+	// processing latency) on its own port, assigned starting from this port in
+	// the same ascending order vehicle ports are assigned from PortBase.  Left
+	// unset (or 0), no metrics endpoint is served.
+	PrometheusPortBase int `toml:"prometheus-port-base,omitempty"`
 }
 
 // SwarmControllerConfig models the [backend.swarm-controller] table.

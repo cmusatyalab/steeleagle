@@ -18,6 +18,12 @@ import (
 	"google.golang.org/grpc"
 )
 
+// tailscaleStartTimeout bounds how long we wait for a tsnet node to join the
+// tailnet. Without this, a node stuck behind a rejected auth key or an
+// interactive-login fallback (tsnet's behavior when authKey doesn't work)
+// blocks startup forever instead of failing with a clear error.
+const tailscaleStartTimeout = 30 * time.Second
+
 // TailscaleConfig models the [tailscale] table.
 type TailscaleConfig struct {
 	Hostname   string `toml:"hostname"`
@@ -101,7 +107,9 @@ func main() {
 		if cfg.Tailscale.AuthKeyEnv != "" {
 			authKey = os.Getenv(cfg.Tailscale.AuthKeyEnv)
 		}
-		ts, err = tailscale.NewServer(cfg.Tailscale.Hostname, authKey, "swarm-controller", cfg.Tailscale.MemStore)
+		startCtx, cancel := context.WithTimeout(context.Background(), tailscaleStartTimeout)
+		defer cancel()
+		ts, err = tailscale.NewServer(startCtx, cfg.Tailscale.Hostname, authKey, "swarm-controller", cfg.Tailscale.MemStore)
 		if err != nil {
 			log.Fatal().Msgf("starting tailscale: %v", err)
 		}

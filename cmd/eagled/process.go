@@ -10,13 +10,15 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// ResetConfig deletes the persisted config and shuts the daemon down, relying
-// on the process supervisor to restart it unconfigured. Installed drivers are
-// untouched, and so is the persisted tailscale network config (see
-// PersistedNetworkFile) — a reset daemon still rejoins the tailnet and stays
-// reachable there for the Configure call that reconfigures it.
+// ResetConfig stops every vehicle (canceling any still mid-spawn rather than
+// waiting on or rejecting for it — see stopOne), deletes the persisted config,
+// and shuts the daemon down, relying on the process supervisor to restart it
+// unconfigured. Installed drivers are untouched, and so is the persisted
+// tailscale network config (see PersistedNetworkFile).
 func (d *daemon) ResetConfig(ctx context.Context, req *eagledpb.ResetConfigRequest) (*eagledpb.ResetConfigResponse, error) {
 	log.Warn().Msg("ResetConfig received: clearing persisted config and shutting down")
+	d.stopAll()
+
 	path, err := persistedConfigPath()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "determining config persistence path: %v", err)
@@ -30,8 +32,11 @@ func (d *daemon) ResetConfig(ctx context.Context, req *eagledpb.ResetConfigReque
 }
 
 // RestartDaemon shuts the daemon down the same way ResetConfig does, minus
-// clearing the persisted config, so the process supervisor brings it back up
-// already configured, with its vehicles restarted from applied-config.toml.
+// stopping vehicles first or clearing the persisted config, so the process
+// supervisor brings it back up already configured, with its vehicles restarted
+// from applied-config.toml. Canceling d.ctx (via d.shutdown) tears down every
+// running or still-spawning vehicle the same way stopOne would, just without
+// waiting for each to finish first.
 func (d *daemon) RestartDaemon(ctx context.Context, req *eagledpb.RestartDaemonRequest) (*eagledpb.RestartDaemonResponse, error) {
 	log.Info().Msg("RestartDaemon received: shutting down for restart")
 	d.shutdown()
@@ -61,9 +66,10 @@ func (d *daemon) GetStatus(ctx context.Context, req *eagledpb.GetStatusRequest) 
 
 	vehicles := make([]*eagledpb.VehicleStatus, 0, len(d.vehicleCfgs))
 	for name, cfg := range d.vehicleCfgs {
-		rv, running := d.running[name]
+		rv, exists := d.running[name]
+		running := exists && rv.running()
 		port := 0
-		if running && rv != nil {
+		if running {
 			port = rv.port
 		}
 		driverName := ""
@@ -73,7 +79,7 @@ func (d *daemon) GetStatus(ctx context.Context, req *eagledpb.GetStatusRequest) 
 		vehicles = append(vehicles, eagledpb.VehicleStatus_builder{
 			Name:    name,
 			Driver:  driverName,
-			Running: running && rv != nil,
+			Running: running,
 			Port:    int32(port),
 		}.Build())
 	}

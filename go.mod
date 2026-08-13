@@ -6,7 +6,7 @@ require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/adrg/xdg v0.5.3
 	github.com/alecthomas/participle/v2 v2.1.4
-	github.com/cmusatyalab/gabriel/go-client v0.3.0
+	github.com/cmusatyalab/gabriel/go-client v0.5.0
 	github.com/cmusatyalab/gabriel/protocol/go v0.3.0
 	github.com/cmusatyalab/steeleagle/api/go v0.0.0
 	github.com/go-git/go-git/v5 v5.19.2
@@ -31,6 +31,7 @@ require (
 	github.com/agnivade/levenshtein v1.2.1 // indirect
 	github.com/akutz/memconn v0.1.0 // indirect
 	github.com/alexbrainman/sspi v0.0.0-20250919150558-7d374ff0d59e // indirect
+	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cilium/ebpf v0.17.3 // indirect
 	github.com/cloudflare/circl v1.6.3 // indirect
@@ -74,12 +75,15 @@ require (
 	github.com/mdlayher/netlink v1.11.2 // indirect
 	github.com/mdlayher/socket v0.6.1 // indirect
 	github.com/mitchellh/go-ps v1.0.0 // indirect
+	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pires/go-proxyproto v0.15.0 // indirect
 	github.com/pjbgf/sha1cd v0.6.0 // indirect
 	github.com/pkg/sftp v1.13.9 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/prometheus/client_golang v1.24.1 // indirect
+	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.70.1 // indirect
+	github.com/prometheus/procfs v0.21.1 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9 // indirect
 	github.com/safchain/ethtool v0.7.0 // indirect
 	github.com/segmentio/asm v1.2.1 // indirect
