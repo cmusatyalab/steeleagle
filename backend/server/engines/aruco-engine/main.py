@@ -44,14 +44,17 @@ def main():
     )
 
     parser.add_argument(
-        "-src", "--engine_id", default="aruco_detector_engine", help="Engine identifier."
+        "-src",
+        "--engine_id",
+        default="aruco_detector_engine",
+        help="Engine identifier.",
     )
 
     parser.add_argument(
         "-H",
         "--redis_host",
         type=str,
-        default='redis',
+        default="redis",
         help="Set host name for redis connection [default: redis",
     )
 
@@ -76,6 +79,7 @@ def main():
     )
 
     runner.run()
+
 
 if __name__ == "__main__":
     main()

@@ -4,7 +4,7 @@ toc_max_heading_level: 3
 
 import Link from '@docusaurus/Link';
 
-# flight_log_service 
+# flight_log_service
 ---
 ## <><code class="docs-class">service</code></> FlightLog
 

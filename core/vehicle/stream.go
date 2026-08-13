@@ -11,7 +11,11 @@ import (
 // Stream telemetry from the driver, updating the vehicle data store.
 func (v *Vehicle) streamTelemetry(ctx context.Context) error {
 	client := driverpb.NewStreamServiceClient(v.driver)
-	req := &driverpb.StreamTelemetryRequest{}
+	builder := driverpb.StreamTelemetryRequest_builder{}
+	if fps := v.telemetryFps; fps != 0 {
+		builder.TargetFps = &fps
+	}
+	req := builder.Build()
 	stream, err := client.StreamTelemetry(ctx, req)
 	if err != nil {
 		v.log.Error().Err(err).Msg("couldn't get telemetry stream from driver")
@@ -34,6 +38,29 @@ func (v *Vehicle) streamTelemetry(ctx context.Context) error {
 			continue
 		}
 		v.store.addTelemetry(tel.GetTelemetry())
+		v.telemetryRecv.Add(1)
+	}
+}
+
+// logRates periodically logs the telemetry and frame rates observed from the
+// driver, until ctx is canceled.
+func (v *Vehicle) logRates(ctx context.Context) {
+	ticker := time.NewTicker(rateLogInterval)
+	defer ticker.Stop()
+	var lastTelemetry, lastFrames uint64
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			telemetry := v.telemetryRecv.Load()
+			frames := v.frameRecv.Load()
+			v.log.Info().
+				Float64("telemetry_fps", float64(telemetry-lastTelemetry)/rateLogInterval.Seconds()).
+				Float64("frame_fps", float64(frames-lastFrames)/rateLogInterval.Seconds()).
+				Msg("driver stream rates")
+			lastTelemetry, lastFrames = telemetry, frames
+		}
 	}
 }
 
@@ -63,6 +90,7 @@ func retryAfterDelay(ctx context.Context) bool {
 // Start streaming video frames and telemetry from the driver, updating the
 // vehicle data store.
 func (v *Vehicle) startDriverStreaming(ctx context.Context) {
+	go v.logRates(ctx)
 	go func() {
 		for {
 			err := v.streamTelemetry(ctx)

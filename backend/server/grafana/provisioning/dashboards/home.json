@@ -140,8 +140,8 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "rate(gabriel_client_inputs_received_total[$window]) > 0",
-          "legendFormat": "{{source_id}}",
+          "expr": "rate(gabriel_producer_inputs_received_total[$window]) > 0",
+          "legendFormat": "{{producer_id}}",
           "range": true,
           "refId": "A"
         }
@@ -396,13 +396,13 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "gabriel_source_queue_length > 0",
-          "legendFormat": "{{source_id}}",
+          "expr": "gabriel_producer_queue_length > 0",
+          "legendFormat": "{{producer_id}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Source Queue Lengths",
+      "title": "Producer Queue Lengths",
       "type": "gauge"
     },
     {

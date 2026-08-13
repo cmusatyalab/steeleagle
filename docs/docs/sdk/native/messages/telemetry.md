@@ -4,7 +4,7 @@ toc_max_heading_level: 3
 
 import Link from '@docusaurus/Link';
 
-# telemetry 
+# telemetry
 ---
 
 ## <><code class="docs-func">enum</code></> MotionStatus

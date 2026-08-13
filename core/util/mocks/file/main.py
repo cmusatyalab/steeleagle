@@ -17,7 +17,7 @@ if __name__ == "__main__":
         print(f"file_test: got expected exception {e}")
     try:
         with open("write.txt", "w") as f:
-            f.write("WRITE")
+            f.write("WRITE\n")
             print("file_test: got expected write result")
     except Exception as e:
         print(f"file_test: got unexpected exception {e}")

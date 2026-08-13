@@ -7,7 +7,7 @@ sidebar_position: 2
 For many missions, users will want to correlate real world geolocations with vehicle actions.
 SteelEagle DSL supports this through KML file referencing. [KML](https://developers.google.com/kml/documentation/kml_tut) (Keyhole Markup Language) files
 are files used to describe geographic data. They are generally used to draw visual features on top of a
-map. Users can create KML files marked up with Polylines or Polygons and inject these shapes into DSL 
+map. Users can create KML files marked up with Polylines or Polygons and inject these shapes into DSL
 datatypes, like the [`Waypoints`](/sdk/python/steeleagle_sdk/api/datatypes/waypoint#class-waypoint)
 object.
 

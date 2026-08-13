@@ -83,7 +83,7 @@ request.vehicle_id = vehicle
 
 assert(send_request(request))
 ```
-</TabItem>    
+</TabItem>
 <TabItem value="direct" label="Direct Upload">
 Direct upload requires a running [vehicle](/reference/vehicle) instance that is accessible over the network, and is [configured for direct service access](/reference/vehicle/dsa#setup).
 This method avoids setting up the SteelEagle backend and is thus a lightweight way to work with SteelEagle vehicles. This comes with a [few caveats](/reference/vehicle/dsa#caveats) which users should be aware of before flying.

@@ -31,8 +31,8 @@ class DatasinkLocation(int, Enum):
         REMOTE (0): remote location (network hop required)
         LOCAL (1): local location (IPC)
     """
-    REMOTE = 0 
-    LOCAL = 1 
+    REMOTE = 0
+    LOCAL = 1
 
 ```
 </details>
@@ -43,9 +43,9 @@ class DatasinkLocation(int, Enum):
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
-Information about a datasink.    
+Information about a datasink.
 #### Attributes
-**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;id**&nbsp;&nbsp;(<code>str</code>) <text>&#8212;</text> datasink ID    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;id**&nbsp;&nbsp;(<code>str</code>) <text>&#8212;</text> datasink ID
 
 **<><code class="docs-attr">attr</code></>&nbsp;&nbsp;location**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/compute#class-datasinklocation">DatasinkLocation</Link></code>) <text>&#8212;</text> datasink location
 
@@ -56,11 +56,11 @@ Information about a datasink.
 ```python
 @register_data
 class DatasinkInfo(Datatype):
-    """Information about a datasink.    
-    
+    """Information about a datasink.
+
     Attributes:
-        id (str): datasink ID    
-        location (DatasinkLocation): datasink location    
+        id (str): datasink ID
+        location (DatasinkLocation): datasink location
     """
     id: str
     location: DatasinkLocation

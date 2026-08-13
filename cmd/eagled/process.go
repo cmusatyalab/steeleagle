@@ -1,0 +1,89 @@
+package main
+
+import (
+	"context"
+	"os"
+
+	eagledpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/eagled"
+	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+)
+
+// ResetConfig stops every vehicle (canceling any still mid-spawn rather than
+// waiting on or rejecting for it — see stopOne), deletes the persisted config,
+// and shuts the daemon down, relying on the process supervisor to restart it
+// unconfigured. Installed drivers are untouched, and so is the persisted
+// tailscale network config (see PersistedNetworkFile).
+func (d *daemon) ResetConfig(ctx context.Context, req *eagledpb.ResetConfigRequest) (*eagledpb.ResetConfigResponse, error) {
+	log.Warn().Msg("ResetConfig received: clearing persisted config and shutting down")
+	d.stopAll()
+
+	path, err := persistedConfigPath()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "determining config persistence path: %v", err)
+	}
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+		return nil, status.Errorf(codes.Internal, "clearing persisted config: %v", err)
+	}
+
+	d.shutdown()
+	return eagledpb.ResetConfigResponse_builder{}.Build(), nil
+}
+
+// RestartDaemon shuts the daemon down the same way ResetConfig does, minus
+// stopping vehicles first or clearing the persisted config, so the process
+// supervisor brings it back up already configured, with its vehicles restarted
+// from applied-config.toml. Canceling d.ctx (via d.shutdown) tears down every
+// running or still-spawning vehicle the same way stopOne would, just without
+// waiting for each to finish first.
+func (d *daemon) RestartDaemon(ctx context.Context, req *eagledpb.RestartDaemonRequest) (*eagledpb.RestartDaemonResponse, error) {
+	log.Info().Msg("RestartDaemon received: shutting down for restart")
+	d.shutdown()
+	return eagledpb.RestartDaemonResponse_builder{}.Build(), nil
+}
+
+// GetStatus reports the daemon's current configuration, if any, and the state
+// of every vehicle it knows about.
+func (d *daemon) GetStatus(ctx context.Context, req *eagledpb.GetStatusRequest) (*eagledpb.GetStatusResponse, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	resp := eagledpb.GetStatusResponse_builder{Configured: d.configured}
+	if d.configured {
+		resp.Config = eagledpb.DaemonConfig_builder{
+			Vpn:                    d.tsServer != nil,
+			VehicleVpn:             d.vehicleAuthKey != "",
+			PortBase:               int32(d.baseCfg.PortBase),
+			PluginDir:              d.pluginDir,
+			TailscaleHostname:      d.daemonName,
+			TailscaleAuthkeyEnv:    TSAuthKeyEnv,
+			SwarmControllerAddress: d.swarmCfg.Address,
+			DaemonName:             d.daemonName,
+			GabrielServerEndpoint:  d.gabrielCfg.ServerEndpoint,
+		}.Build()
+	}
+
+	vehicles := make([]*eagledpb.VehicleStatus, 0, len(d.vehicleCfgs))
+	for name, cfg := range d.vehicleCfgs {
+		rv, exists := d.running[name]
+		running := exists && rv.running()
+		port := 0
+		if running {
+			port = rv.port
+		}
+		driverName := ""
+		if cfg.Driver != nil {
+			driverName = cfg.Driver.Name
+		}
+		vehicles = append(vehicles, eagledpb.VehicleStatus_builder{
+			Name:    name,
+			Driver:  driverName,
+			Running: running,
+			Port:    int32(port),
+		}.Build())
+	}
+	resp.Vehicles = vehicles
+
+	return resp.Build(), nil
+}

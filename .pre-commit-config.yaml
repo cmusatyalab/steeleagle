@@ -32,11 +32,16 @@ repos:
       - id: go-fmt
       - id: go-build
         require_serial: true
-      - id: go-unit-tests
-        require_serial: true
 
   - repo: local
     hooks:
+      - id: go-unit-tests
+        name: go unit tests
+        entry: bash -c 'go test -tags=unit -timeout 30s -short $(go list ./... | grep -v /vendor/)'
+        language: system
+        types: [go]
+        pass_filenames: false
+        require_serial: true
       - id: go-vet
         name: go vet
         entry: go vet ./...

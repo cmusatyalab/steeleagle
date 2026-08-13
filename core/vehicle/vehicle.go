@@ -19,6 +19,11 @@ import (
 	"google.golang.org/grpc"
 )
 
+// Dialer sources an outbound connection from a specific network identity —
+// matches (*tailscale.Server).Dial's signature, so a vehicle's own tsnet node
+// can be passed straight in. A nil Dialer falls back to gRPC's default dialer.
+type Dialer func(ctx context.Context, network, addr string) (net.Conn, error)
+
 type Vehicle struct {
 	Name          string                  // vehicle name
 	Model         string                  // vehicle hardware model, reported by the driver
@@ -27,7 +32,9 @@ type Vehicle struct {
 	pluginCfg     PluginConfig            // plugin configuration
 	policyCfg     PolicyConfig            // policy configuration
 	videoCfg      VideoStreamConfig       // video stream config
+	telemetryFps  uint32                  // target telemetry rate, 0 lets the driver choose
 	gabrielCfg    GabrielConfig           // Gabriel config
+	dialer        Dialer                  // sources outbound connections (e.g. to Gabriel); nil uses gRPC's default dialer
 	policy        policyState             // active policy state
 	driver        *grpc.ClientConn        // driver gRPC client connection
 	mission       *grpc.ClientConn        // mission gRPC client connection
@@ -40,6 +47,8 @@ type Vehicle struct {
 	cancelFn      context.CancelFunc      // cancel function for vehicle context
 	err           error                   // vehicle error, populated exactly once when a fatal error occurs
 	shutdown      chan struct{}           // shutdown channel
+	telemetryRecv atomic.Uint64           // count of telemetry updates received from the driver
+	frameRecv     atomic.Uint64           // count of video frames received from the driver
 }
 
 // Create a new vehicle with the given plugins and options.
@@ -218,10 +227,12 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		}
 	}
 
-	// Monitor plugins in case they exit unexpectedly
+	// Monitor plugins in case they exit unexpectedly, restarting them with
+	// backoff so a crashed driver or mission plugin comes back on its own
+	// instead of leaving the vehicle running against a dead plugin.
 	v.pluginMonitor = &pluginMonitor{
 		pluginCfg:     v.pluginCfg,
-		restartPolicy: noRestart,
+		restartPolicy: alwaysRestart,
 		log:           v.log,
 		pluginResetCb: pluginResetCb,
 	}

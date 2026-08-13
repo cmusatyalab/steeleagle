@@ -11,6 +11,10 @@ import (
 // broken telemetry or video stream,
 const streamRetryDelay = 250 * time.Millisecond
 
+// rateLogInterval is how often the observed telemetry and frame rates from the
+// driver are logged.
+const rateLogInterval = 10 * time.Second
+
 // VideoStreamType determines the type of video streaming that the vehicle
 // uses. RTSP will forward an existing RTSP stream from the driver. Frames will
 // encode individually sent frames into an RTSP stream.

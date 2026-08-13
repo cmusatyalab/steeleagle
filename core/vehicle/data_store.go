@@ -26,18 +26,18 @@ const (
 // computed results. It runs a goroutine to periodically flush telemetry data
 // to disk in a Bolt key/value store.
 type dataStore struct {
-	latestTelemetry    *telemetrypb.Telemetry               // latest telemetry
-	telMu              *sync.RWMutex                        // telemetry mutex
-	latestFrame        *telemetrypb.EncodedFrame            // latest frame
-	frameMu            *sync.RWMutex                        // frame mutex
-	latestResults      map[string]*resultpb.ComputeResult   // latest results
-	resultsMu          *sync.RWMutex                        // results mutex
-	telCh              chan *telemetrypb.Telemetry          // telemetry flush channel
-	db                 *bbolt.DB                            // database
-	telSubscribers     [](chan<- *telemetrypb.Telemetry)    // telemetry subscribers
-	telSubscribersMu   *sync.RWMutex                        // telemetry subscribers mutex
-	frameSubscribers   [](chan<- *telemetrypb.EncodedFrame) // video frame subscribers
-	frameSubscribersMu *sync.RWMutex                        // video frame subscribers mutex
+	latestTelemetry    *telemetrypb.Telemetry             // latest telemetry
+	telMu              *sync.RWMutex                      // telemetry mutex
+	latestFrame        *telemetrypb.EncodedFrame          // latest frame
+	frameMu            *sync.RWMutex                      // frame mutex
+	latestResults      map[string]*resultpb.ComputeResult // latest results
+	resultsMu          *sync.RWMutex                      // results mutex
+	telCh              chan *telemetrypb.Telemetry        // telemetry flush channel
+	db                 *bbolt.DB                          // database
+	telSubscribers     [](chan *telemetrypb.Telemetry)    // telemetry subscribers
+	telSubscribersMu   *sync.RWMutex                      // telemetry subscribers mutex
+	frameSubscribers   [](chan *telemetrypb.EncodedFrame) // video frame subscribers
+	frameSubscribersMu *sync.RWMutex                      // video frame subscribers mutex
 }
 
 // Create a new data store.
@@ -172,12 +172,20 @@ func (s *dataStore) addTelemetry(tel *telemetrypb.Telemetry) {
 	s.telSubscribersMu.RLock()
 	defer s.telSubscribersMu.RUnlock()
 	for _, ch := range s.telSubscribers {
-		go func() {
+		select {
+		case ch <- tel:
+		default:
+			// Subscriber hasn't consumed the last value yet. Drop it and
+			// replace with the latest so subscribers never see stale data.
+			select {
+			case <-ch:
+			default:
+			}
 			select {
 			case ch <- tel:
-			case <-time.After(time.Second):
+			default:
 			}
-		}()
+		}
 	}
 }
 
@@ -190,12 +198,20 @@ func (s *dataStore) addFrame(frame *telemetrypb.EncodedFrame) {
 	s.frameSubscribersMu.RLock()
 	defer s.frameSubscribersMu.RUnlock()
 	for _, ch := range s.frameSubscribers {
-		go func() {
+		select {
+		case ch <- frame:
+		default:
+			// Subscriber hasn't consumed the last value yet. Drop it and
+			// replace with the latest so subscribers never see stale data.
+			select {
+			case <-ch:
+			default:
+			}
 			select {
 			case ch <- frame:
-			case <-time.After(time.Second):
+			default:
 			}
-		}()
+		}
 	}
 }
 

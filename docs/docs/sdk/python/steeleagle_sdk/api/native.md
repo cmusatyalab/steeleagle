@@ -28,7 +28,7 @@ object.
 ```python
 def now_ts() -> Timestamp:
     """Get the current time as a Google Protobuf Timestamp.
-    
+
     Returns the current time as a Google Protobuf Timestamp object.
     This is useful for setting the timestamp field inside a Request
     object.
@@ -100,13 +100,13 @@ ControlStub.Connect.
 
 **<><code class="docs-arg">arg</code></>&nbsp;&nbsp;request_pb**&nbsp;&nbsp;(<code>typing.Any</code>) <text>&#8212;</text> Protobuf object input for the method coroutine.
 
-**<><code class="docs-arg">arg</code></>&nbsp;&nbsp;metadata**&nbsp;&nbsp;(<code>Optional[list]</code>) <text>&#8212;</text> 
-metadata object for gRPC. The metadata must include an `identity` 
-parameter to access kernel services. An `identity` set to 
+**<><code class="docs-arg">arg</code></>&nbsp;&nbsp;metadata**&nbsp;&nbsp;(<code>Optional[list]</code>) <text>&#8212;</text>
+metadata object for gRPC. The metadata must include an `identity`
+parameter to access kernel services. An `identity` set to
 `internal` signals to the kernel that the RPC request originates
 from an onboard client.
 
-**<><code class="docs-arg">arg</code></>&nbsp;&nbsp;timeout**&nbsp;&nbsp;(<code>Optional[int]</code>) <text>&#8212;</text> timeout for the RPC request, `None` indicates 
+**<><code class="docs-arg">arg</code></>&nbsp;&nbsp;timeout**&nbsp;&nbsp;(<code>Optional[int]</code>) <text>&#8212;</text> timeout for the RPC request, `None` indicates
 no timeout.
 
 <details>
@@ -122,12 +122,12 @@ async def run_unary(method_coro: Any, request_pb: Any, metadata: Optional[list]=
         method_coro (Any): an awaitable stub coroutine `STUB.METHOD` e.g.
             ControlStub.Connect.
         request_pb (Any): Protobuf object input for the method coroutine.
-        metadata (Optional[list]): 
-            metadata object for gRPC. The metadata must include an `identity` 
-            parameter to access kernel services. An `identity` set to 
+        metadata (Optional[list]):
+            metadata object for gRPC. The metadata must include an `identity`
+            parameter to access kernel services. An `identity` set to
             `internal` signals to the kernel that the RPC request originates
             from an onboard client.
-        timeout (Optional[int]): timeout for the RPC request, `None` indicates 
+        timeout (Optional[int]): timeout for the RPC request, `None` indicates
             no timeout.
     """
     ts = now_ts()
@@ -159,13 +159,13 @@ ControlStub.TakeOff.
 
 **<><code class="docs-arg">arg</code></>&nbsp;&nbsp;request_pb**&nbsp;&nbsp;(<code>typing.Any</code>) <text>&#8212;</text> Protobuf object input for the method coroutine.
 
-**<><code class="docs-arg">arg</code></>&nbsp;&nbsp;metadata**&nbsp;&nbsp;(<code>Optional[list]</code>) <text>&#8212;</text> metadata object for gRPC. The metadata 
-must include an `identity` parameter to access kernel services. 
-An `identity` set to `internal` signals to the kernel that the 
+**<><code class="docs-arg">arg</code></>&nbsp;&nbsp;metadata**&nbsp;&nbsp;(<code>Optional[list]</code>) <text>&#8212;</text> metadata object for gRPC. The metadata
+must include an `identity` parameter to access kernel services.
+An `identity` set to `internal` signals to the kernel that the
 RPC request originates from an onboard client.
 
-**<><code class="docs-arg">arg</code></>&nbsp;&nbsp;timeout**&nbsp;&nbsp;(<code>Optional[int]</code>) <text>&#8212;</text> timeout for the RPC request, `None` indicates 
-no timeout. It is generally not recommended to add a timeout to a 
+**<><code class="docs-arg">arg</code></>&nbsp;&nbsp;timeout**&nbsp;&nbsp;(<code>Optional[int]</code>) <text>&#8212;</text> timeout for the RPC request, `None` indicates
+no timeout. It is generally not recommended to add a timeout to a
 streaming method, since most have non-deterministic time of completion.
 
 <details>
@@ -182,12 +182,12 @@ async def run_streaming(method_coro: Any, request_pb: Any, metadata: Optional[li
         method_coro (Any): an async generator stub coroutine `STUB.METHOD` e.g.
             ControlStub.TakeOff.
         request_pb (Any): Protobuf object input for the method coroutine.
-        metadata (Optional[list]): metadata object for gRPC. The metadata 
-            must include an `identity` parameter to access kernel services. 
-            An `identity` set to `internal` signals to the kernel that the 
+        metadata (Optional[list]): metadata object for gRPC. The metadata
+            must include an `identity` parameter to access kernel services.
+            An `identity` set to `internal` signals to the kernel that the
             RPC request originates from an onboard client.
-        timeout (Optional[int]): timeout for the RPC request, `None` indicates 
-            no timeout. It is generally not recommended to add a timeout to a 
+        timeout (Optional[int]): timeout for the RPC request, `None` indicates
+            no timeout. It is generally not recommended to add a timeout to a
             streaming method, since most have non-deterministic time of completion.
     """
     ts = now_ts()

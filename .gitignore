@@ -33,6 +33,7 @@ sdk-revision/src/steeleagle_sdk/protocol/**/__pycache__/
 # Backend
 backend/server/models/
 backend/server/steeleagle-vol/
+backend/server/swarm-controller-state/
 backend/server/redis/*
 !backend/server/redis/
 !backend/server/redis/redis.conf.template

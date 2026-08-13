@@ -24,7 +24,11 @@ func (v *Vehicle) streamEncodedVideoFrames(ctx context.Context) error {
 	v.log.Info().Msg("starting streaming encoded video frames")
 
 	client := driverpb.NewStreamServiceClient(v.driver)
-	req := &driverpb.StreamVideoFramesRequest{}
+	builder := driverpb.StreamVideoFramesRequest_builder{}
+	if fps := v.videoCfg.Fps; fps != 0 {
+		builder.TargetFps = &fps
+	}
+	req := builder.Build()
 
 	v.log.Info().Msg("sending StreamVideoFrames request to driver")
 	stream, err := client.StreamVideoFrames(ctx, req)
@@ -44,6 +48,7 @@ func (v *Vehicle) streamEncodedVideoFrames(ctx context.Context) error {
 			v.log.Debug().Msgf("got nil frame from driver")
 		}
 		v.store.addFrame(f.GetFrame())
+		v.frameRecv.Add(1)
 	}
 }
 
@@ -130,10 +135,16 @@ func getFFmpegArgs(url string, cfg VideoStreamConfig) []string {
 	if cfg.Codec != "" {
 		args = append(args, "-c:v", cfg.Codec)
 	}
+	filters := fmt.Sprintf("scale=%d:%d", width, height)
+	if cfg.Fps != 0 {
+		// Throttle to the desired frame rate by dropping/duplicating frames
+		// upstream of the scaler, before they're written to the pipe.
+		filters = fmt.Sprintf("fps=%d,%s", cfg.Fps, filters)
+	}
 	args = append(args,
 		"-i", url,
 		"-an", // drop audio
-		"-vf", fmt.Sprintf("scale=%d:%d", width, height),
+		"-vf", filters,
 		"-pix_fmt", "bgr24", // convert to BGR 3 bytes per pixel
 		"-f", "rawvideo", // no video container
 		"-fps_mode", "passthrough", // don't retime/duplicate/drop frames
@@ -193,6 +204,7 @@ func (v *Vehicle) consumeFrames(ctx context.Context, frameCh chan []byte) error 
 				EncodedData: frame,
 			}.Build()
 			v.store.addFrame(f)
+			v.frameRecv.Add(1)
 			if count%30 == 0 {
 				v.log.Debug().Msgf("processed frame %d (%d bytes)\n", count, len(frame))
 			}

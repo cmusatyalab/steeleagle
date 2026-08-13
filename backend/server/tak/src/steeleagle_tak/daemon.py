@@ -436,7 +436,9 @@ class DetectionToCotSerializer(CotSerializer):
                 # do not report detections repeatedly
                 last_seen = float(fields.get(b"last_seen", b"0.0"))
                 last_reported = self._detected.get(object_name)
-                if last_reported and (last_seen < last_reported + self.detection_report):
+                if last_reported and (
+                    last_seen < last_reported + self.detection_report
+                ):
                     continue
 
                 await self.process_detection(object_name, fields)
@@ -496,7 +498,7 @@ async def async_main(config: SectionProxy) -> None:
 
     # Add our serializer to the task list
     detection_enabled = config.get("DETECTION_POLL_INTERVAL", "0")
-    if float(detection_enabled) != 0.:
+    if float(detection_enabled) != 0.0:
         detections = DetectionToCotSerializer(
             clitool.tx_queue, pytak_config, redis_client, http_session
         )

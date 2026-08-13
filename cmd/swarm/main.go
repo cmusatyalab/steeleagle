@@ -18,13 +18,21 @@ import (
 	"google.golang.org/grpc"
 )
 
+// tailscaleStartTimeout bounds how long we wait for a tsnet node to join the
+// tailnet. Without this, a node stuck behind a rejected auth key or an
+// interactive-login fallback (tsnet's behavior when authKey doesn't work)
+// blocks startup forever instead of failing with a clear error.
+const tailscaleStartTimeout = 30 * time.Second
+
 // TailscaleConfig models the [tailscale] table.
 type TailscaleConfig struct {
 	Hostname   string `toml:"hostname"`
 	AuthKeyEnv string `toml:"authkey-env,omitempty"`
-	// Ephemeral option keeps no tsnet state on disk, so a restart always
-	// re-registers fresh.
-	Ephemeral bool `toml:"ephemeral,omitempty"`
+	// MemStore keeps tsnet state in memory instead of persisting it to disk,
+	// so a restart always re-registers under a fresh identity rather than
+	// reconnecting under the same one. Left false (the default) so restarts
+	// keep a stable identity.
+	MemStore bool `toml:"mem-store,omitempty"`
 }
 
 // Config models the top-level document.
@@ -99,7 +107,9 @@ func main() {
 		if cfg.Tailscale.AuthKeyEnv != "" {
 			authKey = os.Getenv(cfg.Tailscale.AuthKeyEnv)
 		}
-		ts, err = tailscale.NewServer(cfg.Tailscale.Hostname, authKey, cfg.Tailscale.Ephemeral)
+		startCtx, cancel := context.WithTimeout(context.Background(), tailscaleStartTimeout)
+		defer cancel()
+		ts, err = tailscale.NewServer(startCtx, cfg.Tailscale.Hostname, authKey, "swarm-controller", cfg.Tailscale.MemStore)
 		if err != nil {
 			log.Fatal().Msgf("starting tailscale: %v", err)
 		}

@@ -141,6 +141,7 @@ services:
       - TS_AUTHKEY=${TS_AUTHKEY}
     volumes:
       - ./swarm-config.toml:/steeleagle/config.toml:ro
+      - ./swarm-controller-state:/steeleagle/.local/share/steeleagle
     networks:
       - steeleagle-net
     logging:
