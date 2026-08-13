@@ -10,11 +10,24 @@ import { vehicleControlGroupDigits } from './squadUtils.js'
 // as the vehicle turns. Status is carried by fill color alone, which
 // rotating doesn't affect. Quick-squad membership moved to the popup
 // label instead (see the .setHTML call below).
-function createVehicleMarkerElement(color) {
+//
+// Dimming for offline vehicles is applied to an inner <g>, never to the
+// outer <svg> returned here. mapboxgl.Marker takes this exact element as
+// `this._element` and, because this map has terrain enabled, overwrites
+// `this._element.style.opacity` itself every render frame to fade markers
+// occluded behind terrain -- fighting any opacity we set directly on it
+// and producing a periodic flash for markers near an occlusion boundary
+// (stationary/offline markers are the ones likely to sit still on such a
+// boundary). Mapbox never reaches into a nested element, so opacity set
+// there is untouched by that logic.
+function createVehicleMarkerElement(color, opacity = 1) {
   const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   el.setAttribute('width', '34');
   el.setAttribute('height', '34');
   el.setAttribute('viewBox', '0 0 34 34');
+
+  const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  group.style.opacity = String(opacity);
 
   const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   path.setAttribute('d', 'M17 6 L26 27 L17 22 L8 27 Z');
@@ -24,7 +37,8 @@ function createVehicleMarkerElement(color) {
   path.setAttribute('stroke', '#ffffff');
   path.setAttribute('stroke-width', '1.5');
   path.setAttribute('stroke-linejoin', 'round');
-  el.appendChild(path);
+  group.appendChild(path);
+  el.appendChild(group);
 
   return el;
 }
@@ -112,7 +126,8 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObj
       const status = vehicleStatus(isVehicleDisconnected(v), isSelected);
       const groupDigits = vehicleControlGroupDigits(controlGroups ?? {}, v.name);
       const chipsHtml = groupDigits.map((d) => `<span class="squad-chip">${d}</span>`).join('');
-      let marker = new mapboxgl.Marker({ element: createVehicleMarkerElement(vehicleStatusMapColor(status)), rotation: v.bearing, rotationAlignment: 'map' })
+      const offline = status === 'offline';
+      let marker = new mapboxgl.Marker({ element: createVehicleMarkerElement(vehicleStatusMapColor(status), offline ? 0.6 : 1), rotation: v.bearing, rotationAlignment: 'map' })
         .setLngLat([v.current.long, v.current.lat])
         .setPopup(
           new mapboxgl.Popup({ offset: 20, anchor: 'top', focusAfterOpen: false, closeButton: false, closeOnClick: false, className: 'vehicle-label-popup' })
@@ -122,9 +137,11 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObj
       marker.togglePopup();
       const markerDiv = marker.getElement();
 
-      if (onToggleVehicle) {
+      if (onToggleVehicle && !offline) {
         markerDiv.style.cursor = 'pointer';
         markerDiv.addEventListener('click', () => onToggleVehicle(v.name));
+      } else if (offline) {
+        markerDiv.style.cursor = 'not-allowed';
       }
 
       if (tracking && v.name === selectedVehicle) {

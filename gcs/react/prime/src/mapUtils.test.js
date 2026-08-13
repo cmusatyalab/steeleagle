@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature, vehicleColor, vehicleSpeed, isVehicleDisconnected, vehicleStatus, vehicleStatusColor, vehicleStatusMapColor, vehicleStatusTextColor, sortVehiclesForDisplay } from './mapUtils.js';
+import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature, vehicleColor, vehicleSpeed, isVehicleDisconnected, vehicleStatus, vehicleStatusColor, vehicleStatusRailFill, vehicleStatusMapColor, vehicleStatusTextColor, sortVehiclesForDisplay } from './mapUtils.js';
 
 const SAMPLE_FC = {
     type: 'FeatureCollection',
@@ -202,11 +202,21 @@ describe('vehicleStatusColor', () => {
         expect(new Set(colors).size).toBe(3);
     });
 
-    it('uses the theme-adaptive secondary-text token for offline, not a raw (theme-invariant) gray', () => {
-        // The app defaults to the dark PrimeReact theme, where raw --gray-*
-        // tokens don't adapt and read as near-invisible against the dark
-        // --surface-0 card background. --text-color-secondary does adapt.
-        expect(vehicleStatusColor('offline')).toBe('var(--text-color-secondary)');
+    it('uses red for offline, blue for online, and (unchanged) green for selected', () => {
+        expect(vehicleStatusColor('offline')).toBe('var(--red-500)');
+        expect(vehicleStatusColor('online')).toBe('var(--blue-500)');
+        expect(vehicleStatusColor('selected')).toBe('var(--green-500)');
+    });
+});
+
+describe('vehicleStatusRailFill', () => {
+    it('keeps a dim grey fill for offline so it still reads as inactive, not just red', () => {
+        expect(vehicleStatusRailFill('offline')).toBe('var(--gray-500)');
+    });
+
+    it('matches vehicleStatusColor for online and selected', () => {
+        expect(vehicleStatusRailFill('online')).toBe(vehicleStatusColor('online'));
+        expect(vehicleStatusRailFill('selected')).toBe(vehicleStatusColor('selected'));
     });
 });
 
@@ -216,8 +226,12 @@ describe('vehicleStatusMapColor', () => {
         expect(new Set(colors).size).toBe(3);
     });
 
-    it('uses a different "online" shade than vehicleStatusColor, tuned for the dark map background', () => {
-        expect(vehicleStatusMapColor('online')).not.toBe(vehicleStatusColor('online'));
+    it('matches vehicleStatusColor\'s blue for "online", so a vehicle\'s marker and card read as the same color', () => {
+        expect(vehicleStatusMapColor('online')).toBe(vehicleStatusColor('online'));
+    });
+
+    it('uses a muted grey (not red) for "offline" -- red markers scattered across the map read as too busy', () => {
+        expect(vehicleStatusMapColor('offline')).toBe('var(--gray-500)');
     });
 });
 
@@ -229,6 +243,12 @@ describe('vehicleStatusTextColor', () => {
 
     it('uses white for the selected status, for contrast against its green marker', () => {
         expect(vehicleStatusTextColor('selected')).toBe('#ffffff');
+    });
+
+    it('stays a neutral grey scale for offline/online, independent of the blue marker chevron', () => {
+        expect(vehicleStatusTextColor('offline')).toBe('var(--gray-500)');
+        expect(vehicleStatusTextColor('online')).toBe('var(--gray-200)');
+        expect(vehicleStatusTextColor('online')).not.toBe(vehicleStatusMapColor('online'));
     });
 });
 

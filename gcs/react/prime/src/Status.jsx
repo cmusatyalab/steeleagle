@@ -18,6 +18,7 @@ function Status({ vehicle, selectable, selected, onToggle }) {
     const showCheck = !!(selectable && selected);
     const status = vehicleStatus(disconnected, showCheck);
     const statusColor = vehicleStatusColor(status);
+    const clickable = selectable && !disconnected;
 
     let battery_severity = "info";
 
@@ -37,13 +38,13 @@ function Status({ vehicle, selectable, selected, onToggle }) {
             pt={cardPassthrough}
             style={{
                 position: 'relative',
-                backgroundColor: showCheck ? `color-mix(in srgb, ${statusColor} 12%, var(--surface-0))` : 'var(--surface-0)',
+                backgroundColor: `color-mix(in srgb, ${statusColor} 12%, var(--surface-0))`,
                 width: '100%',
-                cursor: selectable ? 'pointer' : 'default',
-                border: showCheck ? `2px solid ${statusColor}` : '2px solid transparent',
+                cursor: clickable ? 'pointer' : (disconnected ? 'not-allowed' : 'default'),
+                border: `2px solid ${statusColor}`,
                 opacity: disconnected ? 0.6 : 1,
             }}
-            onClick={selectable ? onToggle : undefined}
+            onClick={clickable ? onToggle : undefined}
         >
             {showCheck && (
                 <Badge

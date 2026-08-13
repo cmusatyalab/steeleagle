@@ -12,7 +12,7 @@ import { getApiUrl } from './urls.js';
 import VehicleGrid from './VehicleGrid.jsx';
 import Mapbox from './Mapbox.jsx';
 import { toggleVehicleInSquad, recallControlGroup, squadMatchesGroup } from './squadUtils.js';
-import { sortVehiclesForDisplay, vehicleStatus, vehicleStatusColor, isVehicleDisconnected } from './mapUtils.js';
+import { sortVehiclesForDisplay, vehicleStatus, vehicleStatusColor, vehicleStatusRailFill, isVehicleDisconnected } from './mapUtils.js';
 
 const cancelOptions = { icon: 'pi pi-fw pi-times', iconOnly: true, className: 'custom-cancel-btn p-button-danger' };
 const chooseOptions = { label: 'Select...', icon: 'pi pi-fw pi-file', iconOnly: false, className: 'custom-choose-btn p-button-primary' };
@@ -145,8 +145,12 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand,
   ), [onCommand, takeOffAltitude]);
 
   const vehicleNames = useMemo(() => vehicles.map(v => v.name), [vehicles]);
+  const connectedVehicleNames = useMemo(
+    () => vehicles.filter(v => !isVehicleDisconnected(v)).map(v => v.name),
+    [vehicles]
+  );
 
-  const onSelectAllSquad = useCallback(() => setSquadList([...vehicleNames]), [vehicleNames, setSquadList]);
+  const onSelectAllSquad = useCallback(() => setSquadList([...connectedVehicleNames]), [connectedVehicleNames, setSquadList]);
   const onClearSquad = useCallback(() => setSquadList([]), [setSquadList]);
   const onRecallGroup = useCallback((digit) => setSquadList(recallControlGroup(controlGroups, digit)), [controlGroups, setSquadList]);
 
@@ -199,15 +203,19 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand,
             <div className="flex flex-column align-items-center gap-3 pt-2">
               <Button size="small" rounded text label="" icon="pi pi-chevron-right" tooltip="Expand" tooltipOptions={{ position: 'right' }} onClick={() => setSidebarCollapsed(false)} aria-label="Expand squad list" />
               {sortedVehicles.map((v) => {
-                const status = vehicleStatus(isVehicleDisconnected(v), !!(squadList && squadList.includes(v.name)));
+                const disconnected = isVehicleDisconnected(v);
+                const status = vehicleStatus(disconnected, !!(squadList && squadList.includes(v.name)));
                 return (
                   <span
                     key={v.name}
                     title={`${v.name} (${status})`}
-                    onClick={() => onToggleVehicle(v.name)}
+                    onClick={disconnected ? undefined : () => onToggleVehicle(v.name)}
                     style={{
-                      width: '12px', height: '12px', borderRadius: '50%', cursor: 'pointer',
-                      backgroundColor: vehicleStatusColor(status),
+                      width: '12px', height: '12px', borderRadius: '50%',
+                      cursor: disconnected ? 'not-allowed' : 'pointer',
+                      backgroundColor: vehicleStatusRailFill(status),
+                      border: `2px solid ${vehicleStatusColor(status)}`,
+                      opacity: disconnected ? 0.6 : 1,
                     }}
                   />
                 );
