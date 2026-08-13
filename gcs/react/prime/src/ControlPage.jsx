@@ -7,6 +7,7 @@ import { ButtonGroup } from 'primereact/buttongroup';
 import { Tooltip } from 'primereact/tooltip';
 import { FileUpload } from 'primereact/fileupload';
 import { Image } from 'primereact/image';
+import { Dropdown } from 'primereact/dropdown';
 import React from 'react';
 import { getApiUrl } from './urls.js';
 import VehicleGrid from './VehicleGrid.jsx';
@@ -25,7 +26,8 @@ const controlGroupDigits = ['1', '2', '3'];
 // Swarm Controls Panel wrapper below frees up the vertical room for it.
 const videoPanelHeight = '26rem';
 
-function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand,
+function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, setTracking,
+  showDetections, onToggleDetections, toast, onCommand,
   setManualControl, squadList, setSquadList, takeOffAltitude, controlGroups }) {
   const [mapPanelSize] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -231,6 +233,38 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand,
         </div>
         <div className="p-2 flex-1" style={{ minWidth: 0 }}>
           <div className="flex flex-column">
+            <div className="flex align-items-center gap-2 mb-2 px-2 py-1 border-round" style={{ backgroundColor: 'var(--surface-card)', border: '1px solid var(--surface-border)' }}>
+              {/* Left/center/right flex-1 sections roughly align with the map
+                  and video panels below: the left slot is reserved for a
+                  future map-tileset dropdown, not built yet. */}
+              <div className="flex-1" />
+              <div className="flex align-items-center gap-1">
+                <Button
+                  size="small"
+                  outlined={!tracking}
+                  severity={tracking ? undefined : 'secondary'}
+                  icon={tracking ? 'pi pi-bullseye' : 'pi pi-map'}
+                  tooltip={`Tracking ${tracking ? 'On' : 'Off'}: recenters the map on the selected vehicle`}
+                  tooltipOptions={{ position: 'bottom' }}
+                  onClick={() => setTracking(!tracking)}
+                  aria-label="Toggle tracking"
+                />
+                <Button
+                  size="small"
+                  outlined={!showDetections}
+                  severity={showDetections ? undefined : 'secondary'}
+                  icon={showDetections ? 'pi pi-eye' : 'pi pi-eye-slash'}
+                  tooltip={`Detections ${showDetections ? 'Shown' : 'Hidden'}: toggles bounding boxes on the video stream`}
+                  tooltipOptions={{ position: 'bottom' }}
+                  onClick={() => onToggleDetections(!showDetections)}
+                  aria-label="Toggle show detections"
+                />
+              </div>
+              <div className="flex-1 flex justify-content-end">
+                <Dropdown value={selectedVehicle} checkmark={true} onChange={(e) => setSelectedVehicle(e.value)} options={vehicleNames} useOptionAsValue optionLabel="name"
+                  placeholder="Select Video Feed" className="w-full md:w-14rem" />
+              </div>
+            </div>
             <div className="grid m-0">
               <div className="col-12 lg:col-6 p-2">
                 <Mapbox selectedVehicle={selectedVehicle} vehicles={vehicles} mapPanelSize={mapPanelSize} tracking={tracking}
