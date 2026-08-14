@@ -49,10 +49,11 @@ service StreamService {
 
 enum Resolution {
   RESOLUTION_UNSPECIFIED = 0; // defaults to 720P
-  RESOLUTION_480P = 1;
-  RESOLUTION_720P = 2;
-  RESOLUTION_1080P = 3;
-  RESOLUTION_4K = 4;
+  RESOLUTION_360P = 1;
+  RESOLUTION_480P = 2;
+  RESOLUTION_720P = 3;
+  RESOLUTION_1080P = 4;
+  RESOLUTION_4K = 5;
 }
 
 message GetVideoStreamURLRequest {

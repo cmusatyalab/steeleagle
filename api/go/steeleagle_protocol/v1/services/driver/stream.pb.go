@@ -29,27 +29,30 @@ type Resolution int32
 
 const (
 	Resolution_RESOLUTION_UNSPECIFIED Resolution = 0 // defaults to 720P
-	Resolution_RESOLUTION_480P        Resolution = 1
-	Resolution_RESOLUTION_720P        Resolution = 2
-	Resolution_RESOLUTION_1080P       Resolution = 3
-	Resolution_RESOLUTION_4K          Resolution = 4
+	Resolution_RESOLUTION_360P        Resolution = 1
+	Resolution_RESOLUTION_480P        Resolution = 2
+	Resolution_RESOLUTION_720P        Resolution = 3
+	Resolution_RESOLUTION_1080P       Resolution = 4
+	Resolution_RESOLUTION_4K          Resolution = 5
 )
 
 // Enum value maps for Resolution.
 var (
 	Resolution_name = map[int32]string{
 		0: "RESOLUTION_UNSPECIFIED",
-		1: "RESOLUTION_480P",
-		2: "RESOLUTION_720P",
-		3: "RESOLUTION_1080P",
-		4: "RESOLUTION_4K",
+		1: "RESOLUTION_360P",
+		2: "RESOLUTION_480P",
+		3: "RESOLUTION_720P",
+		4: "RESOLUTION_1080P",
+		5: "RESOLUTION_4K",
 	}
 	Resolution_value = map[string]int32{
 		"RESOLUTION_UNSPECIFIED": 0,
-		"RESOLUTION_480P":        1,
-		"RESOLUTION_720P":        2,
-		"RESOLUTION_1080P":       3,
-		"RESOLUTION_4K":          4,
+		"RESOLUTION_360P":        1,
+		"RESOLUTION_480P":        2,
+		"RESOLUTION_720P":        3,
+		"RESOLUTION_1080P":       4,
+		"RESOLUTION_4K":          5,
 	}
 )
 
@@ -550,14 +553,15 @@ const file_steeleagle_protocol_v1_services_driver_stream_proto_rawDesc = "" +
 	"target_fps\x18\x01 \x01(\rH\x00R\ttargetFps\x88\x01\x01B\r\n" +
 	"\v_target_fps\"m\n" +
 	"\x17StreamTelemetryResponse\x12R\n" +
-	"\ttelemetry\x18\x01 \x01(\v24.steeleagle_protocol.v1.messages.telemetry.TelemetryR\ttelemetry*{\n" +
+	"\ttelemetry\x18\x01 \x01(\v24.steeleagle_protocol.v1.messages.telemetry.TelemetryR\ttelemetry*\x90\x01\n" +
 	"\n" +
 	"Resolution\x12\x1a\n" +
 	"\x16RESOLUTION_UNSPECIFIED\x10\x00\x12\x13\n" +
-	"\x0fRESOLUTION_480P\x10\x01\x12\x13\n" +
-	"\x0fRESOLUTION_720P\x10\x02\x12\x14\n" +
-	"\x10RESOLUTION_1080P\x10\x03\x12\x11\n" +
-	"\rRESOLUTION_4K\x10\x042\xde\x03\n" +
+	"\x0fRESOLUTION_360P\x10\x01\x12\x13\n" +
+	"\x0fRESOLUTION_480P\x10\x02\x12\x13\n" +
+	"\x0fRESOLUTION_720P\x10\x03\x12\x14\n" +
+	"\x10RESOLUTION_1080P\x10\x04\x12\x11\n" +
+	"\rRESOLUTION_4K\x10\x052\xde\x03\n" +
 	"\rStreamService\x12\x98\x01\n" +
 	"\x11GetVideoStreamURL\x12@.steeleagle_protocol.v1.services.driver.GetVideoStreamURLRequest\x1aA.steeleagle_protocol.v1.services.driver.GetVideoStreamURLResponse\x12\x9a\x01\n" +
 	"\x11StreamVideoFrames\x12@.steeleagle_protocol.v1.services.driver.StreamVideoFramesRequest\x1aA.steeleagle_protocol.v1.services.driver.StreamVideoFramesResponse0\x01\x12\x94\x01\n" +
