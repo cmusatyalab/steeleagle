@@ -4,10 +4,30 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	eagledpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/eagled"
 )
+
+// gitCmd builds a git invocation isolated from the host's real git
+// environment.
+func gitCmd(t *testing.T, dir string, args ...string) *exec.Cmd {
+	t.Helper()
+	cmd := exec.Command("git", args...)
+	cmd.Dir = dir
+	env := []string{"HOME=" + t.TempDir(), "GIT_CONFIG_NOSYSTEM=1"}
+	for _, kv := range os.Environ() {
+		// Drop ambient GIT_* vars (GIT_DIR, GIT_WORK_TREE, GIT_INDEX_FILE,
+		// ...)
+		if name, _, ok := strings.Cut(kv, "="); ok && strings.HasPrefix(name, "GIT_") {
+			continue
+		}
+		env = append(env, kv)
+	}
+	cmd.Env = env
+	return cmd
+}
 
 // gitFixtureRepo creates a throwaway local git repo under t.TempDir() with an
 // install.sh/run.sh pair at subpath. Returns the repo's filesystem path,
@@ -28,9 +48,7 @@ func gitFixtureRepo(t *testing.T, subpath string) string {
 
 	run := func(args ...string) {
 		t.Helper()
-		cmd := exec.Command("git", args...)
-		cmd.Dir = repo
-		if out, err := cmd.CombinedOutput(); err != nil {
+		if out, err := gitCmd(t, repo, args...).CombinedOutput(); err != nil {
 			t.Fatalf("git %v: %v\n%s", args, err, out)
 		}
 	}
@@ -39,7 +57,7 @@ func gitFixtureRepo(t *testing.T, subpath string) string {
 	run("config", "user.name", "Test")
 	run("config", "commit.gpgsign", "false")
 	run("add", "-A")
-	run("commit", "-q", "-m", "fixture plugin", "--no-gpg-sign")
+	run("commit", "-q", "-m", "fixture plugin", "--no-gpg-sign", "--no-verify")
 
 	return repo
 }
@@ -48,7 +66,7 @@ func gitFixtureRepo(t *testing.T, subpath string) string {
 // like a real InstallPluginRequest would.
 func gitHead(t *testing.T, repo string) string {
 	t.Helper()
-	out, err := exec.Command("git", "-C", repo, "rev-parse", "HEAD").Output()
+	out, err := gitCmd(t, repo, "rev-parse", "HEAD").Output()
 	if err != nil {
 		t.Fatalf("git rev-parse HEAD: %v", err)
 	}
@@ -132,8 +150,7 @@ address = "127.0.0.1:1"
 	if err := os.WriteFile(filepath.Join(badDir, "install.sh"), []byte("#!/bin/sh\nexit 1\n"), 0755); err != nil {
 		t.Fatalf("writing failing install.sh: %v", err)
 	}
-	cmd := exec.Command("git", "-C", badRepo, "commit", "-q", "-a", "-m", "break install.sh", "--no-gpg-sign")
-	if out, err := cmd.CombinedOutput(); err != nil {
+	if out, err := gitCmd(t, badRepo, "commit", "-q", "-a", "-m", "break install.sh", "--no-gpg-sign", "--no-verify").CombinedOutput(); err != nil {
 		t.Fatalf("git commit: %v\n%s", err, out)
 	}
 	badRef := gitHead(t, badRepo)

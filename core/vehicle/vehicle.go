@@ -154,22 +154,25 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		)
 
 	// Start driver plugin
+	v.log.Info().Str("driver", v.pluginCfg.Driver.Name()).Msg("starting driver plugin")
 	_, v.driver, err = v.pluginCfg.Driver.Start(ctx)
 	if err != nil {
 		v.log.Error().Err(err).Msg("could not start driver plugin, aborting")
 		cancel()
 		return err
 	}
-	v.log.Debug().Msgf("driver plugin %s started!", v.pluginCfg.Driver.Name())
+	v.log.Info().Msgf("driver plugin %s started!", v.pluginCfg.Driver.Name())
 
-	// Query the driver for its hardware model before registering with Gabriel.
-	// Not every driver implements InfoService, so a failure here is non-fatal;
-	// the vehicle just registers with an empty model.
-	if model, err := v.getDriverModel(ctx); err != nil {
+	v.log.Info().Msg("querying driver for hardware model")
+	modelCtx, modelCancel := context.WithTimeout(ctx, driverModelQueryTimeout)
+	model, err := v.getDriverModel(modelCtx)
+	modelCancel()
+	if err != nil {
 		v.log.Warn().Err(err).Msg("could not get vehicle model from driver")
 	} else {
 		v.Model = model
 	}
+	v.log.Info().Str("model", v.Model).Msg("driver model query complete")
 
 	// Start mission plugin
 	if v.pluginCfg.Mission == nil {

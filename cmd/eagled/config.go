@@ -86,7 +86,7 @@ type VideoConfig struct {
 	// (encode individually sent frames). Defaults per VehicleConfig above if
 	// left blank.
 	StreamType string `toml:"stream-type,omitempty"`
-	// Resolution is one of "480p", "720p" (default), "1080p", "4k".
+	// Resolution is one of "360p", "480p", "720p" (default), "1080p", "4k".
 	Resolution string `toml:"resolution,omitempty"`
 	// Codec, if set, requests hardware decoding from FFmpeg (e.g.
 	// "h264_cuvid"). Left blank for software decoding.

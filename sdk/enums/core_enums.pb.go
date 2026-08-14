@@ -100,3 +100,14 @@ const (
 	AngleModeAbsolute    AngleMode = 1
 	AngleModeOffset      AngleMode = 2
 )
+
+type Resolution int32
+
+const (
+	ResolutionUnspecified Resolution = 0
+	Resolution360p        Resolution = 1
+	Resolution480p        Resolution = 2
+	Resolution720p        Resolution = 3
+	Resolution1080p       Resolution = 4
+	Resolution4k          Resolution = 5
+)

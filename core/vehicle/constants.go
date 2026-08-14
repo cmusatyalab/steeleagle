@@ -15,6 +15,10 @@ const streamRetryDelay = 250 * time.Millisecond
 // driver are logged.
 const rateLogInterval = 10 * time.Second
 
+// driverModelQueryTimeout bounds how long Start waits for the driver's
+// InfoService to answer GetVehicleInfo before giving up
+const driverModelQueryTimeout = 10 * time.Second
+
 // VideoStreamType determines the type of video streaming that the vehicle
 // uses. RTSP will forward an existing RTSP stream from the driver. Frames will
 // encode individually sent frames into an RTSP stream.
@@ -32,6 +36,7 @@ type VideoResolution int
 
 const (
 	ResUnknown VideoResolution = iota
+	Res360P
 	Res480P
 	Res720P
 	Res1080P
@@ -41,6 +46,8 @@ const (
 // Converts VideoResolution to an int pair representation.
 func (v VideoResolution) Ints() (int, int) {
 	switch v {
+	case Res360P:
+		return 640, 360
 	case Res480P:
 		return 854, 480
 	case Res720P:
