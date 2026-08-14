@@ -1,3 +1,4 @@
+import ReactMarkdown from 'react-markdown';
 import { Avatar } from 'primereact/avatar';
 import { classNames } from 'primereact/utils';
 import ApplyActionCard from './ApplyActionCard.jsx';
@@ -22,6 +23,7 @@ function TypingDots() {
 
 // A single chat message. System messages render as a centered note; user and
 // assistant messages render as left/right aligned bubbles with an avatar.
+// Assistant content is Markdown; user content stays plain text.
 function MessageBubble({ message, onApply }) {
     const { role, content, timestamp, status, artifacts } = message;
 
@@ -55,8 +57,12 @@ function MessageBubble({ message, onApply }) {
                 >
                     {isSending && !content ? (
                         <TypingDots />
-                    ) : (
+                    ) : isUser ? (
                         <span className="se-chat-bubble__text">{content}</span>
+                    ) : (
+                        <div className="se-chat-bubble__md">
+                            <ReactMarkdown>{content || ''}</ReactMarkdown>
+                        </div>
                     )}
                 </div>
 

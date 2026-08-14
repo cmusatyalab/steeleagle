@@ -179,10 +179,9 @@ what Apply does). If unsure whether they want a draft, prefer generating/revisin
 - Always include a short mission summary in natural language.
 - Always include the full normalized DSL from `compile_mission_dsl.normalized_dsl` in a
   fenced `dsl` code block.
-- Include `mission_json` in a fenced `json` code block when compact enough to read
-  comfortably.
-- If `mission_json` is long, show a concise JSON preview containing at least
-  `start_action_id`, action ids/types, event ids/types, and `transitions`.
+- Do not include a Mission JSON preview or any fenced `json` mission block in the chat reply.
+  The compile tool still returns `mission_json` for Apply; do not paste it into the
+  user-visible reply.
 - Never respond with only vague confirmation after a successful compile; the user must be
   able to review the mission in chat and Apply it to the FSM Builder.
 
@@ -209,6 +208,13 @@ edit from that instead of starting from scratch unless the user asks for a brand
 
 {catalog_section}
 """
+
+# To put Mission JSON preview back:
+# remove the "Do not include a Mission JSON preview..." bullet
+# Resotre these bullets into "Chat preview requirements":
+# - Include `mission_json` in a fenced `json` code block when compact enough to read comfortably.
+# - If `mission_json` is long, show a concise JSON preview containing at least
+#   `start_action_id`, action ids/types, event ids/types, and `transitions`.
 
 
 def _one_line_doc(cls: type, fallback: str) -> str:
