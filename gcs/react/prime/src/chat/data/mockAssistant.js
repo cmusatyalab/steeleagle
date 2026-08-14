@@ -4,14 +4,14 @@
 export const ASSISTANT_NAME = 'GCS Assistant';
 
 export const WELCOME_MESSAGE =
-    "Hi, I'm the GCS Assistant. Describe a mission in plain language and I will " +
+    "Hi, I'm the GCS Assistant. Describe a mission in natural language and I will " +
     'draft SteelEagle DSL you can Apply into the FSM Builder. Follow-up messages ' +
     'can revise the current draft. I will not upload or start missions for you.';
 
 export const SUGGESTED_PROMPTS = [
-    'Patrol area B, then return home',
+    'Patrol areaB, then return home',
     'Take off and track the nearest person',
-    'Fly a 300s patrol with a battery check',
+    'Fly a 300s patrol and return home when the battery is below 30%',
     'What actions are available in the FSM builder?',
 ];
 

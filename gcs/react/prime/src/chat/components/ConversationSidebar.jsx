@@ -92,7 +92,9 @@ function ConversationSidebar({
                         onKeyDown={(e) => e.key === 'Enter' && onSelect(s.id)}
                     >
                         <div className="se-chat-conv__body">
-                            <div className="se-chat-conv__title">{s.title}</div>
+                            <div className="se-chat-conv__title" data-title={s.title}>
+                                {s.title}
+                            </div>
                             <div className="se-chat-conv__meta">{relativeTime(s.updatedAt)}</div>
                         </div>
                         <div className="se-chat-conv__actions">

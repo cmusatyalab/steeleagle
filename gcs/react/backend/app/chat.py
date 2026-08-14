@@ -10,11 +10,16 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from app.chat_agent import iter_chat_events
+from app.chat_agent import iter_chat_events, load_client_settings
 
 logger = logging.getLogger("chat")
 
 router = APIRouter(prefix="/api")
+
+_PROVIDER_LABELS = {
+    "openai": "ChatGPT",
+    "anthropic": "Claude",
+}
 
 
 class ChatMessage(BaseModel):
@@ -29,6 +34,23 @@ class ChatRequest(BaseModel):
 
 def _sse_pack(event: str, data: dict[str, Any]) -> str:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+@router.get("/chat/status")
+async def chat_status():
+    """Indicates whether the current LLM provider has its API key set; not checking the key's functionality.
+    The key itself is never returned. ``provider`` refers to the client provider in use (openai or anthropic); 
+    while multiple keys can be present in the environment, only the chosen provider's key decides the ``configured`` status.
+    """
+    settings = load_client_settings()
+    provider = settings["provider"]
+    configured = bool(settings["api_key"])
+    return {
+        "configured": configured,
+        "provider": provider,
+        "model": settings["model"],
+        "label": _PROVIDER_LABELS.get(provider, provider),
+    }
 
 
 @router.post("/chat")

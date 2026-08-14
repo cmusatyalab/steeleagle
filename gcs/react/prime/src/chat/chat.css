@@ -48,6 +48,7 @@
 .se-chat-sidebar__list {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 0.5rem;
 }
 
@@ -84,10 +85,25 @@
 
 .se-chat-conv__title {
     font-size: 0.9rem;
+    font-weight: 400;
     color: var(--text-color);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    width: 100%;
+    max-width: 100%;
+}
+
+/* Reserve bold width so selecting a conversation doesn't widen the sidebar. */
+.se-chat-conv__title::before {
+    content: attr(data-title);
+    display: block;
+    font-weight: 600;
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    pointer-events: none;
+    user-select: none;
 }
 
 .se-chat-conv--active .se-chat-conv__title {
@@ -151,6 +167,10 @@
 
 .se-chat-header .p-tag {
     flex-shrink: 0;
+}
+
+.se-chat-live-tag {
+    cursor: default;
 }
 
 .se-chat-header__title .pi {
