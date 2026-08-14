@@ -32,10 +32,10 @@ const (
 	// noiseAmplitude is the max per-channel +/- jitter applied around the
 	// vehicle's base color at each noise cell.
 	noiseAmplitude = 30
-	// jpegQuality and the constants above were tuned together (see
+	// defaultJPEGQuality and the constants above were tuned together (see
 	// producers_test.go-style experimentation, not checked in) to land
 	// close to ~100KB at 1280x720, matching real vehicle frame sizes.
-	jpegQuality = 90
+	defaultJPEGQuality = 90
 	// textScale magnifies the 7x13 bitmap font; at native size it is
 	// barely legible on a 720p+ frame.
 	textScale = 3
@@ -150,7 +150,7 @@ func drawDot(img *image.RGBA, cx, cy, radius int, c color.Color) {
 // between frames -- the same layout as the GCS squad's
 // mock_imagery_server.py, so frames from this tool look familiar next to
 // that one.
-func syntheticJPEG(vehicle string, seq uint64, width, height int) []byte {
+func syntheticJPEG(vehicle string, seq uint64, width, height, quality int) []byte {
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 	noiseBackground(img, vehicle, seq)
 
@@ -170,7 +170,7 @@ func syntheticJPEG(vehicle string, seq uint64, width, height int) []byte {
 	drawDot(img, x+20, height-40, 15, white)
 
 	var buf bytes.Buffer
-	if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: jpegQuality}); err != nil {
+	if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: quality}); err != nil {
 		log.Err(err).Msg("failed to encode synthetic frame as JPEG")
 		return nil
 	}
@@ -180,10 +180,10 @@ func syntheticJPEG(vehicle string, seq uint64, width, height int) []byte {
 // syntheticFrame builds an EncodedFrame wrapping a synthetic JPEG for tick
 // seq, sharing the same synthetic position as the telemetry producer so
 // stored imagery lines up with reported vehicle position.
-func syntheticFrame(vehicle string, seq uint64, width, height int) *telemetrypb.EncodedFrame {
+func syntheticFrame(vehicle string, seq uint64, width, height, quality int) *telemetrypb.EncodedFrame {
 	return telemetrypb.EncodedFrame_builder{
 		Timestamp:   timestamppb.Now(),
-		EncodedData: syntheticJPEG(vehicle, seq, width, height),
+		EncodedData: syntheticJPEG(vehicle, seq, width, height, quality),
 		Id:          seq,
 	}.Build()
 }

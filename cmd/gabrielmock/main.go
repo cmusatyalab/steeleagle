@@ -61,6 +61,7 @@ func main() {
 	frameHz := flag.Float64("frame-hz", 10, "frame send rate in Hz")
 	frameWidth := flag.Int("frame-width", 1280, "synthetic frame width in pixels")
 	frameHeight := flag.Int("frame-height", 720, "synthetic frame height in pixels")
+	frameQuality := flag.Int("frame-quality", defaultJPEGQuality, "synthetic frame JPEG quality (1-100); lower values shrink frame size at the cost of visual quality")
 	duration := flag.Duration("duration", 0, "how long to run before exiting; 0 runs until interrupted")
 	keepaliveTime := flag.Duration("keepalive-time", defaultKeepaliveTime, "gRPC keepalive ping interval; must exceed the server's minimum ping interval or it will GOAWAY the connection with ENHANCE_YOUR_CALM")
 	keepaliveTimeout := flag.Duration("keepalive-timeout", 20*time.Second, "time to wait for a keepalive ping ack before considering the connection dead")
@@ -89,7 +90,7 @@ func main() {
 	go forceExitOnStuckShutdown(ctx, startedAt, received, telStats, frameStats)
 
 	telProducer := newTelemetryProducer(splitEngines(*telemetryEngines), *telemetryHz, telStats)
-	frameProducer := newFrameProducer(splitEngines(*frameEngines), *frameHz, *vehicleID, *frameWidth, *frameHeight, frameStats)
+	frameProducer := newFrameProducer(splitEngines(*frameEngines), *frameHz, *vehicleID, *frameWidth, *frameHeight, *frameQuality, frameStats)
 
 	consumer := func(res *gabrielpb.Result) {
 		received.record(res.GetTargetEngineId())
@@ -120,6 +121,7 @@ func main() {
 		Str("server", *server).
 		Float64("telemetry_hz", *telemetryHz).
 		Float64("frame_hz", *frameHz).
+		Int("frame_quality", *frameQuality).
 		Dur("keepalive_time", *keepaliveTime).
 		Msg("starting gabriel mock client")
 

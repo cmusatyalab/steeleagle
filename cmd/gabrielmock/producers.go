@@ -77,11 +77,11 @@ func newTelemetryProducer(targetEngines []string, hz float64, stats *producerSta
 	return newTickerProducer("telemetry", targetEngines, hzToInterval(hz), gabrielpb.PayloadType_TEXT, build, stats)
 }
 
-func newFrameProducer(targetEngines []string, hz float64, vehicle string, width, height int, stats *producerStats) *gabrielclient.InputProducer {
+func newFrameProducer(targetEngines []string, hz float64, vehicle string, width, height, quality int, stats *producerStats) *gabrielclient.InputProducer {
 	var seq uint64
 	build := func() proto.Message {
 		seq++
-		return syntheticFrame(vehicle, seq, width, height)
+		return syntheticFrame(vehicle, seq, width, height, quality)
 	}
 	return newTickerProducer("frames", targetEngines, hzToInterval(hz), gabrielpb.PayloadType_IMAGE, build, stats)
 }
