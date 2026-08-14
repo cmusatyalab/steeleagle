@@ -1,0 +1,39 @@
+[device]
+model = "Anafi"
+manufacturer = "Parrot"
+type = "copter"
+
+[[camera]]
+type = "rgb"
+hres = 1080
+vres = 720
+hfov = 69 
+vfov = 43
+fps = 30
+latency = 280
+gimbal = true
+
+[[camera]]
+type = "thermal"
+hres = 1080
+vres = 720
+hfov = 69 
+vfov = 43
+fps = 30
+latency = 280
+gimbal = true
+
+[unsupported]
+methods = [
+    "services/driver/ControlService/Kill",
+]
+fields = [
+    "services/driver/TakeOffRequest/altitude",
+    "messages/telemetry/PositionInfo/velocity_body/angular_vel",
+    "messages/telemetry/PositionInfo/velocity_neu/angular_vel",
+    "messages/telemetry/GimbalInfo/angular_velocity_body",
+    "messages/telemetry/GimbalInfo/angular_velocity_neu",
+]
+enums = [
+    "services/control/HeadingMode/HEADING_MODE_START",
+]

@@ -1,4 +1,4 @@
-package compiler
+package main
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"go/doc"
 	"go/token"
 	"go/types"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -16,21 +17,25 @@ import (
 const sdkPkgPath = "github.com/cmusatyalab/steeleagle/sdk/"
 
 const (
+	basePkgPath    = "github.com/cmusatyalab/steeleagle/sdk"
 	dslPkgPath     = sdkPkgPath + "dsl"
 	actionsPkgPath = sdkPkgPath + "dsl/actions"
 	typesPkgPath   = sdkPkgPath + "dsl/types"
 	eventsPkgPath  = sdkPkgPath + "dsl/events"
 	enumsPkgPath   = sdkPkgPath + "enums"
+	optPkgPath     = sdkPkgPath + "opt"
 )
 
 // steeleaglePkgs are the base packages that are always imported
 // and kept under the base namespace.
 var steeleaglePkgs = []string{
+	basePkgPath,
 	dslPkgPath,
 	actionsPkgPath,
 	typesPkgPath,
 	eventsPkgPath,
 	enumsPkgPath,
+	optPkgPath,
 }
 
 // fieldType holds a type of a baseType field.
@@ -39,11 +44,21 @@ type fieldType struct {
 	Type    types.Type
 }
 
+// optionalType holds a single vehicle-capability-gated optional field,
+// discovered from one SetName(argType) method on the type argument T of an
+// opt.Option[T] (or []opt.Option[T]) field.
+type optionalType struct {
+	Comment string
+	Name    string // e.g. "Altitude", from SetAltitude/WithAltitude
+	Type    types.Type
+}
+
 // baseType holds a base type like an Action, Event, or Datatype.
 type baseType struct {
 	Comment string
 	Type    types.Type
-	Fields  []*fieldType
+	Fields  []fieldType
+	Options []optionalType
 }
 
 // enumValue holds an enum name value and its comment.
@@ -56,7 +71,7 @@ type enumValue struct {
 type enumType struct {
 	Comment string
 	Type    types.Type
-	Values  []*enumValue
+	Values  []enumValue
 }
 
 // typeRegistry holds all the imported packages, and registers
@@ -72,8 +87,10 @@ type typeRegistry struct {
 }
 
 // loadPackages loads all packages in to the type registry and populates
-// Type maps so that it can be queried later.
-func loadPackages(imports []*ImportSpec, workspace string) (*typeRegistry, error) {
+// Type maps so that it can be queried later. overlay (as produced by
+// scrubPackages) replaces the on-disk content of any file it names, so
+// that capability scrubbing is reflected in the loaded types.
+func loadPackages(imports []*ImportSpec, workspace string, overlay map[string][]byte) (*typeRegistry, error) {
 	registry := &typeRegistry{
 		Packages:  make(map[string]*packages.Package),
 		Alias:     make(map[string]string),
@@ -101,9 +118,10 @@ func loadPackages(imports []*ImportSpec, workspace string) (*typeRegistry, error
 	// Configure the Golang package loader
 	cfg := &packages.Config{
 		Dir: workspace,
-		Env: []string{"GOWORK=" + filepath.Join(workspace, "go.work")}, // set the go.work path for local resolutions
+		Env: append(os.Environ(), "GOWORK="+filepath.Join(workspace, "go.work")), // set the go.work path for local resolutions
 		Mode: packages.NeedName | packages.NeedTypes | packages.NeedTypesInfo |
 			packages.NeedSyntax | packages.NeedImports | packages.NeedDeps,
+		Overlay: overlay,
 	}
 	pkgs, err := packages.Load(cfg, pkgPaths...)
 	if err != nil {
@@ -142,6 +160,17 @@ func loadPackages(imports []*ImportSpec, workspace string) (*typeRegistry, error
 		return nil, err
 	}
 
+	// Look up opt.Option, used to recognize a DSL type's optional
+	// (vehicle-capability-gated) fields.
+	optPkg, ok := registry.Packages[optPkgPath]
+	if !ok {
+		return nil, fmt.Errorf("could not load base opt package")
+	}
+	optionType, err := lookupNamedType(optPkg, "Option")
+	if err != nil {
+		return nil, err
+	}
+
 	// Walk all packages looking for DSL interface implementations
 	for _, pkg := range registry.Packages {
 		if pkg.Types == nil {
@@ -152,7 +181,7 @@ func loadPackages(imports []*ImportSpec, workspace string) (*typeRegistry, error
 			qualifier = alias
 		}
 
-		docTypes := packageDocTypes(pkg)
+		docTypes, _ := getPackageDoc(pkg)
 
 		scope := pkg.Types.Scope()
 		for _, name := range scope.Names() {
@@ -180,6 +209,7 @@ func loadPackages(imports []*ImportSpec, workspace string) (*typeRegistry, error
 					Type:    named,
 					Comment: comment,
 					Fields:  structFields(st, dt),
+					Options: structOptions(st, optionType, registry.Packages),
 				}
 				if directlyImplements(named, actionIface) {
 					registry.Actions[qualifiedName] = bt
@@ -217,6 +247,25 @@ func lookupInterface(pkg *packages.Package, name string) (*types.Interface, erro
 	return iface, nil
 }
 
+// lookupNamedType looks up name in pkg's package scope and returns it as a
+// *types.Named. For a generic type declaration (e.g. opt.Option[T any]),
+// this is its generic, uninstantiated form.
+func lookupNamedType(pkg *packages.Package, name string) (*types.Named, error) {
+	obj := pkg.Types.Scope().Lookup(name)
+	if obj == nil {
+		return nil, fmt.Errorf("package %q is missing %s", pkg.PkgPath, name)
+	}
+	tn, ok := obj.(*types.TypeName)
+	if !ok {
+		return nil, fmt.Errorf("%s in package %q is not a type", name, pkg.PkgPath)
+	}
+	named, ok := tn.Type().(*types.Named)
+	if !ok {
+		return nil, fmt.Errorf("%s in package %q is not a named type", name, pkg.PkgPath)
+	}
+	return named, nil
+}
+
 // directlyImplements reports whether named satisfies iface using only
 // named's own explicitly declared methods, ignoring methods promoted from
 // embedded fields.
@@ -244,9 +293,9 @@ func directlyImplements(named *types.Named, iface *types.Interface) bool {
 // enumValues returns one enumValue per exported package-level constant in
 // scope declared with type t, along with each one's doc/line comment (read
 // from dt, dt.Consts specifically).
-func enumValues(scope *types.Scope, t *types.Named, dt *doc.Type) []*enumValue {
+func enumValues(scope *types.Scope, t *types.Named, dt *doc.Type) []enumValue {
 	valueComments := constComments(dt)
-	var values []*enumValue
+	var values []enumValue
 	for _, name := range scope.Names() {
 		if !token.IsExported(name) {
 			continue
@@ -256,7 +305,7 @@ func enumValues(scope *types.Scope, t *types.Named, dt *doc.Type) []*enumValue {
 			continue
 		}
 		if named, ok := c.Type().(*types.Named); ok && named == t {
-			values = append(values, &enumValue{
+			values = append(values, enumValue{
 				Value:   name,
 				Comment: valueComments[name],
 			})
@@ -265,32 +314,15 @@ func enumValues(scope *types.Scope, t *types.Named, dt *doc.Type) []*enumValue {
 	return values
 }
 
-// packageDocTypes returns pkg's exported type declarations, keyed by name,
-// as computed by go/doc.
-func packageDocTypes(pkg *packages.Package) map[string]*doc.Type {
-	docTypes := map[string]*doc.Type{}
-	if pkg.Fset == nil || len(pkg.Syntax) == 0 {
-		return docTypes
-	}
-	docPkg, err := doc.NewFromFiles(pkg.Fset, pkg.Syntax, pkg.PkgPath, doc.PreserveAST)
-	if err != nil {
-		return docTypes
-	}
-	for _, t := range docPkg.Types {
-		docTypes[t.Name] = t
-	}
-	return docTypes
-}
-
 // structFields returns one fieldType per field of st, in declaration order,
 // carrying each field's comment (if dt's declaration can be resolved). dt
 // may be nil, in which case every field's Comment is empty.
-func structFields(st *types.Struct, dt *doc.Type) []*fieldType {
+func structFields(st *types.Struct, dt *doc.Type) []fieldType {
 	comments := fieldComments(dt)
-	fields := make([]*fieldType, st.NumFields())
+	fields := make([]fieldType, st.NumFields())
 	for i := 0; i < st.NumFields(); i++ {
 		f := st.Field(i)
-		fields[i] = &fieldType{
+		fields[i] = fieldType{
 			Type:    f.Type(),
 			Comment: comments[f.Name()],
 		}
@@ -298,81 +330,71 @@ func structFields(st *types.Struct, dt *doc.Type) []*fieldType {
 	return fields
 }
 
-// fieldComments returns field name -> doc/line comment text for the struct
-// type declared by dt. A field's comment is its leading (Doc) comment if
-// present, otherwise its trailing same-line (Comment) comment.
-func fieldComments(dt *doc.Type) map[string]string {
-	comments := map[string]string{}
-	if dt == nil || dt.Decl == nil {
-		return comments
-	}
-	for _, spec := range dt.Decl.Specs {
-		ts, ok := spec.(*ast.TypeSpec)
-		if !ok || ts.Name.Name != dt.Name {
+// structOptions scans st's fields for one whose type is an instantiation
+// of optionType (opt.Option[T]), either directly or as a slice element
+// (opt.Option[T] or []opt.Option[T]), and returns the optionalTypes found.
+func structOptions(st *types.Struct, optionType *types.Named, pkgs map[string]*packages.Package) []optionalType {
+	var opts []optionalType
+	for i := 0; i < st.NumFields(); i++ {
+		t := st.Field(i).Type()
+		if slice, ok := t.(*types.Slice); ok {
+			t = slice.Elem()
+		}
+		named, ok := t.(*types.Named)
+		if !ok || named.Origin() != optionType.Origin() {
 			continue
 		}
-		st, ok := ts.Type.(*ast.StructType)
-		if !ok || st.Fields == nil {
-			return comments
+		targs := named.TypeArgs()
+		if targs == nil || targs.Len() != 1 {
+			continue
 		}
-		for _, f := range st.Fields.List {
-			text := commentText(f.Doc, f.Comment)
-			if text == "" {
-				continue
-			}
-			if len(f.Names) == 0 {
-				if name := embeddedFieldName(f.Type); name != "" {
-					comments[name] = text
+		opts = append(opts, optionsFromConstraint(targs.At(0), pkgs)...)
+	}
+	return opts
+}
+
+// optionsFromConstraint walks t's method set (t is the type argument of an
+// opt.Option[T] field) for single-argument, no-result SetName(argType)
+// methods, and returns one optionalType per method found. Each method's
+// comment comes from the WithName function's doc comment, looked up in
+// whichever package actually declares the SetName method - not
+// necessarily the package of the DSL type the option was found on.
+func optionsFromConstraint(t types.Type, pkgs map[string]*packages.Package) []optionalType {
+	ms := types.NewMethodSet(t)
+	var opts []optionalType
+	for i := 0; i < ms.Len(); i++ {
+		fn, ok := ms.At(i).Obj().(*types.Func)
+		if !ok {
+			continue // TODO: log this
+		}
+		name, ok := strings.CutPrefix(fn.Name(), "Set")
+		if !ok || name == "" {
+			continue // TODO: log this
+		}
+		sig, ok := fn.Type().(*types.Signature)
+		if !ok || sig.Params().Len() != 1 || sig.Results().Len() != 0 {
+			continue // TODO: log this
+		}
+
+		comment := ""
+		if fn.Pkg() != nil {
+			if pkg, ok := pkgs[fn.Pkg().Path()]; ok {
+				_, funcs := getPackageDoc(pkg)
+				if df, ok := funcs["With"+name]; ok {
+					comment = strings.TrimSpace(df.Doc)
+					// Remove "With" from the start of the comment
+					comment, _ = strings.CutPrefix(comment, "With")
 				}
-				continue
-			}
-			for _, id := range f.Names {
-				comments[id.Name] = text
 			}
 		}
-		return comments
-	}
-	return comments // failure case where no comment is found
-}
 
-// constComments returns const name -> doc/line comment text for every
-// constant go/doc associated with dt (i.e. dt.Consts, the constants
-// declared with dt's type).
-func constComments(dt *doc.Type) map[string]string {
-	comments := map[string]string{}
-	if dt == nil {
-		return comments
+		opts = append(opts, optionalType{
+			Comment: comment,
+			Name:    name,
+			Type:    sig.Params().At(0).Type(),
+		})
 	}
-	for _, v := range dt.Consts {
-		if v.Decl == nil {
-			continue
-		}
-		for _, spec := range v.Decl.Specs {
-			vs, ok := spec.(*ast.ValueSpec)
-			if !ok {
-				continue
-			}
-			text := commentText(vs.Doc, vs.Comment)
-			if text == "" {
-				continue
-			}
-			for _, id := range vs.Names {
-				comments[id.Name] = text
-			}
-		}
-	}
-	return comments
-}
-
-// commentText returns doc's text if present, else line's, else "".
-func commentText(doc, line *ast.CommentGroup) string {
-	if doc != nil {
-		return strings.TrimSpace(doc.Text())
-	}
-	if line != nil {
-		return strings.TrimSpace(line.Text())
-	}
-	return ""
+	return opts
 }
 
 // embeddedFieldName returns the identifier go/types would use as the field

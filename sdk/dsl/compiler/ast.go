@@ -1,4 +1,4 @@
-package compiler
+package main
 
 import (
 	"io"
@@ -64,14 +64,14 @@ type Attr struct {
 }
 
 type Value struct {
-	Pos    lexer.Position
-	Float  *float64    `parser:"@Float"`
-	Int    *int64      `parser:"| @Int"`
-	String *string     `parser:"| @String"`
-	Array  *ArrayValue `parser:"| @@"`
-	Inline *InlineCtor `parser:"| @@"`
-	Kml    *string     `parser:"| @KmlIdent"`
-	Ident  *string     `parser:"| @Ident"`
+	Pos     lexer.Position
+	Float   *float64    `parser:"@Float"`
+	Int     *int64      `parser:"| @Int"`
+	String  *string     `parser:"| @String"`
+	Array   *ArrayValue `parser:"| @@"`
+	Inline  *InlineCtor `parser:"| @@"`
+	GeoJson *string     `parser:"| @GeoJsonIdent"`
+	Ident   *string     `parser:"| @Ident"`
 }
 
 type ArrayValue struct {
@@ -121,7 +121,7 @@ var dslLexer = lexer.MustSimple([]lexer.SimpleRule{
 	{Name: "Int", Pattern: `-?\d+`},
 	{Name: "String", Pattern: `'[^']*'|"[^"]*"`},
 	{Name: "QualIdent", Pattern: `[a-zA-Z][a-zA-Z_\d]*(?:\.[a-zA-Z][a-zA-Z_\d]*)+`},
-	{Name: "KmlIdent", Pattern: `kml:[a-zA-Z][a-zA-Z_\d]*`},
+	{Name: "GeoJsonIdent", Pattern: `geojson:[a-zA-Z][a-zA-Z_\d]*`},
 	{Name: "Ident", Pattern: `[a-zA-Z][a-zA-Z_\d]*`},
 	{Name: "Punct", Pattern: `[:(),=\[\]]`},
 	{Name: "Whitespace", Pattern: `[ \t\r\n]+`},
