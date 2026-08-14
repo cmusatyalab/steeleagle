@@ -185,7 +185,7 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 		// Set the working directory for the command
 		p.cmd.Dir = filepath.Dir(p.script)
 	}
-	p.log.Debug().Msgf("starting: %v", p.final)
+	p.log.Info().Msgf("starting: %v", p.final)
 
 	// Bind in stdout and stderr
 	p.cmd.Stdout = p.outStream
@@ -204,6 +204,7 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 		p.cleanup()
 		return nil, nil, err
 	}
+	p.log.Info().Int("pid", p.cmd.Process.Pid).Msg("plugin process launched")
 	p.acl.AddPID(p.cmd.Process.Pid)
 
 	// Cleanup goroutine.
@@ -342,6 +343,8 @@ func (p *BasePlugin) createSocketEndpoints() (net.Listener, *grpc.ClientConn, er
 	// Wait on the socket file to be created by the plugin
 	var client *grpc.ClientConn
 	if p.client {
+		p.log.Info().Int("timeout_sec", p.timeout).Str("socket", p.cSock).
+			Msg("waiting for plugin to create its socket")
 		err = p.waitForSocket(p.cSock)
 		if err != nil {
 			p.log.Error().Err(err).Msg("timed out waiting for socket")
@@ -350,6 +353,7 @@ func (p *BasePlugin) createSocketEndpoints() (net.Listener, *grpc.ClientConn, er
 			}
 			return nil, nil, err
 		}
+		p.log.Info().Msg("plugin socket ready, connecting")
 
 		// Connect to the client socket
 		target := fmt.Sprintf("unix://%s", p.cSock)

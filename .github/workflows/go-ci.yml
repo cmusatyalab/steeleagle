@@ -50,6 +50,7 @@ jobs:
           fi
 
       - name: Build
+        id: build
         run: go build ./...
 
       - name: Test
@@ -80,7 +81,7 @@ jobs:
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         with:
           name: coverage-report
           path: ${{ steps.coverage.outputs.report-pathname }}

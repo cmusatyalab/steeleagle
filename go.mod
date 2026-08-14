@@ -17,6 +17,7 @@ require (
 	github.com/rs/zerolog v1.35.1
 	github.com/shirou/gopsutil/v3 v3.24.5
 	go.etcd.io/bbolt v1.5.0
+	golang.org/x/image v0.41.0
 	golang.org/x/sync v0.22.0
 	golang.org/x/tools v0.48.0
 	google.golang.org/grpc v1.83.0

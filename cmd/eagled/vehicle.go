@@ -146,6 +146,8 @@ func buildVideoStreamConfig(vehicleCfg VehicleConfig) (vehicle.VideoStreamConfig
 		}
 		if v.Resolution != "" {
 			switch v.Resolution {
+			case "360p":
+				resolution = vehicle.Res360P
 			case "480p":
 				resolution = vehicle.Res480P
 			case "720p":
@@ -155,7 +157,7 @@ func buildVideoStreamConfig(vehicleCfg VehicleConfig) (vehicle.VideoStreamConfig
 			case "4k":
 				resolution = vehicle.Res4K
 			default:
-				return vehicle.VideoStreamConfig{}, fmt.Errorf("video.resolution must be one of %q, %q, %q, %q, got %q", "480p", "720p", "1080p", "4k", v.Resolution)
+				return vehicle.VideoStreamConfig{}, fmt.Errorf("video.resolution must be one of %q, %q, %q, %q, %q, got %q", "360p", "480p", "720p", "1080p", "4k", v.Resolution)
 			}
 		}
 		codec = v.Codec

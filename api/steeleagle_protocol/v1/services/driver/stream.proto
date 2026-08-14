@@ -47,14 +47,16 @@ service StreamService {
     returns (stream StreamTelemetryResponse);
 }
 
+enum Resolution {
+  RESOLUTION_UNSPECIFIED = 0; // defaults to 720P
+  RESOLUTION_360P = 1;
+  RESOLUTION_480P = 2;
+  RESOLUTION_720P = 3;
+  RESOLUTION_1080P = 4;
+  RESOLUTION_4K = 5;
+}
+
 message GetVideoStreamURLRequest {
-  enum Resolution {
-    RESOLUTION_UNSPECIFIED = 0; // defaults to 720P
-    RESOLUTION_480P = 1;
-    RESOLUTION_720P = 2;
-    RESOLUTION_1080P = 3;
-    RESOLUTION_4K = 4;
-  }
   Resolution resolution = 1; // video stream resolution
 }
 
@@ -65,6 +67,7 @@ message GetVideoStreamURLResponse {
 
 message StreamVideoFramesRequest {
   optional uint32 target_fps = 1; // target fps to stream at, if 0 is provided will choose fps
+  Resolution resolution = 2; // target frame resolution, if unspecified the driver's native resolution is used
 }
 
 message StreamVideoFramesResponse {

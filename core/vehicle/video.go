@@ -24,7 +24,9 @@ func (v *Vehicle) streamEncodedVideoFrames(ctx context.Context) error {
 	v.log.Info().Msg("starting streaming encoded video frames")
 
 	client := driverpb.NewStreamServiceClient(v.driver)
-	builder := driverpb.StreamVideoFramesRequest_builder{}
+	builder := driverpb.StreamVideoFramesRequest_builder{
+		Resolution: driverpb.Resolution(v.videoCfg.Resolution),
+	}
 	if fps := v.videoCfg.Fps; fps != 0 {
 		builder.TargetFps = &fps
 	}
@@ -59,7 +61,7 @@ func (v *Vehicle) streamRTSPVideo(ctx context.Context) error {
 
 	client := driverpb.NewStreamServiceClient(v.driver)
 	req := driverpb.GetVideoStreamURLRequest_builder{
-		Resolution: driverpb.GetVideoStreamURLRequest_Resolution(v.videoCfg.Resolution),
+		Resolution: driverpb.Resolution(v.videoCfg.Resolution),
 	}.Build()
 
 	// Send request to driver to get video stream URL
