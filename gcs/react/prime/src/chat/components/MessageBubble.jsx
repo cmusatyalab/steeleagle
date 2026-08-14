@@ -21,6 +21,11 @@ function TypingDots() {
     );
 }
 
+/** Collapse excess blank lines so Markdown doesn't leave large empty gaps. */
+function normalizeAssistantMarkdown(text) {
+    return (text || '').replace(/\n{3,}/g, '\n\n').trim();
+}
+
 // A single chat message. System messages render as a centered note; user and
 // assistant messages render as left/right aligned bubbles with an avatar.
 // Assistant content is Markdown; user content stays plain text.
@@ -61,7 +66,7 @@ function MessageBubble({ message, onApply }) {
                         <span className="se-chat-bubble__text">{content}</span>
                     ) : (
                         <div className="se-chat-bubble__md">
-                            <ReactMarkdown>{content || ''}</ReactMarkdown>
+                            <ReactMarkdown>{normalizeAssistantMarkdown(content)}</ReactMarkdown>
                         </div>
                     )}
                 </div>

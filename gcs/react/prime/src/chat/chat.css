@@ -250,6 +250,85 @@
     white-space: pre-wrap;
 }
 
+.se-chat-bubble__md {
+    font-size: inherit;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+.se-chat-bubble__md > :first-child {
+    margin-top: 0 !important;
+}
+
+.se-chat-bubble__md > :last-child {
+    margin-bottom: 0 !important;
+}
+
+/* Reset theme defaults first, then add a small gap only between siblings. */
+.se-chat-bubble__md :is(p, ul, ol, pre, blockquote, h1, h2, h3, h4) {
+    margin: 0;
+}
+
+.se-chat-bubble__md :is(p, ul, ol, pre, blockquote, h1, h2, h3, h4)
+    + :is(p, ul, ol, pre, blockquote, h1, h2, h3, h4) {
+    margin-top: 0.35em;
+}
+
+/* Title/label paragraph right above a list or code fence should stay tight. */
+.se-chat-bubble__md p + ul,
+.se-chat-bubble__md p + ol,
+.se-chat-bubble__md p + pre,
+.se-chat-bubble__md :is(h1, h2, h3, h4) + :is(ul, ol, pre) {
+    margin-top: 0.1em;
+}
+
+.se-chat-bubble__md p:empty {
+    display: none;
+}
+
+.se-chat-bubble__md h1,
+.se-chat-bubble__md h2,
+.se-chat-bubble__md h3,
+.se-chat-bubble__md h4 {
+    font-size: 1em;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.se-chat-bubble__md ul,
+.se-chat-bubble__md ol {
+    padding-left: 1.2em;
+}
+
+.se-chat-bubble__md li + li {
+    margin-top: 0.08em;
+}
+
+.se-chat-bubble__md code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.9em;
+}
+
+.se-chat-bubble__md :not(pre) > code {
+    padding: 0.1em 0.35em;
+    border-radius: 0.25rem;
+    background: color-mix(in srgb, var(--surface-ground) 70%, transparent);
+}
+
+.se-chat-bubble__md pre {
+    padding: 0.45rem 0.65rem;
+    border-radius: 0.4rem;
+    overflow-x: auto;
+    background: var(--surface-ground);
+    border: 1px solid var(--surface-border);
+}
+
+.se-chat-bubble__md pre code {
+    font-size: 0.82em;
+    white-space: pre;
+    line-height: 1.35;
+}
+
 .se-chat-bubble__time {
     font-size: 0.68rem;
     color: var(--text-color-secondary);
