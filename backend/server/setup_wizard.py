@@ -57,6 +57,7 @@ DEFAULTS = [
     ("swiftmap_site", "area", "SwiftMap Site Tag"),
     ("swiftmap_max_keyframes", 70, "SwiftMap Max Keyframes"),
     ("swiftmap_conf_threshold", 60, "SwiftMap Confidence Threshold"),
+    ("swiftmap_merge_voxel", 0.1, "SwiftMap Grow-Merge Voxel Size (m)"),
     ("swiftmap_mask_sky", True, "SwiftMap Mask Sky"),
     ("swiftmap_keep_all", False, "SwiftMap Keep All Keyframes"),
     ("swiftmap_viewer_port", 7866, "SwiftMap Viewer Port"),
@@ -567,7 +568,7 @@ def main():
 
             CONTEXT["swiftmap_site"] = input_dialog(
                 title="SwiftMap - Site Tag",
-                text="Enter the area-tag prefix (drone/site name):",
+                text="Enter the map-tag prefix (drone/site name):",
                 default="area",
                 style=GLOBAL_STYLE,
             ).run()
