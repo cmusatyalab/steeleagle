@@ -44,11 +44,16 @@ class MissionFSM:
         action = action_cls(**action_ir.attributes)
 
         logger.info("[FSM] action %s: %s", curr_action_id, action_ir.type_name)
-        event_ids = [e for e in self._gather_events(curr_action_id) if e != _DONE_EVENT]
+        event_ids = [
+                e for e in self._gather_events(curr_action_id) if e != _DONE_EVENT
+        ]
         logger.info("[FSM] events: %s", event_ids)
 
-        q: asyncio.Queue[tuple[RacerType, Any]] = asyncio.Queue(maxsize=1)
+        winner_fut: asyncio.Future[tuple[RacerType, Any ]] = (
+                asyncio.get_running_loop().create_future()
+        )
         winner: tuple[RacerType, Any]
+
 
         async with asyncio.TaskGroup() as tg:
             members: list[asyncio.Task] = []
@@ -56,7 +61,7 @@ class MissionFSM:
             # Action
             members.append(
                 tg.create_task(
-                    self._race(action, RacerType.ACTION, curr_action_id, q),
+                    self._race(action, RacerType.ACTION, curr_action_id, winner_fut),
                     name=f"action:{curr_action_id}",
                 )
             )
@@ -68,12 +73,17 @@ class MissionFSM:
                 ev = ev_cls(**ev_ir.attributes)
                 members.append(
                     tg.create_task(
-                        self._race(ev, RacerType.EVENT, ev_id, q), name=f"event:{ev_id}"
+                        self._race(
+                            ev,
+                            RacerType.EVENT,
+                            ev_id,
+                            winner_fut),
+                        name=f"event:{ev_id}"
                     )
                 )
-
-            # First finisher places a result into q
-            winner = await q.get()
+                
+            # First finisher 
+            winner = await winner_fut 
 
             # Cancel everyone else
             for t in members:
@@ -102,7 +112,7 @@ class MissionFSM:
         racer: Any,
         racer_type: RacerType,
         racer_id: str,
-        q: asyncio.Queue[tuple[RacerType, Any]],
+        winner_fut: asyncio.Future[tuple[RacerType, Any]],
     ) -> None:
         try:
             if racer_type is RacerType.ACTION:
@@ -110,20 +120,15 @@ class MissionFSM:
             else:  # RacerType.EVENT
                 await racer.check()
 
-            try:
-                q.put_nowait((racer_type, racer_id))
-            except asyncio.QueueFull:
-                pass
+            if not winner_fut.done():
+                winner_fut.set_result((racer_type, racer_id))
 
         except Exception as e:
             logger.exception(
                 "[FSM] Racer %s (%s) failed", racer_id, racer_type, exc_info=e
             )
-            try:
-                q.put_nowait((RacerType.ERROR, e))
-            except asyncio.QueueFull:
-                pass
-            raise
+            if not winner_fut.done():
+                winner_fut.set_result((RacerType.ERROR, e))
 
     def _gather_events(self, curr_action_id: str) -> list[str]:
         return list(self.transition.get(curr_action_id, {}).keys())

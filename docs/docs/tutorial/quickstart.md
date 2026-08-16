@@ -49,6 +49,10 @@ If on Mac or Linux, be sure to run the commands listed in the install output to 
 To run SteelEagle, you must have a backend and at least one vehicle set up. For this guide, we will create a simulated
 vehicle and spin up a backend containing an obstacle avoidance and object detection engine
 
+:::tip[Recommended: use the Orchestrator]
+The steps below launch each service by hand in its own terminal. The [SteelEagle Orchestrator](orchestrator) (`steele` CLI) can manage installation and the start/stop/restart/logs lifecycle of the backend, GCS, vehicle, and simulator for you instead, once the setup wizard below has been run. The manual steps are still shown here since the orchestrator wraps them directly and remains optional.
+:::
+
 ### Backend Setup
 
 SteelEagle provides a backend setup wizard to streamline the backend setup process.
@@ -131,7 +135,7 @@ To stop __ALL__ the containers:
 docker compose down
 ```
 
-To stop and individual container:
+To stop an individual container:
 ```bash
 docker compose stop <container_name>
 ```
@@ -140,6 +144,15 @@ To view logs for an individual container:
 ```bash
 docker compose logs -f <container_name>
 ```
+
+:::tip[Orchestrator equivalent]
+```bash
+steele backend start
+steele backend stop
+steele backend logs -f
+```
+See the [Orchestrator](orchestrator) guide for full details, including `orchestrator.yaml` configuration.
+:::
 
 To create a minimal backend with just the telemetry engine, Redis DB, and the swarm controller:
 ```bash
@@ -177,6 +190,13 @@ Once installed, the GCS can be launched using uv run:
 cd ~/steeleagle/gcs/react/backend/
 uv run main.py
 ```
+
+:::tip[Orchestrator equivalent]
+```bash
+steele gcs install
+steele gcs start
+```
+:::
 
 ### Vehicle Setup
 
@@ -222,6 +242,14 @@ log_level = 'INFO'
 ```
 
 Once done, run `uv run launch.py` and the vehicle should start!
+
+:::tip[Orchestrator equivalent]
+```bash
+steele sim start
+steele vehicle start --name test1 --config config.toml --headless
+```
+The sim must be started before the vehicle, or it will fail to connect.
+:::
 
 ## Controlling the Vehicle with the GCS
 

@@ -10,11 +10,12 @@ from scipy.spatial.transform import Rotation as R
 
 from ....compiler.registry import register_action
 from ...base import Action
-from ...datatypes import common as common
-from ...datatypes.control import AltitudeMode, HeadingMode, PoseMode
-from ...datatypes.result import BoundingBox, Detection, FrameResult
-from ...datatypes.waypoint import Waypoints
-from ...utils import fetch_results, fetch_telemetry
+from ...datatypes.primitives import common as common
+from ...datatypes.primitives.vehicle import AltitudeMode, HeadingMode, PoseMode
+from ...datatypes.primitives.result import BoundingBox, Detection, FrameResult
+from ...datatypes.advanced.route_plan import RoutePlan
+from ...datatypes.primitives.map import Map as MissionMap
+from ...utils import fetch_results, fetch_results_range, fetch_telemetry
 from ..primitives.vehicle import (
     Hold,
     Joystick,
@@ -26,7 +27,44 @@ from ..primitives.vehicle import (
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_HOVER_TIME = 1.0
+DEFAULT_MAX_VELOCITY = common.Velocity(x_vel=3.0, y_vel=3.0, z_vel=3.0, angular_vel=120.0)
 
+
+# private helper method to fly through a list of locations with hover time and max velocity
+async def _fly(
+    locations: list[common.Location],
+    alt: float,
+    hover_time: float,
+    max_velocity: common.Velocity,
+):
+    logger.info("waypoints_num=%d", len(locations))
+    for loc in locations:
+        logger.info("goto (%.6f, %.6f)", loc.latitude, loc.longitude)
+        goto = SetGlobalPosition(
+            location=common.Location(
+                latitude=loc.latitude,
+                longitude=loc.longitude,
+                altitude=alt,
+                heading=None,
+            ),
+            altitude_mode=AltitudeMode.RELATIVE,
+            heading_mode=HeadingMode.TO_TARGET,
+            max_velocity=max_velocity,
+        )
+        response = await goto.execute()
+        if response is None or response.status >= common.ResponseStatus.CANCELLED:
+            msg = getattr(response, "response_string", None) or "no response"
+            logger.error(
+                "goto (%.6f, %.6f) failed: %s -- continuing",
+                loc.latitude,
+                loc.longitude,
+                msg,
+            )
+
+        if hover_time > 0:
+            await asyncio.sleep(hover_time)
+            
 @register_action
 class ElevateToAltitude(Action):
     """Climb to a target altitude by setting vertical velocity until reached."""
@@ -47,6 +85,8 @@ class ElevateToAltitude(Action):
         start = asyncio.get_event_loop().time()
         while True:
             tel = await fetch_telemetry()
+            if not tel:
+              logger.warning("Could not get telemetry, waiting...")
             rel_alt = tel.position_info.relative_position.z
 
             if rel_alt + self.tolerance >= self.target_altitude:
@@ -89,40 +129,23 @@ class PrePatrolSequence(Action):
 
 @register_action
 class Patrol(Action):
-    """Fly through a sequence of waypoints generated from an area and slicing algorithm."""
+    """Fly through a sequence of waypoints generated from a mission-map area and slicing algorithm."""
 
     hover_time: float = Field(
-        1.0, ge=0.0, description="seconds to hover after each move"
+        DEFAULT_HOVER_TIME, ge=0.0, description="seconds to hover after each move"
     )
-    waypoints: Waypoints = Field(
-        description="Waypoints definition (area, alt, algo, spacing, angle_degrees, trigger_distance)."
+    plan: RoutePlan = Field(
+        description="Route plan (area, alt, algo, spacing, angle_degrees, trigger_distance)."
     )
     max_velocity: common.Velocity = Field(
-        common.Velocity(x_vel=3.0, y_vel=3.0, z_vel=3.0, angular_vel=120.0),
+        DEFAULT_MAX_VELOCITY,
         description="Maximum velocity to use while transiting between waypoints.",
     )
 
     async def execute(self):
-        map = self.waypoints.calculate()
-        for area_name, points in map.items():
-            logger.info("Patrol: area=%s, waypoints_num=%d", area_name, len(points))
-            for p in points:
-                logger.info(f"Patrol: goto {p}")
-                goto = SetGlobalPosition(
-                    location=common.Location(
-                        latitude=float(p["lat"]),
-                        longitude=float(p["lon"]),
-                        altitude=float(p["alt"]),
-                        heading=None,
-                    ),
-                    altitude_mode=AltitudeMode.RELATIVE,
-                    heading_mode=HeadingMode.TO_TARGET,
-                    max_velocity=self.max_velocity,
-                )
-                await goto.execute()
-
-                if self.hover_time > 0:
-                    await asyncio.sleep(self.hover_time)
+        mission_map = MissionMap() # init the map object without the area parameter will spawn the mission map
+        locations = self.plan.apply(mission_map)
+        await _fly(locations, self.plan.alt, self.hover_time, self.max_velocity)
 
 
 @register_action
@@ -152,6 +175,76 @@ class PrecisionLand(Action):
     descent_speed: float = Field(1.0, gt=0)
     altitude_ceil: float = Field(10.0, lt=20.0)
     target_altitude: float = Field(1.5, gt=1)
+
+    # --- Descent step configuration (new) ---
+    max_descent_step: float = Field(
+        1.0,
+        gt=0,
+        description="Maximum altitude (meters) to drop in a single descend-then-realign increment",
+    )
+    min_descent_step: float = Field(
+        0.2,
+        gt=0,
+        description="Minimum altitude (meters) to drop per increment, even when margin is tight",
+    )
+    fov_margin_fraction: float = Field(
+        0.6,
+        gt=0,
+        lt=1.0,
+        description=(
+            "Safety fraction of remaining FOV margin to consume per descent step. "
+            "E.g. 0.6 means: only use 60% of the angular room left before the target "
+            "would exit frame, leaving headroom for drift during the drop."
+        ),
+    )
+
+    def _max_safe_descent(
+        self, forward_err: float, lateral_err: float, altitude: float
+    ) -> float:
+        """
+        Estimate how far we can safely descend before the target risks leaving frame,
+        assuming some lateral/forward drift could occur during the drop.
+
+        Idea: the target currently sits at angular offset (forward_err, lateral_err)
+        from center. The remaining angular margin before hitting the edge of the FOV
+        is (half_fov - |current_err|) for each axis. We don't want to "spend" all of
+        that margin on altitude change alone -- we want most of it left over as a
+        buffer against horizontal drift during the descent. So we scale the safe
+        descent step by how much margin remains, relative to how much margin we
+        started with (i.e. how centered we already are).
+
+        Returns a step size in meters, clamped to [min_descent_step, max_descent_step].
+        """
+        half_hfov = self.hfov_deg / 2.0
+        half_vfov = self.vfov_deg / 2.0
+
+        lateral_margin_frac = self._clamp(
+            1.0 - (abs(lateral_err) / half_hfov), 0.0, 1.0
+        )
+        forward_margin_frac = self._clamp(
+            1.0 - (abs(forward_err) / half_vfov), 0.0, 1.0
+        )
+
+        # Use the tighter (smaller) of the two margins -- whichever axis is closer
+        # to the frame edge is the one that limits how aggressively we can descend.
+        tightest_margin_frac = min(lateral_margin_frac, forward_margin_frac)
+
+        # Scale max_descent_step by that margin, then apply the safety fraction
+        # so we're not using 100% of even the "safe" margin.
+        step = self.max_descent_step * tightest_margin_frac * self.fov_margin_fraction
+
+        # Never drop below min_descent_step (avoid the loop stalling on tiny steps
+        # forever) and never exceed max_descent_step or current altitude itself.
+        step = self._clamp(step, self.min_descent_step, self.max_descent_step)
+        step = min(step, altitude - 0.05)  # never command a step past the ground
+
+        logger.debug(
+            "max_safe_descent: lateral_margin=%.2f forward_margin=%.2f -> step=%.2fm",
+            lateral_margin_frac,
+            forward_margin_frac,
+            step,
+        )
+        return max(step, 0.0)
 
     @property
     def _pixel_center(self) -> tuple[float, float]:
@@ -185,20 +278,20 @@ class PrecisionLand(Action):
     async def execute(self):
         logger.info("Started the task")
         last_seen: float | None = None
-        mode: int = 0
-        # Pitch the gimbal
+        mode: int = 0  # 0 = align forward, 1 = align lateral, 2 = bounded descend
+
         await SetGimbalPose(
             gimbal_id=0, pose=common.Pose(pitch=-90.0, roll=0.0, yaw=0.0)
         ).execute()
-        # Descent loop
+
         while True:
             # --- Telemetry ---
             telemetry = await fetch_telemetry()
             if not telemetry:
                 logger.error("Could not get telemetry, waiting!")
                 continue
-            # logger.info("Track: telemetry fetched: %s", telemetry)
-            altitude = telemetry.relative_position.z
+            altitude = telemetry.position_info.relative_position.z
+
             # --- Target lost check ---
             now = asyncio.get_event_loop().time()
             if last_seen is not None and (now - last_seen) > self.target_lost_duration:
@@ -210,18 +303,18 @@ class PrecisionLand(Action):
                     )
                     break
                 else:
+                    logger.info("Ascending to attempt to reacquire...")
                     await Joystick(
                         velocity=common.Velocity(z_vel=self.descent_speed)
                     ).execute()
 
             # --- Detections ---
             res: FrameResult = await fetch_results(self.compute_stream)
-            # logger.info("Track: fetched results from stream=%s", res)
-
             box: BoundingBox | None = None
             if not res or not res.result:
-                logger.info("PrecisionLand: no objects found")
-                continue  # no ComputeResult entries
+                logger.info(f"PrecisionLand: No results from {self.compute_stream}")
+                continue
+
             for compute in res.result:
                 det_result = compute.detection_result
                 if not det_result or not det_result.detections:
@@ -236,69 +329,89 @@ class PrecisionLand(Action):
                         last_seen = now
                         break
 
-            # --- Track procedure ---
-            if box is not None:
-                altitude = telemetry.position_info.relative_position.z
-                forward_err, lateral_err = await self._compute_error(box, telemetry)
-                forward_off = math.tan(math.radians(forward_err)) * altitude
-                lateral_off = math.tan(math.radians(lateral_err)) * altitude
-                target = common.Velocity()
-                if mode == 0:  # forward
-                    logger.info(f"forward step {forward_off}")
-                    if math.isclose(forward_off, 0.0, abs_tol=self.err_tol * altitude):
-                        logger.info(
-                            f"forward check {forward_off} {self.err_tol * altitude} {altitude}"
-                        )
-                        mode = 1
-                        await Hold().execute()
-                        continue
-                    else:
-                        target.x_vel = self._clamp(
-                            forward_off, -self.forward_speed, self.forward_speed
-                        )
-                elif mode == 1:  # lateral
-                    logger.info(f"lateral step {lateral_off}")
-                    if math.isclose(lateral_off, 0.0, abs_tol=self.err_tol * altitude):
-                        logger.info(
-                            f"lateral check {lateral_off} {self.err_tol * altitude} {altitude}"
-                        )
-                        if math.isclose(
-                            forward_off, 0.0, abs_tol=self.err_tol * altitude
-                        ):
-                            mode = 2
-                            await Hold().execute()
-                            continue
-                        else:
-                            mode = 0
-                            await Hold().execute()
-                            continue
-                    else:
-                        target.y_vel = self._clamp(
-                            lateral_off, -self.lateral_speed, self.lateral_speed
-                        )
-                else:  # descend
-                    if math.isclose(
-                        forward_off, 0.0, abs_tol=self.err_tol * self.target_altitude
-                    ) and math.isclose(
-                        lateral_off, 0.0, abs_tol=self.err_tol * self.target_altitude
-                    ):
-                        logger.info("land check")
-                        await Land().execute()
-                        return
-                    else:
-                        mode = 0
-                logger.info("outer loop")
-                if (
-                    math.isclose(forward_off, 0.0, abs_tol=self.err_tol)
-                    and math.isclose(lateral_off, 0.0, abs_tol=self.err_tol)
-                    and altitude <= self.target_altitude
-                ):
-                    logger.info("land check")
+            if box is None:
+                continue
+
+            # --- Error computation (every iteration, fresh) ---
+            altitude = telemetry.position_info.relative_position.z
+            forward_err, lateral_err = await self._compute_error(box, telemetry)
+            forward_off = math.tan(math.radians(forward_err)) * altitude
+            lateral_off = math.tan(math.radians(lateral_err)) * altitude
+
+            target = common.Velocity()
+
+            # --- Final landing check (unconditional, any mode) ---
+            if (
+                math.isclose(forward_off, 0.0, abs_tol=self.err_tol)
+                and math.isclose(lateral_off, 0.0, abs_tol=self.err_tol)
+                and altitude <= self.target_altitude
+            ):
+                logger.info("Landing criteria met -- landing")
+                await Land().execute()
+                return
+
+            # --- Mode 0: forward alignment ---
+            if mode == 0:
+                if math.isclose(forward_off, 0.0, abs_tol=self.err_tol * altitude):
+                    logger.info(
+                        "forward aligned (%.2fm) -> moving to lateral", forward_off
+                    )
+                    await Hold().execute()
+                    mode = 1
+                else:
+                    logger.info("forward step: %.2fm", forward_off)
+                    target.x_vel = self._clamp(
+                        forward_off, -self.forward_speed, self.forward_speed
+                    )
+                    await Joystick(velocity=target).execute()
+
+            # --- Mode 1: lateral alignment ---
+            elif mode == 1:
+                if math.isclose(lateral_off, 0.0, abs_tol=self.err_tol * altitude):
+                    logger.info(
+                        "lateral aligned (%.2fm) -> moving to descend", lateral_off
+                    )
+                    await Hold().execute()
+                    mode = 2
+                else:
+                    logger.info("lateral step: %.2fm", lateral_off)
+                    target.y_vel = self._clamp(
+                        lateral_off, -self.lateral_speed, self.lateral_speed
+                    )
+                    await Joystick(velocity=target).execute()
+
+            # --- Mode 2: bounded incremental descend, then re-align ---
+            else:
+                if altitude <= self.target_altitude:
+                    logger.info(
+                        "reached target altitude without full centering -- landing"
+                    )
                     await Land().execute()
                     return
-                else:
-                    logger.info("joystick")
-                    await Joystick(velocity=target).execute()
+
+                step = self._max_safe_descent(forward_err, lateral_err, altitude)
+                logger.info(
+                    "descending step=%.2fm (altitude=%.2fm, fwd_err=%.2f, lat_err=%.2f)",
+                    step,
+                    altitude,
+                    forward_err,
+                    lateral_err,
+                )
+
+                # Estimate how long to descend at descent_speed to cover `step` meters,
+                # then hold and go re-align rather than trying to descend continuously
+                # while also correcting position (keeps the phases decoupled and simple).
+                descend_duration = step / self.descent_speed
+                await Joystick(
+                    velocity=common.Velocity(z_vel=-1 * self.descent_speed)
+                ).execute()
+                await asyncio.sleep(descend_duration)
+                await Hold().execute()
+
+                # Always re-check forward alignment first after a descent step,
+                # since a lower altitude changes the ground-distance meaning of
+                # the same angular error.
+                mode = 0
 
 
 @register_action
@@ -497,6 +610,8 @@ class Track(Action):
             if last_seen is not None and (now - last_seen) > self.target_lost_duration:
                 # Stop motion and exit
                 telemetry = await fetch_telemetry()
+                if not telemetry:
+                    logger.warning("Could not get telemetry, waiting...")
                 await self._actuate(0.0, 0.0, 0.0, 0.0, 0.0, telemetry)
                 logger.info(
                     "Track: target lost for %.1fs, exiting",
@@ -506,6 +621,8 @@ class Track(Action):
 
             # --- Telemetry ---
             telemetry = await fetch_telemetry()
+            if not telemetry:
+                    logger.warning("Could not get telemetry, waiting...")
             # logger.info("Track: telemetry fetched: %s", telemetry)
 
             # --- Detections ---
@@ -681,3 +798,102 @@ class AvoidTask(Action):
                 logger.error("[AvoidTask] Threw an exception")
                 logger.error(e)
             await asyncio.sleep(self._poll_period)
+
+
+@register_action
+class Map(Action):
+    """Fly an area, then iteratively re-fly the next-flight area returned by the mapping engine."""
+
+    # Fields
+    gimbal_pitch: float = Field(45, ge=0.0, description="Gimbal pitch degree")
+    hover_time: float = Field(
+        DEFAULT_HOVER_TIME, ge=0.0, description="seconds to hover after each move"
+    )
+    max_velocity: common.Velocity = Field(
+        DEFAULT_MAX_VELOCITY,
+        description="Maximum velocity to use while transiting between waypoints.",
+    )
+    compute_stream: str = Field(
+        "swiftmap-engine",
+        description="Name of compute stream to pull next flight navigation points from",
+    )
+    initial_plan: RoutePlan = Field(
+        description=(
+            "Route plan for the first flight (area, alt, algo, spacing, "
+            "angle_degrees, trigger_distance). Its algo/spacing/angle_degrees/"
+            "trigger_distance/alt are reused to slice every subsequent flight's area."
+        )
+    )
+    iterative_plan: RoutePlan = Field(
+        description=(
+            "Route plan for subsequent flights (area, alt, algo, spacing, "
+            "angle_degrees, trigger_distance). Its algo/spacing/angle_degrees/"
+            "trigger_distance/alt are reused to slice every subsequent flight's area."
+        )
+    )
+    num_trials: int = Field(1, gt=0, description="Number of trials for iterative flights")
+
+    @staticmethod
+    def _oldest_area(results: list[tuple[float, FrameResult]]):
+        """Pop the oldest navigation result with a usable area from `results`."""
+        for ts, res in results:
+            if not res or not res.result:
+                continue
+            for compute in res.result:
+                nav = compute.navigation_result
+                if nav and nav.area and nav.area.points:
+                    return ts, nav.area
+        return None, None
+
+    # Main logic
+    async def execute(self):
+
+        current_map = MissionMap()  # init the map object without the area parameter will spawn the mission map
+        first_trial_locations = self.initial_plan.apply(current_map)
+        logger.info(
+            "[Map] trial 1/%d (%d left): flying %d waypoints: %s",
+            self.num_trials,
+            self.num_trials - 1,
+            len(first_trial_locations),
+            [(loc.latitude, loc.longitude) for loc in first_trial_locations],
+        )
+        t0 = time.time()
+        await _fly(first_trial_locations, self.initial_plan.alt, self.hover_time, self.max_velocity)
+
+        for trial in range(self.num_trials - 1):
+            trial_no = trial + 2
+            results = await fetch_results_range(self.compute_stream, t0, time.time())
+            ts, next_area = self._oldest_area(results)
+            if next_area is None:
+                logger.info(
+                    "[Map] No navigation result on %s for trial %d/%d; stopping.",
+                    self.compute_stream,
+                    trial_no,
+                    self.num_trials,
+                )
+                return
+            t0 = ts
+
+            try:
+                current_map.update(next_area)
+                next_trial_locations = self.iterative_plan.apply(current_map)
+            except ValueError:
+                logger.warning(
+                    "[Map] Navigation result on %s for trial %d/%d had no area name; stopping.",
+                    self.compute_stream,
+                    trial_no,
+                    self.num_trials,
+                )
+                return
+
+            logger.info(
+                "[Map] trial %d/%d (%d left): flying %d waypoints: %s",
+                trial_no,
+                self.num_trials,
+                self.num_trials - trial_no,
+                len(next_trial_locations),
+                [(loc.latitude, loc.longitude) for loc in next_trial_locations],
+            )
+            await _fly(next_trial_locations, self.iterative_plan.alt, self.hover_time, self.max_velocity)
+
+

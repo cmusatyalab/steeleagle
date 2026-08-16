@@ -1,0 +1,35 @@
+[project]
+name = "steele"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "docker>=7.0",
+    "httpx>=0.27",
+    "typer>=0.12",
+    "rich>=13.0",
+    "GitPython",
+    "toml",
+    "trogon",
+    "python-on-whales",
+    "pytest"
+]
+
+[project.scripts]
+steele = "cli.main:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["daemon", "cli"]
+
+[tool.pytest.ini_options]
+markers = [
+    "gcs: GCS service lifecycle and build/install routes",
+    "backend: backend Docker Compose service routes",
+    "sim: simulator service lifecycle",
+    "pool: vehicle ProcessPool routes",
+]

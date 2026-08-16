@@ -92,3 +92,9 @@ message Location {
   optional double altitude = 3; // altitude above MSL or takeoff [meters]
   optional double heading = 4; // global heading [degrees]
 }
+
+// A named boundary polygon in global coordinates.
+message Area {
+  string name = 1; // area/placemark name
+  repeated Location points = 2; // boundary vertices, in order
+}

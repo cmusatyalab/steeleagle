@@ -1,0 +1,88 @@
+# orchestrator.yaml
+#
+# Define every service the daemon should know about.
+# The daemon loads this file at startup.
+#
+# Managed flag (useful for environments where not all services need to be run):
+#   true - this service will be managed by the daemon
+#   false - the daemon will ignore the service on launch
+#
+# Supported service types:
+#
+#   process   — a long-running Python (or any) subprocess
+#   pool      — a group of identically-configured processes, each
+#               launched on demand with optional per-instance extra args
+#   container — an individual Docker container
+#   compose   — a group of containers defined by docker compose yaml/env files
+#
+# Additional type-specific fields:
+#   process,pool:
+#     command - list of strings that specify the command to run with its arguments
+#   compose:
+#     compose_files - list of strings to the paths of Docker compose files to start
+#     environment - list of strings to the paths of any environment files to include
+#   container:
+#     image - Docker image to run
+#     ports: dict[str, int]
+#     environment: dict[str, str]
+#     volumes: dict[str, str]
+#
+# NOTE: Directories for commands must map to the directory where the repositories were created.
+# e.g. If SteelEagle was cloned with Git to 'se' instead of the default 'steeleagle' directory,
+# the commands below would need to be updated to point at '~/se/...'.
+# User expansion will be performed on these paths, so ~ is valid to specify the user's home directory.
+#
+# WARNING: When installing the daemon as a system service, please use absolute paths to the repositories.
+# e.g. /home/ubuntu/steeleagle
+# Otherwise user expansion will cause the commands listed below to point at /root/steeleagle which
+# is likely not where the repositories were cloned to.
+services:
+  # Aviary Simulator (from git.cmusatyalab.org/steeleagle/roost)
+  sim:
+    managed: true
+    type: process
+    command: [
+                "uv",
+                "run",
+                "--directory",
+                "~/roost/aviary/src/steeleagle_aviary",
+                "--env-file",
+                "~/roost/aviary/src/steeleagle_aviary/.env",
+                "simulator.py",
+            ]
+
+  # React/FastAPI Ground Control System
+  gcs:
+    managed: true
+    type: process
+    command: [
+                "uv",
+                "run",
+                "--directory",
+                "~/steeleagle/gcs/react/backend",
+                "main.py",
+            ]
+
+  # Backend containers including swarm controller and cognitive engines
+  backend:
+    managed: false
+    type: compose
+    compose_files: ["~/steeleagle/backend/server/docker-compose.yml"]
+    environment: ["~/steeleagle/backend/server/.env"]
+
+  # Vehicle (kernel, driver, mission) instances
+  vehicle:
+    managed: true
+    type: pool
+    command: [
+                "uv",
+                "run",
+                "--directory",
+                "~/steeleagle/vehicle",
+                "launch.py",
+            ]
+
+# Roost (git.cmusatyalab.org/steeleagle/roost) will be pulled into this directory by the daemon on launch
+roost: "~/roost"
+# Root of the SteelEagle repository clone
+steeleagle: "~/steeleagle"

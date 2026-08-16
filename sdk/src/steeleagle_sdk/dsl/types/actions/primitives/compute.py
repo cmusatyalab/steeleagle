@@ -5,11 +5,11 @@ from ....compiler.registry import register_action
 
 # API imports
 from ...base import Action
-from ...datatypes import common as common
-from ...datatypes import compute as params
+from ...datatypes.primitives import common as common
+from ...datatypes.primitives import compute as params
 
 # Type imports
-from ...datatypes.common import Response
+from ...datatypes.primitives.common import Response
 
 
 # @register_action
