@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import MessageBubble from './MessageBubble.jsx';
-import { SUGGESTED_PROMPTS } from '../data/mockAssistant.js';
+import { SUGGESTED_PROMPTS } from '../data/constants.js';
 
 // Scrollable message log. Uses a native scroll container (not VirtualScroller)
 // because chat bubbles have variable, dynamic heights. Auto-scrolls to the

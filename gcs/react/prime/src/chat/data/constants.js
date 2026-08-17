@@ -9,14 +9,13 @@ export const WELCOME_MESSAGE =
     'can revise the current draft. I will not upload or start missions for you.';
 
 export const SUGGESTED_PROMPTS = [
-    'Patrol areaB, then return home',
-    'Take off and track the nearest person',
-    'Fly a 300s patrol and return home when the battery is below 30%',
+    'Patrol areaB, then return home.',
+    'Take off and track the nearest person.',
+    'Fly a 300s patrol and return home when the battery is below 30%.',
     'What actions are available in the FSM builder?',
 ];
 
-// Apply target identifiers shared with the host app. Keeping these as
-// constants avoids magic strings when the real integration is added.
+// Apply target identifiers shared with the host app.
 export const APPLY_TARGETS = {
     fsmBuilder: 'fsm-builder',
     dslPreview: 'dsl-preview',
@@ -27,4 +26,3 @@ export function nextId(prefix = 'id') {
     _seq += 1;
     return `${prefix}-${Date.now().toString(36)}-${_seq}`;
 }
-

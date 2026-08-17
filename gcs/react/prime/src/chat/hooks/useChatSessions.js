@@ -14,7 +14,7 @@ import {
     saveSessions,
     setCurrentDraft,
 } from './sessionLogic.js';
-import { ASSISTANT_NAME } from '../data/mockAssistant.js';
+import { ASSISTANT_NAME } from '../data/constants.js';
 
 class ChatAbortError extends Error {
     constructor() {

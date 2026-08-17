@@ -2,7 +2,7 @@
 // Keeping these functions pure makes the conversation model easy to unit test
 // and keeps React components free of storage/branching concerns.
 
-import { nextId, WELCOME_MESSAGE, ASSISTANT_NAME } from '../data/mockAssistant.js';
+import { nextId, WELCOME_MESSAGE, ASSISTANT_NAME } from '../data/constants.js';
 
 export const STORAGE_KEY = 'se-chat-sessions';
 

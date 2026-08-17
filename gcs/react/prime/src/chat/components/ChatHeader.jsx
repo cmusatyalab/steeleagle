@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Button } from 'primereact/button';
 import { Tag } from 'primereact/tag';
 import { Tooltip } from 'primereact/tooltip';
-import { ASSISTANT_NAME } from '../data/mockAssistant.js';
+import { ASSISTANT_NAME } from '../data/constants.js';
 import { getApiUrl } from '../../App.jsx';
 
 // Top bar of the chat window: assistant identity, live-mode indicator and a
