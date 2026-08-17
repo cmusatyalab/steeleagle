@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 4
 ---
 
 import Tabs from '@theme/Tabs';
@@ -27,6 +27,13 @@ In order to quickly build the GCS, an installation shell script exists.  This sc
 cd ~/steeleagle/gcs/react
 sh -x install.sh
 ```
+
+:::tip[Orchestrator equivalent]
+The [Orchestrator](orchestrator) CLI can install and build the GCS for you instead:
+```bash
+steele gcs install
+```
+:::
 
 ## Configuration
 
@@ -99,6 +106,15 @@ uv run main.py
 
 This will launch using the default host (127.0.0.1) and port (8002). The host and port can be overridden by using the --host and --port command line parameters respectively. Once launched, the GCS can be reached in the browser at the host/port specified.
 
+:::tip[Orchestrator equivalent]
+The [Orchestrator](orchestrator) CLI can manage the GCS process instead of running it directly:
+```bash
+steele gcs start
+steele gcs logs -f
+steele gcs stop
+```
+:::
+
 ### GCS Anatomy
 
 <div style={{textAlign: 'center'}}>
@@ -110,7 +126,7 @@ By default, the control page is shown. Below is an explanation of each numbered 
 1. __Page Selection__ - Navigate between monitor, control, and plan pages.
 * The monitor page displays a large map which tracks the position of all vehicles and detected objects. It also lists the status cards for all connected vehicles.
 * The control page allows the user to view a particular vehicle. It also allows both manual and autonomous control of a squadron of vehicles.
-* __The plan page is currently a WIP and is non-functional__.
+* The plan page is a visual mission builder that lets you draw waypoint areas and design a finite state machine mission without hand-writing DSL. See the [Plan Page](#plan-page) section below.
 
 2. __Global Settings Panel__ - This settings panel allows toggling between two modes: Swarm Controller where it talks to a backend server (this is the default), and Local Vehicles where it will communicate directly with any locally running vehicles.
 
@@ -199,3 +215,63 @@ Please keep in mind that due to the nature of the control loop in SteelEagle, th
 
 Utmost caution should be taken when executing autonomous missions and when unsure, missions should be interrupted using the above mechanisms.
 :::
+
+## Plan Page
+
+The plan page is a visual editor for building [DSL missions](../sdk/guide/dsl) without hand-writing the finite state machine (FSM) text. It is split into three tabs: __FSM Builder__, __Map__, and __DSL Preview__.
+
+:::note
+The plan page talks to the same FastAPI backend as the rest of the GCS (`/api/schema`, `/api/compile`, `/api/parse_dsl`, `/api/upload`), so it requires the GCS backend from [Installation](#installation) to be running with a working `steeleagle_sdk` DSL compiler.
+:::
+
+### FSM Builder
+
+<div style={{textAlign: 'center'}}>
+![Plan Page FSM Builder](/img/gcs/gcs_plan_fsm_builder.png)
+</div>
+
+The FSM Builder is made up of three parts:
+
+* __Action Palette__ (left) - A list of every action type the DSL compiler knows about (TakeOff, Patrol, Track, Wait, etc), loaded from `/api/schema`. Drag an action from the palette onto the canvas to create a new task node.
+* __Canvas__ (center) - A [React Flow](https://reactflow.dev) graph where each node is one task instance in the mission. Draw a transition by dragging from one node's handle to another (or back onto itself for a self-loop).
+* __Toolbar__ (top) - Undo/Redo, New, Load DSL, Export DSL, Compile, Download .json, and Deploy.
+
+Clicking a node opens a side panel where its instance ID and parameters (as defined by the action's schema) can be edited. Right-clicking a node or transition opens a context menu to set the node as the mission's start state, edit/delete a transition, or delete the node.
+
+When a transition is drawn (including a self-loop), a dialog prompts for the triggering event: the built-in `done` event (fires on task completion), an existing custom event instance, or a brand new event type/instance defined inline. Clicking an existing transition reopens this same information in a side panel so its event's parameters can be edited or the transition deleted.
+
+As the graph is edited, the canvas is validated on a short debounce and problems are surfaced directly on the offending nodes and in the status bar at the bottom of the canvas:
+
+* Required parameters that are unset
+* Duplicate instance IDs
+* No start state selected
+
+:::tip[Undo/Redo]
+`Ctrl+Z` / `Ctrl+Shift+Z` (or `Ctrl+Y`) undo and redo the last 50 changes to the graph, including node/edge edits, parameter changes, and deletions.
+:::
+
+Toolbar actions:
+
+* __New__ - Clears the canvas after confirmation.
+* __Load DSL__ - Parses an existing `.dsl` file (via `/api/parse_dsl`) and rebuilds the graph from it, automatically laying out nodes by distance from the start state.
+* __Export DSL__ - Downloads the current graph as a `.dsl` text file, generated live from the nodes/transitions/events on the canvas.
+* __Compile__ - Sends the graph to `/api/compile`. On success, a `mission.json` (IR the vehicle understands) is produced and the __Download .json__ button is enabled. On failure, the failing node(s) are highlighted and the error is shown in a toast.
+* __Deploy__ - Uploads the compiled mission (plus any map features from the Map tab, converted to KML) to every vehicle currently selected in the Control page's [Squad Selection](#usage) dropdown, via `/api/upload`. A mission must be compiled first, and at least one vehicle must be selected in the squad.
+
+### Map
+
+<div style={{textAlign: 'center'}}>
+![Plan Page Map tab](/img/gcs/gcs_plan_map.png)
+</div>
+
+The Map tab is a Mapbox GL drawing surface for defining the named areas/waypoints that patrol, track, and other location-based actions reference:
+
+* Draw polygons, lines, and points directly on the map (satellite or street styles).
+* The __Features__ sidebar on the left lists every drawn feature; click one to select and zoom to it, click the pencil icon to rename it, or the trash icon to delete it.
+* Named features are exposed to the FSM Builder's parameter panel so location fields can reference them by name instead of raw coordinates.
+* __Import__ accepts an existing `.kml` or `.geojson`/`.json` file and replaces the current features with it.
+* __Export GeoJSON__ / __Export KML__ download the current set of drawn features in either format.
+
+### DSL Preview
+
+A read-only, live-updating view of the DSL text generated from the current FSM graph. This is the same text produced by __Export DSL__, useful for reviewing the mission or copying it elsewhere without leaving the plan page. The __Export DSL__ and __Download .json__ (once compiled) buttons are also available here.

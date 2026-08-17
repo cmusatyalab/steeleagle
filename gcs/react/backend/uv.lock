@@ -2138,7 +2138,7 @@ dev = [{ name = "pytest", specifier = ">=9.0.2" }]
 
 [[package]]
 name = "steeleagle-sdk"
-version = "3.1.0"
+version = "3.2.0"
 source = { editable = "../../../sdk" }
 dependencies = [
     { name = "aiosqlite" },

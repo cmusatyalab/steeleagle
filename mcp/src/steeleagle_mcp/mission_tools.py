@@ -60,9 +60,9 @@ _GENERATION_RULES = [
     "Use done only as the reserved completion event; all other events must be declared in Events.",
     "Every action referenced by Start or transitions must be declared in Actions.",
     "Every declared action should be reachable from Start through transitions.",
-    "For KML-backed paths, Waypoints.area must exactly match a KML Placemark name.",
-    "For Waypoints algo=survey, include spacing, angle_degrees, and trigger_distance.",
-    "For Waypoints algo=corridor, include spacing and angle_degrees.",
+    "For KML-backed paths, RoutePlan.area must exactly match a KML Placemark name.",
+    "For RoutePlan algo=survey, include spacing, angle_degrees, and trigger_distance.",
+    "For RoutePlan algo=corridor, include spacing and angle_degrees.",
     "End missions by transitioning to a terminal action such as Land or ReturnToHome; do not invent end/stop states.",
 ]
 
@@ -73,8 +73,8 @@ _COMMON_MISTAKES = [
         "reason": "Start is not a stanza and takes no colon.",
     },
     {
-        "bad": "Waypoints path(area = 'PatrolZone', algo = 'edge', alt = 15.0)",
-        "good": "Waypoints path(area = PatrolZone, algo = edge, alt = 15.0)",
+        "bad": "RoutePlan path(area = 'PatrolZone', algo = 'edge', alt = 15.0)",
+        "good": "RoutePlan path(area = PatrolZone, algo = edge, alt = 15.0)",
         "reason": "The DSL grammar uses bare NAME tokens, not quoted strings.",
     },
     {
@@ -278,17 +278,17 @@ def _focus_allows(kind: str, class_name: str, focus: str) -> bool:
         "waypoints": {
             "actions": {"TakeOff", "Patrol", "Track", "ReturnToHome", "Land"},
             "events": {"DetectionFound", "BatteryReached", "TimeReached"},
-            "data": {"Waypoints", "Detection", "Location"},
+            "data": {"RoutePlan", "Detection", "Location"},
         },
         "events": {
             "actions": {"TakeOff", "Patrol", "Track", "ReturnToHome", "Land", "Wait"},
             "events": None,
-            "data": {"Detection", "Location", "Waypoints"},
+            "data": {"Detection", "Location", "RoutePlan"},
         },
         "actions": {
             "actions": None,
             "events": set(),
-            "data": {"Location", "Waypoints", "Detection"},
+            "data": {"Location", "RoutePlan", "Detection"},
         },
     }
     allowed = buckets[focus][kind]
@@ -353,10 +353,10 @@ def _fallback_examples() -> list[dict[str, str]]:
             "name": "patrol.dsl",
             "dsl": (
                 "Data:\n"
-                "    Waypoints patrol_path(alt = 15.0, area = PatrolZone, algo = edge)\n"
+                "    RoutePlan patrol_path(alt = 15.0, area = PatrolZone, algo = edge)\n"
                 "Actions:\n"
                 "    TakeOff take_off(take_off_altitude = 10.0)\n"
-                "    Patrol patrol(waypoints = patrol_path)\n"
+                "    Patrol patrol(plan = patrol_path)\n"
                 "    ReturnToHome return_to_home()\n"
                 "Events:\n"
                 "    BatteryReached battery_low(threshold = 40)\n"

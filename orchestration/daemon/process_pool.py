@@ -64,11 +64,12 @@ class ProcessPool:
         return {"instance_id": instance_id, **result}
 
     async def stop_all(self) -> list[dict]:
-        return [
-            await self.stop_instance(iid)
+        running_ids = [
+            iid
             for iid, mgr in self._instances.items()
             if mgr.status().get("status") == "running"
         ]
+        return [await self.stop_instance(iid) for iid in running_ids]
 
     # ------------------------------------------------------------------
     # Status & logs — delegate to the individual ProcessManager

@@ -1,6 +1,9 @@
 from dataclasses import dataclass, field
 from typing import Any
 
+DONE_EVENT = "done"
+TERMINATE_ACTION_ID = "terminate"
+
 
 @dataclass
 class ActionIR:

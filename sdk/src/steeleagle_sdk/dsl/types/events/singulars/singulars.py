@@ -7,11 +7,11 @@ from pydantic import Field
 
 from ....compiler.registry import register_event
 from ...base import Event
-from ...datatypes.common import Location, Pose, Position, Velocity
-from ...datatypes.result import BoundingBox, Detection, FrameResult
-from ...datatypes.control import ReferenceFrame
-from ...datatypes.result import HSV, Detection, FrameResult
-from ...datatypes.telemetry import DriverTelemetry
+from ...datatypes.primitives.common import Location, Pose, Position, Velocity
+from ...datatypes.primitives.result import BoundingBox, Detection, FrameResult
+from ...datatypes.primitives.vehicle import ReferenceFrame
+from ...datatypes.primitives.result import HSV, Detection, FrameResult
+from ...datatypes.primitives.telemetry import DriverTelemetry
 from ...utils import fetch_results, fetch_telemetry
 
 logger = logging.getLogger(__name__)
@@ -356,7 +356,7 @@ class BoundingBoxCentered(Event):
     """
 
     target: Detection = Field(description="Detection to check if centered")
-    compute_stream: str = Field("aruco_detector_engine", description="Name of compute stream to get results from")
+    compute_stream: str = Field("aruco-detector-engine", description="Name of compute stream to get results from")
     v_tol: float = Field(1.0, ge=0.0, description="Vertical tolerance")
     h_tol: float = Field(1.0, ge=0.0, description="Horizontal tolerance")
 
