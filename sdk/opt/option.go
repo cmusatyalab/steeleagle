@@ -10,39 +10,53 @@ type Option[T any] func(T)
 
 // TakeOffOption represents an option for a TakeOff RPC.
 type TakeOffOption interface {
+	// #exclude-ifndef services/driver/TakeOffRequest/altitude
 	SetAltitude(float32)
 }
 
 // ReturnToHomeOption represents an option for a ReturnToHome RPC.
 type ReturnToHomeOption interface {
+	// #exclude-ifndef services/driver/ReturnToHomeRequest/end_behavior
 	SetEndBehavior(driverpb.ReturnToHomeEndBehavior)
+	// #exclude-ifndef services/driver/ReturnToHomeRequest/min_return_altitude
 	SetMinReturnAltitude(float32)
+	// #exclude-ifndef services/driver/ReturnToHomeRequest/final_altitude
 	SetFinalAltitude(float32)
 }
 
 // SetGlobalPositionTargetOption represents an option for a SetGlobalPositionTarget RPC.
 type SetGlobalPositionTargetOption interface {
+	// #exclude-ifndef services/driver/SetGlobalPositionTargetRequest/heading_mode
 	SetHeadingMode(driverpb.HeadingMode)
+	// #exclude-ifndef services/driver/SetGlobalPositionTargetRequest/altitude_mode
 	SetAltitudeMode(driverpb.AltitudeMode)
+	// #exclude-ifndef services/driver/SetGlobalPositionTargetRequest/speed
 	SetSpeed(float32)
+	// #exclude-ifndef services/driver/SetGlobalPositionTargetRequest/angular_speed
 	SetAngularSpeed(float32)
 }
 
 // SetRelativePositionTargetOption represents an option for a SetRelativePositionTarget RPC.
 type SetRelativePositionTargetOption interface {
+	// #exclude-ifndef services/driver/SetRelativePositionTargetRequest/speed
 	SetSpeed(float32)
+	// #exclude-ifndef services/driver/SetRelativePositionTargetRequest/angular_speed
 	SetAngularSpeed(float32)
+	// #exclude-ifndef services/driver/SetRelativePositionTargetRequest/frame
 	SetFrame(driverpb.ReferenceFrame)
 }
 
 // SetVelocityTargetOption represents an option for a SetVelocityTarget RPC.
 type SetVelocityTargetOption interface {
+	// #exclude-ifndef services/driver/SetVelocityTargetRequest/frame
 	SetFrame(driverpb.ReferenceFrame)
 }
 
 // SetGimbalAngleTargetOption represents an option for a SetGimbalAngleTarget RPC.
 type SetGimbalAngleTargetOption interface {
+	// #exclude-ifndef services/driver/SetGimbalAngleTargetRequest/angle_mode
 	SetAngleMode(driverpb.AngleMode)
+	// #exclude-ifndef services/driver/SetGimbalAngleTargetRequest/frame
 	SetFrame(driverpb.ReferenceFrame)
 }
 
