@@ -8,12 +8,16 @@ import (
 )
 
 func TestStreamingFromFile(t *testing.T) {
+	requireFFmpegFpsMode(t)
+
 	videoPath := fmt.Sprintf("%s/%s", t.TempDir(), testVideoFilename)
 	generateTestVideo(t, videoPath, testWidth, testHeight, testFPS, testDuration)
 	testStreaming(t, videoPath)
 }
 
 func TestStreamingRTSP(t *testing.T) {
+	requireFFmpegFpsMode(t)
+
 	if _, err := exec.LookPath("mediamtx"); err != nil {
 		if errors.Is(err, exec.ErrNotFound) {
 			t.Skip("mediamtx binary not found")
