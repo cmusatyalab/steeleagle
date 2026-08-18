@@ -1,7 +1,12 @@
 package sdk
 
 import (
+	"context"
+
+	driverpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver"
+	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
 	"github.com/cmusatyalab/steeleagle/sdk/opt"
+	"google.golang.org/grpc"
 )
 
 // Vehicle is the interface that all SDK code interacts with. It provides
@@ -9,6 +14,7 @@ import (
 // can wait for the command to complete. This interface can be selectively
 // masked out when drivers do not support certain RPC methods.
 type Vehicle interface {
+	Ctx() context.Context // retrieves the current context
 	// #exclude-ifndef services/driver/ControlService/TakeOff
 	TakeOff(options ...opt.Option[opt.TakeOffOption]) *waiter[TakeOffResponse]
 	// #exclude-ifndef services/driver/ControlService/Land
@@ -45,4 +51,14 @@ type Vehicle interface {
 	) *waiter[SetGimbalVelocityTargetResponse]
 	// #exclude-ifndef services/driver/StreamService/StreamTelemetry
 	GetTelemetry() *waiter[Telemetry]
+}
+
+// NewVehicleFromContext creates a new Vehicle interface given a context and
+// gRPC client connection.
+func NewVehicleFromContext(ctx context.Context, conn *grpc.ClientConn) Vehicle {
+	return &vehicleContext{
+		ctx:     ctx,
+		control: driverpb.NewControlServiceClient(conn),
+		data:    vehiclepb.NewDataServiceClient(conn),
+	}
 }

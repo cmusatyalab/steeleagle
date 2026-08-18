@@ -1,10 +1,17 @@
 package sdk
 
 import (
+	"context"
+
 	driverpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver"
 	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
 	"github.com/cmusatyalab/steeleagle/sdk/opt"
 )
+
+// Ctx gets the current context attached to a vehicleContext.
+func (v *vehicleContext) Ctx() context.Context {
+	return v.ctx
+}
 
 // TakeOff implements Vehicle.TakeOff for a vehicleContext.
 func (v *vehicleContext) TakeOff(options ...opt.Option[opt.TakeOffOption]) *waiter[TakeOffResponse] {
@@ -197,3 +204,5 @@ func (v *vehicleContext) GetTelemetry() *waiter[Telemetry] {
 		func(opt.WaitOptions) error { return nil },
 	)
 }
+
+var _ Vehicle = &vehicleContext{}

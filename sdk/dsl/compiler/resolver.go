@@ -3,79 +3,130 @@ package main
 import (
 	"fmt"
 	"go/types"
+	"math"
 )
 
-// resolveValue resolves val to its Go type and, if it links to another
-// typeIR rather than being a plain Go generic.
-func (l *linker) resolveValue(val *Value) (types.Type, *typeIR, bool) {
+// lookupEnumConst looks up name as an exported package-level constant of
+// enumType's own declaring package, returning it only if its type is
+// exactly enumType -- i.e. name is one of enumType's own declared values,
+// such as enums.ReturnToHomeEndBehaviorHover for enums.ReturnToHomeEndBehavior.
+func lookupEnumConst(enumType *types.Named, name string) (*types.Const, bool) {
+	pkg := enumType.Obj().Pkg()
+	if pkg == nil {
+		return nil, false
+	}
+	c, ok := pkg.Scope().Lookup(name).(*types.Const)
+	if !ok || !types.Identical(c.Type(), enumType) {
+		return nil, false
+	}
+	return c, true
+}
+
+// basicKind returns t's underlying *types.Basic type info, if t has one.
+func basicKind(t types.Type) (types.BasicInfo, bool) {
+	b, ok := t.Underlying().(*types.Basic)
+	if !ok {
+		return 0, false
+	}
+	return b.Info(), true
+}
+
+// resolveValue resolves val into a fieldIR whose value is assignable to
+// target -- a struct field's declared type, an option's argument type, or a
+// slice's element type.
+func (l *linker) resolveValue(target types.Type, val *Value) (*fieldIR, bool) {
 	switch {
 	case val.Float != nil:
-		t, _ := genericType("float64")
-		return t, nil, true
+		return l.resolveNumber(target, val.Pos, *val.Float)
 	case val.Int != nil:
-		t, _ := genericType("int64")
-		return t, nil, true
+		return l.resolveNumber(target, val.Pos, float64(*val.Int))
 	case val.String != nil:
-		t, _ := genericType("string")
-		return t, nil, true
-	case val.GeoJson != nil:
-		t, _ := genericType("string")
-		return t, nil, true
+		info, ok := basicKind(target)
+		if !ok || info&types.IsString == 0 {
+			l.errorf(val.Pos, "string value not valid for type %s", target)
+			return nil, false
+		}
+		s, _ := val.StringValue()
+		return &fieldIR{Type: target, String: &s}, true
 	case val.Ident != nil:
+		if named, ok := target.(*types.Named); ok {
+			if c, ok := lookupEnumConst(named, *val.Ident); ok {
+				return &fieldIR{Type: target, Const: c}, true
+			}
+		}
 		info, ok := l.names[*val.Ident]
 		if !ok || info.ir == nil {
-			l.errorf(val.Pos, "identifier %q does not refer to a previously declared Data, Actions, or Events declaration", *val.Ident)
-			return nil, nil, false
+			l.errorf(val.Pos, "identifier %q does not refer to a previously declared Data, Actions, or Events declaration, or a value of enum type %s", *val.Ident, target)
+			return nil, false
 		}
-		return info.ir.Type, info.ir, true
+		return &fieldIR{Type: target, Link: info.ir}, true
 	case val.Inline != nil:
-		return l.resolveInline(val.Pos, val.Inline)
+		return l.resolveInline(target, val.Pos, val.Inline)
 	case val.Array != nil:
-		return l.resolveArray(val.Pos, val.Array)
+		return l.resolveArray(target, val.Pos, val.Array)
 	default:
 		l.errorf(val.Pos, "value has no recognized literal form")
-		return nil, nil, false
+		return nil, false
 	}
+}
+
+// resolveNumber resolves a Float or Int literal (both surface as a float64
+// here -- the DSL lexer tokenizes any bare integer as a Float, see
+// dslLexer's Float pattern in ast.go) against target, which may be an
+// integer or floating-point type.
+func (l *linker) resolveNumber(target types.Type, pos fmt.Stringer, v float64) (*fieldIR, bool) {
+	info, ok := basicKind(target)
+	if !ok || info&(types.IsFloat|types.IsInteger) == 0 {
+		l.errorf(pos, "numeric value not valid for type %s", target)
+		return nil, false
+	}
+	if info&types.IsInteger != 0 {
+		if v != math.Trunc(v) {
+			l.errorf(pos, "value %v is not a whole number, required for integer type %s", v, target)
+			return nil, false
+		}
+		i := int64(v)
+		return &fieldIR{Type: target, Int: &i}, true
+	}
+	return &fieldIR{Type: target, Float: &v}, true
 }
 
 // resolveInline links an inline constructor value to a synthesized typeIR.
 // ctor.Type must be a DSL Datatype; its own Args are recursively linked
-// into the synthesized typeIR's Fields.
-func (l *linker) resolveInline(pos fmt.Stringer, ctor *InlineCtor) (types.Type, *typeIR, bool) {
+// into the synthesized typeIR's Fields and Options.
+func (l *linker) resolveInline(target types.Type, pos fmt.Stringer, ctor *InlineCtor) (*fieldIR, bool) {
 	bt, ok := l.lookupBase(l.registry.Datatypes, typesPkgPath, string(ctor.Type))
 	if !ok {
 		l.errorf(pos, "constructor %q: not a datatype", ctor.Type)
-		return nil, nil, false
+		return nil, false
 	}
 
 	ir := &typeIR{Name: string(ctor.Type), Type: bt.Type}
-	ir.Fields = l.linkAttrs(bt.Type, bt.Options, ctor.Args)
-	return bt.Type, ir, true
+	ir.Fields, ir.Options = l.linkAttrs(bt.Type, bt.Options, ctor.Args)
+	return &fieldIR{Type: target, Link: ir, Inline: true}, true
 }
 
-// resolveArray resolves an array value to a slice of its element type.
-// Every element must resolve to the same type.
-func (l *linker) resolveArray(pos fmt.Stringer, arr *ArrayValue) (types.Type, *typeIR, bool) {
+// resolveArray resolves an array value against target, which must be a
+// slice type; every element is resolved against target's element type.
+func (l *linker) resolveArray(target types.Type, pos fmt.Stringer, arr *ArrayValue) (*fieldIR, bool) {
+	slice, ok := target.Underlying().(*types.Slice)
+	if !ok {
+		l.errorf(pos, "array value not valid for type %s", target)
+		return nil, false
+	}
 	if len(arr.Elems) == 0 {
-		l.errorf(pos, "empty array: cannot infer an element type")
-		return nil, nil, false
+		return &fieldIR{Type: target}, true
 	}
-	var elemType types.Type
+
+	elems := make([]*fieldIR, 0, len(arr.Elems))
 	for _, e := range arr.Elems {
-		t, _, ok := l.resolveValue(e)
+		f, ok := l.resolveValue(slice.Elem(), e)
 		if !ok {
-			return nil, nil, false
+			return nil, false
 		}
-		if elemType == nil {
-			elemType = t
-			continue
-		}
-		if !types.Identical(elemType, t) {
-			l.errorf(e.Pos, "array element type %s does not match earlier element type %s", t, elemType)
-			return nil, nil, false
-		}
+		elems = append(elems, f)
 	}
-	return types.NewSlice(elemType), nil, true
+	return &fieldIR{Type: target, Elems: elems}, true
 }
 
 // resolveData resolves a Data declaration's type: a DSL Datatype, or a Go

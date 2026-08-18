@@ -7,7 +7,6 @@ import (
 	"go/token"
 	"go/types"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"golang.org/x/tools/go/packages"
@@ -51,6 +50,7 @@ type optionalType struct {
 	Comment string
 	Name    string // e.g. "Altitude", from SetAltitude/WithAltitude
 	Type    types.Type
+	Pkg     *types.Package // package declaring the With<Name> constructor
 }
 
 // baseType holds a base type like an Action, Event, or Datatype.
@@ -118,7 +118,8 @@ func loadPackages(imports []*ImportSpec, workspace string, overlay map[string][]
 	// Configure the Golang package loader
 	cfg := &packages.Config{
 		Dir: workspace,
-		Env: append(os.Environ(), "GOWORK="+filepath.Join(workspace, "go.work")), // set the go.work path for local resolutions
+		// See the matching comment in scrub.go's scrubPackages.
+		Env: append(os.Environ(), "GOFLAGS=-mod=mod"),
 		Mode: packages.NeedName | packages.NeedTypes | packages.NeedTypesInfo |
 			packages.NeedSyntax | packages.NeedImports | packages.NeedDeps,
 		Overlay: overlay,
@@ -355,10 +356,7 @@ func structOptions(st *types.Struct, optionType *types.Named, pkgs map[string]*p
 
 // optionsFromConstraint walks t's method set (t is the type argument of an
 // opt.Option[T] field) for single-argument, no-result SetName(argType)
-// methods, and returns one optionalType per method found. Each method's
-// comment comes from the WithName function's doc comment, looked up in
-// whichever package actually declares the SetName method - not
-// necessarily the package of the DSL type the option was found on.
+// methods, and returns one optionalType per method found.
 func optionsFromConstraint(t types.Type, pkgs map[string]*packages.Package) []optionalType {
 	ms := types.NewMethodSet(t)
 	var opts []optionalType
@@ -376,9 +374,22 @@ func optionsFromConstraint(t types.Type, pkgs map[string]*packages.Package) []op
 			continue // TODO: log this
 		}
 
+		// argType defaults to the Set method's own parameter type, but the
+		// With<Name> constructor's parameter type takes precedence when it
+		// can be found: for an enum-typed option, With<Name> takes the
+		// DSL-facing enums.X wrapper type and converts it to the driverpb.X
+		// type Set<Name> actually wants (see opt.WithEndBehavior for an
+		// example) -- callers need the former, since that's the type
+		// With<Name> itself is instantiated and called against.
+		argType := sig.Params().At(0).Type()
 		comment := ""
 		if fn.Pkg() != nil {
 			if pkg, ok := pkgs[fn.Pkg().Path()]; ok {
+				if withFn, ok := pkg.Types.Scope().Lookup("With" + name).(*types.Func); ok {
+					if withSig, ok := withFn.Type().(*types.Signature); ok && withSig.Params().Len() == 1 {
+						argType = withSig.Params().At(0).Type()
+					}
+				}
 				_, funcs := getPackageDoc(pkg)
 				if df, ok := funcs["With"+name]; ok {
 					comment = strings.TrimSpace(df.Doc)
@@ -391,7 +402,8 @@ func optionsFromConstraint(t types.Type, pkgs map[string]*packages.Package) []op
 		opts = append(opts, optionalType{
 			Comment: comment,
 			Name:    name,
-			Type:    sig.Params().At(0).Type(),
+			Type:    argType,
+			Pkg:     fn.Pkg(),
 		})
 	}
 	return opts

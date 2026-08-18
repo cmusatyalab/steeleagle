@@ -45,7 +45,12 @@ func scrubPkgPaths(imports []*ImportSpec) []string {
 // a map from absolute file path to new content.
 func scrubPackages(imports []*ImportSpec, workspace string, unsupported map[string]struct{}) (map[string][]byte, error) {
 	cfg := &packages.Config{
-		Dir:  workspace,
+		Dir: workspace,
+		// The scratch go.mod's require/replace directives, copied
+		// wholesale from repoRoot's own go.mod, don't preserve its
+		// direct/indirect split; -mod=mod lets the go command settle
+		// that itself instead of refusing to load anything.
+		Env:  append(os.Environ(), "GOFLAGS=-mod=mod"),
 		Mode: packages.NeedName | packages.NeedFiles,
 	}
 	pkgs, err := packages.Load(cfg, scrubPkgPaths(imports)...)

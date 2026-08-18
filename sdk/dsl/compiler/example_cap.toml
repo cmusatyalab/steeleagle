@@ -35,5 +35,6 @@ fields = [
     "messages/telemetry/GimbalInfo/angular_velocity_neu",
 ]
 enums = [
+    "services/control/ReturnToHomeEndBehavior/RETURN_TO_HOME_END_BEHAVIOR_HOVER",
     "services/control/HeadingMode/HEADING_MODE_START",
 ]

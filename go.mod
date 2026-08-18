@@ -11,6 +11,7 @@ require (
 	github.com/cmusatyalab/steeleagle/api/go v0.0.0
 	github.com/go-git/go-git/v5 v5.19.2
 	github.com/google/uuid v1.6.0
+	github.com/looplab/fsm v1.0.3
 	github.com/mwitkow/grpc-proxy v0.0.0-20250813121105-2866842de9a5
 	github.com/open-policy-agent/opa v1.19.0
 	github.com/pelletier/go-toml/v2 v2.4.3

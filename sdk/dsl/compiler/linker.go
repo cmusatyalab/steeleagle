@@ -7,20 +7,41 @@ import (
 	"strings"
 )
 
-// fieldIR represents a field in a typeIR constructor. In cases
-// where fieldIR is an inline constructor, it can link to the
-// underlying typeIR.
+// fieldIR represents a single resolved value: a struct field's value, an
+// option's argument, or an array element. Type is always the Go type this
+// value must be assignable to at its use site (a struct field's declared
+// type, an option's argument type, or a slice's element type) -- not
+// necessarily the type of whatever produced the value, so generator.go can
+// tell (e.g. by pointer-ness) whether a Link needs to be taken by address.
+//
+// Exactly one of Float/Int/String/Elems/Link/Const is set, except for an
+// empty array value, where none are.
 type fieldIR struct {
-	Name string
-	Type types.Type
-	Link *typeIR
+	Name   string // the field/option name this value is assigned to; empty for an array element
+	Type   types.Type
+	Float  *float64
+	Int    *int64
+	String *string
+	Elems  []*fieldIR   // one per array element, for an array value
+	Link   *typeIR      // an Ident reference to a previously declared Data/Actions/Events typeIR, or a synthesized Inline constructor
+	Inline bool         // true when Link is a synthesized inline constructor rather than a reference to an already-declared, named typeIR
+	Const  *types.Const // an Ident reference to one of Type's exported package-level constants (an enum value)
+}
+
+// optionIR represents a single With<Name>(...) functional-option call to be
+// collected into a typeIR's Options field.
+type optionIR struct {
+	Pkg   *types.Package // package declaring the With<Name> constructor
+	Name  string         // e.g. "Altitude", rendered as <Pkg>.WithAltitude(Value)
+	Value *fieldIR
 }
 
 // typeIR represents a type in the DSL.
 type typeIR struct {
-	Name   string
-	Type   types.Type
-	Fields []*fieldIR
+	Name    string
+	Type    types.Type
+	Fields  []*fieldIR  // direct struct field assignments
+	Options []*optionIR // With<Name>(...) calls collected into the type's Options field
 }
 
 // transitionIR represents a single transition declaration. Begin is the
@@ -138,59 +159,59 @@ func (l *linker) linkDecl(d *Decl, section string, resolve func(*Decl) (types.Ty
 	ir := &typeIR{Name: d.Name, Type: t}
 	info.ir = ir
 	l.ir.Types[d.Name] = ir
-	ir.Fields = l.linkAttrs(t, opts, d.Attrs)
+	ir.Fields, ir.Options = l.linkAttrs(t, opts, d.Attrs)
 	return ir
 }
 
-// linkAttrs resolves each of attrs into a fieldIR: Name is the attr's key,
-// and Type/Link come from resolving its value (see resolveValue).
-func (l *linker) linkAttrs(target types.Type, options []optionalType, attrs []*Attr) []*fieldIR {
+// linkAttrs resolves each of attrs into either a direct struct field
+// assignment (returned in fields) or, when its key instead names one of
+// options' functional-option constructors, a With<Name>(...) call to
+// collect into the type's Options field (returned in opts).
+func (l *linker) linkAttrs(target types.Type, options []optionalType, attrs []*Attr) (fields []*fieldIR, opts []*optionIR) {
 	if len(attrs) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// Get all known struct attributes
 	structType, _ := target.Underlying().(*types.Struct)
 	if structType == nil && len(options) == 0 {
 		l.errorf(attrs[0].Value.Pos, "type %s has no parameters", target)
-		return nil
+		return nil, nil
 	}
-	optNames := make(map[string]bool, len(options))
+	optsByName := make(map[string]optionalType, len(options))
 	for _, o := range options {
-		optNames[o.Name] = true
+		optsByName[o.Name] = o
 	}
 
 	var pkg *types.Package
 	if structType != nil {
 		pkg = declPackage(target)
 	}
-	var fields []*fieldIR
 	for _, a := range attrs {
-		found := false
 		if structType != nil {
-			obj, _, _ := types.LookupFieldOrMethod(target, true, pkg, a.Key)
-			fld, ok := obj.(*types.Var)
-			found = ok && fld != nil && fld.IsField()
+			if obj, _, _ := types.LookupFieldOrMethod(target, true, pkg, a.Key); obj != nil {
+				if fld, ok := obj.(*types.Var); ok && fld.IsField() {
+					f, ok := l.resolveValue(fld.Type(), a.Value)
+					if !ok {
+						continue
+					}
+					f.Name = a.Key
+					fields = append(fields, f)
+					continue
+				}
+			}
 		}
-		if !found {
-			found = optNames[a.Key]
-		}
-		if !found {
-			l.errorf(a.Value.Pos, "unknown parameter %q for type %s", a.Key, target)
+		if opt, ok := optsByName[a.Key]; ok {
+			v, ok := l.resolveValue(opt.Type, a.Value)
+			if !ok {
+				continue
+			}
+			opts = append(opts, &optionIR{Pkg: opt.Pkg, Name: opt.Name, Value: v})
 			continue
 		}
-
-		t, link, ok := l.resolveValue(a.Value)
-		if !ok {
-			continue
-		}
-		fields = append(fields, &fieldIR{
-			Name: a.Key,
-			Type: t,
-			Link: link,
-		})
+		l.errorf(a.Value.Pos, "unknown parameter %q for type %s", a.Key, target)
 	}
-	return fields
+	return fields, opts
 }
 
 // declPackage returns the *types.Package that owns t, used so
