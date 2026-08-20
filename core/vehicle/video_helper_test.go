@@ -2,11 +2,13 @@ package vehicle_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -25,6 +27,27 @@ const (
 	testDuration      = 3
 	testVideoFilename = "test.mp4"
 )
+
+// requireFFmpegFpsMode skips the test if FFmpeg is missing, or too old to
+// support the -fps_mode flag that getFFmpegArgs always passes when streaming
+// RTSP video (-fps_mode replaced the deprecated -vsync flag in FFmpeg 5.1;
+// older FFmpeg rejects it outright).
+func requireFFmpegFpsMode(t *testing.T) {
+	t.Helper()
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		if errors.Is(err, exec.ErrNotFound) {
+			t.Skip("ffmpeg binary not found")
+		}
+		t.Fatalf("error looking for ffmpeg binary: %v", err)
+	}
+	out, err := exec.Command("ffmpeg", "-hide_banner", "-h", "full").CombinedOutput()
+	if err != nil {
+		t.Fatalf("error checking ffmpeg capabilities: %v", err)
+	}
+	if !strings.Contains(string(out), "-fps_mode") {
+		t.Skip("ffmpeg version does not support -fps_mode (requires FFmpeg >= 5.1)")
+	}
+}
 
 // generateTestVideo creates a synthetic video stream.
 func generateTestVideo(t *testing.T, path string, width, height, fps, duration int) {
