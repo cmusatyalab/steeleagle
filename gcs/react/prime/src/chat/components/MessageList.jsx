@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import MessageBubble from './MessageBubble.jsx';
-import { SUGGESTED_PROMPTS } from '../data/constants.js';
+import { AI_DISCLAIMER, SUGGESTED_PROMPTS } from '../data/constants.js';
 
 // Scrollable message log. Uses a native scroll container (not VirtualScroller)
 // because chat bubbles have variable, dynamic heights. Auto-scrolls to the
@@ -46,6 +46,7 @@ function MessageList({ messages, onApply, onSuggestion }) {
                             </button>
                         ))}
                     </div>
+                    <p className="se-chat-suggestions__disclaimer">{AI_DISCLAIMER}</p>
                 </div>
             )}
 

@@ -8,8 +8,11 @@ export const WELCOME_MESSAGE =
     'draft SteelEagle DSL you can Apply into the FSM Builder. Follow-up messages ' +
     'can revise the current draft. I will not upload or start missions for you.';
 
+export const AI_DISCLAIMER =
+    'AI can make mistakes. Please double-check before deploying a mission.';
+
 export const SUGGESTED_PROMPTS = [
-    'Patrol areaB, then return home.',
+    'Patrol areaB for 50-sec, then return home.',
     'Take off and track the nearest person.',
     'Fly a 300s patrol and return home when the battery is below 30%.',
     'What actions are available in the FSM builder?',

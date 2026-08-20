@@ -432,6 +432,13 @@
     border-color: var(--primary-color);
 }
 
+.se-chat-suggestions__disclaimer {
+    margin: 0.85rem 0 0;
+    font-size: 0.75rem;
+    color: var(--text-color-secondary);
+    max-width: 560px;
+}
+
 /* ---------- Typing indicator ---------- */
 .se-chat-typing {
     display: inline-flex;
