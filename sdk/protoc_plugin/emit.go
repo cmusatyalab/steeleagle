@@ -5,9 +5,7 @@ import (
 )
 
 // emitCommonFieldInterface declares a per-field-scoped interface
-// containing only the Getter methods. fieldPath is field's own capability
-// path (see capFilePrefix); each inner getter is tagged with fieldPath
-// plus that inner field's own name.
+// containing only the Getter methods.
 func emitCommonFieldInterface(g *protogen.GeneratedFile, parentGoName, fieldPath string, field *protogen.Field) {
 	name := commonFieldInterfaceName(parentGoName, field)
 	g.P("type ", name, " interface {")
@@ -50,10 +48,7 @@ func emitGetter(g *protogen.GeneratedFile, parentGoName string, field *protogen.
 
 // emitInterfaceMethod replicates the opaque protobuf API for a given
 // message field: a Getter (via emitGetter) and an unexported has<Field>()
-// if optional. No Setters are generated anywhere. fieldPath is field's own
-// capability path (see capFilePrefix); every line this emits is preceded
-// by an #exclude-requires tag naming it, so a vehicle that doesn't
-// support the field loses the whole method.
+// if optional. No Setters are generated.
 func emitInterfaceMethod(g *protogen.GeneratedFile, parentGoName, fieldPath string, field *protogen.Field) {
 	g.P(excludeTagPrefix, fieldPath)
 	emitGetter(g, parentGoName, field)

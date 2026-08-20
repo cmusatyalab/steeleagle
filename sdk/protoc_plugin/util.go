@@ -9,11 +9,8 @@ import (
 )
 
 // capFilePrefix returns the "<category>/<file-basename>" prefix used to
-// identify file in the vehicle capability file's path convention - e.g.
+// identify file in the vehicle capability file's path convention e.g.
 // "services/control" for .../steeleagle_protocol/v1/services/driver/control.proto.
-// The file's own base name, not its containing directory, disambiguates
-// between multiple files sharing one service directory (driver here holds
-// control.proto, stream.proto, info.proto, and calibrate.proto).
 func capFilePrefix(file *protogen.File) string {
 	p := strings.TrimPrefix(string(file.Desc.Path()), "steeleagle_protocol/v1/")
 	category, _, _ := strings.Cut(p, "/")

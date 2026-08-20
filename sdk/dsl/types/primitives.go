@@ -10,10 +10,8 @@ type GlobalPosition struct {
 	Heading   float32
 }
 
-// Type implementation
 func (*GlobalPosition) Type() {}
 
-// Type assertion
 var _ dsl.Datatype = &GlobalPosition{}
 
 // RelativePosition is the DSL version of an SDK RelativePosition.
@@ -24,10 +22,8 @@ type RelativePosition struct {
 	Angle float32
 }
 
-// Type implementation
 func (*RelativePosition) Type() {}
 
-// Type assertion
 var _ dsl.Datatype = &RelativePosition{}
 
 // Velocity is the DSL version of an SDK Velocity.
@@ -38,10 +34,8 @@ type Velocity struct {
 	AngularVel float32
 }
 
-// Type implementation
 func (*Velocity) Type() {}
 
-// Type assertion
 var _ dsl.Datatype = &Velocity{}
 
 // Pose is the DSL version of an SDK Pose.
@@ -51,10 +45,8 @@ type Pose struct {
 	Yaw   float32
 }
 
-// Type implementation
 func (*Pose) Type() {}
 
-// Type assertion
 var _ dsl.Datatype = &Pose{}
 
 // PoseVelocity is the DSL version of an SDK PoseVelocity.
@@ -64,8 +56,6 @@ type PoseVelocity struct {
 	YawVel   float32
 }
 
-// Type implementation
 func (*PoseVelocity) Type() {}
 
-// Type assertion
 var _ dsl.Datatype = &PoseVelocity{}

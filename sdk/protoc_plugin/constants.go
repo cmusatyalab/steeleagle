@@ -14,8 +14,8 @@ const commonPackage = "steeleagle_protocol.v1.common"
 // fieldNotPresentError is the name of the error returned when a field is not set.
 const fieldNotPresentError = "ErrFieldNotPresent"
 
-// excludeTagPrefix/privateTagPrefix are the //#exclude-requires and
-// //#private-requires directive comments that signal the compiler to
+// excludeTagPrefix/privateTagPrefix are the #exclude-requires and
+// #private-requires directive comments that signal the compiler to
 // selectively ignore interfaces/enums if they are unsupported.
 const (
 	excludeTagPrefix = "// #exclude-ifndef "
