@@ -7,6 +7,7 @@ import { MAPBOX_TOKEN } from './config.js';
 import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';
 import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature, featureLabel, labelAnchor } from './mapUtils.js';
+import { syncVehicleMarkers } from './vehicleMarkers.js';
 import FeatureList from './FeatureList.jsx';
 
 const STYLE_URLS = {
@@ -83,13 +84,14 @@ const DRAW_STYLES = [
     },
 ];
 
-function MapDraw({ features, setFeatures, toast, theme }) {
+function MapDraw({ features, setFeatures, toast, theme, vehicles = [] }) {
     const mapRef = useRef();
     const mapContainerRef = useRef();
     const draw = useRef();
     const numFeaturesRef = useRef(0);
     const importFileRef = useRef(null);
     const isFirstStyleEffect = useRef(true);
+    const vehicleMarkerRefs = useRef([]);
 
     const [selectedFeatureId, setSelectedFeatureId] = useState(null);
     const [mapStyle, setMapStyle] = useState('streets');
@@ -236,7 +238,13 @@ function MapDraw({ features, setFeatures, toast, theme }) {
         const ro = new ResizeObserver(() => { mapRef.current?.resize(); });
         ro.observe(mapContainerRef.current);
 
-        return () => { clearTimeout(timer); ro.disconnect(); mapRef.current.remove(); };
+        return () => {
+            clearTimeout(timer);
+            ro.disconnect();
+            vehicleMarkerRefs.current.forEach((marker) => marker.remove());
+            vehicleMarkerRefs.current = [];
+            mapRef.current.remove();
+        };
     }, []);
 
     useEffect(() => {
@@ -244,6 +252,10 @@ function MapDraw({ features, setFeatures, toast, theme }) {
         if (isFirstStyleEffect.current) { isFirstStyleEffect.current = false; return; }
         mapRef.current.setStyle(STYLE_URLS[mapStyle]);
     }, [mapStyle]);
+
+    useEffect(() => {
+        syncVehicleMarkers(mapRef.current, vehicles, vehicleMarkerRefs);
+    }, [vehicles]);
 
     useEffect(() => {
         // featureArray is only a change-trigger — draw.current.getAll() is read fresh since
