@@ -685,10 +685,9 @@ function PlanPage({ vehicles, squadList, theme }) {
         URL.revokeObjectURL(url);
     }
 
-    // Apply an assistant-produced artifact from the Chat tab. For a mission
-    // draft targeting the FSM builder we reuse the same loader as "Load DSL",
-    // then switch to the FSM Builder tab so the result is visible immediately.
-    // This is entirely frontend today; no backend/MCP call is involved yet.
+    // Apply a mission draft from Chat into the FSM duiler.
+    // The draft is produced by the GCS chat agent; this handler only loads the payload
+    // (same shape as "Load DSL") and switches to the FSM Builder tab for review.
     function handleApplyArtifact(target, artifact) {
         if (target !== 'fsm-builder' || !artifact?.payload) {
             toast.current?.show({

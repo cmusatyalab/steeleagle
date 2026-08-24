@@ -7,9 +7,7 @@ import ChatComposer from './components/ChatComposer.jsx';
 import { isPristine } from './hooks/sessionLogic.js';
 import './chat.css';
 
-// Top-level chat page. Owns no business logic itself; it coordinates the
-// session store (useChatSessions) with presentational components and forwards
-// artifact "apply" actions up to the host app via onApplyArtifact.
+// Plan-tab Chat shell
 function ChatPage({ onApplyArtifact }) {
     const {
         sessions,

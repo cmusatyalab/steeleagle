@@ -1,5 +1,5 @@
-/* Chat page styles. Colors use PrimeReact theme variables so the page tracks
-   the active Lara light/dark amber theme automatically. */
+/* Chat page styles: colors use PrimeReact theme variables so the page tracks
+   the active light/dark mode theme automatically. */
 
 .se-chat-page {
     height: calc(100vh - 180px);

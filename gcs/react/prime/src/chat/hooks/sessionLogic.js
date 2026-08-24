@@ -1,6 +1,6 @@
-// Pure, framework-free session logic used by useChatSessions.
-// Keeping these functions pure makes the conversation model easy to unit test
-// and keeps React components free of storage/branching concerns.
+// Session helpers for useChatSessions. 
+// No React: session CRUD is plain functions (easy for unit test).
+// loadSessions/saveSessions touch localStorage.
 
 import { nextId, WELCOME_MESSAGE, ASSISTANT_NAME } from '../data/constants.js';
 

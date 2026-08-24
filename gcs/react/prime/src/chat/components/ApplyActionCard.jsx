@@ -1,8 +1,6 @@
 import { Button } from 'primereact/button';
 
-// Renders an apply-able artifact attached to an assistant message.
-// In this first version clicking simply forwards to the host app's
-// onApplyArtifact callback, which shows a "not connected yet" toast.
+// Apply card on an assistant response. Clicking loads the DSL draft into the FSM Builder canvas.
 function ApplyActionCard({ artifact, onApply }) {
     if (!artifact) return null;
 

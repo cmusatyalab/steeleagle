@@ -1,4 +1,4 @@
-"""Mission-only chat agent: LLM + in-process NL2DSL tools (no MCP server)."""
+"""Mission-only Chat Agent: LLM + in-process NL2DSL tools (no MCP server)."""
 
 from __future__ import annotations
 
