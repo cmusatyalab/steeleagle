@@ -6,7 +6,9 @@ import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import { MAPBOX_TOKEN } from './config.js';
 import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';
+import { InputSwitch } from 'primereact/inputswitch';
 import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature, featureLabel, labelAnchor } from './mapUtils.js';
+import { syncVehicleMarkers } from './vehicleMarkers.js';
 import FeatureList from './FeatureList.jsx';
 
 const STYLE_URLS = {
@@ -18,6 +20,15 @@ const STYLE_OPTIONS = [
     { label: 'Streets', value: 'streets' },
     { label: 'Satellite', value: 'satellite' },
 ];
+
+const FOLLOW_STORAGE_KEY = 'se-map-follow';
+
+function readStoredFollow() {
+    const raw = localStorage.getItem(FOLLOW_STORAGE_KEY);
+    if (raw === 'true') return true;
+    if (raw === 'false') return false;
+    return true;
+}
 
 const DRAW_STYLES = [
     {
@@ -83,16 +94,37 @@ const DRAW_STYLES = [
     },
 ];
 
-function MapDraw({ features, setFeatures, toast, theme }) {
+function MapDraw({ features, setFeatures, toast, theme, vehicles = [] }) {
     const mapRef = useRef();
     const mapContainerRef = useRef();
     const draw = useRef();
     const numFeaturesRef = useRef(0);
     const importFileRef = useRef(null);
     const isFirstStyleEffect = useRef(true);
+    const vehicleMarkerRefs = useRef([]);
 
     const [selectedFeatureId, setSelectedFeatureId] = useState(null);
     const [mapStyle, setMapStyle] = useState('streets');
+    const [follow, setFollow] = useState(readStoredFollow);
+    const [followVehicle, setFollowVehicle] = useState(null);
+
+    const vehicleOptions = useMemo(
+        () => (vehicles || []).map((v) => ({ label: v.name, value: v.name })),
+        [vehicles]
+    );
+
+    useEffect(() => {
+        if (!vehicleOptions.length) {
+            if (followVehicle) setFollowVehicle(null);
+            return;
+        }
+        const stillPresent = vehicleOptions.some((opt) => opt.value === followVehicle);
+        if (!stillPresent) setFollowVehicle(vehicleOptions[0].value);
+    }, [vehicleOptions, followVehicle]);
+
+    useEffect(() => {
+        localStorage.setItem(FOLLOW_STORAGE_KEY, String(follow));
+    }, [follow]);
 
     const hasFeatures = useMemo(() => {
         try { return JSON.parse(features).features.length > 0; } catch { return false; }
@@ -236,7 +268,13 @@ function MapDraw({ features, setFeatures, toast, theme }) {
         const ro = new ResizeObserver(() => { mapRef.current?.resize(); });
         ro.observe(mapContainerRef.current);
 
-        return () => { clearTimeout(timer); ro.disconnect(); mapRef.current.remove(); };
+        return () => {
+            clearTimeout(timer);
+            ro.disconnect();
+            vehicleMarkerRefs.current.forEach((marker) => marker.remove());
+            vehicleMarkerRefs.current = [];
+            mapRef.current.remove();
+        };
     }, []);
 
     useEffect(() => {
@@ -244,6 +282,19 @@ function MapDraw({ features, setFeatures, toast, theme }) {
         if (isFirstStyleEffect.current) { isFirstStyleEffect.current = false; return; }
         mapRef.current.setStyle(STYLE_URLS[mapStyle]);
     }, [mapStyle]);
+
+    useEffect(() => {
+        syncVehicleMarkers(mapRef.current, vehicles, vehicleMarkerRefs);
+        if (!follow || !followVehicle || !mapRef.current) return;
+        const vehicle = (vehicles || []).find((v) => v.name === followVehicle);
+        const lng = vehicle?.current?.long;
+        const lat = vehicle?.current?.lat;
+        if (!Number.isFinite(lng) || !Number.isFinite(lat)) return;
+        mapRef.current.flyTo({
+            center: [lng, lat],
+            essential: true,
+        });
+    }, [vehicles, follow, followVehicle]);
 
     useEffect(() => {
         // featureArray is only a change-trigger — draw.current.getAll() is read fresh since
@@ -364,6 +415,26 @@ function MapDraw({ features, setFeatures, toast, theme }) {
                     className="p-inputtext-sm"
                     style={{ width: 130 }}
                 />
+                <div
+                    className="flex align-items-center gap-2 ml-auto"
+                    title="When Follow is on, the map recenters on the selected vehicle"
+                >
+                    <span className="text-sm" style={{ color: 'var(--palette-item-text)' }}>Follow</span>
+                    <InputSwitch
+                        checked={follow}
+                        onChange={(e) => setFollow(e.value)}
+                        disabled={!vehicleOptions.length}
+                    />
+                    <Dropdown
+                        value={followVehicle}
+                        options={vehicleOptions}
+                        onChange={(e) => setFollowVehicle(e.value)}
+                        placeholder="No vehicles"
+                        disabled={!vehicleOptions.length}
+                        className="p-inputtext-sm"
+                        style={{ width: 160 }}
+                    />
+                </div>
             </div>
             <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
                 <FeatureList

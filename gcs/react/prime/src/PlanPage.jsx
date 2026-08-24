@@ -19,6 +19,7 @@ import FsmPalette from './FsmPalette.jsx';
 import ConnectModal from './ConnectModal.jsx';
 import { getApiUrl } from './App.jsx';
 import { runValidation } from './validation.js';
+import ChatPage from './chat/ChatPage.jsx';
 
 const nodeTypes = { taskNode: TaskNode };
 const edgeTypes = { selfLoop: SelfLoopEdge };
@@ -372,6 +373,7 @@ function PlanPage({ vehicles, squadList, theme }) {
     const fileInputRef = useRef(null);
     const toast = useRef(null);
     const [validationIssues, setValidationIssues] = useState({});
+    const [activeTab, setActiveTab] = useState(0);
 
     // Undo / redo history
     const pastRef = useRef([]);
@@ -683,6 +685,37 @@ function PlanPage({ vehicles, squadList, theme }) {
         URL.revokeObjectURL(url);
     }
 
+    // Apply a mission draft from Chat into the FSM duiler.
+    // The draft is produced by the GCS chat agent; this handler only loads the payload
+    // (same shape as "Load DSL") and switches to the FSM Builder tab for review.
+    function handleApplyArtifact(target, artifact) {
+        if (target !== 'fsm-builder' || !artifact?.payload) {
+            toast.current?.show({
+                severity: 'info',
+                summary: 'Nothing to apply',
+                detail: 'This message has no FSM draft attached.',
+            });
+            return;
+        }
+        const p = artifact.payload;
+        loadFromParsed({
+            nodes: (p.nodes ?? []).map(n => ({
+                instance_id: n.instance_id,
+                type_name: n.type_name,
+                params: n.params ?? {},
+            })),
+            events: p.events ?? [],
+            edges: p.edges ?? [],
+            start_id: p.start_id ?? (p.nodes?.[0]?.instance_id ?? null),
+        });
+        setActiveTab(0);
+        toast.current?.show({
+            severity: 'success',
+            summary: 'Applied to FSM Builder',
+            detail: `Loaded ${(p.nodes ?? []).length} actions into the canvas.`,
+        });
+    }
+
     const liveDsl = nodes.length > 0 ? generateDsl(nodes, edges, eventInstances, startNodeId, schema) : '# Add nodes to see DSL preview';
 
     const nodesWithWarnings = useMemo(
@@ -701,7 +734,7 @@ function PlanPage({ vehicles, squadList, theme }) {
     return (
         <>
             <Toast ref={toast} />
-            <TabView renderActiveOnly={false}>
+            <TabView activeIndex={activeTab} onTabChange={(e) => setActiveTab(e.index)} renderActiveOnly={false}>
                 <TabPanel header="FSM Builder" leftIcon="pi pi-share-alt mr-2" headerClassName="mr-2">
                     <div className="flex flex-column" style={{ height: 'calc(100vh - 180px)' }}>
                         {/* Hidden file input — outside toolbar div */}
@@ -857,8 +890,12 @@ function PlanPage({ vehicles, squadList, theme }) {
 
                 <TabPanel header="Map" leftIcon="pi pi-map mr-2" headerClassName="mr-2">
                     <div style={{ height: 'calc(100vh - 180px)' }}>
-                        <MapDraw features={features} setFeatures={setFeatures} toast={toast} theme={theme} />
+                        <MapDraw features={features} setFeatures={setFeatures} toast={toast} theme={theme} vehicles={vehicles} />
                     </div>
+                </TabPanel>
+
+                <TabPanel header="Chat" leftIcon="pi pi-comments mr-2" headerClassName="mr-2">
+                    <ChatPage onApplyArtifact={handleApplyArtifact} />
                 </TabPanel>
 
                 <TabPanel header="DSL Preview" leftIcon="pi pi-code mr-2" headerClassName="mr-2">
