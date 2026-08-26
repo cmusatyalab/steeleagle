@@ -63,8 +63,8 @@ class Start(BaseModel):
 
 
 class Upload(BaseModel):
-    kml: str
-    dsl: str
+    binary: str  # base64-encoded compiled Go mission binary
+    map: str  # base64-encoded map data (KML or GeoJSON, format-agnostic)
     vehicles: list[str]
 
 
@@ -595,13 +595,13 @@ async def upload(req: Upload) -> JSONResponse:
     conn = _current_connection()
     conn.grpc_channel.get_state(try_to_connect=True)
     try:
-        mission_json = base64.b64decode(req.dsl).decode("utf-8")
-        kml_map = base64.b64decode(req.kml)
-    except (binascii.Error, UnicodeDecodeError) as e:
+        mission_binary = base64.b64decode(req.binary)
+        map_data = base64.b64decode(req.map)
+    except binascii.Error as e:
         raise HTTPException(status_code=400, detail="Invalid base64 payload") from e
     try:
         results = await conn.swarm_client.upload_mission(
-            req.vehicles, mission_json=mission_json, kml_map=kml_map
+            req.vehicles, mission_binary=mission_binary, map_data=map_data
         )
     except grpc.aio.AioRpcError as e:
         raise HTTPException(

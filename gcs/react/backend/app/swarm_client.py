@@ -104,12 +104,12 @@ class SwarmClient:
         return await _collect_stream(self._stub.SwarmSetGimbalAngleTarget(request))
 
     async def upload_mission(
-        self, vehicles: list[str], mission_json: str, kml_map: bytes
+        self, vehicles: list[str], mission_binary: bytes, map_data: bytes
     ) -> list[VehicleResult]:
         request = swarm_pb2.SwarmUploadMissionRequest(
             vehicles=vehicles,
             request=mission_pb2.UploadMissionRequest(
-                mission=mission_pb2.MissionData(json=mission_json, map=kml_map)
+                mission=mission_pb2.MissionData(binary=mission_binary, map=map_data)
             ),
         )
         return await _collect_stream(self._stub.SwarmUploadMission(request))

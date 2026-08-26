@@ -227,16 +227,16 @@ async def test_set_gimbal_pose_sends_offset_pose(swarm_client_factory):
     assert (p.pitch, p.yaw, p.roll) == pytest.approx((5.0, -10.0, 0.0))
 
 
-async def test_upload_mission_sends_json_content_and_map(swarm_client_factory):
+async def test_upload_mission_sends_binary_content_and_map(swarm_client_factory):
     client, servicer = await swarm_client_factory(
         {"SwarmUploadMission": [("drone1", 0, "")]}
     )
 
     await client.upload_mission(
-        ["drone1"], mission_json='{"actions": []}', kml_map=b"<kml></kml>"
+        ["drone1"], mission_binary=b"\x7fELF...", map_data=b"<kml></kml>"
     )
 
     sent = servicer.received["SwarmUploadMission"][0]
     assert list(sent.vehicles) == ["drone1"]
-    assert sent.request.mission.json == '{"actions": []}'
+    assert sent.request.mission.binary == b"\x7fELF..."
     assert sent.request.mission.map == b"<kml></kml>"
