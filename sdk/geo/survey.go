@@ -5,7 +5,7 @@ import (
 	"math"
 	"slices"
 
-	"github.com/cmusatyalab/steeleagle/sdk/dsl/types"
+	"github.com/cmusatyalab/steeleagle/sdk/params"
 	"github.com/peterstace/simplefeatures/carto"
 	"github.com/peterstace/simplefeatures/geom"
 )
@@ -13,24 +13,27 @@ import (
 // SurveyScan computes a survey pattern over a WGS84 lon/lat polygon.
 // Spacing is the distance in meters between scan lines, and heading is
 // the heading of each survey corridor.
-func (m *Map) SurveyScan(area string, spacing, heading, altitude float32) ([]types.GlobalPosition, error) {
+func (m *Map) SurveyScan(area params.MapFeature, spacing, heading, altitude float32) ([]GeoPoint, error) {
 	if spacing <= 0 {
 		return nil, fmt.Errorf("spacing must be positive")
 	}
 	// Convert heading to an angle
 	angle := (90 - float64(heading)) * math.Pi / 180
 
-	// Create projector object
-	proj, err := carto.NewUTMFromLocation(geom.XY{X: m.centroid.Longitude, Y: m.centroid.Latitude})
-	if err != nil {
-		return nil, err
-	}
-
-	// Retrieve polygon from store and transform it
+	// Retrieve polygon from store
 	poly, err := m.GetPolygon(area)
 	if err != nil {
 		return nil, err
 	}
+
+	// Create projector object using the polygon's first vertex as the
+	// reference point for the UTM zone
+	proj, err := carto.NewUTMFromLocation(poly.ExteriorRing().Coordinates().GetXY(0))
+	if err != nil {
+		return nil, err
+	}
+
+	// Transform the polygon into the projected, rotated coordinate space
 	rotated := poly.AsGeometry().TransformXY(func(p geom.XY) geom.XY {
 		return rotate(proj.Forward(p), angle)
 	})
@@ -48,7 +51,7 @@ func (m *Map) SurveyScan(area string, spacing, heading, altitude float32) ([]typ
 	}
 	coords := rotatedPoly.ExteriorRing().Coordinates()
 
-	var points []types.GlobalPosition
+	var points []GeoPoint
 	reverse := false // we want to fly the next corridor in reverse
 	for y := minXY.Y + float64(spacing)/2; y <= maxXY.Y; y += float64(spacing) {
 		line := geom.NewLineStringXY(minXY.X-pad, y, maxXY.X+pad, y).AsGeometry()

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/cmusatyalab/steeleagle/sdk/preprocess"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/pluginpb"
 )
@@ -126,18 +127,23 @@ func generateMessage(g *protogen.GeneratedFile, msg *protogen.Message) {
 
 // generateEnum defines a Go-native enum type that mirrors a protobuf enum's
 // values, entirely decoupled from the real protoc-gen-go-generated enum
-// type. filePrefix is enum's file's capability path prefix (see
-// capFilePrefix); each value is tagged with an #private-requires naming
-// its own "<filePrefix>/<EnumGoName>/<VALUE_NAME>" path.
+// type. It instead follows Go's iota syntax.
 func generateEnum(g *protogen.GeneratedFile, enum *protogen.Enum, filePrefix string) {
 	typeName := enum.GoIdent.GoName
 	g.P("type ", typeName, " int32")
 	g.P()
 	g.P("const (")
-	for _, v := range enum.Values {
+	for i, v := range enum.Values {
+		if int(v.Desc.Number()) != i {
+			panic(fmt.Sprintf("enum %s value %s has number %d, want %d: iota-based generation requires sequential enum values", typeName, v.Desc.Name(), v.Desc.Number(), i))
+		}
 		valuePath := filePrefix + "/" + typeName + "/" + string(v.Desc.Name())
-		g.P(privateTagPrefix, valuePath)
-		g.P(enumValueConstName(enum, v), " ", typeName, " = ", v.Desc.Number())
+		g.P(preprocess.DirectivePrivate, " ", valuePath)
+		if i == 0 {
+			g.P(enumValueConstName(enum, v), " ", typeName, " = iota")
+		} else {
+			g.P(enumValueConstName(enum, v))
+		}
 	}
 	g.P(")")
 	g.P()

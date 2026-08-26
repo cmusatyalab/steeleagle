@@ -3,7 +3,7 @@ model = "Anafi"
 manufacturer = "Parrot"
 type = "copter"
 
-[[camera]]
+[[cameras]]
 type = "rgb"
 hres = 1080
 vres = 720
@@ -13,7 +13,7 @@ fps = 30
 latency = 280
 gimbal = true
 
-[[camera]]
+[[cameras]]
 type = "thermal"
 hres = 1080
 vres = 720

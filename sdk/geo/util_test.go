@@ -4,7 +4,6 @@ import (
 	"math"
 	"testing"
 
-	"github.com/cmusatyalab/steeleagle/sdk/dsl/types"
 	"github.com/peterstace/simplefeatures/carto"
 	"github.com/peterstace/simplefeatures/geom"
 )
@@ -52,7 +51,7 @@ func TestAddPointsForward(t *testing.T) {
 	p0 := base
 	p1 := geom.XY{X: base.X, Y: base.Y + 1000} // 1000m due grid-north of p0
 
-	existing := []types.GlobalPosition{{Latitude: 1, Longitude: 2}}
+	existing := []GeoPoint{{Latitude: 1, Longitude: 2}}
 	got := addPoints(existing, []geom.XY{p0, p1}, proj, 0, 50, false)
 
 	if len(got) != 3 {
@@ -235,17 +234,17 @@ func TestGetSectionWraparound(t *testing.T) {
 // TestBearingCardinalDirections checks Bearing against hand-verified
 // cardinal directions for small displacements.
 func TestBearingCardinalDirections(t *testing.T) {
-	origin := types.GlobalPosition{Latitude: 0, Longitude: 0}
+	origin := GeoPoint{Latitude: 0, Longitude: 0}
 
 	cases := []struct {
 		name string
-		to   types.GlobalPosition
+		to   GeoPoint
 		want float32
 	}{
-		{"north", types.GlobalPosition{Latitude: 1, Longitude: 0}, 0},
-		{"east", types.GlobalPosition{Latitude: 0, Longitude: 1}, 90},
-		{"south", types.GlobalPosition{Latitude: -1, Longitude: 0}, 180},
-		{"west", types.GlobalPosition{Latitude: 0, Longitude: -1}, 270},
+		{"north", GeoPoint{Latitude: 1, Longitude: 0}, 0},
+		{"east", GeoPoint{Latitude: 0, Longitude: 1}, 90},
+		{"south", GeoPoint{Latitude: -1, Longitude: 0}, 180},
+		{"west", GeoPoint{Latitude: 0, Longitude: -1}, 270},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -260,7 +259,7 @@ func TestBearingCardinalDirections(t *testing.T) {
 // TestBearingSamePoint checks the degenerate case where from and to are
 // identical, which should not produce NaN.
 func TestBearingSamePoint(t *testing.T) {
-	p := types.GlobalPosition{Latitude: 12.3, Longitude: 45.6}
+	p := GeoPoint{Latitude: 12.3, Longitude: 45.6}
 	got := Bearing(p, p)
 	if got != 0 {
 		t.Errorf("expected bearing 0 for identical points, got %v", got)

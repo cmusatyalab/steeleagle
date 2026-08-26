@@ -6,7 +6,6 @@ import (
 	"slices"
 	"sort"
 
-	"github.com/cmusatyalab/steeleagle/sdk/dsl/types"
 	"github.com/peterstace/simplefeatures/carto"
 	"github.com/peterstace/simplefeatures/geom"
 )
@@ -19,15 +18,15 @@ func rotate(p geom.XY, angle float64) geom.XY {
 
 // addPoints concatenates geom points together either in forward
 // order or in reverse.
-func addPoints(points []types.GlobalPosition, newPoints []geom.XY, proj *carto.UTM, angle float64, alt float32, reverse bool) []types.GlobalPosition {
+func addPoints(points []GeoPoint, newPoints []geom.XY, proj *carto.UTM, angle float64, alt float32, reverse bool) []GeoPoint {
 	if reverse {
 		slices.Reverse(newPoints)
 	}
-	newPositions := make([]types.GlobalPosition, len(newPoints))
+	newPositions := make([]GeoPoint, len(newPoints))
 	for i, p := range newPoints {
 		unrotated := rotate(p, -angle) // undo the rotation first
 		lonlat := proj.Reverse(unrotated)
-		newPositions[i] = types.GlobalPosition{
+		newPositions[i] = GeoPoint{
 			Latitude:  lonlat.Y,
 			Longitude: lonlat.X,
 			Altitude:  alt,
@@ -95,7 +94,7 @@ func getSection(coords geom.Sequence, startIdx, endIdx int) ([]geom.XY, float64)
 
 // Bearing returns the great-circle compass bearing between from
 // and to.
-func Bearing(from, to types.GlobalPosition) float32 {
+func Bearing(from, to GeoPoint) float32 {
 	psi1 := from.Latitude * math.Pi / 180
 	psi2 := to.Latitude * math.Pi / 180
 	delta := (to.Longitude - from.Longitude) * math.Pi / 180

@@ -1,4 +1,4 @@
-package runtime
+package fsm
 
 import (
 	"context"
@@ -21,7 +21,7 @@ func TestStartRunsActionsThroughDoneToTerminalAction(t *testing.T) {
 		"b": &fakeAction{execute: func(v sdk.Vehicle) error { bRan = true; return nil }},
 	}
 	transitions := map[string]map[string]string{"a": {"done": "b"}}
-	d := NewDslRuntime("a", transitions, actions, nil, nil)
+	d := NewDslFsm("a", transitions, actions, nil, nil)
 
 	if err := d.Start(context.Background()); err != nil {
 		t.Fatalf("Start() = %v, want nil", err)
@@ -32,7 +32,7 @@ func TestStartRunsActionsThroughDoneToTerminalAction(t *testing.T) {
 }
 
 // TestStartFiresTransitionOnEventMonitor checks that when an event's
-// Monitor call returns true, the runtime fires that event's transition and
+// Monitor call returns true, the FSM fires that event's transition and
 // cancels the context of the action still racing against it.
 func TestStartFiresTransitionOnEventMonitor(t *testing.T) {
 	aCancelled := make(chan struct{})
@@ -48,7 +48,7 @@ func TestStartFiresTransitionOnEventMonitor(t *testing.T) {
 		"seen": &fakeEvent{monitor: func(v sdk.Vehicle) (bool, error) { return true, nil }},
 	}
 	transitions := map[string]map[string]string{"a": {"seen": "b"}}
-	d := NewDslRuntime("a", transitions, actions, events, nil)
+	d := NewDslFsm("a", transitions, actions, events, nil)
 
 	if err := d.Start(context.Background()); err != nil {
 		t.Fatalf("Start() = %v, want nil", err)
@@ -67,7 +67,7 @@ func TestStartReturnsActionExecuteError(t *testing.T) {
 	actions := map[string]dsl.Action{
 		"a": &fakeAction{execute: func(v sdk.Vehicle) error { return wantErr }},
 	}
-	d := NewDslRuntime("a", nil, actions, nil, nil)
+	d := NewDslFsm("a", nil, actions, nil, nil)
 
 	err := d.Start(context.Background())
 	if !errors.Is(err, wantErr) {
@@ -89,7 +89,7 @@ func TestStartReturnsEventMonitorError(t *testing.T) {
 		"seen": &fakeEvent{monitor: func(v sdk.Vehicle) (bool, error) { return false, wantErr }},
 	}
 	transitions := map[string]map[string]string{"a": {"seen": "b"}}
-	d := NewDslRuntime("a", transitions, actions, events, nil)
+	d := NewDslFsm("a", transitions, actions, events, nil)
 
 	err := d.Start(context.Background())
 	if !errors.Is(err, wantErr) {
@@ -112,7 +112,7 @@ func TestStartEndsMissionWhenDoneHasNoMatchingRule(t *testing.T) {
 		}},
 	}
 	transitions := map[string]map[string]string{"a": {"seen": "b"}}
-	d := NewDslRuntime("a", transitions, actions, events, nil)
+	d := NewDslFsm("a", transitions, actions, events, nil)
 
 	done := make(chan error, 1)
 	go func() { done <- d.Start(context.Background()) }()

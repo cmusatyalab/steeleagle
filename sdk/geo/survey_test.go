@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cmusatyalab/steeleagle/sdk/dsl/types"
+	"github.com/cmusatyalab/steeleagle/sdk/params"
 	"github.com/peterstace/simplefeatures/carto"
 	"github.com/peterstace/simplefeatures/geom"
 )
@@ -14,8 +14,7 @@ import (
 // its spacing argument before doing any geometric work.
 func TestSurveyScanRejectsNonPositiveSpacing(t *testing.T) {
 	m := &Map{
-		centroid:   types.GlobalPosition{Longitude: -79.9, Latitude: 40.4},
-		placemarks: map[string]geom.Geometry{},
+		geometry: map[params.MapFeature]geom.Geometry{},
 	}
 	for _, spacing := range []float32{0, -1} {
 		_, err := m.SurveyScan("area", spacing, 0, 0)
@@ -26,11 +25,10 @@ func TestSurveyScanRejectsNonPositiveSpacing(t *testing.T) {
 }
 
 // TestSurveyScanMissingArea checks that SurveyScan surfaces an error when
-// the requested area key isn't present in the map's placemarks.
+// the requested area key isn't present in the map's geometry.
 func TestSurveyScanMissingArea(t *testing.T) {
 	m := &Map{
-		centroid:   types.GlobalPosition{Longitude: -79.9, Latitude: 40.4},
-		placemarks: map[string]geom.Geometry{},
+		geometry: map[params.MapFeature]geom.Geometry{},
 	}
 	if _, err := m.SurveyScan("missing", 10, 0, 0); err == nil {
 		t.Fatal("expected an error for a missing area key")
@@ -42,8 +40,9 @@ func TestSurveyScanMissingArea(t *testing.T) {
 func TestSurveyScanAreaNotPolygon(t *testing.T) {
 	line := geom.NewLineStringXY(-79.9, 40.4, -79.8, 40.4)
 	m := &Map{
-		centroid:   types.GlobalPosition{Longitude: -79.9, Latitude: 40.4},
-		placemarks: map[string]geom.Geometry{"area": line.AsGeometry()},
+		geometry: map[params.MapFeature]geom.Geometry{
+			"area": line.AsGeometry(),
+		},
 	}
 	if _, err := m.SurveyScan("area", 10, 0, 0); err == nil {
 		t.Fatal("expected an error for a non-polygon area")
@@ -68,8 +67,9 @@ func TestSurveyScanConvexRectangleBoustrophedon(t *testing.T) {
 
 	poly := buildNicePolygon(base, verts)
 	m := &Map{
-		centroid:   types.GlobalPosition{Longitude: base.X, Latitude: base.Y},
-		placemarks: map[string]geom.Geometry{"area": poly.AsGeometry()},
+		geometry: map[params.MapFeature]geom.Geometry{
+			"area": poly.AsGeometry(),
+		},
 	}
 
 	points, err := m.SurveyScan("area", spacing, 90, 50)
@@ -143,8 +143,9 @@ func TestSurveyScanConcaveRoutesThroughShortConnector(t *testing.T) {
 
 	poly := buildNicePolygon(base, verts)
 	m := &Map{
-		centroid:   types.GlobalPosition{Longitude: base.X, Latitude: base.Y},
-		placemarks: map[string]geom.Geometry{"area": poly.AsGeometry()},
+		geometry: map[params.MapFeature]geom.Geometry{
+			"area": poly.AsGeometry(),
+		},
 	}
 
 	points, err := m.SurveyScan("area", float32(spacing), 90, 50)
@@ -174,11 +175,20 @@ func TestSurveyScanConcaveRoutesThroughShortConnector(t *testing.T) {
 // TestSurveyScanConcaveRoutesAroundOutside checks the other branch of the
 // perimeter routing decision: when going through the direct connector
 // would be the *longer* way around, SurveyScan should route around the
-// outside of the polygon instead. This uses a "comb" shape with a single
-// short middle tooth that sits just below the scan row, forcing the direct
-// route between the two crossed teeth to detour up and over it, while the
-// short outer route (up over one tooth's top, around the outside, down the
-// other) is shorter.
+// outside of the polygon instead.
+//
+//	(0,1.3)-(0.1,1.3)                     (0.4,1.3)-(0.5,1.3)
+//	   |        \                           /        |
+//	   |         |                         |         |     <- row 1.15 crosses only
+//	   |         |   (0.2,0.9)-(0.3,0.9)   |         |        these two outer teeth
+//	   |         |    /              \     |         |
+//	   |     (0.1,0.1)-(0.2,0.1) (0.3,0.1)-(0.4,0.1)  |
+//	   |                                               |
+//	 (0,0)----------------------------------------(0.5,0)
+//
+// A scan row at nice-y=1.15 sits above the middle tooth's top (0.9) but
+// below the outer teeth's tops (1.3), crossing only the left and right
+// prongs.
 func TestSurveyScanConcaveRoutesAroundOutside(t *testing.T) {
 	base := geom.XY{X: -79.9, Y: 40.4}
 	verts := [][2]float64{
@@ -214,18 +224,15 @@ func TestSurveyScanConcaveRoutesAroundOutside(t *testing.T) {
 
 	poly := buildNicePolygon(base, verts)
 	m := &Map{
-		centroid:   types.GlobalPosition{Longitude: base.X, Latitude: base.Y},
-		placemarks: map[string]geom.Geometry{"area": poly.AsGeometry()},
+		geometry: map[params.MapFeature]geom.Geometry{
+			"area": poly.AsGeometry(),
+		},
 	}
 
 	points, err := m.SurveyScan("area", float32(spacing), 90, 50)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	// The reverse walk crosses the ring's closing vertex (index 11 -> the
-	// duplicated index 0), which getSection visits twice, once as the
-	// wraparound target and once as the next step's start, producing one
-	// extra duplicate point (see TestGetSectionWraparound)
 	if len(points) != 13 {
 		t.Fatalf("expected 13 points (2 + 9 transit + 2), got %d", len(points))
 	}

@@ -1,6 +1,7 @@
 package geo
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -18,7 +19,7 @@ func TestGetPolygonFound(t *testing.T) {
 }
 
 // TestGetPolygonMissingKey checks that GetPolygon errors when the key
-// isn't present in placemarks.
+// isn't present in geometry.
 func TestGetPolygonMissingKey(t *testing.T) {
 	m := testMap()
 	if _, err := m.GetPolygon("missing"); err == nil {
@@ -49,7 +50,7 @@ func TestGetLineStringFound(t *testing.T) {
 }
 
 // TestGetLineStringMissingKey checks that GetLineString errors when the
-// key isn't present in placemarks.
+// key isn't present in geometry.
 func TestGetLineStringMissingKey(t *testing.T) {
 	m := testMap()
 	if _, err := m.GetLineString("missing"); err == nil {
@@ -63,5 +64,37 @@ func TestGetLineStringWrongType(t *testing.T) {
 	m := testMap()
 	if _, err := m.GetLineString("poly"); err == nil {
 		t.Fatal("expected an error for a key that isn't a line string")
+	}
+}
+
+// TestNewMapIsEmpty checks that NewMap returns a usable map with no
+// geometry in it.
+func TestNewMapIsEmpty(t *testing.T) {
+	m := NewMap()
+	if _, err := m.GetPolygon("anything"); err == nil {
+		t.Fatal("expected an error looking up a polygon in an empty map")
+	}
+}
+
+// TestNewMapFromGeoJSONBuildsUsableMap checks that a map built directly
+// from GeoJSON data can be queried via GetPolygon/GetLineString.
+func TestNewMapFromGeoJSONBuildsUsableMap(t *testing.T) {
+	m, err := NewMapFromGeoJSON(strings.NewReader(sampleGeoJSON))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, err := m.GetPolygon("area"); err != nil {
+		t.Errorf("GetPolygon(area): %v", err)
+	}
+	if _, err := m.GetLineString("path"); err != nil {
+		t.Errorf("GetLineString(path): %v", err)
+	}
+}
+
+// TestNewMapFromGeoJSONInvalidJSON checks that malformed GeoJSON input
+// surfaces an error rather than returning a partially built map.
+func TestNewMapFromGeoJSONInvalidJSON(t *testing.T) {
+	if _, err := NewMapFromGeoJSON(strings.NewReader("not json")); err == nil {
+		t.Fatal("expected an error for invalid JSON")
 	}
 }

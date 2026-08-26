@@ -1,4 +1,4 @@
-package runtime
+package fsm
 
 import (
 	"context"
@@ -17,9 +17,9 @@ import (
 // triggered with no transition target, the mission ends.
 const doneEvent = "done"
 
-// DslRuntime executes a compiled DSL mission as a finite state machine,
+// DslFsm executes a compiled DSL mission as a finite state machine,
 // built with looplab/fsm.
-type DslRuntime struct {
+type DslFsm struct {
 	fsm         *fsm.FSM
 	transitions map[string]map[string]string // action -> event -> next action
 	actions     map[string]dsl.Action
@@ -30,17 +30,17 @@ type DslRuntime struct {
 	done        chan error
 }
 
-// NewDslRuntime creates a DSL runtime for a mission compiled to transitions,
+// NewDslFsm creates a DSL runtime for a mission compiled to transitions,
 // actions, and events, that dials out to the vehicle over conn. Call Start
 // to begin executing the mission from its start action.
-func NewDslRuntime(
+func NewDslFsm(
 	start string,
 	transitions map[string]map[string]string,
 	actions map[string]dsl.Action,
 	events map[string]dsl.Event,
 	conn *grpc.ClientConn,
-) *DslRuntime {
-	d := &DslRuntime{
+) *DslFsm {
+	d := &DslFsm{
 		transitions: transitions,
 		actions:     actions,
 		events:      events,
@@ -70,15 +70,15 @@ func fsmEvents(transitions map[string]map[string]string) []fsm.EventDesc {
 // the mission reaches a terminal action (one whose Execute call finishes
 // without error and has no matching "done" rule) or an action or event
 // reports an error.
-func (d *DslRuntime) Start(ctx context.Context) error {
+func (d *DslFsm) Start(ctx context.Context) error {
 	d.rootCtx = ctx
 	d.enterState(d.fsm.Current())
 	return <-d.done
 }
 
-// finish records the mission's outcome, waking Start. Only the first call
+// finish records the mission's outcome, signaling Start. Only the first call
 // has any effect.
-func (d *DslRuntime) finish(err error) {
+func (d *DslFsm) finish(err error) {
 	d.doneOnce.Do(func() { d.done <- err })
 }
 
@@ -87,7 +87,7 @@ func (d *DslRuntime) finish(err error) {
 // action completing, matched against a "done" rule if one exists, or an
 // event's Monitor call returning true) fires the corresponding transition,
 // cancelling every other in-flight call for this state.
-func (d *DslRuntime) enterState(state string) {
+func (d *DslFsm) enterState(state string) {
 	action, ok := d.actions[state]
 	if !ok {
 		d.finish(fmt.Errorf("no action registered for state %q", state))
@@ -149,7 +149,7 @@ func (d *DslRuntime) enterState(state string) {
 // synthetic "done" event and state has no matching rule for it, that means
 // state is a terminal action, so the mission has completed normally rather
 // than failed. Any other error firing the event aborts the mission.
-func (d *DslRuntime) fireEvent(state, name string) {
+func (d *DslFsm) fireEvent(state, name string) {
 	err := d.fsm.Event(context.Background(), name)
 	if err == nil {
 		return

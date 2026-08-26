@@ -1,7 +1,6 @@
 package geo
 
 import (
-	"github.com/cmusatyalab/steeleagle/sdk/dsl/types"
 	"github.com/peterstace/simplefeatures/carto"
 	"github.com/peterstace/simplefeatures/geom"
 )
@@ -44,10 +43,10 @@ func solveT(p1, p2 geom.XY, y float64) float64 {
 	return (y - p1.Y) / (p2.Y - p1.Y)
 }
 
-// toXY re-projects a returned GlobalPosition back into the same UTM space
+// toXY re-projects a returned GeoPoint back into the same UTM space
 // used to build expectations, so returned points can be compared exactly
 // against hand-derived projected coordinates.
-func toXY(proj *carto.UTM, gp types.GlobalPosition) geom.XY {
+func toXY(proj *carto.UTM, gp GeoPoint) geom.XY {
 	return proj.Forward(geom.XY{X: gp.Longitude, Y: gp.Latitude})
 }
 

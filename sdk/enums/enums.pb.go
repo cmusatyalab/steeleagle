@@ -6,136 +6,153 @@ type Mode int32
 
 const (
 	// #private-ifndef messages/telemetry/Mode/MODE_UNSPECIFIED
-	ModeUnspecified Mode = 0
+	ModeUnspecified Mode = iota
 	// #private-ifndef messages/telemetry/Mode/MODE_TAKEOFF
-	ModeTakeoff Mode = 1
+	ModeTakeoff
 	// #private-ifndef messages/telemetry/Mode/MODE_LAND
-	ModeLand Mode = 2
+	ModeLand
 	// #private-ifndef messages/telemetry/Mode/MODE_LOITER
-	ModeLoiter Mode = 3
+	ModeLoiter
 	// #private-ifndef messages/telemetry/Mode/MODE_GUIDED
-	ModeGuided Mode = 4
+	ModeGuided
 	// #private-ifndef messages/telemetry/Mode/MODE_EMERGENCY
-	ModeEmergency Mode = 5
+	ModeEmergency
 )
 
 type MotionStatus int32
 
 const (
 	// #private-ifndef messages/telemetry/MotionStatus/MOTION_STATUS_UNSPECIFIED
-	MotionStatusUnspecified MotionStatus = 0
+	MotionStatusUnspecified MotionStatus = iota
 	// #private-ifndef messages/telemetry/MotionStatus/MOTION_STATUS_HOLDING
-	MotionStatusHolding MotionStatus = 1
+	MotionStatusHolding
 	// #private-ifndef messages/telemetry/MotionStatus/MOTION_STATUS_IN_TRANSIT
-	MotionStatusInTransit MotionStatus = 2
+	MotionStatusInTransit
 	// #private-ifndef messages/telemetry/MotionStatus/MOTION_STATUS_STOPPED
-	MotionStatusStopped MotionStatus = 3
+	MotionStatusStopped
 )
 
 type AlertInfo_BatteryWarning int32
 
 const (
 	// #private-ifndef messages/telemetry/AlertInfo_BatteryWarning/BATTERY_WARNING_UNSPECIFIED
-	AlertInfo_BatteryWarningUnspecified AlertInfo_BatteryWarning = 0
+	AlertInfo_BatteryWarningUnspecified AlertInfo_BatteryWarning = iota
 	// #private-ifndef messages/telemetry/AlertInfo_BatteryWarning/BATTERY_WARNING_LOW
-	AlertInfo_BatteryWarningLow AlertInfo_BatteryWarning = 1
+	AlertInfo_BatteryWarningLow
 	// #private-ifndef messages/telemetry/AlertInfo_BatteryWarning/BATTERY_WARNING_CRITICAL
-	AlertInfo_BatteryWarningCritical AlertInfo_BatteryWarning = 2
+	AlertInfo_BatteryWarningCritical
 )
 
 type AlertInfo_GpsWarning int32
 
 const (
 	// #private-ifndef messages/telemetry/AlertInfo_GpsWarning/GPS_WARNING_UNSPECIFIED
-	AlertInfo_GpsWarningUnspecified AlertInfo_GpsWarning = 0
+	AlertInfo_GpsWarningUnspecified AlertInfo_GpsWarning = iota
 	// #private-ifndef messages/telemetry/AlertInfo_GpsWarning/GPS_WARNING_WEAK_SIGNAL
-	AlertInfo_GpsWarningWeakSignal AlertInfo_GpsWarning = 1
+	AlertInfo_GpsWarningWeakSignal
 	// #private-ifndef messages/telemetry/AlertInfo_GpsWarning/GPS_WARNING_NO_FIX
-	AlertInfo_GpsWarningNoFix AlertInfo_GpsWarning = 2
+	AlertInfo_GpsWarningNoFix
 )
 
 type AlertInfo_MagnetometerWarning int32
 
 const (
 	// #private-ifndef messages/telemetry/AlertInfo_MagnetometerWarning/MAGNETOMETER_WARNING_UNSPECIFIED
-	AlertInfo_MagnetometerWarningUnspecified AlertInfo_MagnetometerWarning = 0
+	AlertInfo_MagnetometerWarningUnspecified AlertInfo_MagnetometerWarning = iota
 	// #private-ifndef messages/telemetry/AlertInfo_MagnetometerWarning/MAGNETOMETER_WARNING_PERTURBATIONS
-	AlertInfo_MagnetometerWarningPerturbations AlertInfo_MagnetometerWarning = 1
+	AlertInfo_MagnetometerWarningPerturbations
 )
 
 type AlertInfo_ConnectionWarning int32
 
 const (
 	// #private-ifndef messages/telemetry/AlertInfo_ConnectionWarning/CONNECTION_WARNING_UNSPECIFIED
-	AlertInfo_ConnectionWarningUnspecified AlertInfo_ConnectionWarning = 0
+	AlertInfo_ConnectionWarningUnspecified AlertInfo_ConnectionWarning = iota
 	// #private-ifndef messages/telemetry/AlertInfo_ConnectionWarning/CONNECTION_WARNING_DISCONNECTED
-	AlertInfo_ConnectionWarningDisconnected AlertInfo_ConnectionWarning = 1
+	AlertInfo_ConnectionWarningDisconnected
 	// #private-ifndef messages/telemetry/AlertInfo_ConnectionWarning/CONNECTION_WARNING_WEAK_CONNECTION
-	AlertInfo_ConnectionWarningWeakConnection AlertInfo_ConnectionWarning = 2
+	AlertInfo_ConnectionWarningWeakConnection
 )
 
 type AlertInfo_CompassWarning int32
 
 const (
 	// #private-ifndef messages/telemetry/AlertInfo_CompassWarning/COMPASS_WARNING_UNSPECIFIED
-	AlertInfo_CompassWarningUnspecified AlertInfo_CompassWarning = 0
+	AlertInfo_CompassWarningUnspecified AlertInfo_CompassWarning = iota
 	// #private-ifndef messages/telemetry/AlertInfo_CompassWarning/COMPASS_WARNING_WEAK_LOCK
-	AlertInfo_CompassWarningWeakLock AlertInfo_CompassWarning = 1
+	AlertInfo_CompassWarningWeakLock
 	// #private-ifndef messages/telemetry/AlertInfo_CompassWarning/COMPASS_WARNING_NO_LOCK
-	AlertInfo_CompassWarningNoLock AlertInfo_CompassWarning = 2
+	AlertInfo_CompassWarningNoLock
 )
 
 type ReturnToHomeEndBehavior int32
 
 const (
 	// #private-ifndef services/control/ReturnToHomeEndBehavior/RETURN_TO_HOME_END_BEHAVIOR_UNSPECIFIED
-	ReturnToHomeEndBehaviorUnspecified ReturnToHomeEndBehavior = 0
+	ReturnToHomeEndBehaviorUnspecified ReturnToHomeEndBehavior = iota
 	// #private-ifndef services/control/ReturnToHomeEndBehavior/RETURN_TO_HOME_END_BEHAVIOR_HOVER
-	ReturnToHomeEndBehaviorHover ReturnToHomeEndBehavior = 1
+	ReturnToHomeEndBehaviorHover
 	// #private-ifndef services/control/ReturnToHomeEndBehavior/RETURN_TO_HOME_END_BEHAVIOR_LAND
-	ReturnToHomeEndBehaviorLand ReturnToHomeEndBehavior = 2
+	ReturnToHomeEndBehaviorLand
 )
 
 type AltitudeMode int32
 
 const (
 	// #private-ifndef services/control/AltitudeMode/ALTITUDE_MODE_UNSPECIFIED
-	AltitudeModeUnspecified AltitudeMode = 0
+	AltitudeModeUnspecified AltitudeMode = iota
 	// #private-ifndef services/control/AltitudeMode/ALTITUDE_MODE_RELATIVE
-	AltitudeModeRelative AltitudeMode = 1
+	AltitudeModeRelative
 	// #private-ifndef services/control/AltitudeMode/ALTITUDE_MODE_ABSOLUTE
-	AltitudeModeAbsolute AltitudeMode = 2
+	AltitudeModeAbsolute
 )
 
 type HeadingMode int32
 
 const (
 	// #private-ifndef services/control/HeadingMode/HEADING_MODE_UNSPECIFIED
-	HeadingModeUnspecified HeadingMode = 0
+	HeadingModeUnspecified HeadingMode = iota
 	// #private-ifndef services/control/HeadingMode/HEADING_MODE_TO_TARGET
-	HeadingModeToTarget HeadingMode = 1
+	HeadingModeToTarget
 	// #private-ifndef services/control/HeadingMode/HEADING_MODE_START
-	HeadingModeStart HeadingMode = 2
+	HeadingModeStart
 )
 
 type ReferenceFrame int32
 
 const (
 	// #private-ifndef services/control/ReferenceFrame/REFERENCE_FRAME_UNSPECIFIED
-	ReferenceFrameUnspecified ReferenceFrame = 0
+	ReferenceFrameUnspecified ReferenceFrame = iota
 	// #private-ifndef services/control/ReferenceFrame/REFERENCE_FRAME_BODY
-	ReferenceFrameBody ReferenceFrame = 1
+	ReferenceFrameBody
 	// #private-ifndef services/control/ReferenceFrame/REFERENCE_FRAME_NEU
-	ReferenceFrameNeu ReferenceFrame = 2
+	ReferenceFrameNeu
 )
 
 type AngleMode int32
 
 const (
 	// #private-ifndef services/control/AngleMode/ANGLE_MODE_UNSPECIFIED
-	AngleModeUnspecified AngleMode = 0
+	AngleModeUnspecified AngleMode = iota
 	// #private-ifndef services/control/AngleMode/ANGLE_MODE_ABSOLUTE
-	AngleModeAbsolute AngleMode = 1
+	AngleModeAbsolute
 	// #private-ifndef services/control/AngleMode/ANGLE_MODE_OFFSET
-	AngleModeOffset AngleMode = 2
+	AngleModeOffset
+)
+
+type Resolution int32
+
+const (
+	// #private-ifndef services/stream/Resolution/RESOLUTION_UNSPECIFIED
+	ResolutionUnspecified Resolution = iota
+	// #private-ifndef services/stream/Resolution/RESOLUTION_360P
+	Resolution360p
+	// #private-ifndef services/stream/Resolution/RESOLUTION_480P
+	Resolution480p
+	// #private-ifndef services/stream/Resolution/RESOLUTION_720P
+	Resolution720p
+	// #private-ifndef services/stream/Resolution/RESOLUTION_1080P
+	Resolution1080p
+	// #private-ifndef services/stream/Resolution/RESOLUTION_4K
+	Resolution4k
 )

@@ -1,4 +1,4 @@
-package runtime
+package fsm
 
 import "github.com/cmusatyalab/steeleagle/sdk"
 

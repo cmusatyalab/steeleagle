@@ -12,7 +12,7 @@ type TakeOff struct {
 	Options []opt.Option[opt.TakeOffOption]
 }
 
-func (i *TakeOff) Execute(v sdk.Vehicle) error {
+func (i *TakeOff) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 	_, err := v.TakeOff(i.Options...).Wait()
 	return err
 }
@@ -22,7 +22,7 @@ var _ dsl.Action = &TakeOff{}
 // Land orders the vehicle to land at its current position.
 type Land struct{}
 
-func (i *Land) Execute(v sdk.Vehicle) error {
+func (i *Land) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 	_, err := v.Land().Wait()
 	return err
 }
@@ -34,7 +34,7 @@ type ReturnToHome struct {
 	Options []opt.Option[opt.ReturnToHomeOption]
 }
 
-func (i *ReturnToHome) Execute(v sdk.Vehicle) error {
+func (i *ReturnToHome) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 	_, err := v.ReturnToHome(i.Options...).Wait()
 	return err
 }
@@ -48,7 +48,7 @@ type GoToGlobalPosition struct {
 	Options []opt.Option[opt.SetGlobalPositionTargetOption]
 }
 
-func (i *GoToGlobalPosition) Execute(v sdk.Vehicle) error {
+func (i *GoToGlobalPosition) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 	_, err := v.SetGlobalPositionTarget(i.Latitude, i.Longitude, i.Altitude, i.Heading, i.Options...).Wait()
 	return err
 }
@@ -62,7 +62,7 @@ type GoToRelativePosition struct {
 	Options []opt.Option[opt.SetRelativePositionTargetOption]
 }
 
-func (i *GoToRelativePosition) Execute(v sdk.Vehicle) error {
+func (i *GoToRelativePosition) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 	_, err := v.SetRelativePositionTarget(i.X, i.Y, i.Z, i.Angle, i.Options...).Wait()
 	return err
 }
@@ -76,7 +76,7 @@ type SetGimbalPose struct {
 	Options []opt.Option[opt.SetGimbalAngleTargetOption]
 }
 
-func (i *SetGimbalPose) Execute(v sdk.Vehicle) error {
+func (i *SetGimbalPose) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 	_, err := v.SetGimbalAngleTarget(i.Pitch, i.Roll, i.Yaw, i.Options...).Wait()
 	return err
 }
