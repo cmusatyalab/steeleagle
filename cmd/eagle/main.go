@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	eagledpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/eagled"
+	"golang.org/x/term"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -46,17 +48,39 @@ func withClient(ctx context.Context, daemonAddr string, fn func(context.Context,
 	return fn(ctx, client)
 }
 
+// confirm asks the user to type "yes" before a destructive action described by
+// prompt, unless skip is true.
+func confirm(prompt string, skip bool) error {
+	if skip {
+		return nil
+	}
+	if !term.IsTerminal(int(os.Stdin.Fd())) {
+		return fmt.Errorf("%s; pass --yes to run non-interactively", prompt)
+	}
+	fmt.Printf("%s. Type \"yes\" to continue: ", prompt)
+	line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+	if strings.TrimSpace(line) != "yes" {
+		return fmt.Errorf("aborted")
+	}
+	return nil
+}
+
 // printResults prints one line per vehicle result and reports whether any
 // failed.
 func printResults(results []*eagledpb.VehicleResult, verb string) bool {
 	failed := false
 	for _, v := range results {
-		if v.GetOk() {
+		switch {
+		case v.GetOk() && v.GetRestartRequired():
+			fmt.Printf("%s: reconfigured (still running on its previous config -- run `eagle restart %s` to apply)\n", v.GetName(), v.GetName())
+		case v.GetOk() && v.GetReconfigured():
+			fmt.Printf("%s: reconfigured (replaced its previous config) and %s\n", v.GetName(), verb)
+		case v.GetOk():
 			fmt.Printf("%s: %s\n", v.GetName(), verb)
-			continue
+		default:
+			failed = true
+			fmt.Printf("%s: failed: %s\n", v.GetName(), v.GetError())
 		}
-		failed = true
-		fmt.Printf("%s: failed: %s\n", v.GetName(), v.GetError())
 	}
 	return failed
 }
@@ -68,12 +92,21 @@ func configure(ctx context.Context, daemonAddr, configPath string) error {
 	if err != nil {
 		return fmt.Errorf("reading %s: %w", configPath, err)
 	}
+	fmt.Printf("pushing %s to %s...\n", configPath, daemonAddr)
 	return withClient(ctx, daemonAddr, func(ctx context.Context, client eagledpb.DaemonServiceClient) error {
 		resp, err := client.Configure(ctx, eagledpb.ConfigureRequest_builder{ConfigToml: string(data)}.Build())
 		if err != nil {
 			return fmt.Errorf("configuring %s: %w", daemonAddr, err)
 		}
-		if printResults(resp.GetVehicles(), "started") {
+		if len(resp.GetVehicles()) == 0 {
+			fmt.Printf("%s has no [[vehicles]] entries; nothing to start\n", configPath)
+		}
+		failed := printResults(resp.GetVehicles(), "started")
+		if resp.GetDaemonSettingsDiverged() {
+			fmt.Printf("\nnote: daemon already configured; the daemon-wide settings in %s differ from what's active and were NOT applied\n", configPath)
+			fmt.Println("  run `eagle reset-config` to clear them and re-apply from this file (drops all vehicles)")
+		}
+		if failed {
 			return fmt.Errorf("one or more vehicles failed to start")
 		}
 		return nil
@@ -162,6 +195,7 @@ func installPlugin(ctx context.Context, daemonAddr, name, repo, ref, subpath, ca
 	if err != nil {
 		return err
 	}
+	fmt.Printf("%s: fetching %s@%s (may take a while)...\n", name, repo, ref)
 	return withClient(ctx, daemonAddr, func(ctx context.Context, client eagledpb.DaemonServiceClient) error {
 		resp, err := client.InstallPlugin(ctx, eagledpb.InstallPluginRequest_builder{
 			Name: name, Repo: repo, Ref: ref, Subpath: subpath, Category: protoCategory,
@@ -220,9 +254,26 @@ func restartDaemon(ctx context.Context, daemonAddr string) error {
 	})
 }
 
-// status prints the eagled instance's current configuration, if any, and
+// fetchVehicleStatuses fetches the current status of every vehicle daemonAddr
+// knows about, so a confirmation prompt for a destructive call can describe
+// its actual effect (e.g. which vehicles are running) instead of a generic
+// warning.
+func fetchVehicleStatuses(ctx context.Context, daemonAddr string) ([]*eagledpb.VehicleStatus, error) {
+	var vehicles []*eagledpb.VehicleStatus
+	err := withClient(ctx, daemonAddr, func(ctx context.Context, client eagledpb.DaemonServiceClient) error {
+		resp, err := client.GetStatus(ctx, eagledpb.GetStatusRequest_builder{}.Build())
+		if err != nil {
+			return fmt.Errorf("getting status of %s: %w", daemonAddr, err)
+		}
+		vehicles = resp.GetVehicles()
+		return nil
+	})
+	return vehicles, err
+}
+
+// printStatus prints the eagled instance's current configuration, if any, and
 // the state of every vehicle it knows about.
-func status(ctx context.Context, daemonAddr string) error {
+func printStatus(ctx context.Context, daemonAddr string) error {
 	return withClient(ctx, daemonAddr, func(ctx context.Context, client eagledpb.DaemonServiceClient) error {
 		resp, err := client.GetStatus(ctx, eagledpb.GetStatusRequest_builder{}.Build())
 		if err != nil {
@@ -235,8 +286,16 @@ func status(ctx context.Context, daemonAddr string) error {
 
 		cfg := resp.GetConfig()
 		fmt.Printf("daemon: %s\n", cfg.GetDaemonName())
-		fmt.Printf("swarm controller: %s\n", cfg.GetSwarmControllerAddress())
+		fmt.Printf("port base: %d\n", cfg.GetPortBase())
 		fmt.Printf("plugin dir: %s\n", cfg.GetPluginDir())
+		fmt.Printf("swarm controller: %s\n", cfg.GetSwarmControllerAddress())
+		if cfg.GetGabrielServerEndpoint() != "" {
+			fmt.Printf("gabriel: %s\n", cfg.GetGabrielServerEndpoint())
+		}
+		fmt.Printf("vpn: %t (vehicles: %t)\n", cfg.GetVpn(), cfg.GetVehicleVpn())
+		if cfg.GetVpn() {
+			fmt.Printf("tailscale auth key from: $%s\n", cfg.GetTailscaleAuthkeyEnv())
+		}
 
 		if len(resp.GetVehicles()) == 0 {
 			fmt.Println("no vehicles configured")
@@ -246,11 +305,24 @@ func status(ctx context.Context, daemonAddr string) error {
 			state := "stopped"
 			if v.GetRunning() {
 				state = fmt.Sprintf("running on port %d", v.GetPort())
+				if v.GetConfigStale() {
+					state += " (config changed -- restart to apply)"
+				}
 			}
 			fmt.Printf("%s (%s): %s\n", v.GetName(), v.GetDriver(), state)
 		}
 		return nil
 	})
+}
+
+// requireVehicleNames exits with usage if fs has no leftover positional
+// arguments, naming the problem before dumping the usage banner.
+func requireVehicleNames(fs *flag.FlagSet) {
+	if fs.NArg() == 0 {
+		fmt.Fprintf(os.Stderr, "%s: at least one vehicle name is required\n", fs.Name())
+		usage()
+		os.Exit(2)
+	}
 }
 
 // rejectExtraArgs exits with usage if fs has leftover positional arguments.
@@ -279,13 +351,14 @@ func usage() {
   eagle configure --daemon <host:port> --config <path>
   eagle stop --daemon <host:port> <vehicle> [<vehicle>...]
   eagle restart --daemon <host:port> <vehicle> [<vehicle>...]
-  eagle forget --daemon <host:port> <vehicle> [<vehicle>...]
+  eagle forget --daemon <host:port> [--yes] <vehicle> [<vehicle>...]
   eagle install-plugin --daemon <host:port> --name <name> --repo <url> --ref <ref> --category <driver|mission|extra> [--subpath <path>]
   eagle plugins --daemon <host:port>
   eagle status --daemon <host:port>
   eagle restart-daemon --daemon <host:port>
-  eagle reset-config --daemon <host:port>
-(daemon defaults to %s)
+  eagle reset-config --daemon <host:port> [--yes]
+(daemon defaults to %s; forget and reset-config permanently drop config and
+prompt for confirmation unless --yes is given)
 `, DefaultDaemonAddr)
 }
 
@@ -311,32 +384,52 @@ func main() {
 		fs := flag.NewFlagSet("stop", flag.ExitOnError)
 		daemonAddr := fs.String("daemon", DefaultDaemonAddr, "eagled's control-plane address")
 		fs.Parse(os.Args[2:])
-		if fs.NArg() == 0 {
-			usage()
-			os.Exit(2)
-		}
+		requireVehicleNames(fs)
 		rejectFlagLikeArgs(fs, fs.Args())
 		err = stopVehicles(ctx, *daemonAddr, fs.Args())
 	case "restart":
 		fs := flag.NewFlagSet("restart", flag.ExitOnError)
 		daemonAddr := fs.String("daemon", DefaultDaemonAddr, "eagled's control-plane address")
 		fs.Parse(os.Args[2:])
-		if fs.NArg() == 0 {
-			usage()
-			os.Exit(2)
-		}
+		requireVehicleNames(fs)
 		rejectFlagLikeArgs(fs, fs.Args())
 		err = restartVehicles(ctx, *daemonAddr, fs.Args())
 	case "forget":
 		fs := flag.NewFlagSet("forget", flag.ExitOnError)
 		daemonAddr := fs.String("daemon", DefaultDaemonAddr, "eagled's control-plane address")
+		yes := fs.Bool("yes", false, "skip the confirmation prompt")
 		fs.Parse(os.Args[2:])
-		if fs.NArg() == 0 {
-			usage()
-			os.Exit(2)
-		}
+		requireVehicleNames(fs)
 		rejectFlagLikeArgs(fs, fs.Args())
-		err = forgetVehicles(ctx, *daemonAddr, fs.Args())
+		names := fs.Args()
+		msg := fmt.Sprintf("this permanently drops config for: %s", strings.Join(names, ", "))
+		if !*yes {
+			statuses, serr := fetchVehicleStatuses(ctx, *daemonAddr)
+			if serr != nil {
+				err = serr
+				break
+			}
+			runningSet := make(map[string]bool, len(statuses))
+			for _, v := range statuses {
+				if v.GetRunning() {
+					runningSet[v.GetName()] = true
+				}
+			}
+			var running []string
+			for _, n := range names {
+				if runningSet[n] {
+					running = append(running, n)
+				}
+			}
+			if len(running) > 0 {
+				msg = fmt.Sprintf("%s (%s currently running -- will be stopped first)", msg, strings.Join(running, ", "))
+			}
+		}
+		if cerr := confirm(msg, *yes); cerr != nil {
+			err = cerr
+			break
+		}
+		err = forgetVehicles(ctx, *daemonAddr, names)
 	case "install-plugin":
 		fs := flag.NewFlagSet("install-plugin", flag.ExitOnError)
 		daemonAddr := fs.String("daemon", DefaultDaemonAddr, "eagled's control-plane address")
@@ -347,7 +440,21 @@ func main() {
 		category := fs.String("category", "", "one of driver, mission, extra")
 		fs.Parse(os.Args[2:])
 		rejectExtraArgs(fs)
-		if *name == "" || *repo == "" || *ref == "" || *category == "" {
+		var missing []string
+		if *name == "" {
+			missing = append(missing, "--name")
+		}
+		if *repo == "" {
+			missing = append(missing, "--repo")
+		}
+		if *ref == "" {
+			missing = append(missing, "--ref")
+		}
+		if *category == "" {
+			missing = append(missing, "--category")
+		}
+		if len(missing) > 0 {
+			fmt.Fprintf(os.Stderr, "install-plugin: missing required flag(s): %s\n", strings.Join(missing, ", "))
 			usage()
 			os.Exit(2)
 		}
@@ -363,7 +470,7 @@ func main() {
 		daemonAddr := fs.String("daemon", DefaultDaemonAddr, "eagled's control-plane address")
 		fs.Parse(os.Args[2:])
 		rejectExtraArgs(fs)
-		err = status(ctx, *daemonAddr)
+		err = printStatus(ctx, *daemonAddr)
 	case "restart-daemon":
 		fs := flag.NewFlagSet("restart-daemon", flag.ExitOnError)
 		daemonAddr := fs.String("daemon", DefaultDaemonAddr, "eagled's control-plane address")
@@ -373,8 +480,29 @@ func main() {
 	case "reset-config":
 		fs := flag.NewFlagSet("reset-config", flag.ExitOnError)
 		daemonAddr := fs.String("daemon", DefaultDaemonAddr, "eagled's control-plane address")
+		yes := fs.Bool("yes", false, "skip the confirmation prompt")
 		fs.Parse(os.Args[2:])
 		rejectExtraArgs(fs)
+		msg := "this stops every vehicle and wipes eagled's daemon-wide config; it restarts unconfigured"
+		if !*yes {
+			statuses, serr := fetchVehicleStatuses(ctx, *daemonAddr)
+			if serr != nil {
+				err = serr
+				break
+			}
+			if len(statuses) > 0 {
+				names := make([]string, 0, len(statuses))
+				for _, v := range statuses {
+					names = append(names, v.GetName())
+				}
+				msg = fmt.Sprintf("this stops %d vehicle(s) (%s) and wipes eagled's daemon-wide config; it restarts unconfigured",
+					len(names), strings.Join(names, ", "))
+			}
+		}
+		if cerr := confirm(msg, *yes); cerr != nil {
+			err = cerr
+			break
+		}
 		err = resetConfig(ctx, *daemonAddr)
 	default:
 		usage()

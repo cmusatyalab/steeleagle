@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n3steeleagle_protocol/v1/services/eagled/eagled.proto\x12&steeleagle_protocol.v1.services.eagled\"3\n\x10\x43onfigureRequest\x12\x1f\n\x0b\x63onfig_toml\x18\x01 \x01(\tR\nconfigToml\"f\n\x11\x43onfigureResponse\x12Q\n\x08vehicles\x18\x01 \x03(\x0b\x32\x35.steeleagle_protocol.v1.services.eagled.VehicleResultR\x08vehicles\"+\n\x13StopVehiclesRequest\x12\x14\n\x05names\x18\x01 \x03(\tR\x05names\"i\n\x14StopVehiclesResponse\x12Q\n\x08vehicles\x18\x01 \x03(\x0b\x32\x35.steeleagle_protocol.v1.services.eagled.VehicleResultR\x08vehicles\".\n\x16RestartVehiclesRequest\x12\x14\n\x05names\x18\x01 \x03(\tR\x05names\"l\n\x17RestartVehiclesResponse\x12Q\n\x08vehicles\x18\x01 \x03(\x0b\x32\x35.steeleagle_protocol.v1.services.eagled.VehicleResultR\x08vehicles\"-\n\x15\x46orgetVehiclesRequest\x12\x14\n\x05names\x18\x01 \x03(\tR\x05names\"k\n\x16\x46orgetVehiclesResponse\x12Q\n\x08vehicles\x18\x01 \x03(\x0b\x32\x35.steeleagle_protocol.v1.services.eagled.VehicleResultR\x08vehicles\"I\n\rVehicleResult\x12\x12\n\x04name\x18\x01 \x01(\tR\x04name\x12\x0e\n\x02ok\x18\x02 \x01(\x08R\x02ok\x12\x14\n\x05\x65rror\x18\x03 \x01(\tR\x05\x65rror\"\xbe\x01\n\x14InstallPluginRequest\x12\x12\n\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n\x04repo\x18\x02 \x01(\tR\x04repo\x12\x10\n\x03ref\x18\x03 \x01(\tR\x03ref\x12\x18\n\x07subpath\x18\x04 \x01(\tR\x07subpath\x12R\n\x08\x63\x61tegory\x18\x05 \x01(\x0e\x32\x36.steeleagle_protocol.v1.services.eagled.PluginCategoryR\x08\x63\x61tegory\"=\n\x15InstallPluginResponse\x12\x0e\n\x02ok\x18\x01 \x01(\x08R\x02ok\x12\x14\n\x05\x65rror\x18\x02 \x01(\tR\x05\x65rror\"\x1c\n\x1aGetInstalledPluginsRequest\"p\n\x1bGetInstalledPluginsResponse\x12Q\n\x07plugins\x18\x01 \x03(\x0b\x32\x37.steeleagle_protocol.v1.services.eagled.InstalledPluginR\x07plugins\"\x8b\x01\n\x0fInstalledPlugin\x12\x12\n\x04name\x18\x01 \x01(\tR\x04name\x12\x10\n\x03ref\x18\x02 \x01(\tR\x03ref\x12R\n\x08\x63\x61tegory\x18\x03 \x01(\x0e\x32\x36.steeleagle_protocol.v1.services.eagled.PluginCategoryR\x08\x63\x61tegory\"\x14\n\x12ResetConfigRequest\"\x15\n\x13ResetConfigResponse\"\x16\n\x14RestartDaemonRequest\"\x17\n\x15RestartDaemonResponse\"\x12\n\x10GetStatusRequest\"\xd4\x01\n\x11GetStatusResponse\x12\x1e\n\nconfigured\x18\x01 \x01(\x08R\nconfigured\x12L\n\x06\x63onfig\x18\x02 \x01(\x0b\x32\x34.steeleagle_protocol.v1.services.eagled.DaemonConfigR\x06\x63onfig\x12Q\n\x08vehicles\x18\x03 \x03(\x0b\x32\x35.steeleagle_protocol.v1.services.eagled.VehicleStatusR\x08vehicles\"\xf3\x02\n\x0c\x44\x61\x65monConfig\x12\x10\n\x03vpn\x18\x01 \x01(\x08R\x03vpn\x12\x1f\n\x0bvehicle_vpn\x18\x02 \x01(\x08R\nvehicleVpn\x12\x1b\n\tport_base\x18\x03 \x01(\x05R\x08portBase\x12\x1d\n\nplugin_dir\x18\x04 \x01(\tR\tpluginDir\x12-\n\x12tailscale_hostname\x18\x05 \x01(\tR\x11tailscaleHostname\x12\x32\n\x15tailscale_authkey_env\x18\x06 \x01(\tR\x13tailscaleAuthkeyEnv\x12\x38\n\x18swarm_controller_address\x18\x07 \x01(\tR\x16swarmControllerAddress\x12\x1f\n\x0b\x64\x61\x65mon_name\x18\x08 \x01(\tR\ndaemonName\x12\x36\n\x17gabriel_server_endpoint\x18\t \x01(\tR\x15gabrielServerEndpoint\"i\n\rVehicleStatus\x12\x12\n\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n\x06\x64river\x18\x02 \x01(\tR\x06\x64river\x12\x18\n\x07running\x18\x03 \x01(\x08R\x07running\x12\x12\n\x04port\x18\x04 \x01(\x05R\x04port*\x85\x01\n\x0ePluginCategory\x12\x1f\n\x1bPLUGIN_CATEGORY_UNSPECIFIED\x10\x00\x12\x1a\n\x16PLUGIN_CATEGORY_DRIVER\x10\x01\x12\x1b\n\x17PLUGIN_CATEGORY_MISSION\x10\x02\x12\x19\n\x15PLUGIN_CATEGORY_EXTRA\x10\x03\x32\xa2\n\n\rDaemonService\x12\x82\x01\n\tConfigure\x12\x38.steeleagle_protocol.v1.services.eagled.ConfigureRequest\x1a\x39.steeleagle_protocol.v1.services.eagled.ConfigureResponse\"\x00\x12\x8b\x01\n\x0cStopVehicles\x12;.steeleagle_protocol.v1.services.eagled.StopVehiclesRequest\x1a<.steeleagle_protocol.v1.services.eagled.StopVehiclesResponse\"\x00\x12\x94\x01\n\x0fRestartVehicles\x12>.steeleagle_protocol.v1.services.eagled.RestartVehiclesRequest\x1a?.steeleagle_protocol.v1.services.eagled.RestartVehiclesResponse\"\x00\x12\x91\x01\n\x0e\x46orgetVehicles\x12=.steeleagle_protocol.v1.services.eagled.ForgetVehiclesRequest\x1a>.steeleagle_protocol.v1.services.eagled.ForgetVehiclesResponse\"\x00\x12\x8e\x01\n\rInstallPlugin\x12<.steeleagle_protocol.v1.services.eagled.InstallPluginRequest\x1a=.steeleagle_protocol.v1.services.eagled.InstallPluginResponse\"\x00\x12\xa0\x01\n\x13GetInstalledPlugins\x12\x42.steeleagle_protocol.v1.services.eagled.GetInstalledPluginsRequest\x1a\x43.steeleagle_protocol.v1.services.eagled.GetInstalledPluginsResponse\"\x00\x12\x88\x01\n\x0bResetConfig\x12:.steeleagle_protocol.v1.services.eagled.ResetConfigRequest\x1a;.steeleagle_protocol.v1.services.eagled.ResetConfigResponse\"\x00\x12\x8e\x01\n\rRestartDaemon\x12<.steeleagle_protocol.v1.services.eagled.RestartDaemonRequest\x1a=.steeleagle_protocol.v1.services.eagled.RestartDaemonResponse\"\x00\x12\x82\x01\n\tGetStatus\x12\x38.steeleagle_protocol.v1.services.eagled.GetStatusRequest\x1a\x39.steeleagle_protocol.v1.services.eagled.GetStatusResponse\"\x00\x42\xc2\x02\n*com.steeleagle_protocol.v1.services.eagledB\x0b\x45\x61gledProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/eagled\xa2\x02\x04SVSE\xaa\x02%SteeleagleProtocol.V1.Services.Eagled\xca\x02%SteeleagleProtocol\\V1\\Services\\Eagled\xe2\x02\x31SteeleagleProtocol\\V1\\Services\\Eagled\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Services::Eagledb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n3steeleagle_protocol/v1/services/eagled/eagled.proto\x12&steeleagle_protocol.v1.services.eagled\"3\n\x10\x43onfigureRequest\x12\x1f\n\x0b\x63onfig_toml\x18\x01 \x01(\tR\nconfigToml\"\xd8\x01\n\x11\x43onfigureResponse\x12Q\n\x08vehicles\x18\x01 \x03(\x0b\x32\x35.steeleagle_protocol.v1.services.eagled.VehicleResultR\x08vehicles\x12\x36\n\x17\x64\x61\x65mon_settings_applied\x18\x02 \x01(\x08R\x15\x64\x61\x65monSettingsApplied\x12\x38\n\x18\x64\x61\x65mon_settings_diverged\x18\x03 \x01(\x08R\x16\x64\x61\x65monSettingsDiverged\"+\n\x13StopVehiclesRequest\x12\x14\n\x05names\x18\x01 \x03(\tR\x05names\"i\n\x14StopVehiclesResponse\x12Q\n\x08vehicles\x18\x01 \x03(\x0b\x32\x35.steeleagle_protocol.v1.services.eagled.VehicleResultR\x08vehicles\".\n\x16RestartVehiclesRequest\x12\x14\n\x05names\x18\x01 \x03(\tR\x05names\"l\n\x17RestartVehiclesResponse\x12Q\n\x08vehicles\x18\x01 \x03(\x0b\x32\x35.steeleagle_protocol.v1.services.eagled.VehicleResultR\x08vehicles\"-\n\x15\x46orgetVehiclesRequest\x12\x14\n\x05names\x18\x01 \x03(\tR\x05names\"k\n\x16\x46orgetVehiclesResponse\x12Q\n\x08vehicles\x18\x01 \x03(\x0b\x32\x35.steeleagle_protocol.v1.services.eagled.VehicleResultR\x08vehicles\"\x98\x01\n\rVehicleResult\x12\x12\n\x04name\x18\x01 \x01(\tR\x04name\x12\x0e\n\x02ok\x18\x02 \x01(\x08R\x02ok\x12\x14\n\x05\x65rror\x18\x03 \x01(\tR\x05\x65rror\x12\"\n\x0creconfigured\x18\x04 \x01(\x08R\x0creconfigured\x12)\n\x10restart_required\x18\x05 \x01(\x08R\x0frestartRequired\"\xbe\x01\n\x14InstallPluginRequest\x12\x12\n\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n\x04repo\x18\x02 \x01(\tR\x04repo\x12\x10\n\x03ref\x18\x03 \x01(\tR\x03ref\x12\x18\n\x07subpath\x18\x04 \x01(\tR\x07subpath\x12R\n\x08\x63\x61tegory\x18\x05 \x01(\x0e\x32\x36.steeleagle_protocol.v1.services.eagled.PluginCategoryR\x08\x63\x61tegory\"=\n\x15InstallPluginResponse\x12\x0e\n\x02ok\x18\x01 \x01(\x08R\x02ok\x12\x14\n\x05\x65rror\x18\x02 \x01(\tR\x05\x65rror\"\x1c\n\x1aGetInstalledPluginsRequest\"p\n\x1bGetInstalledPluginsResponse\x12Q\n\x07plugins\x18\x01 \x03(\x0b\x32\x37.steeleagle_protocol.v1.services.eagled.InstalledPluginR\x07plugins\"\x8b\x01\n\x0fInstalledPlugin\x12\x12\n\x04name\x18\x01 \x01(\tR\x04name\x12\x10\n\x03ref\x18\x02 \x01(\tR\x03ref\x12R\n\x08\x63\x61tegory\x18\x03 \x01(\x0e\x32\x36.steeleagle_protocol.v1.services.eagled.PluginCategoryR\x08\x63\x61tegory\"\x14\n\x12ResetConfigRequest\"\x15\n\x13ResetConfigResponse\"\x16\n\x14RestartDaemonRequest\"\x17\n\x15RestartDaemonResponse\"\x12\n\x10GetStatusRequest\"\xd4\x01\n\x11GetStatusResponse\x12\x1e\n\nconfigured\x18\x01 \x01(\x08R\nconfigured\x12L\n\x06\x63onfig\x18\x02 \x01(\x0b\x32\x34.steeleagle_protocol.v1.services.eagled.DaemonConfigR\x06\x63onfig\x12Q\n\x08vehicles\x18\x03 \x03(\x0b\x32\x35.steeleagle_protocol.v1.services.eagled.VehicleStatusR\x08vehicles\"\xf3\x02\n\x0c\x44\x61\x65monConfig\x12\x10\n\x03vpn\x18\x01 \x01(\x08R\x03vpn\x12\x1f\n\x0bvehicle_vpn\x18\x02 \x01(\x08R\nvehicleVpn\x12\x1b\n\tport_base\x18\x03 \x01(\x05R\x08portBase\x12\x1d\n\nplugin_dir\x18\x04 \x01(\tR\tpluginDir\x12-\n\x12tailscale_hostname\x18\x05 \x01(\tR\x11tailscaleHostname\x12\x32\n\x15tailscale_authkey_env\x18\x06 \x01(\tR\x13tailscaleAuthkeyEnv\x12\x38\n\x18swarm_controller_address\x18\x07 \x01(\tR\x16swarmControllerAddress\x12\x1f\n\x0b\x64\x61\x65mon_name\x18\x08 \x01(\tR\ndaemonName\x12\x36\n\x17gabriel_server_endpoint\x18\t \x01(\tR\x15gabrielServerEndpoint\"\x8c\x01\n\rVehicleStatus\x12\x12\n\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n\x06\x64river\x18\x02 \x01(\tR\x06\x64river\x12\x18\n\x07running\x18\x03 \x01(\x08R\x07running\x12\x12\n\x04port\x18\x04 \x01(\x05R\x04port\x12!\n\x0c\x63onfig_stale\x18\x05 \x01(\x08R\x0b\x63onfigStale*\x85\x01\n\x0ePluginCategory\x12\x1f\n\x1bPLUGIN_CATEGORY_UNSPECIFIED\x10\x00\x12\x1a\n\x16PLUGIN_CATEGORY_DRIVER\x10\x01\x12\x1b\n\x17PLUGIN_CATEGORY_MISSION\x10\x02\x12\x19\n\x15PLUGIN_CATEGORY_EXTRA\x10\x03\x32\xa2\n\n\rDaemonService\x12\x82\x01\n\tConfigure\x12\x38.steeleagle_protocol.v1.services.eagled.ConfigureRequest\x1a\x39.steeleagle_protocol.v1.services.eagled.ConfigureResponse\"\x00\x12\x8b\x01\n\x0cStopVehicles\x12;.steeleagle_protocol.v1.services.eagled.StopVehiclesRequest\x1a<.steeleagle_protocol.v1.services.eagled.StopVehiclesResponse\"\x00\x12\x94\x01\n\x0fRestartVehicles\x12>.steeleagle_protocol.v1.services.eagled.RestartVehiclesRequest\x1a?.steeleagle_protocol.v1.services.eagled.RestartVehiclesResponse\"\x00\x12\x91\x01\n\x0e\x46orgetVehicles\x12=.steeleagle_protocol.v1.services.eagled.ForgetVehiclesRequest\x1a>.steeleagle_protocol.v1.services.eagled.ForgetVehiclesResponse\"\x00\x12\x8e\x01\n\rInstallPlugin\x12<.steeleagle_protocol.v1.services.eagled.InstallPluginRequest\x1a=.steeleagle_protocol.v1.services.eagled.InstallPluginResponse\"\x00\x12\xa0\x01\n\x13GetInstalledPlugins\x12\x42.steeleagle_protocol.v1.services.eagled.GetInstalledPluginsRequest\x1a\x43.steeleagle_protocol.v1.services.eagled.GetInstalledPluginsResponse\"\x00\x12\x88\x01\n\x0bResetConfig\x12:.steeleagle_protocol.v1.services.eagled.ResetConfigRequest\x1a;.steeleagle_protocol.v1.services.eagled.ResetConfigResponse\"\x00\x12\x8e\x01\n\rRestartDaemon\x12<.steeleagle_protocol.v1.services.eagled.RestartDaemonRequest\x1a=.steeleagle_protocol.v1.services.eagled.RestartDaemonResponse\"\x00\x12\x82\x01\n\tGetStatus\x12\x38.steeleagle_protocol.v1.services.eagled.GetStatusRequest\x1a\x39.steeleagle_protocol.v1.services.eagled.GetStatusResponse\"\x00\x42\xc2\x02\n*com.steeleagle_protocol.v1.services.eagledB\x0b\x45\x61gledProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/eagled\xa2\x02\x04SVSE\xaa\x02%SteeleagleProtocol.V1.Services.Eagled\xca\x02%SteeleagleProtocol\\V1\\Services\\Eagled\xe2\x02\x31SteeleagleProtocol\\V1\\Services\\Eagled\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Services::Eagledb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,52 +32,52 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'steeleagle_protocol.v1.serv
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'\n*com.steeleagle_protocol.v1.services.eagledB\013EagledProtoP\001ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/eagled\242\002\004SVSE\252\002%SteeleagleProtocol.V1.Services.Eagled\312\002%SteeleagleProtocol\\V1\\Services\\Eagled\342\0021SteeleagleProtocol\\V1\\Services\\Eagled\\GPBMetadata\352\002(SteeleagleProtocol::V1::Services::Eagled'
-  _globals['_PLUGINCATEGORY']._serialized_start=2146
-  _globals['_PLUGINCATEGORY']._serialized_end=2279
+  _globals['_PLUGINCATEGORY']._serialized_start=2377
+  _globals['_PLUGINCATEGORY']._serialized_end=2510
   _globals['_CONFIGUREREQUEST']._serialized_start=95
   _globals['_CONFIGUREREQUEST']._serialized_end=146
-  _globals['_CONFIGURERESPONSE']._serialized_start=148
-  _globals['_CONFIGURERESPONSE']._serialized_end=250
-  _globals['_STOPVEHICLESREQUEST']._serialized_start=252
-  _globals['_STOPVEHICLESREQUEST']._serialized_end=295
-  _globals['_STOPVEHICLESRESPONSE']._serialized_start=297
-  _globals['_STOPVEHICLESRESPONSE']._serialized_end=402
-  _globals['_RESTARTVEHICLESREQUEST']._serialized_start=404
-  _globals['_RESTARTVEHICLESREQUEST']._serialized_end=450
-  _globals['_RESTARTVEHICLESRESPONSE']._serialized_start=452
-  _globals['_RESTARTVEHICLESRESPONSE']._serialized_end=560
-  _globals['_FORGETVEHICLESREQUEST']._serialized_start=562
-  _globals['_FORGETVEHICLESREQUEST']._serialized_end=607
-  _globals['_FORGETVEHICLESRESPONSE']._serialized_start=609
-  _globals['_FORGETVEHICLESRESPONSE']._serialized_end=716
-  _globals['_VEHICLERESULT']._serialized_start=718
-  _globals['_VEHICLERESULT']._serialized_end=791
-  _globals['_INSTALLPLUGINREQUEST']._serialized_start=794
-  _globals['_INSTALLPLUGINREQUEST']._serialized_end=984
-  _globals['_INSTALLPLUGINRESPONSE']._serialized_start=986
-  _globals['_INSTALLPLUGINRESPONSE']._serialized_end=1047
-  _globals['_GETINSTALLEDPLUGINSREQUEST']._serialized_start=1049
-  _globals['_GETINSTALLEDPLUGINSREQUEST']._serialized_end=1077
-  _globals['_GETINSTALLEDPLUGINSRESPONSE']._serialized_start=1079
-  _globals['_GETINSTALLEDPLUGINSRESPONSE']._serialized_end=1191
-  _globals['_INSTALLEDPLUGIN']._serialized_start=1194
-  _globals['_INSTALLEDPLUGIN']._serialized_end=1333
-  _globals['_RESETCONFIGREQUEST']._serialized_start=1335
-  _globals['_RESETCONFIGREQUEST']._serialized_end=1355
-  _globals['_RESETCONFIGRESPONSE']._serialized_start=1357
-  _globals['_RESETCONFIGRESPONSE']._serialized_end=1378
-  _globals['_RESTARTDAEMONREQUEST']._serialized_start=1380
-  _globals['_RESTARTDAEMONREQUEST']._serialized_end=1402
-  _globals['_RESTARTDAEMONRESPONSE']._serialized_start=1404
-  _globals['_RESTARTDAEMONRESPONSE']._serialized_end=1427
-  _globals['_GETSTATUSREQUEST']._serialized_start=1429
-  _globals['_GETSTATUSREQUEST']._serialized_end=1447
-  _globals['_GETSTATUSRESPONSE']._serialized_start=1450
-  _globals['_GETSTATUSRESPONSE']._serialized_end=1662
-  _globals['_DAEMONCONFIG']._serialized_start=1665
-  _globals['_DAEMONCONFIG']._serialized_end=2036
-  _globals['_VEHICLESTATUS']._serialized_start=2038
-  _globals['_VEHICLESTATUS']._serialized_end=2143
-  _globals['_DAEMONSERVICE']._serialized_start=2282
-  _globals['_DAEMONSERVICE']._serialized_end=3596
+  _globals['_CONFIGURERESPONSE']._serialized_start=149
+  _globals['_CONFIGURERESPONSE']._serialized_end=365
+  _globals['_STOPVEHICLESREQUEST']._serialized_start=367
+  _globals['_STOPVEHICLESREQUEST']._serialized_end=410
+  _globals['_STOPVEHICLESRESPONSE']._serialized_start=412
+  _globals['_STOPVEHICLESRESPONSE']._serialized_end=517
+  _globals['_RESTARTVEHICLESREQUEST']._serialized_start=519
+  _globals['_RESTARTVEHICLESREQUEST']._serialized_end=565
+  _globals['_RESTARTVEHICLESRESPONSE']._serialized_start=567
+  _globals['_RESTARTVEHICLESRESPONSE']._serialized_end=675
+  _globals['_FORGETVEHICLESREQUEST']._serialized_start=677
+  _globals['_FORGETVEHICLESREQUEST']._serialized_end=722
+  _globals['_FORGETVEHICLESRESPONSE']._serialized_start=724
+  _globals['_FORGETVEHICLESRESPONSE']._serialized_end=831
+  _globals['_VEHICLERESULT']._serialized_start=834
+  _globals['_VEHICLERESULT']._serialized_end=986
+  _globals['_INSTALLPLUGINREQUEST']._serialized_start=989
+  _globals['_INSTALLPLUGINREQUEST']._serialized_end=1179
+  _globals['_INSTALLPLUGINRESPONSE']._serialized_start=1181
+  _globals['_INSTALLPLUGINRESPONSE']._serialized_end=1242
+  _globals['_GETINSTALLEDPLUGINSREQUEST']._serialized_start=1244
+  _globals['_GETINSTALLEDPLUGINSREQUEST']._serialized_end=1272
+  _globals['_GETINSTALLEDPLUGINSRESPONSE']._serialized_start=1274
+  _globals['_GETINSTALLEDPLUGINSRESPONSE']._serialized_end=1386
+  _globals['_INSTALLEDPLUGIN']._serialized_start=1389
+  _globals['_INSTALLEDPLUGIN']._serialized_end=1528
+  _globals['_RESETCONFIGREQUEST']._serialized_start=1530
+  _globals['_RESETCONFIGREQUEST']._serialized_end=1550
+  _globals['_RESETCONFIGRESPONSE']._serialized_start=1552
+  _globals['_RESETCONFIGRESPONSE']._serialized_end=1573
+  _globals['_RESTARTDAEMONREQUEST']._serialized_start=1575
+  _globals['_RESTARTDAEMONREQUEST']._serialized_end=1597
+  _globals['_RESTARTDAEMONRESPONSE']._serialized_start=1599
+  _globals['_RESTARTDAEMONRESPONSE']._serialized_end=1622
+  _globals['_GETSTATUSREQUEST']._serialized_start=1624
+  _globals['_GETSTATUSREQUEST']._serialized_end=1642
+  _globals['_GETSTATUSRESPONSE']._serialized_start=1645
+  _globals['_GETSTATUSRESPONSE']._serialized_end=1857
+  _globals['_DAEMONCONFIG']._serialized_start=1860
+  _globals['_DAEMONCONFIG']._serialized_end=2231
+  _globals['_VEHICLESTATUS']._serialized_start=2234
+  _globals['_VEHICLESTATUS']._serialized_end=2374
+  _globals['_DAEMONSERVICE']._serialized_start=2513
+  _globals['_DAEMONSERVICE']._serialized_end=3827
 # @@protoc_insertion_point(module_scope)

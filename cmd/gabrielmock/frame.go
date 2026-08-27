@@ -158,7 +158,7 @@ func syntheticJPEG(vehicle string, seq uint64, width, height, quality int) []byt
 	lineHeight := basicfont.Face7x13.Metrics().Height.Ceil() * textScale
 	firstBaseline := height/2 - lineHeight
 	drawScaledText(img, 20, firstBaseline, vehicle, white)
-	drawScaledText(img, 20, firstBaseline+lineHeight+8, fmt.Sprintf("frame %d  %s", seq, time.Now().Format("15:04:05")), white)
+	drawScaledText(img, 20, firstBaseline+lineHeight+8, fmt.Sprintf("frame %d  %s", seq, time.Now().Format("15:04:05.000")), white)
 
 	// Bounces left-to-right so motion is visible even between same-second frames.
 	span := width - 40

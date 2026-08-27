@@ -25,13 +25,18 @@ func (d *daemon) InstallPlugin(ctx context.Context, req *eagledpb.InstallPluginR
 		return nil, status.Errorf(codes.Internal, "determining install directory: %v", err)
 	}
 
+	key := installedPluginKey{Name: req.GetName(), Category: category}
+	installMu := d.lockInstall(key)
+	installMu.Lock()
+	defer installMu.Unlock()
+
 	if err := installPlugin(ctx, installDir, req.GetName(), req.GetRepo(), req.GetRef(), req.GetSubpath()); err != nil {
 		log.Warn().Str("plugin", req.GetName()).Err(err).Msg("plugin install failed")
 		return eagledpb.InstallPluginResponse_builder{Ok: false, Error: err.Error()}.Build(), nil
 	}
 
 	d.mu.Lock()
-	d.installed[installedPluginKey{Name: req.GetName(), Category: category}] = req.GetRef()
+	d.installed[key] = req.GetRef()
 	d.mu.Unlock()
 	d.persistInstalled()
 

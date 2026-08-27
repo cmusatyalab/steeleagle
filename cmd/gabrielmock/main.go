@@ -74,6 +74,23 @@ func main() {
 	}
 	zerolog.SetGlobalLevel(level)
 
+	cfg := runConfig{
+		server:           *server,
+		vehicleID:        *vehicleID,
+		model:            *model,
+		telemetryEngines: *telemetryEngines,
+		frameEngines:     *frameEngines,
+		telemetryHz:      *telemetryHz,
+		frameHz:          *frameHz,
+		frameWidth:       *frameWidth,
+		frameHeight:      *frameHeight,
+		frameQuality:     *frameQuality,
+		duration:         *duration,
+		keepaliveTime:    *keepaliveTime,
+		keepaliveTimeout: *keepaliveTimeout,
+		logLevel:         *logLevel,
+	}
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	if *duration > 0 {
@@ -87,7 +104,7 @@ func main() {
 	received := &receivedStats{}
 	startedAt := time.Now()
 
-	go forceExitOnStuckShutdown(ctx, startedAt, received, telStats, frameStats)
+	go forceExitOnStuckShutdown(ctx, cfg, startedAt, received, telStats, frameStats)
 
 	telProducer := newTelemetryProducer(splitEngines(*telemetryEngines), *telemetryHz, telStats)
 	frameProducer := newFrameProducer(splitEngines(*frameEngines), *frameHz, *vehicleID, *frameWidth, *frameHeight, *frameQuality, frameStats)
@@ -134,7 +151,7 @@ func main() {
 		log.Error().Err(err).Msg("gabriel client error")
 	}
 	log.Info().Msg("gabriel mock client stopped")
-	printStats(startedAt, received, telStats, frameStats)
+	printStats(cfg, startedAt, received, telStats, frameStats)
 }
 
 // hzToInterval converts a send rate in Hz to a time.Duration tick interval.
@@ -157,6 +174,7 @@ func hzToInterval(hz float64) time.Duration {
 // is never reached on this path.
 func forceExitOnStuckShutdown(
 	ctx context.Context,
+	cfg runConfig,
 	startedAt time.Time,
 	received *receivedStats,
 	producers ...*producerStats) {
@@ -164,6 +182,6 @@ func forceExitOnStuckShutdown(
 	log.Warn().Dur("grace_period", shutdownGracePeriod).Msg("shutting down; forcing exit if this hangs")
 	time.Sleep(shutdownGracePeriod)
 	log.Warn().Msg("graceful shutdown did not complete in time; forcing exit")
-	printStats(startedAt, received, producers...)
+	printStats(cfg, startedAt, received, producers...)
 	os.Exit(1)
 }
