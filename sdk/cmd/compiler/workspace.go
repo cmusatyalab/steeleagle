@@ -81,7 +81,37 @@ func newWorkspace(imports []*parser.ImportSpec) (dir string, cleanup func(), err
 		}
 	}
 
+	if err := localizeSteeleagleModule(dir); err != nil {
+		cleanup()
+		return "", nil, err
+	}
+
 	return dir, cleanup, nil
+}
+
+// localizeSteeleagleModule copies the fetched steeleagleModule out of the
+// (read-only, content-addressed) module cache and into workspace, then adds
+// a "replace" directive pointing the module at the copy. CreateOverlay keys
+// its replacements by each package's on-disk GoFiles path, and the "go"
+// command refuses -overlay replacements for any file beneath GOMODCACHE
+// (https://pkg.go.dev/cmd/go#hdr-Compile_packages_and_dependencies), so the
+// module being scrubbed/const-generated must resolve to a path outside it.
+func localizeSteeleagleModule(workspace string) error {
+	out, err := runIn(workspace, "go", "list", "-m", "-f", "{{.Dir}}", steeleagleModule)
+	if err != nil {
+		return fmt.Errorf("locating %s module: %w\n%s", steeleagleModule, err, out)
+	}
+	modDir := strings.TrimSpace(out)
+
+	localDir := filepath.Join(workspace, ".steeleagle-src")
+	if err := os.CopyFS(localDir, os.DirFS(modDir)); err != nil {
+		return fmt.Errorf("copying %s module: %w", steeleagleModule, err)
+	}
+
+	if out, err := runIn(workspace, "go", "mod", "edit", "-replace="+steeleagleModule+"="+localDir); err != nil {
+		return fmt.Errorf("go mod edit -replace: %w\n%s", err, out)
+	}
+	return nil
 }
 
 // runIn runs name with args in dir, returning its combined output for

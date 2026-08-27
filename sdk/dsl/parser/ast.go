@@ -143,16 +143,11 @@ func (v *Value) StringValue() (s string, ok bool) {
 var dslLexer = lexer.MustSimple([]lexer.SimpleRule{
 	{Name: "Comment", Pattern: `#[^\n]*`},
 	{Name: "Arrow", Pattern: `->`},
-	// Float requires a fractional part so it doesn't shadow Int: the
-	// lexer tries rules in order and takes the first one that matches at
-	// all (see participle's StatefulLexer.Next), so if Float matched bare
-	// digits too, an integer literal would always lex as Float and Int
-	// would never be reachable.
 	{Name: "Float", Pattern: `-?\d+\.\d+`},
 	{Name: "Int", Pattern: `-?\d+`},
 	{Name: "String", Pattern: `'[^']*'|"[^"]*"`},
 	{Name: "QualIdent", Pattern: `[a-zA-Z][a-zA-Z_\d]*(?:\.[a-zA-Z][a-zA-Z_\d]*)+`},
-	{Name: "Version", Pattern: `v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?`},
+	{Name: "Version", Pattern: `v\d+(?:\.[0-9A-Za-z][0-9A-Za-z.+-]*)?`},
 	{Name: "Ident", Pattern: `[a-zA-Z][a-zA-Z_\d]*`},
 	{Name: "Punct", Pattern: `[:(),=\[\]]`},
 	{Name: "Whitespace", Pattern: `[ \t\r\n]+`},
