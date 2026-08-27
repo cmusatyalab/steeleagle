@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"reflect"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -69,12 +70,13 @@ type installedPluginKey struct {
 // is reserved (before spawnVehicle is even called), so a stop/restart/reset
 // request can always interrupt it.
 type runningVehicle struct {
-	cancel   context.CancelFunc
-	ready    chan struct{}   // closed once the spawn attempt finishes, successfully or not
-	err      error           // set if the spawn attempt failed; only meaningful once ready is closed
-	done     <-chan struct{} // closed once a successfully-spawned vehicle exits; nil if the spawn failed
-	port     int             // port its listener is bound on
-	promPort int             // port its Gabriel client serves Prometheus metrics on; 0 if disabled
+	cancel      context.CancelFunc
+	ready       chan struct{}   // closed once the spawn attempt finishes, successfully or not
+	err         error           // set if the spawn attempt failed; only meaningful once ready is closed
+	done        <-chan struct{} // closed once a successfully-spawned vehicle exits; nil if the spawn failed
+	port        int             // port its listener is bound on
+	promPort    int             // port its Gabriel client serves Prometheus metrics on; 0 if disabled
+	configStale bool            // true once a Configure call has replaced d.vehicleCfgs[name] out from under this still-running process; guarded by d.mu, like d.running itself
 }
 
 // running reports whether rv's spawn attempt finished successfully and the
@@ -124,6 +126,31 @@ type daemon struct {
 	configMu      sync.Mutex
 	aviaryMu      sync.Mutex
 	aviaryStarted bool // whether the shared aviary simulator has been spawned; guarded by aviaryMu
+
+	// installLocks serializes InstallPlugin calls per {name, category}, so
+	// two requests for the same plugin can't interleave swapIn's
+	// remove/rename sequence on the same target directory and leave
+	// d.installed pointing at a different ref than what's actually on disk.
+	// Installs for different keys still run concurrently. Guarded by mu, but
+	// each *sync.Mutex is held for the duration of one install, well beyond
+	// any mu critical section.
+	installLocks map[installedPluginKey]*sync.Mutex
+}
+
+// lockInstall returns the mutex serializing InstallPlugin calls for key,
+// creating one on first use.
+func (d *daemon) lockInstall(key installedPluginKey) *sync.Mutex {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.installLocks == nil {
+		d.installLocks = make(map[installedPluginKey]*sync.Mutex)
+	}
+	mu, ok := d.installLocks[key]
+	if !ok {
+		mu = &sync.Mutex{}
+		d.installLocks[key] = mu
+	}
+	return mu
 }
 
 // newDaemon constructs a new eagled daemon.
@@ -137,10 +164,10 @@ func newDaemon(ctx context.Context, shutdown context.CancelFunc) *daemon {
 	}
 }
 
-// logConfig logs the daemon-wide config (minus Vehicles, logged individually)
-// and each vehicle's config, along with the resolved gabriel and steeleagle
-// protocol module versions in use. msg distinguishes the caller (a Configure
-// RPC vs. reloading persisted config on daemon restart) in the log line.
+// logConfig logs the daemon-wide config and each vehicle's config, along with
+// the resolved gabriel and steeleagle protocol module versions in use. msg
+// distinguishes the caller (a Configure RPC vs. reloading persisted config on
+// daemon restart) in the log line.
 func logConfig(cfg Config, msg string) {
 	log.Info().
 		Int("port-base", cfg.PortBase).
@@ -166,11 +193,12 @@ func (d *daemon) Configure(ctx context.Context, req *eagledpb.ConfigureRequest) 
 		return nil, status.Errorf(codes.InvalidArgument, "parsing config: %v", err)
 	}
 	logConfig(cfg, "Configure received")
-	if err := d.ensureNetwork(cfg); err != nil {
+	applied, diverged, err := d.ensureConfigured(cfg)
+	if err != nil {
 		return nil, err
 	}
-	if err := d.ensureConfigured(cfg); err != nil {
-		return nil, err
+	if diverged {
+		log.Warn().Msg("daemon already configured; some requested daemon-wide settings differ from what's active and were not applied")
 	}
 	if err := d.ensureAviary(cfg.Vehicles); err != nil {
 		return nil, err
@@ -183,16 +211,38 @@ func (d *daemon) Configure(ctx context.Context, req *eagledpb.ConfigureRequest) 
 			log.Warn().Str("vehicle", r.GetName()).Str("error", r.GetError()).Msg("vehicle failed to start")
 		}
 	}
-	return eagledpb.ConfigureResponse_builder{Vehicles: results}.Build(), nil
+	return eagledpb.ConfigureResponse_builder{
+		Vehicles:               results,
+		DaemonSettingsApplied:  applied,
+		DaemonSettingsDiverged: diverged,
+	}.Build(), nil
 }
 
 // StopVehicles stops each named vehicle without forgetting it. These vehicles
 // stay known to the daemon, so RestartVehicles can bring it back. They come
 // back on a subsequent eagled restart same as any other configured vehicle.
+// dedupeNames returns names with each value kept only once, in
+// first-occurrence order -- so a caller listing the same vehicle twice gets
+// one result for it instead of a second, spurious failure once the first
+// occurrence has already changed its state.
+func dedupeNames(names []string) []string {
+	seen := make(map[string]bool, len(names))
+	out := make([]string, 0, len(names))
+	for _, name := range names {
+		if seen[name] {
+			continue
+		}
+		seen[name] = true
+		out = append(out, name)
+	}
+	return out
+}
+
 func (d *daemon) StopVehicles(ctx context.Context, req *eagledpb.StopVehiclesRequest) (*eagledpb.StopVehiclesResponse, error) {
 	log.Info().Strs("vehicles", req.GetNames()).Msg("StopVehicles received")
-	results := make([]*eagledpb.VehicleResult, 0, len(req.GetNames()))
-	for _, name := range req.GetNames() {
+	names := dedupeNames(req.GetNames())
+	results := make([]*eagledpb.VehicleResult, 0, len(names))
+	for _, name := range names {
 		if err := d.stopOne(name); err != nil {
 			log.Warn().Str("vehicle", name).Err(err).Msg("failed to stop vehicle")
 			results = append(results, eagledpb.VehicleResult_builder{Name: name, Ok: false, Error: err.Error()}.Build())
@@ -207,8 +257,9 @@ func (d *daemon) StopVehicles(ctx context.Context, req *eagledpb.StopVehiclesReq
 // configuration it was last started or configured with.
 func (d *daemon) RestartVehicles(ctx context.Context, req *eagledpb.RestartVehiclesRequest) (*eagledpb.RestartVehiclesResponse, error) {
 	log.Info().Strs("vehicles", req.GetNames()).Msg("RestartVehicles received")
-	results := make([]*eagledpb.VehicleResult, 0, len(req.GetNames()))
-	for _, name := range req.GetNames() {
+	names := dedupeNames(req.GetNames())
+	results := make([]*eagledpb.VehicleResult, 0, len(names))
+	for _, name := range names {
 		if err := d.restartOne(name); err != nil {
 			log.Warn().Str("vehicle", name).Err(err).Msg("failed to restart vehicle")
 			results = append(results, eagledpb.VehicleResult_builder{Name: name, Ok: false, Error: err.Error()}.Build())
@@ -224,8 +275,9 @@ func (d *daemon) RestartVehicles(ctx context.Context, req *eagledpb.RestartVehic
 // restart unless reconfigured.
 func (d *daemon) ForgetVehicles(ctx context.Context, req *eagledpb.ForgetVehiclesRequest) (*eagledpb.ForgetVehiclesResponse, error) {
 	log.Info().Strs("vehicles", req.GetNames()).Msg("ForgetVehicles received")
-	results := make([]*eagledpb.VehicleResult, 0, len(req.GetNames()))
-	for _, name := range req.GetNames() {
+	names := dedupeNames(req.GetNames())
+	results := make([]*eagledpb.VehicleResult, 0, len(names))
+	for _, name := range names {
 		d.mu.Lock()
 		_, known := d.vehicleCfgs[name]
 		_, running := d.running[name]
@@ -281,6 +333,31 @@ func (d *daemon) startVehicles(vehicleCfgs []VehicleConfig) []*eagledpb.VehicleR
 
 	results := make([]*eagledpb.VehicleResult, 0, len(vehicleCfgs))
 	for _, vehicleCfg := range vehicleCfgs {
+		d.mu.Lock()
+		_, existed := d.vehicleCfgs[vehicleCfg.Name]
+		rv, present := d.running[vehicleCfg.Name]
+		// rv.running(), not just present: a reservation that hasn't finished
+		// spawning yet (e.g. a duplicate name earlier in this same
+		// [[vehicles]] list, or a concurrent Configure call racing on this
+		// name) isn't safe to "leave alone" -- its own spawn is still going
+		// to write d.vehicleCfgs[name] once it finishes, clobbering whatever
+		// we save here. Falls through to reserve() below instead, which
+		// rejects it as already-in-use rather than lying about the result.
+		running := present && rv.running()
+		if running {
+			// Leave the running process alone; its new config takes effect
+			// next time it's (re)started.
+			d.vehicleCfgs[vehicleCfg.Name] = vehicleCfg
+			rv.configStale = true
+		}
+		d.mu.Unlock()
+		if running {
+			results = append(results, eagledpb.VehicleResult_builder{
+				Name: vehicleCfg.Name, Ok: true, Reconfigured: true, RestartRequired: true,
+			}.Build())
+			continue
+		}
+
 		rv, vCtx, err := d.reserve(vehicleCfg.Name)
 		if err != nil {
 			results = append(results, eagledpb.VehicleResult_builder{
@@ -318,7 +395,7 @@ func (d *daemon) startVehicles(vehicleCfgs []VehicleConfig) []*eagledpb.VehicleR
 							Msg("vehicle failed to start after drone became reachable")
 					}
 				}()
-				results = append(results, eagledpb.VehicleResult_builder{Name: vehicleCfg.Name, Ok: true}.Build())
+				results = append(results, eagledpb.VehicleResult_builder{Name: vehicleCfg.Name, Ok: true, Reconfigured: existed}.Build())
 				continue
 			}
 		}
@@ -329,7 +406,7 @@ func (d *daemon) startVehicles(vehicleCfgs []VehicleConfig) []*eagledpb.VehicleR
 			}.Build())
 			continue
 		}
-		results = append(results, eagledpb.VehicleResult_builder{Name: vehicleCfg.Name, Ok: true}.Build())
+		results = append(results, eagledpb.VehicleResult_builder{Name: vehicleCfg.Name, Ok: true, Reconfigured: existed}.Build())
 	}
 	return results
 }
@@ -486,8 +563,11 @@ func (d *daemon) restartOne(name string) error {
 func (d *daemon) reserve(name string) (rv *runningVehicle, vCtx context.Context, err error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	if _, exists := d.running[name]; exists {
-		return nil, nil, fmt.Errorf("vehicle %q already running", name)
+	if rv, exists := d.running[name]; exists {
+		if rv.running() {
+			return nil, nil, fmt.Errorf("vehicle %q already running", name)
+		}
+		return nil, nil, fmt.Errorf("vehicle %q is still starting from an earlier request", name)
 	}
 	port := d.nextPort
 	d.nextPort++
@@ -519,12 +599,20 @@ func (d *daemon) networked() bool {
 	return d.tsServer != nil
 }
 
-// ensureNetwork starts eagled's tsnet node and serves DaemonService over it.
-// This method is also invoked when the hostname is changed.
+// ensureNetwork starts eagled's tsnet node and serves DaemonService over it,
+// if it isn't already up. Used at startup only (from the persisted network
+// config, and as a fallback from loadPersisted): ensureConfigured calls
+// ensureNetworkLocked directly, since it already holds configMu by the time it
+// needs to join.
 func (d *daemon) ensureNetwork(cfg Config) error {
 	d.configMu.Lock()
 	defer d.configMu.Unlock()
+	return d.ensureNetworkLocked(cfg)
+}
 
+// ensureNetworkLocked is ensureNetwork's body, for callers that already hold
+// configMu.
+func (d *daemon) ensureNetworkLocked(cfg Config) error {
 	authKey := os.Getenv(TSAuthKeyEnv)
 	if authKey == "" {
 		// tailscale not configured
@@ -590,32 +678,45 @@ func (d *daemon) ensureNetwork(cfg Config) error {
 	return nil
 }
 
-// ensureConfigured establishes daemon-wide settings from cfg on the first call
-// only. Later calls are no-ops.
-func (d *daemon) ensureConfigured(cfg Config) error {
+// ensureConfigured establishes daemon-wide settings, including eagled's own
+// tailscale identity, from cfg on the first Configure call a fresh daemon ever
+// receives, and returns applied=true. Later calls are no-ops: applied is
+// false, and diverged reports whether cfg's daemon-wide settings (everything
+// but Vehicles) differ from what's already active, so an ignored change
+// doesn't look identical to one that succeeded.
+func (d *daemon) ensureConfigured(cfg Config) (applied, diverged bool, err error) {
 	d.configMu.Lock()
 	defer d.configMu.Unlock()
 
 	d.mu.Lock()
 	configured := d.configured
+	active := d.baseCfg
 	d.mu.Unlock()
 	if configured {
-		return nil
+		requested := cfg
+		requested.Vehicles = nil
+		return false, !reflect.DeepEqual(active, requested), nil
 	}
 
 	if cfg.Backend.SwarmController.Address == "" {
-		return status.Error(codes.InvalidArgument, "backend.swarm-controller.address must be set")
+		return false, false, status.Error(codes.InvalidArgument, "backend.swarm-controller.address must be set")
 	}
 	daemonName, err := resolveHostname(cfg.Hostname)
 	if err != nil {
-		return status.Errorf(codes.Internal, "determining daemon name: %v", err)
+		return false, false, status.Errorf(codes.Internal, "determining daemon name: %v", err)
 	}
 
 	pluginDir := cfg.PluginDir
 	if pluginDir == "" {
 		var err error
 		if pluginDir, err = util.GetPluginDir(); err != nil {
-			return status.Errorf(codes.Internal, "determining plugin directory: %v", err)
+			return false, false, status.Errorf(codes.Internal, "determining plugin directory: %v", err)
+		}
+	}
+
+	if !d.networked() {
+		if err := d.ensureNetworkLocked(cfg); err != nil {
+			return false, false, err
 		}
 	}
 
@@ -647,7 +748,7 @@ func (d *daemon) ensureConfigured(cfg Config) error {
 		Bool("vehicle-vpn", vehicleAuthKey != "").
 		Str("swarm-controller", cfg.Backend.SwarmController.Address).
 		Msg("daemon-wide config established")
-	return nil
+	return true, false, nil
 }
 
 // ensureAviary starts the shared aviary simulator the first time a Configure

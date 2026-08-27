@@ -82,6 +82,66 @@ name = "nonexistent-mission"
 	t.Logf("got expected error: %s", result.GetError())
 }
 
+// TestConfigureRejectsEmptyVehicleName exercises decodeConfig's rejection of
+// a nameless [[vehicles]] entry at the RPC level: this is a malformed
+// request, not a single vehicle failing to start, so Configure itself should
+// error rather than reporting a per-vehicle failure.
+func TestConfigureRejectsEmptyVehicleName(t *testing.T) {
+	inst := startEagled(t, "")
+	cfg := fmt.Sprintf(`
+port-base = %d
+hostname = "test-daemon"
+
+[backend.swarm-controller]
+address = "127.0.0.1:1"
+
+[[vehicles]]
+name = ""
+`, freePort(t))
+
+	_, err := inst.Client.Configure(t.Context(), eagledpb.ConfigureRequest_builder{ConfigToml: cfg}.Build())
+	if err == nil {
+		t.Fatal("expected Configure to reject a config with an empty vehicle name")
+	}
+	t.Logf("got expected error: %v", err)
+}
+
+// TestConfigureRejectsDuplicateVehicleName mirrors
+// TestConfigureRejectsEmptyVehicleName for two [[vehicles]] entries sharing a
+// name: without this check, the two entries would race on the same map key
+// in startVehicles, and the second could be misreported as "already
+// running" for a vehicle that never actually started.
+func TestConfigureRejectsDuplicateVehicleName(t *testing.T) {
+	inst := startEagled(t, "")
+	const name, driver = "harpy", "mockdriver"
+	writeMockDriver(t, inst.DataDir, driver)
+
+	cfg := fmt.Sprintf(`
+port-base = %d
+plugin-dir = %q
+hostname = "test-daemon"
+
+[backend.swarm-controller]
+address = "127.0.0.1:1"
+
+[[vehicles]]
+name = %q
+[vehicles.driver]
+name = %q
+
+[[vehicles]]
+name = %q
+[vehicles.driver]
+name = %q
+`, freePort(t), inst.PluginDir, name, driver, name, driver)
+
+	_, err := inst.Client.Configure(t.Context(), eagledpb.ConfigureRequest_builder{ConfigToml: cfg}.Build())
+	if err == nil {
+		t.Fatal("expected Configure to reject a config listing the same vehicle name twice")
+	}
+	t.Logf("got expected error: %v", err)
+}
+
 // simulatedVehicleConfig is baseConfig's Simulate counterpart: no plugin-dir
 // override (so both eagled and the aviary subprocess it spawns resolve the
 // same XDG_RUNTIME_DIR-based default, matching steeleagle-aviary's actual

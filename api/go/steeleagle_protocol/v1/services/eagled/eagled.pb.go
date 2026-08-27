@@ -129,10 +129,12 @@ func (b0 ConfigureRequest_builder) Build() *ConfigureRequest {
 }
 
 type ConfigureResponse struct {
-	state               protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Vehicles *[]*VehicleResult      `protobuf:"bytes,1,rep,name=vehicles,proto3"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state                             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Vehicles               *[]*VehicleResult      `protobuf:"bytes,1,rep,name=vehicles,proto3"`
+	xxx_hidden_DaemonSettingsApplied  bool                   `protobuf:"varint,2,opt,name=daemon_settings_applied,json=daemonSettingsApplied,proto3"`
+	xxx_hidden_DaemonSettingsDiverged bool                   `protobuf:"varint,3,opt,name=daemon_settings_diverged,json=daemonSettingsDiverged,proto3"`
+	unknownFields                     protoimpl.UnknownFields
+	sizeCache                         protoimpl.SizeCache
 }
 
 func (x *ConfigureResponse) Reset() {
@@ -169,14 +171,45 @@ func (x *ConfigureResponse) GetVehicles() []*VehicleResult {
 	return nil
 }
 
+func (x *ConfigureResponse) GetDaemonSettingsApplied() bool {
+	if x != nil {
+		return x.xxx_hidden_DaemonSettingsApplied
+	}
+	return false
+}
+
+func (x *ConfigureResponse) GetDaemonSettingsDiverged() bool {
+	if x != nil {
+		return x.xxx_hidden_DaemonSettingsDiverged
+	}
+	return false
+}
+
 func (x *ConfigureResponse) SetVehicles(v []*VehicleResult) {
 	x.xxx_hidden_Vehicles = &v
+}
+
+func (x *ConfigureResponse) SetDaemonSettingsApplied(v bool) {
+	x.xxx_hidden_DaemonSettingsApplied = v
+}
+
+func (x *ConfigureResponse) SetDaemonSettingsDiverged(v bool) {
+	x.xxx_hidden_DaemonSettingsDiverged = v
 }
 
 type ConfigureResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Vehicles []*VehicleResult
+	// True only for the first Configure call a fresh daemon ever receives, when
+	// daemon-wide settings were actually established from this call.
+	DaemonSettingsApplied bool
+	// True when this was not the first Configure call and this call's
+	// daemon-wide settings differ from what's already active -- i.e. some
+	// requested settings were silently not applied. Always false when
+	// daemon_settings_applied is true, and also false on a later call whose
+	// daemon-wide settings already matched what's active (nothing to report).
+	DaemonSettingsDiverged bool
 }
 
 func (b0 ConfigureResponse_builder) Build() *ConfigureResponse {
@@ -184,6 +217,8 @@ func (b0 ConfigureResponse_builder) Build() *ConfigureResponse {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Vehicles = &b.Vehicles
+	x.xxx_hidden_DaemonSettingsApplied = b.DaemonSettingsApplied
+	x.xxx_hidden_DaemonSettingsDiverged = b.DaemonSettingsDiverged
 	return m0
 }
 
@@ -536,12 +571,14 @@ func (b0 ForgetVehiclesResponse_builder) Build() *ForgetVehiclesResponse {
 }
 
 type VehicleResult struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Name  string                 `protobuf:"bytes,1,opt,name=name,proto3"`
-	xxx_hidden_Ok    bool                   `protobuf:"varint,2,opt,name=ok,proto3"`
-	xxx_hidden_Error string                 `protobuf:"bytes,3,opt,name=error,proto3"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	state                      protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Name            string                 `protobuf:"bytes,1,opt,name=name,proto3"`
+	xxx_hidden_Ok              bool                   `protobuf:"varint,2,opt,name=ok,proto3"`
+	xxx_hidden_Error           string                 `protobuf:"bytes,3,opt,name=error,proto3"`
+	xxx_hidden_Reconfigured    bool                   `protobuf:"varint,4,opt,name=reconfigured,proto3"`
+	xxx_hidden_RestartRequired bool                   `protobuf:"varint,5,opt,name=restart_required,json=restartRequired,proto3"`
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
 }
 
 func (x *VehicleResult) Reset() {
@@ -590,6 +627,20 @@ func (x *VehicleResult) GetError() string {
 	return ""
 }
 
+func (x *VehicleResult) GetReconfigured() bool {
+	if x != nil {
+		return x.xxx_hidden_Reconfigured
+	}
+	return false
+}
+
+func (x *VehicleResult) GetRestartRequired() bool {
+	if x != nil {
+		return x.xxx_hidden_RestartRequired
+	}
+	return false
+}
+
 func (x *VehicleResult) SetName(v string) {
 	x.xxx_hidden_Name = v
 }
@@ -602,12 +653,31 @@ func (x *VehicleResult) SetError(v string) {
 	x.xxx_hidden_Error = v
 }
 
+func (x *VehicleResult) SetReconfigured(v bool) {
+	x.xxx_hidden_Reconfigured = v
+}
+
+func (x *VehicleResult) SetRestartRequired(v bool) {
+	x.xxx_hidden_RestartRequired = v
+}
+
 type VehicleResult_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Name  string
 	Ok    bool
 	Error string
+	// True iff ok and this Configure call replaced an already-known vehicle's
+	// config -- as opposed to configuring name for the first time. Only
+	// meaningful in a ConfigureResponse; always false from StopVehicles/
+	// RestartVehicles/ForgetVehicles.
+	Reconfigured bool
+	// True iff ok, reconfigured, and name was already running: its new config
+	// is saved and becomes what a future RestartVehicles/eagled restart uses,
+	// but the running process itself was left alone, so it's still running
+	// under its *previous* config until explicitly restarted. Only meaningful
+	// in a ConfigureResponse.
+	RestartRequired bool
 }
 
 func (b0 VehicleResult_builder) Build() *VehicleResult {
@@ -617,6 +687,8 @@ func (b0 VehicleResult_builder) Build() *VehicleResult {
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Ok = b.Ok
 	x.xxx_hidden_Error = b.Error
+	x.xxx_hidden_Reconfigured = b.Reconfigured
+	x.xxx_hidden_RestartRequired = b.RestartRequired
 	return m0
 }
 
@@ -1477,13 +1549,14 @@ func (b0 DaemonConfig_builder) Build() *DaemonConfig {
 }
 
 type VehicleStatus struct {
-	state              protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Name    string                 `protobuf:"bytes,1,opt,name=name,proto3"`
-	xxx_hidden_Driver  string                 `protobuf:"bytes,2,opt,name=driver,proto3"`
-	xxx_hidden_Running bool                   `protobuf:"varint,3,opt,name=running,proto3"`
-	xxx_hidden_Port    int32                  `protobuf:"varint,4,opt,name=port,proto3"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Name        string                 `protobuf:"bytes,1,opt,name=name,proto3"`
+	xxx_hidden_Driver      string                 `protobuf:"bytes,2,opt,name=driver,proto3"`
+	xxx_hidden_Running     bool                   `protobuf:"varint,3,opt,name=running,proto3"`
+	xxx_hidden_Port        int32                  `protobuf:"varint,4,opt,name=port,proto3"`
+	xxx_hidden_ConfigStale bool                   `protobuf:"varint,5,opt,name=config_stale,json=configStale,proto3"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *VehicleStatus) Reset() {
@@ -1539,6 +1612,13 @@ func (x *VehicleStatus) GetPort() int32 {
 	return 0
 }
 
+func (x *VehicleStatus) GetConfigStale() bool {
+	if x != nil {
+		return x.xxx_hidden_ConfigStale
+	}
+	return false
+}
+
 func (x *VehicleStatus) SetName(v string) {
 	x.xxx_hidden_Name = v
 }
@@ -1555,6 +1635,10 @@ func (x *VehicleStatus) SetPort(v int32) {
 	x.xxx_hidden_Port = v
 }
 
+func (x *VehicleStatus) SetConfigStale(v bool) {
+	x.xxx_hidden_ConfigStale = v
+}
+
 type VehicleStatus_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -1562,6 +1646,11 @@ type VehicleStatus_builder struct {
 	Driver  string
 	Running bool
 	Port    int32
+	// True iff running and a Configure call has replaced this vehicle's config
+	// since this running process was spawned -- it's still running under its
+	// previous config, and picks up the new one on its next restart. Always
+	// false when not running.
+	ConfigStale bool
 }
 
 func (b0 VehicleStatus_builder) Build() *VehicleStatus {
@@ -1572,6 +1661,7 @@ func (b0 VehicleStatus_builder) Build() *VehicleStatus {
 	x.xxx_hidden_Driver = b.Driver
 	x.xxx_hidden_Running = b.Running
 	x.xxx_hidden_Port = b.Port
+	x.xxx_hidden_ConfigStale = b.ConfigStale
 	return m0
 }
 
@@ -1582,9 +1672,11 @@ const file_steeleagle_protocol_v1_services_eagled_eagled_proto_rawDesc = "" +
 	"3steeleagle_protocol/v1/services/eagled/eagled.proto\x12&steeleagle_protocol.v1.services.eagled\"3\n" +
 	"\x10ConfigureRequest\x12\x1f\n" +
 	"\vconfig_toml\x18\x01 \x01(\tR\n" +
-	"configToml\"f\n" +
+	"configToml\"\xd8\x01\n" +
 	"\x11ConfigureResponse\x12Q\n" +
-	"\bvehicles\x18\x01 \x03(\v25.steeleagle_protocol.v1.services.eagled.VehicleResultR\bvehicles\"+\n" +
+	"\bvehicles\x18\x01 \x03(\v25.steeleagle_protocol.v1.services.eagled.VehicleResultR\bvehicles\x126\n" +
+	"\x17daemon_settings_applied\x18\x02 \x01(\bR\x15daemonSettingsApplied\x128\n" +
+	"\x18daemon_settings_diverged\x18\x03 \x01(\bR\x16daemonSettingsDiverged\"+\n" +
 	"\x13StopVehiclesRequest\x12\x14\n" +
 	"\x05names\x18\x01 \x03(\tR\x05names\"i\n" +
 	"\x14StopVehiclesResponse\x12Q\n" +
@@ -1596,11 +1688,13 @@ const file_steeleagle_protocol_v1_services_eagled_eagled_proto_rawDesc = "" +
 	"\x15ForgetVehiclesRequest\x12\x14\n" +
 	"\x05names\x18\x01 \x03(\tR\x05names\"k\n" +
 	"\x16ForgetVehiclesResponse\x12Q\n" +
-	"\bvehicles\x18\x01 \x03(\v25.steeleagle_protocol.v1.services.eagled.VehicleResultR\bvehicles\"I\n" +
+	"\bvehicles\x18\x01 \x03(\v25.steeleagle_protocol.v1.services.eagled.VehicleResultR\bvehicles\"\x98\x01\n" +
 	"\rVehicleResult\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x0e\n" +
 	"\x02ok\x18\x02 \x01(\bR\x02ok\x12\x14\n" +
-	"\x05error\x18\x03 \x01(\tR\x05error\"\xbe\x01\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\x12\"\n" +
+	"\freconfigured\x18\x04 \x01(\bR\freconfigured\x12)\n" +
+	"\x10restart_required\x18\x05 \x01(\bR\x0frestartRequired\"\xbe\x01\n" +
 	"\x14InstallPluginRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04repo\x18\x02 \x01(\tR\x04repo\x12\x10\n" +
@@ -1640,12 +1734,13 @@ const file_steeleagle_protocol_v1_services_eagled_eagled_proto_rawDesc = "" +
 	"\x18swarm_controller_address\x18\a \x01(\tR\x16swarmControllerAddress\x12\x1f\n" +
 	"\vdaemon_name\x18\b \x01(\tR\n" +
 	"daemonName\x126\n" +
-	"\x17gabriel_server_endpoint\x18\t \x01(\tR\x15gabrielServerEndpoint\"i\n" +
+	"\x17gabriel_server_endpoint\x18\t \x01(\tR\x15gabrielServerEndpoint\"\x8c\x01\n" +
 	"\rVehicleStatus\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
 	"\x06driver\x18\x02 \x01(\tR\x06driver\x12\x18\n" +
 	"\arunning\x18\x03 \x01(\bR\arunning\x12\x12\n" +
-	"\x04port\x18\x04 \x01(\x05R\x04port*\x85\x01\n" +
+	"\x04port\x18\x04 \x01(\x05R\x04port\x12!\n" +
+	"\fconfig_stale\x18\x05 \x01(\bR\vconfigStale*\x85\x01\n" +
 	"\x0ePluginCategory\x12\x1f\n" +
 	"\x1bPLUGIN_CATEGORY_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16PLUGIN_CATEGORY_DRIVER\x10\x01\x12\x1b\n" +

@@ -110,7 +110,7 @@ func (d *daemon) loadPersisted() error {
 			return err
 		}
 	}
-	if err := d.ensureConfigured(cfg); err != nil {
+	if _, _, err := d.ensureConfigured(cfg); err != nil {
 		return err
 	}
 	if err := d.ensureAviary(cfg.Vehicles); err != nil {
@@ -196,7 +196,10 @@ func persistedPluginsPath() (string, error) {
 }
 
 // decodeConfig parses a TOML document into a Config, warning (but not failing)
-// on unrecognized keys.
+// on unrecognized keys, and rejecting an empty or repeated vehicle name --
+// both would otherwise reach startVehicles, which keys everything by name and
+// has no way to tell two vehicles named the same thing (or a nameless one)
+// apart.
 func decodeConfig(data string) (Config, error) {
 	var cfg Config
 	md, err := toml.Decode(data, &cfg)
@@ -209,6 +212,16 @@ func decodeConfig(data string) (Config, error) {
 			keys[i] = k.String()
 		}
 		log.Warn().Strs("keys", keys).Msg("unrecognized keys in config")
+	}
+	seen := make(map[string]bool, len(cfg.Vehicles))
+	for _, vc := range cfg.Vehicles {
+		if vc.Name == "" {
+			return Config{}, fmt.Errorf("a [[vehicles]] entry has no name")
+		}
+		if seen[vc.Name] {
+			return Config{}, fmt.Errorf("vehicle %q is listed more than once in [[vehicles]]", vc.Name)
+		}
+		seen[vc.Name] = true
 	}
 	return cfg, nil
 }

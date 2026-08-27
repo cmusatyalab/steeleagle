@@ -3,7 +3,6 @@ package vehicle
 import (
 	"context"
 	"fmt"
-	"net"
 
 	gabrielclient "github.com/cmusatyalab/gabriel/go-client"
 	gabrielpb "github.com/cmusatyalab/gabriel/protocol/go"
@@ -11,7 +10,6 @@ import (
 	resultpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/result"
 	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
 	"github.com/rs/zerolog/log"
-	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -113,14 +111,6 @@ func (v *Vehicle) createGabrielClient() error {
 	}
 	if v.gabrielCfg.PrometheusPort != 0 {
 		opts = append(opts, gabrielclient.WithPrometheusPort(v.gabrielCfg.PrometheusPort))
-	}
-	if v.dialer != nil {
-		// Sources the connection from the vehicle's own tsnet node (if any)
-		opts = append(opts, gabrielclient.WithDialOptions(grpc.WithContextDialer(
-			func(ctx context.Context, addr string) (net.Conn, error) {
-				return v.dialer(ctx, "tcp", addr)
-			},
-		)))
 	}
 
 	client, err := gabrielclient.NewGrpcClient(

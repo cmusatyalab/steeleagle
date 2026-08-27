@@ -25,10 +25,14 @@ class ConfigureRequest(_message.Message):
     def __init__(self, config_toml: _Optional[str] = ...) -> None: ...
 
 class ConfigureResponse(_message.Message):
-    __slots__ = ("vehicles",)
+    __slots__ = ("vehicles", "daemon_settings_applied", "daemon_settings_diverged")
     VEHICLES_FIELD_NUMBER: _ClassVar[int]
+    DAEMON_SETTINGS_APPLIED_FIELD_NUMBER: _ClassVar[int]
+    DAEMON_SETTINGS_DIVERGED_FIELD_NUMBER: _ClassVar[int]
     vehicles: _containers.RepeatedCompositeFieldContainer[VehicleResult]
-    def __init__(self, vehicles: _Optional[_Iterable[_Union[VehicleResult, _Mapping]]] = ...) -> None: ...
+    daemon_settings_applied: bool
+    daemon_settings_diverged: bool
+    def __init__(self, vehicles: _Optional[_Iterable[_Union[VehicleResult, _Mapping]]] = ..., daemon_settings_applied: _Optional[bool] = ..., daemon_settings_diverged: _Optional[bool] = ...) -> None: ...
 
 class StopVehiclesRequest(_message.Message):
     __slots__ = ("names",)
@@ -67,14 +71,18 @@ class ForgetVehiclesResponse(_message.Message):
     def __init__(self, vehicles: _Optional[_Iterable[_Union[VehicleResult, _Mapping]]] = ...) -> None: ...
 
 class VehicleResult(_message.Message):
-    __slots__ = ("name", "ok", "error")
+    __slots__ = ("name", "ok", "error", "reconfigured", "restart_required")
     NAME_FIELD_NUMBER: _ClassVar[int]
     OK_FIELD_NUMBER: _ClassVar[int]
     ERROR_FIELD_NUMBER: _ClassVar[int]
+    RECONFIGURED_FIELD_NUMBER: _ClassVar[int]
+    RESTART_REQUIRED_FIELD_NUMBER: _ClassVar[int]
     name: str
     ok: bool
     error: str
-    def __init__(self, name: _Optional[str] = ..., ok: _Optional[bool] = ..., error: _Optional[str] = ...) -> None: ...
+    reconfigured: bool
+    restart_required: bool
+    def __init__(self, name: _Optional[str] = ..., ok: _Optional[bool] = ..., error: _Optional[str] = ..., reconfigured: _Optional[bool] = ..., restart_required: _Optional[bool] = ...) -> None: ...
 
 class InstallPluginRequest(_message.Message):
     __slots__ = ("name", "repo", "ref", "subpath", "category")
@@ -171,13 +179,15 @@ class DaemonConfig(_message.Message):
     def __init__(self, vpn: _Optional[bool] = ..., vehicle_vpn: _Optional[bool] = ..., port_base: _Optional[int] = ..., plugin_dir: _Optional[str] = ..., tailscale_hostname: _Optional[str] = ..., tailscale_authkey_env: _Optional[str] = ..., swarm_controller_address: _Optional[str] = ..., daemon_name: _Optional[str] = ..., gabriel_server_endpoint: _Optional[str] = ...) -> None: ...
 
 class VehicleStatus(_message.Message):
-    __slots__ = ("name", "driver", "running", "port")
+    __slots__ = ("name", "driver", "running", "port", "config_stale")
     NAME_FIELD_NUMBER: _ClassVar[int]
     DRIVER_FIELD_NUMBER: _ClassVar[int]
     RUNNING_FIELD_NUMBER: _ClassVar[int]
     PORT_FIELD_NUMBER: _ClassVar[int]
+    CONFIG_STALE_FIELD_NUMBER: _ClassVar[int]
     name: str
     driver: str
     running: bool
     port: int
-    def __init__(self, name: _Optional[str] = ..., driver: _Optional[str] = ..., running: _Optional[bool] = ..., port: _Optional[int] = ...) -> None: ...
+    config_stale: bool
+    def __init__(self, name: _Optional[str] = ..., driver: _Optional[str] = ..., running: _Optional[bool] = ..., port: _Optional[int] = ..., config_stale: _Optional[bool] = ...) -> None: ...

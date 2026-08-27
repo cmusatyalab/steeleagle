@@ -1,7 +1,10 @@
 # Example config for `eagle configure`. This config gets pushed to a running
 # instance over its control-plane API, which starts the vehicles it describes.
-# The daemon-wide settings (everything above [[vehicles]]) only take effect on
-# the first call to a given eagled instance.
+# The daemon-wide settings (everything above [[vehicles]], including
+# hostname) only take effect on the first call to a given eagled instance;
+# `eagle configure` prints a note if a later call's daemon-wide settings
+# differ from what's already active, since those differences are silently
+# not applied.
 
 # Vehicle ports are assigned in ascending order from this base port.
 port-base = 9000
