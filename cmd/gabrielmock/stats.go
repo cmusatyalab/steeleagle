@@ -42,15 +42,37 @@ func (s *receivedStats) record(engineID string) {
 	s.byEngine[engineID]++
 }
 
+// runConfig captures the resolved command-line flags a run was launched
+// with, so printStats can report them alongside the stats they produced
+// (flag defaults included, unlike a raw os.Args dump).
+type runConfig struct {
+	server                          string
+	vehicleID, model                string
+	telemetryEngines, frameEngines  string
+	telemetryHz, frameHz            float64
+	frameWidth, frameHeight         int
+	frameQuality                    int
+	duration                        time.Duration
+	keepaliveTime, keepaliveTimeout time.Duration
+	logLevel                        string
+}
+
 // printStats prints a human-readable summary of the run to stdout, separate
 // from the structured zerolog output on stderr. Called on every shutdown
 // path (graceful or forced) so a Ctrl-C or an exceeded -duration always
 // leaves a report behind.
-func printStats(startedAt time.Time, received *receivedStats, producers ...*producerStats) {
+func printStats(cfg runConfig, startedAt time.Time, received *receivedStats, producers ...*producerStats) {
 	elapsed := time.Since(startedAt)
 
 	fmt.Println()
 	fmt.Println("=== gabriel mock client stats ===")
+	fmt.Println("config:")
+	fmt.Printf("  server=%s vehicle-id=%s model=%s\n", cfg.server, cfg.vehicleID, cfg.model)
+	fmt.Printf("  telemetry-engines=%s frame-engines=%s\n", cfg.telemetryEngines, cfg.frameEngines)
+	fmt.Printf("  telemetry-hz=%g frame-hz=%g frame-width=%d frame-height=%d frame-quality=%d\n",
+		cfg.telemetryHz, cfg.frameHz, cfg.frameWidth, cfg.frameHeight, cfg.frameQuality)
+	fmt.Printf("  duration=%s keepalive-time=%s keepalive-timeout=%s log-level=%s\n",
+		cfg.duration, cfg.keepaliveTime, cfg.keepaliveTimeout, cfg.logLevel)
 	fmt.Printf("run duration: %s\n", elapsed.Round(time.Millisecond))
 	fmt.Println("sent:")
 	var totalBytes uint64
