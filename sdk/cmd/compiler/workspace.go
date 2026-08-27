@@ -181,14 +181,18 @@ func tidyAndBuild(workspace, overlayPath, outPath, arch string) error {
 		return fmt.Errorf("go mod tidy: %w\n%s", err, out)
 	}
 
-	buildArgs := []string{"build", "-o", outPath}
+	// -s -w strip the symbol table and DWARF debug info to minimize binary
+	// size; -trimpath drops build-machine file paths from the result.
+	// CGO_ENABLED=0 forces a statically linked binary with no dependency on
+	// the host's C library, so it runs unmodified on whatever it's shipped to.
+	buildArgs := []string{"build", "-trimpath", "-ldflags=-s -w", "-o", outPath}
 	if overlayPath != "" {
 		buildArgs = append(buildArgs, "-overlay="+overlayPath)
 	}
 	buildArgs = append(buildArgs, ".")
 	cmd := exec.Command("go", buildArgs...)
 	cmd.Dir = workspace
-	cmd.Env = os.Environ()
+	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
 	if arch != "" {
 		cmd.Env = append(cmd.Env, "GOARCH="+arch)
 	}
