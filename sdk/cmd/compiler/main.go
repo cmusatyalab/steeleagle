@@ -102,7 +102,15 @@ func main() {
 	for i, imp := range imports {
 		requests[i] = &loader.PackageRequest{Path: imp.Path, Alias: imp.Alias}
 	}
-	registry, compileErrs := loader.LoadTypes(requests, workspace, overlay)
+	// buildEnv mirrors what tidyAndBuild ultimately builds the mission
+	// binary with, so this type-checking pass's build-cache entries are
+	// reusable by the final "go build" instead of being computed twice
+	// under two different CGO_ENABLED/GOARCH cache keys.
+	buildEnv := []string{"CGO_ENABLED=0"}
+	if *arch != "" {
+		buildEnv = append(buildEnv, "GOARCH="+*arch)
+	}
+	registry, compileErrs := loader.LoadTypes(requests, workspace, overlay, buildEnv)
 	if len(compileErrs) > 0 {
 		fatalCompileErrors("loading DSL types", compileErrs)
 	}

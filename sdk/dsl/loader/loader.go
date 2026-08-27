@@ -53,8 +53,12 @@ type TypeRegistry struct {
 }
 
 // LoadTypes loads all DSL types present in imports (Actions, Events, and Datatypes).
-// Also loads comments and detects optional types by #optional tags.
-func LoadTypes(imports []*PackageRequest, workspace string, overlay map[string][]byte) (*TypeRegistry, []*sdk.CompileError) {
+// Also loads comments and detects optional types by #optional tags. env is
+// appended to the packages.Config environment on top of the process's own
+// (e.g. "CGO_ENABLED=0"), so the caller can keep this type-checking pass's
+// build-cache key aligned with whatever flags it ultimately builds the
+// mission binary with.
+func LoadTypes(imports []*PackageRequest, workspace string, overlay map[string][]byte, env []string) (*TypeRegistry, []*sdk.CompileError) {
 	registry := &TypeRegistry{
 		Packages:    make(map[string]*packages.Package),
 		AliasToPack: make(map[string]*packages.Package),
@@ -77,10 +81,11 @@ func LoadTypes(imports []*PackageRequest, workspace string, overlay map[string][
 		}
 	}
 	cfg := &packages.Config{
-		Dir:     workspace,
-		Env:     append(os.Environ(), "GOFLAGS=-mod=mod"),
-		Mode:    packages.NeedName | packages.NeedTypes | packages.NeedSyntax,
-		Overlay: overlay,
+		Dir:        workspace,
+		Env:        append(append(os.Environ(), "GOFLAGS=-mod=mod"), env...),
+		BuildFlags: []string{"-trimpath"},
+		Mode:       packages.NeedName | packages.NeedTypes | packages.NeedSyntax,
+		Overlay:    overlay,
 	}
 	pkgs, err := packages.Load(cfg, pkgPaths...)
 	if err != nil {

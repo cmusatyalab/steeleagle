@@ -23,9 +23,10 @@ const steeleagleModule = "github.com/cmusatyalab/steeleagle"
 // the resulting overlay is for.
 func loadSteeleaglePackages(workspace string, pkgPaths []string) ([]*packages.Package, error) {
 	cfg := &packages.Config{
-		Dir:  workspace,
-		Env:  append(os.Environ(), "GOFLAGS=-mod=mod"),
-		Mode: packages.NeedName | packages.NeedFiles | packages.NeedImports | packages.NeedDeps,
+		Dir:        workspace,
+		Env:        append(os.Environ(), "GOFLAGS=-mod=mod", "CGO_ENABLED=0"),
+		BuildFlags: []string{"-trimpath"},
+		Mode:       packages.NeedName | packages.NeedFiles | packages.NeedImports | packages.NeedDeps,
 	}
 	roots, err := packages.Load(cfg, pkgPaths...)
 	if err != nil {

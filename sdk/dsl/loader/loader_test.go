@@ -83,7 +83,7 @@ func TestLoaderAmbiguousInterfaceReportsError(t *testing.T) {
 		{Path: dslPkgPath},
 		{Path: ambiguousPkgPath},
 	}
-	reg, errs := LoadTypes(imports, "", nil)
+	reg, errs := LoadTypes(imports, "", nil, nil)
 	if len(errs) != 1 {
 		t.Fatalf("LoadTypes() errors = %v, want exactly 1 (ambiguous.Ambiguous)", errs)
 	}
@@ -98,7 +98,7 @@ func TestLoaderAmbiguousInterfaceReportsError(t *testing.T) {
 // interfaces to check against.
 func TestLoaderMissingDslImportErrors(t *testing.T) {
 	imports := []*PackageRequest{{Path: fixturesPkgPath}}
-	reg, errs := LoadTypes(imports, "", nil)
+	reg, errs := LoadTypes(imports, "", nil, nil)
 	if reg != nil {
 		t.Errorf("registry = %v, want nil", reg)
 	}
@@ -115,7 +115,7 @@ func TestLoaderUnknownImportPathErrors(t *testing.T) {
 		{Path: dslPkgPath},
 		{Path: "github.com/cmusatyalab/steeleagle/sdk/dsl/loader/testdata/does-not-exist"},
 	}
-	reg, errs := LoadTypes(imports, "", nil)
+	reg, errs := LoadTypes(imports, "", nil, nil)
 	if reg != nil {
 		t.Errorf("registry = %v, want nil", reg)
 	}
@@ -132,7 +132,7 @@ func TestLoaderQualifiesNamesByAlias(t *testing.T) {
 		{Path: dslPkgPath},
 		{Path: fixturesPkgPath, Alias: "fx"},
 	}
-	reg, errs := LoadTypes(imports, "", nil)
+	reg, errs := LoadTypes(imports, "", nil, nil)
 	if len(errs) > 0 {
 		t.Fatalf("LoadTypes() errors = %v, want none", errs)
 	}

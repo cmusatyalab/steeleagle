@@ -44,7 +44,7 @@ func sharedFixtureRegistry(t *testing.T) *TypeRegistry {
 	t.Helper()
 	sharedRegistryOnce.Do(func() {
 		imports := []*PackageRequest{{Path: dslPkgPath}, {Path: fixturesPkgPath}}
-		sharedRegistryVal, sharedRegistryErrs = LoadTypes(imports, "", nil)
+		sharedRegistryVal, sharedRegistryErrs = LoadTypes(imports, "", nil, nil)
 	})
 	if len(sharedRegistryErrs) > 0 {
 		t.Fatalf("LoadTypes() errors = %v, want none", sharedRegistryErrs)
