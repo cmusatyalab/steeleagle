@@ -5,11 +5,17 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"syscall"
 
 	"github.com/BurntSushi/toml"
 	"github.com/rs/zerolog/log"
 )
+
+// uvInstallScriptURL is astral.sh's official installer, the same one used to
+// bootstrap uv for steeleagle_plugins driver builds (see e.g.
+// drivers/parrot_anafi/install.sh).
+const uvInstallScriptURL = "https://astral.sh/uv/install.sh"
 
 // DefaultAviaryCommand is the command line eagled runs to launch the shared
 // aviary simulator.
@@ -71,14 +77,32 @@ func spawnAviary(ctx context.Context, command []string, dir string, vehicleCfgs 
 	if len(command) == 0 {
 		command = DefaultAviaryCommand
 	}
+
+	// exec.CommandContext resolves command[0] via LookPath against the
+	// current process's PATH immediately, at construction time -- setting
+	// cmd.Env afterward only changes the child's environment, not that
+	// lookup. So uv has to be resolved to an absolute path (and installed,
+	// if necessary) before constructing cmd, not after.
+	bin, childPath := command[0], ""
+	if filepath.Base(command[0]) == "uv" {
+		var err error
+		if bin, childPath, err = ensureUv(ctx); err != nil {
+			os.Remove(f.Name())
+			return fmt.Errorf("ensuring uv is installed: %w", err)
+		}
+	}
+
 	args := make([]string, 0, len(command)-1+2)
 	args = append(args, command[1:]...)
 	args = append(args, "--config", f.Name())
-	cmd := exec.CommandContext(ctx, command[0], args...)
+	cmd := exec.CommandContext(ctx, bin, args...)
 	cmd.Dir = dir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	if childPath != "" {
+		cmd.Env = append(os.Environ(), "PATH="+childPath)
+	}
 	cmd.Cancel = func() error {
 		return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
 	}
@@ -95,4 +119,41 @@ func spawnAviary(ctx context.Context, command []string, dir string, vehicleCfgs 
 	}()
 
 	return nil
+}
+
+// ensureUv makes sure a uv executable is reachable for launching aviary,
+// installing it into $HOME/.local/bin via astral.sh's official installer if
+// it isn't already on PATH there or anywhere else. eagled commonly runs as a
+// systemd service with a minimal PATH that doesn't include the user-local bin
+// directories uv is normally installed into, so this can't rely on PATH
+// lookups alone. It returns the absolute path to the uv binary to exec, and
+// the PATH aviary's subprocess should run with.
+func ensureUv(ctx context.Context) (bin, path string, err error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", "", fmt.Errorf("determining home directory: %w", err)
+	}
+	localBin := filepath.Join(home, ".local", "bin")
+	localUv := filepath.Join(localBin, "uv")
+	path = localBin + string(os.PathListSeparator) + os.Getenv("PATH")
+
+	if p, err := exec.LookPath("uv"); err == nil {
+		return p, path, nil
+	}
+	if _, err := os.Stat(localUv); err == nil {
+		return localUv, path, nil
+	}
+
+	log.Info().Str("installer", uvInstallScriptURL).Msg("uv not found; installing")
+	install := exec.CommandContext(ctx, "sh", "-c", "curl -LsSf "+uvInstallScriptURL+" | sh")
+	install.Env = append(os.Environ(), "HOME="+home)
+	install.Stdout = os.Stdout
+	install.Stderr = os.Stderr
+	if err := install.Run(); err != nil {
+		return "", "", fmt.Errorf("running uv installer: %w", err)
+	}
+	if _, err := os.Stat(localUv); err != nil {
+		return "", "", fmt.Errorf("uv installer completed but %s is still missing: %w", localUv, err)
+	}
+	return localUv, path, nil
 }

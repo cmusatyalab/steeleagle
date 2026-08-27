@@ -25,7 +25,11 @@ RestartSec=5s
 
 NoNewPrivileges=true
 ProtectSystem=strict
-ProtectHome=true
+# Not ProtectHome=true: aviary.dir/aviary.command in a pushed config.toml are
+# arbitrary admin-supplied paths and commands (e.g. a driver checkout under a
+# developer's home directory), so eagled needs to be able to reach anywhere
+# it's told to, not just /var/lib/eagled. Configure already implies that
+# trust -- it can already run any command eagled's uid can reach.
 ReadWritePaths=/var/lib/eagled
 PrivateTmp=true
 
