@@ -130,8 +130,10 @@ enum Mode {
   MODE_LOITER = 3;
   // the vehicle is in guided mode
   MODE_GUIDED = 4;
+  // the vehicle is stopped
+  MODE_STOPPED = 5;
   // the vehicle is experiencing an emergency
-  MODE_EMERGENCY = 5;
+  MODE_EMERGENCY = 6;
 }
 
 // Motion status of the vehicle.
