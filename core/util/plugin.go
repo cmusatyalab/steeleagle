@@ -191,8 +191,7 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 	p.cmd.Stdout = p.outStream
 	p.cmd.Stderr = p.outStream
 
-	// Reverse the listener and client; the plugin connects
-	// in the opposite way
+	// Reverse the listener and client; the plugin connects in the opposite way
 	p.cmd.Env = append(
 		p.environ,
 		fmt.Sprintf("%s=%s", ListenSockEnv, p.cSock),
