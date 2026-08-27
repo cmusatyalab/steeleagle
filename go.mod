@@ -8,17 +8,19 @@ require (
 	github.com/alecthomas/participle/v2 v2.1.4
 	github.com/cmusatyalab/gabriel/go-client v0.5.0
 	github.com/cmusatyalab/gabriel/protocol/go v0.3.0
-	github.com/cmusatyalab/steeleagle/api/go v0.0.0
+	github.com/cmusatyalab/steeleagle/api/go v0.1.0
 	github.com/go-git/go-git/v5 v5.19.2
 	github.com/google/uuid v1.6.0
 	github.com/looplab/fsm v1.0.3
 	github.com/mwitkow/grpc-proxy v0.0.0-20250813121105-2866842de9a5
 	github.com/open-policy-agent/opa v1.19.0
 	github.com/pelletier/go-toml/v2 v2.4.3
+	github.com/peterstace/simplefeatures v0.59.0
 	github.com/rs/zerolog v1.35.1
 	github.com/shirou/gopsutil/v3 v3.24.5
 	go.etcd.io/bbolt v1.5.0
 	golang.org/x/image v0.41.0
+	golang.org/x/mod v0.38.0
 	golang.org/x/sync v0.22.0
 	golang.org/x/term v0.45.0
 	golang.org/x/tools v0.48.0
@@ -80,7 +82,6 @@ require (
 	github.com/mdlayher/socket v0.6.1 // indirect
 	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/peterstace/simplefeatures v0.59.0 // indirect
 	github.com/pires/go-proxyproto v0.15.0 // indirect
 	github.com/pjbgf/sha1cd v0.6.0 // indirect
 	github.com/pkg/sftp v1.13.9 // indirect
@@ -119,7 +120,6 @@ require (
 	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba // indirect
 	golang.org/x/crypto v0.54.0 // indirect
 	golang.org/x/exp v0.0.0-20260727155853-b88d891fe743 // indirect
-	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
