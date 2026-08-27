@@ -195,7 +195,7 @@ func installPlugin(ctx context.Context, daemonAddr, name, repo, ref, subpath, ca
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%s: fetching %s@%s (may take a while)...\n", name, repo, ref)
+	fmt.Printf("%s: fetching %s@%s...\n", name, repo, ref)
 	return withClient(ctx, daemonAddr, func(ctx context.Context, client eagledpb.DaemonServiceClient) error {
 		resp, err := client.InstallPlugin(ctx, eagledpb.InstallPluginRequest_builder{
 			Name: name, Repo: repo, Ref: ref, Subpath: subpath, Category: protoCategory,
