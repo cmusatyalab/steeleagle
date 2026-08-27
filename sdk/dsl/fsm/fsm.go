@@ -52,7 +52,10 @@ func NewDslFsm(
 		done:        make(chan error, 1),
 	}
 	d.fsm = fsm.NewFSM(start, fsmEvents(transitions), fsm.Callbacks{
-		"enter_state": func(_ context.Context, e *fsm.Event) { d.enterState(e.Dst) },
+		"enter_state": func(_ context.Context, e *fsm.Event) {
+			d.data.Log.Info().Str("from", e.Src).Str("to", e.Dst).Str("event", e.Event).Msg("state transition")
+			d.enterState(e.Dst)
+		},
 	})
 	return d
 }
@@ -76,6 +79,7 @@ func fsmEvents(transitions map[string]map[string]string) []fsm.EventDesc {
 // reports an error.
 func (d *DslFsm) Start(ctx context.Context) error {
 	d.rootCtx = ctx
+	d.data.Log.Info().Str("state", d.fsm.Current()).Msg("mission started")
 	d.enterState(d.fsm.Current())
 	return <-d.done
 }

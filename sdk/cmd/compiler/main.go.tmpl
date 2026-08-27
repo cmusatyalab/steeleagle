@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -67,6 +68,7 @@ func main() {
 		Cap:  *capFile,
 		Map:  *missionMap,
 		Role: swarm.Role({{printf "%q" .Role}}),
+		Log:  zerolog.New(os.Stderr).With().Timestamp().Logger(),
 	}
 
 	actions := map[string]dsl.Action{
