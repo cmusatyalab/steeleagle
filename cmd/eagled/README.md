@@ -129,10 +129,13 @@ A couple of things worth knowing before you re-run it:
   exported — it won't hang waiting on a prompt, it just fails.
 
 `eagled.service` runs as the unprivileged `eagled` user under
-`ProtectSystem=strict`/`ProtectHome=true`, with only `/var/lib/eagled`
-writable, and `Restart=always` rather than `on-failure`. `ResetConfig` exits 0
-on purpose to get itself relaunched, so `on-failure` would leave it dead
-instead.
+`ProtectSystem=strict`, with only `/var/lib/eagled` writable, and
+`Restart=always` rather than `on-failure`. `ResetConfig` exits 0 on purpose to
+get itself relaunched, so `on-failure` would leave it dead instead.
+`ProtectHome` is deliberately left unset: `aviary.dir`/`aviary.command` in a
+pushed `config.toml` are arbitrary admin-supplied paths (e.g. a driver
+checkout under a developer's home directory), and `Configure` already implies
+that trust.
 
 systemd doesn't set `HOME` or `XDG_RUNTIME_DIR` for system services, so the
 unit sets them explicitly, and `PATH` ends up fairly bare. If a plugin's

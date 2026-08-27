@@ -124,7 +124,15 @@ if [[ -z "${TS_HOSTNAME:-}" && -t 0 ]]; then
 fi
 TS_HOSTNAME="${TS_HOSTNAME:-$(hostname)-eagled}"
 
+# install -d only chowns the final leaf directory it creates, not the
+# missing parents along the way (those get root:root, mode 755) -- so when
+# STATE_DIR itself is missing (e.g. a fresh reinstall with the service user
+# already existing, skipping --create-home above), everything from STATE_DIR
+# down to DATA_DIR's parent ends up root-owned. Recursively chown the whole
+# state dir afterwards to guarantee eagled can write everywhere under it,
+# including $HOME/.local/bin for e.g. `uv install`.
 install -d -m 755 -o "$SERVICE_USER" -g "$SERVICE_USER" "$DATA_DIR"
+chown -R "$SERVICE_USER:$SERVICE_USER" "$STATE_DIR"
 rm -f "$NETWORK_CONFIG"
 cat >"$NETWORK_CONFIG" <<-EOF
 	hostname = "$TS_HOSTNAME"

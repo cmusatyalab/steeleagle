@@ -66,6 +66,14 @@ alt = 0
 name = "parrot_anafi"
 # args = ["--ip", "10.202.0.1"]
 
+# Optional: name of the mission plugin to run for this vehicle (installed via
+# InstallPlugin under PLUGIN_CATEGORY_MISSION), and any command line args to
+# launch it with. A vehicle runs fine with no mission plugin configured --
+# omit this whole table to leave one out.
+# [vehicles.mission]
+# name = "mission-service"
+# args = ["-mission-file", "/path/to/a/pre-built/mission/binary"]  # dev/testing only, see mission-service's own -mission-file flag
+
 # Optional per-vehicle video stream override. If omitted entirely, simulated
 # vehicles default to stream-type "frames" (aviary has no RTSP source to
 # forward) and every other vehicle defaults to "rtsp".
