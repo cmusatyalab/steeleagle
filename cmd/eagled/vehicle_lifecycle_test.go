@@ -110,3 +110,32 @@ func TestVehicleLifecycle(t *testing.T) {
 		t.Error("expected RestartVehicles to fail after ForgetVehicles, vehicle isn't configured")
 	}
 }
+
+// TestStopVehiclesDedupesNames verifies that naming the same vehicle twice in
+// one StopVehicles call produces exactly one result, not a successful stop
+// followed by a spurious "not running" failure for the same vehicle.
+func TestStopVehiclesDedupesNames(t *testing.T) {
+	inst := startEagled(t, "")
+	ctx := t.Context()
+
+	const name, driver = "harpy", "mockdriver"
+	writeMockDriver(t, inst.DataDir, driver)
+
+	cfgResp, err := inst.Client.Configure(ctx, eagledpb.ConfigureRequest_builder{
+		ConfigToml: baseConfig(inst, freePort(t), name, driver),
+	}.Build())
+	if err != nil || len(cfgResp.GetVehicles()) != 1 || !cfgResp.GetVehicles()[0].GetOk() {
+		t.Fatalf("Configure: resp=%v err=%v", cfgResp, err)
+	}
+
+	stopResp, err := inst.Client.StopVehicles(ctx, eagledpb.StopVehiclesRequest_builder{Names: []string{name, name}}.Build())
+	if err != nil {
+		t.Fatalf("StopVehicles: %v", err)
+	}
+	if len(stopResp.GetVehicles()) != 1 {
+		t.Fatalf("expected exactly one result for a duplicated name, got %v", stopResp.GetVehicles())
+	}
+	if !stopResp.GetVehicles()[0].GetOk() {
+		t.Errorf("expected the single deduped result to be a success, got %v", stopResp.GetVehicles()[0])
+	}
+}

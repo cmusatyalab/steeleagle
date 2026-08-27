@@ -18,21 +18,28 @@ service DaemonService {
    * Load a TOML configuration document (the same shape as eagled's
    * config.toml) and start the vehicles it describes.
    *
-   * The first call configures the daemon itself (tailscale, gabriel,
+   * The first call configures the daemon itself (tailscale hostname, gabriel,
    * swarm-controller settings) in addition to starting its vehicles. Later
    * calls reuse that daemon-wide configuration and only start the vehicles
-   * newly listed. A vehicle name already running is reported as a per-vehicle
-   * failure rather than aborting the whole call.
+   * newly listed. If the daemon-wide settings in a later call differ from
+   * what's already active, ConfigureResponse.daemon_settings_diverged reports
+   * that rather than silently dropping them. A vehicle name that's known but
+   * not currently running has its config replaced outright
+   * (VehicleResult.reconfigured is set on that result, to distinguish it
+   * from configuring the name for the first time). A vehicle name that's
+   * currently running also has its config replaced, but the running process
+   * itself is left alone -- VehicleResult.restart_required is set, and
+   * RestartVehicles picks up the new config next time it's called.
    */
   rpc Configure (ConfigureRequest) returns (ConfigureResponse) {}
 
   /*
    * Stop one or more currently-running vehicles by name. Unlike
-   * ForgetVehicles, the daemon still knows about them afterward: they can
-   * be brought back with RestartVehicles, and they come back on a
-   * subsequent eagled restart too, same as any other configured vehicle. A
-   * name that isn't currently running is reported as a per-vehicle failure
-   * rather than aborting the whole call.
+   * ForgetVehicles, the daemon still knows about them afterward: they can be
+   * brought back with RestartVehicles, and they come back on a subsequent
+   * eagled restart too, same as any other configured vehicle. A name that
+   * isn't currently running is reported as a per-vehicle failure rather than
+   * aborting the whole call.
    */
   rpc StopVehicles (StopVehiclesRequest) returns (StopVehiclesResponse) {}
 
@@ -70,9 +77,11 @@ service DaemonService {
    * Delete the persisted config and terminate the daemon process, relying on
    * systemd to bring it back up unconfigured, as if freshly installed. Every
    * currently-running vehicle is torn down as part of that shutdown. This is
-   * the only way to change daemon-wide settings (tailscale, gabriel,
-   * swarm-controller): they're only ever established from the first Configure
-   * call after a process starts.
+   * the only way to change daemon-wide settings (gabriel, swarm-controller,
+   * port-base, plugin-dir): they're only ever established from the first
+   * Configure call after a process starts. The tailscale hostname is not
+   * affected: it's established once, on this host, and outlives ResetConfig;
+   * changing it is a manual, on-site operation, not something any RPC does.
    */
   rpc ResetConfig (ResetConfigRequest) returns (ResetConfigResponse) {}
 
@@ -84,7 +93,9 @@ service DaemonService {
 
   /*
    * Report the daemon's current configuration and the state of every vehicle
-   * it knows about.
+   * it knows about, including whether a running vehicle's config has since
+   * been replaced by a Configure call it hasn't picked up yet (see
+   * VehicleStatus.config_stale).
    */
   rpc GetStatus (GetStatusRequest) returns (GetStatusResponse) {}
 }
@@ -95,6 +106,15 @@ message ConfigureRequest {
 
 message ConfigureResponse {
   repeated VehicleResult vehicles = 1;
+  // True only for the first Configure call a fresh daemon ever receives, when
+  // daemon-wide settings were actually established from this call.
+  bool daemon_settings_applied = 2;
+  // True when this was not the first Configure call and this call's
+  // daemon-wide settings differ from what's already active -- i.e. some
+  // requested settings were silently not applied. Always false when
+  // daemon_settings_applied is true, and also false on a later call whose
+  // daemon-wide settings already matched what's active (nothing to report).
+  bool daemon_settings_diverged = 3;
 }
 
 message StopVehiclesRequest {
@@ -125,6 +145,17 @@ message VehicleResult {
   string name = 1;
   bool ok = 2;
   string error = 3; // populated iff !ok
+  // True iff ok and this Configure call replaced an already-known vehicle's
+  // config -- as opposed to configuring name for the first time. Only
+  // meaningful in a ConfigureResponse; always false from StopVehicles/
+  // RestartVehicles/ForgetVehicles.
+  bool reconfigured = 4;
+  // True iff ok, reconfigured, and name was already running: its new config
+  // is saved and becomes what a future RestartVehicles/eagled restart uses,
+  // but the running process itself was left alone, so it's still running
+  // under its *previous* config until explicitly restarted. Only meaningful
+  // in a ConfigureResponse.
+  bool restart_required = 5;
 }
 
 enum PluginCategory {
@@ -195,4 +226,9 @@ message VehicleStatus {
   string driver = 2;
   bool running = 3;
   int32 port = 4; // its ControlService/MissionService port; 0 if not running
+  // True iff running and a Configure call has replaced this vehicle's config
+  // since this running process was spawned -- it's still running under its
+  // previous config, and picks up the new one on its next restart. Always
+  // false when not running.
+  bool config_stale = 5;
 }

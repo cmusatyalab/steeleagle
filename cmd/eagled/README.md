@@ -28,11 +28,34 @@ addresses, get pushed by the GCS afterward, over the tailnet.
 `Configure` takes a TOML document. Daemon-wide settings (`port-base`,
 `hostname`, `backend`, `gabriel`, `aviary`, `plugin-dir`) only take effect on
 the first `Configure` call a fresh daemon ever receives. Later calls can't
-change them. `[[vehicles]]` is the exception and gets re-applied every call.
+change them: `ConfigureResponse.daemon_settings_diverged` is true whenever a
+later call's daemon-wide settings don't match what's already active, so a
+later call that tried to change one doesn't look identical to one that
+succeeded, without naming which field. It's false when a later call's
+daemon-wide settings already match what's active — that's the common case,
+since the intended workflow is to keep re-pushing the same config.toml with
+`[[vehicles]]` edited. `[[vehicles]]` is the exception to the freeze and gets
+re-applied every call. `Configure` rejects a config with an empty or repeated
+`[[vehicles]]` name outright (the whole call fails, not just that vehicle):
+both would otherwise reach the same map key in eagled's vehicle bookkeeping
+with no way to tell them apart.
 
 Each vehicle in the request gets its own `ok`/`error` result, so one bad
 vehicle doesn't sink the whole call or the rest of the vehicles. A vehicle that
-fails to start won't show up in `GetStatus` at all.
+fails to start won't show up in `GetStatus` at all. `[[vehicles]]` entries
+naming an already-known vehicle replace its config outright, no merge and no
+confirmation -- `VehicleResult.reconfigured` is set on that result so it
+doesn't look identical to configuring the name for the first time. If that
+vehicle is currently running, the running process is left alone rather than
+restarted out from under whatever it's doing: the new config is saved and
+`VehicleResult.restart_required` is set, and it takes effect the next time
+the vehicle is restarted (`RestartVehicles`, or a `StopVehicles` followed by
+another `Configure`/eagled restart). That pending-restart state isn't only
+visible in that one Configure call's response -- `GetStatus` also reports it
+per vehicle via `VehicleStatus.config_stale`, so it's still discoverable
+later, from a different `eagle status` call or a different operator
+entirely, instead of only being knowable to whoever was watching the
+original `Configure` call's output.
 
 Every successful change gets persisted to disk (`applied-config.toml`,
 `installed-plugins.toml`, `network-config.toml`), and reloaded on startup.
@@ -46,7 +69,11 @@ plugins and the tailscale identity survive). `RestartDaemon` just restarts.
 - `StopVehicles` stops a vehicle but keeps its config around; `RestartVehicles`
   brings it back. `ForgetVehicles` stops it and drops the config for good.
   Stopping something already stopped, or restarting/forgetting something
-  unknown, just comes back as a per-vehicle error, not a crash.
+  unknown, just comes back as a per-vehicle error, not a crash. A name listed
+  more than once in the same `StopVehicles`/`RestartVehicles`/`ForgetVehicles`
+  call is deduplicated first, so it gets one result, not a real result
+  followed by a spurious failure once the first occurrence already changed
+  its state.
 - Ports are handed out sequentially from `port-base`, in the order vehicles
   were first configured, and never get reused for a different vehicle while
   eagled is running.
@@ -69,6 +96,12 @@ fails, the backup gets put back so you're never left without a working plugin.
 Categories (`driver`, `mission`, `extra`) live in separate directories and have
 separate install records, so the same plugin name can be installed under two
 categories at once without either one clobbering the other.
+
+Concurrent `InstallPlugin` calls for the same name and category are
+serialized (installs for different names/categories still run in parallel):
+without that, two overlapping installs could interleave the swap-in and
+leave the recorded ref pointing at a different version than what's actually
+on disk.
 
 ## Deployment (systemd)
 
@@ -121,6 +154,10 @@ vehicle then gets a fresh identity every restart. `ForgetVehicles` deletes a
 forgotten vehicle's persisted tsnet state so a future vehicle reusing that name
 doesn't inherit a stale node key.
 
-Changing `hostname` on a later `Configure` call re-joins eagled's tsnet node
-under the new name, even though every other daemon-wide setting is frozen after
-the first call.
+`hostname` is frozen along with every other daemon-wide setting: it's only ever
+established from the daemon's first `Configure` call (or from
+`network-config.toml`, seeded before that call ever happens — see "Why a daemon
+instead of a config file" above), and no later `Configure` call, not even
+`ResetConfig`, changes it. Changing eagled's tailscale identity is a manual,
+on-site operation: edit or delete `network-config.toml` on the host and restart
+eagled.

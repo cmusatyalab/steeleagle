@@ -180,3 +180,94 @@ address = "127.0.0.1:1"
 		}
 	}
 }
+
+// TestInstallPluginConcurrentSameKeySerializes fires many concurrent
+// InstallPlugin calls for the same {name, category} at two different refs,
+// each of which writes a distinguishable marker file. Without per-key
+// locking around swapIn's remove/rename sequence, two calls installing the
+// same plugin at once could interleave those filesystem operations and leave
+// GetInstalledPlugins reporting a ref that doesn't match what's actually on
+// disk. With locking, whichever call's write wins is consistent between the
+// two: the recorded ref always matches the marker file physically present.
+func TestInstallPluginConcurrentSameKeySerializes(t *testing.T) {
+	inst := startEagled(t, "")
+	ctx := t.Context()
+
+	cfgResp, err := inst.Client.Configure(ctx, eagledpb.ConfigureRequest_builder{
+		ConfigToml: `
+port-base = 0
+plugin-dir = "` + inst.PluginDir + `"
+
+[backend.swarm-controller]
+address = "127.0.0.1:1"
+`,
+	}.Build())
+	if err != nil || len(cfgResp.GetVehicles()) != 0 {
+		t.Fatalf("Configure: resp=%v err=%v", cfgResp, err)
+	}
+
+	const pluginName, subpath = "racy", "subdir"
+	repo := gitFixtureRepo(t, subpath)
+	ref1 := gitHead(t, repo)
+
+	dir := filepath.Join(repo, subpath)
+	if err := os.WriteFile(filepath.Join(dir, "install.sh"), []byte("#!/bin/sh\necho v2 > installed.marker\n"), 0755); err != nil {
+		t.Fatalf("writing second install.sh: %v", err)
+	}
+	if out, err := gitCmd(t, repo, "commit", "-q", "-a", "-m", "v2", "--no-gpg-sign", "--no-verify").CombinedOutput(); err != nil {
+		t.Fatalf("git commit: %v\n%s", err, out)
+	}
+	ref2 := gitHead(t, repo)
+
+	const n = 10
+	results := make(chan *eagledpb.InstallPluginResponse, 2*n)
+	for i := 0; i < n; i++ {
+		for _, ref := range []string{ref1, ref2} {
+			go func(ref string) {
+				resp, err := inst.Client.InstallPlugin(ctx, eagledpb.InstallPluginRequest_builder{
+					Name: pluginName, Repo: repo, Ref: ref, Subpath: subpath,
+					Category: eagledpb.PluginCategory_PLUGIN_CATEGORY_DRIVER,
+				}.Build())
+				if err != nil {
+					t.Errorf("InstallPlugin(%s): %v", ref, err)
+					return
+				}
+				results <- resp
+			}(ref)
+		}
+	}
+	for i := 0; i < 2*n; i++ {
+		resp := <-results
+		if !resp.GetOk() {
+			t.Fatalf("InstallPlugin: %s", resp.GetError())
+		}
+	}
+
+	listResp, err := inst.Client.GetInstalledPlugins(ctx, eagledpb.GetInstalledPluginsRequest_builder{}.Build())
+	if err != nil {
+		t.Fatalf("GetInstalledPlugins: %v", err)
+	}
+	var recordedRef string
+	for _, p := range listResp.GetPlugins() {
+		if p.GetName() == pluginName {
+			recordedRef = p.GetRef()
+		}
+	}
+	if recordedRef == "" {
+		t.Fatalf("expected %s in GetInstalledPlugins, got %v", pluginName, listResp.GetPlugins())
+	}
+
+	wantMarker := "installed\n"
+	if recordedRef == ref2 {
+		wantMarker = "v2\n"
+	}
+	markerPath := filepath.Join(inst.DataDir, "steeleagle", "plugins", "driver", pluginName, "installed.marker")
+	got, err := os.ReadFile(markerPath)
+	if err != nil {
+		t.Fatalf("reading installed.marker: %v", err)
+	}
+	if string(got) != wantMarker {
+		t.Errorf("recorded ref %s (from %s) doesn't match what's on disk: marker = %q, want %q",
+			recordedRef, map[string]string{ref1: "ref1", ref2: "ref2"}[recordedRef], got, wantMarker)
+	}
+}

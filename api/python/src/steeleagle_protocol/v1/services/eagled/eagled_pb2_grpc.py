@@ -79,11 +79,18 @@ class DaemonServiceServicer:
         Load a TOML configuration document (the same shape as eagled's
         config.toml) and start the vehicles it describes.
 
-        The first call configures the daemon itself (tailscale, gabriel,
+        The first call configures the daemon itself (tailscale hostname, gabriel,
         swarm-controller settings) in addition to starting its vehicles. Later
         calls reuse that daemon-wide configuration and only start the vehicles
-        newly listed. A vehicle name already running is reported as a per-vehicle
-        failure rather than aborting the whole call.
+        newly listed. If the daemon-wide settings in a later call differ from
+        what's already active, ConfigureResponse.daemon_settings_diverged reports
+        that rather than silently dropping them. A vehicle name that's known but
+        not currently running has its config replaced outright
+        (VehicleResult.reconfigured is set on that result, to distinguish it
+        from configuring the name for the first time). A vehicle name that's
+        currently running also has its config replaced, but the running process
+        itself is left alone -- VehicleResult.restart_required is set, and
+        RestartVehicles picks up the new config next time it's called.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -92,11 +99,11 @@ class DaemonServiceServicer:
     def StopVehicles(self, request, context):
         """
         Stop one or more currently-running vehicles by name. Unlike
-        ForgetVehicles, the daemon still knows about them afterward: they can
-        be brought back with RestartVehicles, and they come back on a
-        subsequent eagled restart too, same as any other configured vehicle. A
-        name that isn't currently running is reported as a per-vehicle failure
-        rather than aborting the whole call.
+        ForgetVehicles, the daemon still knows about them afterward: they can be
+        brought back with RestartVehicles, and they come back on a subsequent
+        eagled restart too, same as any other configured vehicle. A name that
+        isn't currently running is reported as a per-vehicle failure rather than
+        aborting the whole call.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -149,9 +156,11 @@ class DaemonServiceServicer:
         Delete the persisted config and terminate the daemon process, relying on
         systemd to bring it back up unconfigured, as if freshly installed. Every
         currently-running vehicle is torn down as part of that shutdown. This is
-        the only way to change daemon-wide settings (tailscale, gabriel,
-        swarm-controller): they're only ever established from the first Configure
-        call after a process starts.
+        the only way to change daemon-wide settings (gabriel, swarm-controller,
+        port-base, plugin-dir): they're only ever established from the first
+        Configure call after a process starts. The tailscale hostname is not
+        affected: it's established once, on this host, and outlives ResetConfig;
+        changing it is a manual, on-site operation, not something any RPC does.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -169,7 +178,9 @@ class DaemonServiceServicer:
     def GetStatus(self, request, context):
         """
         Report the daemon's current configuration and the state of every vehicle
-        it knows about.
+        it knows about, including whether a running vehicle's config has since
+        been replaced by a Configure call it hasn't picked up yet (see
+        VehicleStatus.config_stale).
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
