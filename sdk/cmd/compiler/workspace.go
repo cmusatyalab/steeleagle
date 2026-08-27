@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -50,10 +51,15 @@ func ensureBaseImports(imports []*parser.ImportSpec) []*parser.ImportSpec {
 
 // newWorkspace creates a scratch directory containing a throwaway Go
 // module, then fetches every one of imports into it with "go get" (pinned
-// to Version when one was given, otherwise "latest"). The caller is
-// responsible for calling the returned cleanup once the workspace is no
+// to Version when one was given, otherwise "latest"). If steeleagleRef is
+// non-empty, it overrides the version used for every import under
+// steeleagleModule (base SDK packages and any mission-declared import of a
+// steeleagle package alike), regardless of any Version the import already
+// carries -- see resolveSteeleagleRef for why callers should pass an
+// already-resolved commit SHA rather than a raw branch/tag name. The caller
+// is responsible for calling the returned cleanup once the workspace is no
 // longer needed.
-func newWorkspace(imports []*parser.ImportSpec) (dir string, cleanup func(), err error) {
+func newWorkspace(imports []*parser.ImportSpec, steeleagleRef string) (dir string, cleanup func(), err error) {
 	dir, err = os.MkdirTemp("", "steeleagle-mission-*")
 	if err != nil {
 		return "", nil, fmt.Errorf("creating workspace: %w", err)
@@ -72,7 +78,9 @@ func newWorkspace(imports []*parser.ImportSpec) (dir string, cleanup func(), err
 
 	for _, imp := range imports {
 		version := imp.Version
-		if version == "" {
+		if steeleagleRef != "" && isSteeleaglePkg(imp.Path) {
+			version = steeleagleRef
+		} else if version == "" {
 			version = "latest"
 		}
 		if out, err := runIn(dir, "go", "get", imp.Path+"@"+version); err != nil {
@@ -87,6 +95,47 @@ func newWorkspace(imports []*parser.ImportSpec) (dir string, cleanup func(), err
 	}
 
 	return dir, cleanup, nil
+}
+
+// isSteeleaglePkg reports whether path is steeleagleModule itself or a
+// package beneath it.
+func isSteeleaglePkg(path string) bool {
+	return path == steeleagleModule || strings.HasPrefix(path, steeleagleModule+"/")
+}
+
+// commitSHARe matches a full or abbreviated git commit hash.
+var commitSHARe = regexp.MustCompile(`^[0-9a-fA-F]{7,40}$`)
+
+// resolveSteeleagleRef resolves ref -- a branch, tag, or commit SHA -- to a
+// commit SHA in the SteelEagle repository, for use as -steeleagle-ref.
+//
+// go get's own "@<branch>" version query goes through the Go module proxy,
+// which caches its answer to "what commit is this branch/tag currently at"
+// and can lag behind the repository's real tip on a fast-moving branch
+// (observed: the proxy returned a commit three pushes behind the actual
+// v4.0-beta tip). Resolving the ref ourselves with "git ls-remote" asks the
+// repository directly, then "go get module@<sha>" pins to that exact,
+// unambiguous commit, which every proxy resolves consistently.
+//
+// If ref already looks like a commit SHA, it's returned as-is: ls-remote
+// only resolves refs (branches/tags) advertised by the server, not
+// arbitrary commit hashes.
+func resolveSteeleagleRef(ref string) (string, error) {
+	if commitSHARe.MatchString(ref) {
+		return ref, nil
+	}
+
+	repoURL := "https://" + steeleagleModule
+	out, err := exec.Command("git", "ls-remote", repoURL, ref).Output()
+	if err != nil {
+		return "", fmt.Errorf("git ls-remote %s %s: %w", repoURL, ref, err)
+	}
+	line := strings.SplitN(strings.TrimSpace(string(out)), "\n", 2)[0]
+	fields := strings.Fields(line)
+	if len(fields) == 0 {
+		return "", fmt.Errorf("ref %q not found in %s", ref, repoURL)
+	}
+	return fields[0], nil
 }
 
 // localizeSteeleagleModule copies the fetched steeleagleModule out of the

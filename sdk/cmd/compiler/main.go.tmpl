@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -21,14 +20,14 @@ import (
 {{end -}}
 )
 
-// capTOML is the vehicle capability manifest this mission was compiled
+// capToml is the vehicle capability manifest this mission was compiled
 // against, embedded so the generated binary can rebuild it without the
 // original file.
-var capTOML = []byte({{printf "%q" .CapTOML}})
+var capToml = []byte({{printf "%q" .CapTOML}})
 
-// missionGeoJSON is the GeoJSON feature collection this mission was
+// missionGeoJson is the GeoJSON feature collection this mission was
 // compiled against, embedded the same way. Empty when none was given.
-var missionGeoJSON = []byte({{printf "%q" .GeoJSON}})
+var missionGeoJson = []byte({{printf "%q" .GeoJSON}})
 
 {{range .Vars}}
 var {{.Name}} = {{.Type}}{
@@ -37,30 +36,27 @@ var {{.Name}} = {{.Type}}{
 }
 {{end}}
 func main() {
+    log := zerolog.New(os.Stderr).With().Timestamp().Logger()
 	socket := os.Getenv("CLIENT_SOCKET")
 	if socket == "" {
-		fmt.Fprintln(os.Stderr, "CLIENT_SOCKET environment variable must be set")
-		os.Exit(1)
+        log.Fatal().Msg("CLIENT_SOCKET environment variable unset")
 	}
 
 	conn, err := grpc.NewClient("unix://"+socket, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "dialing %s: %v\n", socket, err)
-		os.Exit(1)
+        log.Fatal().Err(err).Msg("failed to dial on socket")
 	}
 	defer conn.Close()
 
-	capFile, err := sdk.ParseCapFromBytes(capTOML)
+	capFile, err := sdk.ParseCapFromBytes(capToml)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "parsing embedded cap file: %v\n", err)
-		os.Exit(1)
+        log.Fatal().Err(err).Msg("failed to parse cap file")
 	}
 
 	missionMap := geo.NewMap()
-	if len(missionGeoJSON) > 0 {
-		if _, err := missionMap.AddFeaturesFromGeoJson(missionGeoJSON); err != nil {
-			fmt.Fprintf(os.Stderr, "parsing embedded GeoJSON: %v\n", err)
-			os.Exit(1)
+	if len(missionGeoJson) > 0 {
+		if _, err := missionMap.AddFeaturesFromGeoJson(missionGeoJson); err != nil {
+			log.Fatal().Err(err).Msg("parsing embedded GeoJSON failed")
 		}
 	}
 
@@ -68,7 +64,7 @@ func main() {
 		Cap:  *capFile,
 		Map:  *missionMap,
 		Role: swarm.Role({{printf "%q" .Role}}),
-		Log:  zerolog.New(os.Stderr).With().Timestamp().Logger(),
+		Log:  log,
 	}
 
 	actions := map[string]dsl.Action{
@@ -94,7 +90,6 @@ func main() {
 
 	mission := fsm.NewDslFsm({{printf "%q" .Start}}, transitions, actions, events, data, conn)
 	if err := mission.Start(ctx); err != nil {
-		fmt.Fprintf(os.Stderr, "mission failed: %v\n", err)
-		os.Exit(1)
+        log.Fatal().Err(err).Msg("mission exited unexpectedly")
 	}
 }

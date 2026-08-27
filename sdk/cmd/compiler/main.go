@@ -22,6 +22,7 @@ func main() {
 	geoJSONPath := flag.String("geojson", "", "path to a GeoJSON map for the mission (optional)")
 	arch := flag.String("arch", "", "GOARCH to cross-compile the mission binary for (optional; defaults to the host architecture)")
 	out := flag.String("out", "mission", "name of the compiled mission binary")
+	steeleagleRef := flag.String("steeleagle-ref", "", "git branch, tag, or commit to pull every github.com/cmusatyalab/steeleagle package (base SDK and any mission import under that module) against; overrides any per-import version in the DSL file's Import stanza for those packages (optional; defaults to each import's own declared version, or \"latest\" on the module's default branch)")
 	flag.Parse()
 
 	if *dslPath == "" {
@@ -69,7 +70,15 @@ func main() {
 	}
 	imports = ensureBaseImports(imports)
 
-	workspace, cleanup, err := newWorkspace(imports)
+	var resolvedRef string
+	if *steeleagleRef != "" {
+		resolvedRef, err = resolveSteeleagleRef(*steeleagleRef)
+		if err != nil {
+			fatalf("resolving -steeleagle-ref %s: %v", *steeleagleRef, err)
+		}
+	}
+
+	workspace, cleanup, err := newWorkspace(imports, resolvedRef)
 	if err != nil {
 		fatalf("setting up build workspace: %v", err)
 	}
