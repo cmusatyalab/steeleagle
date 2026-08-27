@@ -69,6 +69,64 @@ func TestScrubSingleLineExcludeNotSatisfied(t *testing.T) {
 	}
 }
 
+// TestScrubSingleLineExcludeSkipsCommentLines checks to make sure that
+// an #exclude-ifndef directive reaches past intervening comment lines
+// (e.g. a doc comment) to exclude the next actual line of code, and that
+// the comment lines in between are excluded along with it.
+func TestScrubSingleLineExcludeSkipsCommentLines(t *testing.T) {
+	cap := newCapFile(t, "services/driver/TakeOffRequest/altitude")
+	src := "// #exclude-ifndef services/driver/TakeOffRequest/altitude\n" +
+		"// GetAltitude returns the last known altitude.\n" +
+		"GetAltitude() float32\n" +
+		"GetLatitude() float32\n"
+	out, dirty, err := preprocess.Scrub(cap.Supports, []byte(src))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !dirty {
+		t.Fatal("dirty = false, want true")
+	}
+	lines := strings.Split(string(out), "\n")
+	if lines[1] != "" {
+		t.Errorf("doc comment line = %q, want blank", lines[1])
+	}
+	if lines[2] != "" {
+		t.Errorf("excluded line = %q, want blank", lines[2])
+	}
+	if lines[3] != "GetLatitude() float32" {
+		t.Errorf("unrelated line changed: %q", lines[3])
+	}
+}
+
+// TestScrubSingleLinePrivateSkipsCommentLines checks to make sure that a
+// #private-ifndef directive reaches past intervening comment lines to
+// private the next actual line of code.
+func TestScrubSingleLinePrivateSkipsCommentLines(t *testing.T) {
+	cap := newCapFile(t, "services/control/HeadingMode/HEADING_MODE_START")
+	src := "// #private-ifndef services/control/HeadingMode/HEADING_MODE_START\n" +
+		"// HeadingMode_HEADING_MODE_START is the starting heading mode.\n" +
+		"HeadingMode_HEADING_MODE_START HeadingMode = 0\n" +
+		"HeadingMode_HEADING_MODE_MAGNETIC HeadingMode = 1\n"
+	out, dirty, err := preprocess.Scrub(cap.Supports, []byte(src))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !dirty {
+		t.Fatal("dirty = false, want true")
+	}
+	lines := strings.Split(string(out), "\n")
+	if lines[1] != "// HeadingMode_HEADING_MODE_START is the starting heading mode." {
+		t.Errorf("doc comment line = %q, want unchanged (comments aren't privated)", lines[1])
+	}
+	want := "headingMode_HEADING_MODE_START HeadingMode = 0"
+	if lines[2] != want {
+		t.Errorf("line = %q, want %q", lines[2], want)
+	}
+	if lines[3] != "HeadingMode_HEADING_MODE_MAGNETIC HeadingMode = 1" {
+		t.Errorf("unrelated line changed: %q", lines[3])
+	}
+}
+
 // TestScrubSingleLinePrivateSatisfied checks to make sure that a single
 // line private directive works.
 func TestScrubSingleLinePrivateSatisfied(t *testing.T) {
@@ -256,7 +314,7 @@ func TestScrubUnclosedPrivateBlock(t *testing.T) {
 
 // TestScrubTagLinesAlwaysRemoved checks that every directive line itself is
 // always stripped from the output, regardless of whether its directive is
-// satisfied -- directive lines are preprocessor syntax, not source.
+// satisfied. Directive lines are preprocessor syntax, not source.
 func TestScrubTagLinesAlwaysRemoved(t *testing.T) {
 	cap := newCapFile(t, "services/driver/ControlService/Kill")
 	tagLines := []string{

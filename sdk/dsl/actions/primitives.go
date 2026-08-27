@@ -4,16 +4,21 @@ import (
 	"github.com/cmusatyalab/steeleagle/sdk"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/types"
+	"github.com/cmusatyalab/steeleagle/sdk/enums"
 	"github.com/cmusatyalab/steeleagle/sdk/opt"
 )
 
 // TakeOff orders the vehicle to take off at its current position.
 type TakeOff struct {
-	Options []opt.Option[opt.TakeOffOption]
+	// #optional
+	Altitude float32
 }
 
 func (i *TakeOff) Execute(v sdk.Vehicle, m dsl.MissionData) error {
-	_, err := v.TakeOff(i.Options...).Wait()
+	options := []opt.Option[opt.TakeOffOption]{}
+	// #exclude-ifndef services/driver/TakeOffRequest/altitude
+	options = append(options, opt.WithAltitude[opt.TakeOffOption](i.Altitude))
+	_, err := v.TakeOff(options...).Wait()
 	return err
 }
 
@@ -31,11 +36,22 @@ var _ dsl.Action = &Land{}
 
 // ReturnToHome orders the vehicle to return to its start position.
 type ReturnToHome struct {
-	Options []opt.Option[opt.ReturnToHomeOption]
+	// #optional
+	EndBehavior enums.ReturnToHomeEndBehavior
+	// #optional
+	MinReturnAltitude float32
+	// #optional
+	FinalAltitude float32
 }
 
 func (i *ReturnToHome) Execute(v sdk.Vehicle, m dsl.MissionData) error {
-	_, err := v.ReturnToHome(i.Options...).Wait()
+	options := []opt.Option[opt.ReturnToHomeOption]{}
+	options = append(options, opt.WithEndBehavior[opt.ReturnToHomeOption](i.EndBehavior))
+	// #exclude-ifndef services/driver/ReturnToHomeRequest/min_return_altitude
+	options = append(options, opt.WithMinReturnAltitude[opt.ReturnToHomeOption](i.MinReturnAltitude))
+	// #exclude-ifndef services/driver/ReturnToHomeRequest/final_altitude
+	options = append(options, opt.WithFinalAltitude[opt.ReturnToHomeOption](i.FinalAltitude))
+	_, err := v.ReturnToHome(options...).Wait()
 	return err
 }
 
@@ -45,11 +61,25 @@ var _ dsl.Action = &ReturnToHome{}
 // position.
 type GoToGlobalPosition struct {
 	types.GlobalPosition
-	Options []opt.Option[opt.SetGlobalPositionTargetOption]
+	// #optional
+	HeadingMode enums.HeadingMode
+	// #optional
+	AltitudeMode enums.AltitudeMode
+	// #optional
+	Speed float32
+	// #optional
+	AngularSpeed float32
 }
 
 func (i *GoToGlobalPosition) Execute(v sdk.Vehicle, m dsl.MissionData) error {
-	_, err := v.SetGlobalPositionTarget(i.Latitude, i.Longitude, i.Altitude, i.Heading, i.Options...).Wait()
+	options := []opt.Option[opt.SetGlobalPositionTargetOption]{}
+	options = append(options, opt.WithHeadingMode[opt.SetGlobalPositionTargetOption](i.HeadingMode))
+	options = append(options, opt.WithAltitudeMode[opt.SetGlobalPositionTargetOption](i.AltitudeMode))
+	// #exclude-ifndef services/driver/SetGlobalPositionTargetRequest/speed
+	options = append(options, opt.WithSpeed[opt.SetGlobalPositionTargetOption](i.Speed))
+	// #exclude-ifndef services/driver/SetGlobalPositionTargetRequest/angular_speed
+	options = append(options, opt.WithAngularSpeed[opt.SetGlobalPositionTargetOption](i.AngularSpeed))
+	_, err := v.SetGlobalPositionTarget(i.Latitude, i.Longitude, i.Altitude, i.Heading, options...).Wait()
 	return err
 }
 
@@ -59,11 +89,22 @@ var _ dsl.Action = &GoToGlobalPosition{}
 // position.
 type GoToRelativePosition struct {
 	types.RelativePosition
-	Options []opt.Option[opt.SetRelativePositionTargetOption]
+	// #optional
+	Speed float32
+	// #optional
+	AngularSpeed float32
+	// #optional
+	Frame enums.ReferenceFrame
 }
 
 func (i *GoToRelativePosition) Execute(v sdk.Vehicle, m dsl.MissionData) error {
-	_, err := v.SetRelativePositionTarget(i.X, i.Y, i.Z, i.Angle, i.Options...).Wait()
+	options := []opt.Option[opt.SetRelativePositionTargetOption]{}
+	// #exclude-ifndef services/driver/SetRelativePositionTargetRequest/speed
+	options = append(options, opt.WithSpeed[opt.SetRelativePositionTargetOption](i.Speed))
+	// #exclude-ifndef services/driver/SetRelativePositionTargetRequest/angular_speed
+	options = append(options, opt.WithAngularSpeed[opt.SetRelativePositionTargetOption](i.AngularSpeed))
+	options = append(options, opt.WithReferenceFrame[opt.SetRelativePositionTargetOption](i.Frame))
+	_, err := v.SetRelativePositionTarget(i.X, i.Y, i.Z, i.Angle, options...).Wait()
 	return err
 }
 
@@ -73,11 +114,17 @@ var _ dsl.Action = &GoToRelativePosition{}
 // gimbal.
 type SetGimbalPose struct {
 	types.Pose
-	Options []opt.Option[opt.SetGimbalAngleTargetOption]
+	// #optional
+	AngleMode enums.AngleMode
+	// #optional
+	Frame enums.ReferenceFrame
 }
 
 func (i *SetGimbalPose) Execute(v sdk.Vehicle, m dsl.MissionData) error {
-	_, err := v.SetGimbalAngleTarget(i.Pitch, i.Roll, i.Yaw, i.Options...).Wait()
+	options := []opt.Option[opt.SetGimbalAngleTargetOption]{}
+	options = append(options, opt.WithAngleMode[opt.SetGimbalAngleTargetOption](i.AngleMode))
+	options = append(options, opt.WithReferenceFrame[opt.SetGimbalAngleTargetOption](i.Frame))
+	_, err := v.SetGimbalAngleTarget(i.Pitch, i.Roll, i.Yaw, options...).Wait()
 	return err
 }
 

@@ -11,7 +11,7 @@ import (
 
 // GenerateConsts returns a copy of a Go source file declaring one or more
 // const types as `type <Name> string` (e.g. sdk/params.go or
-// dsl/info.go) with a const block appended for every type in types.
+// dsl/swarm.go) with a const block appended for every type in types.
 // Every key of types must already be declared in src as `type <key>
 // string`.
 func GenerateConsts(types map[string][]string, src []byte) ([]byte, error) {

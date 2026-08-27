@@ -42,18 +42,23 @@ func Scrub(filter func(string) bool, src []byte) ([]byte, bool, error) {
 				}
 			}
 		} else {
+			// A next-line directive should govern the next non-comment line,
+			// so comment lines (e.g. doc comments) in between are carried
+			// along with whatever the directive does, and the directive
+			// stays pending until a non-comment line is reached.
+			comment := isCommentLine(line)
 			// Exclude or private lines if inside a block or after a directive
 			if nextExclude || excludeStack.top() {
 				out[i] = ""
 				dirty = true
+				nextExclude = nextExclude && comment
 			} else if nextPrivate || privateStack.top() {
 				out[i] = privateLine(line)
-				dirty = (out[i] != line) // only set dirty if we actually modified the line
+				dirty = dirty || (out[i] != line) // only set dirty if we actually modified a line
+				nextPrivate = nextPrivate && comment
 			} else {
 				out[i] = line
 			}
-			// Reset nextPrivate and nextExclude
-			nextPrivate, nextExclude = false, false
 		}
 	}
 	// Every new block added to the stack should be closed and thus these should
@@ -86,6 +91,11 @@ func getTag(line string) (Directive, []string) {
 		tag = DirectiveEndPrivate
 	}
 	return tag, strings.Split(trimmed[len(tag):], ",")
+}
+
+// isCommentLine reports whether a line is a Go line comment.
+func isCommentLine(line string) bool {
+	return strings.HasPrefix(strings.TrimSpace(line), "//")
 }
 
 // privateLine privates a line of Go by lowercasing the first

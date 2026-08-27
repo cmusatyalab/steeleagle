@@ -1,8 +1,6 @@
-package main
+package parser
 
 import (
-	"io"
-
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
 )
@@ -43,7 +41,7 @@ type ImportStanza struct {
 
 // ImportSpec is a single imported package path, optionally preceded by an
 // alias Ident used to qualify types from that package and optionally followed
-// by a version (e.g. "basesdk "github.com/cmusatyalab/steeleagle/sdk\" v1.2.3").
+// by a version (e.g. "basesdk "github.com/cmusatyalab/steeleagle/sdk" v1.2.3").
 // When Alias is empty, the package's own name is used as the qualifier. When no
 // version is provided the latest version is fetched.
 type ImportSpec struct {
@@ -154,23 +152,3 @@ var dslParser = participle.MustBuild[Ast](
 	participle.Elide("Whitespace", "Comment"),
 	participle.UseLookahead(2),
 )
-
-// Parse parses a DSL mission file and unquotes every Override and Import
-// path (captured raw as String tokens) in place.
-func Parse(filename string, r io.Reader) (*Ast, error) {
-	ast, err := dslParser.Parse(filename, r)
-	if err != nil {
-		return nil, err
-	}
-	if ast.Override != nil {
-		for _, o := range ast.Override.Paths {
-			o.Path = unquoteString(o.Path)
-		}
-	}
-	if ast.Import != nil {
-		for _, imp := range ast.Import.Imports {
-			imp.Path = unquoteString(imp.Path)
-		}
-	}
-	return ast, nil
-}

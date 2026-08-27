@@ -12,19 +12,19 @@ import (
 // Target source packages for const generation.
 const (
 	sdkParamsPkgPath = "github.com/cmusatyalab/steeleagle/sdk/params"
-	dslInfoPkgPath   = "github.com/cmusatyalab/steeleagle/sdk/dsl/info"
+	dslSwarmPkgPath  = "github.com/cmusatyalab/steeleagle/sdk/dsl/swarm"
 )
 
 //go:embed params/params.go
 var sdkParamsSource []byte
 
-//go:embed dsl/info/info.go
-var dslInfoSource []byte
+//go:embed dsl/swarm/swarm.go
+var dslSwarmSource []byte
 
 // CreateOverlay creates a Go compiler overlay that replaces source files
 // with files scrubbed according to pre-processor directives, and rewrites
-// sdk/params/params.go and dsl/info/info.go to declare the params/info
-// constants named by sdkParams and dslInfo respectively (see
+// sdk/params/params.go and dsl/swarm/swarm.go to declare the params/swarm
+// constants named by sdkParams and dslSwarm respectively (see
 // preprocess.GenerateConsts).
 func CreateOverlay(capFile *CapFile, sdkTypes, dslTypes map[string][]string, pkgs []*packages.Package) (map[string][]byte, []*CompileError) {
 	overlay := map[string][]byte{}
@@ -80,8 +80,8 @@ func constSourceFor(pkgPath string, sdkTypes, dslTypes map[string][]string) ([]b
 	switch pkgPath {
 	case sdkParamsPkgPath:
 		return sdkParamsSource, sdkTypes, true
-	case dslInfoPkgPath:
-		return dslInfoSource, dslTypes, true
+	case dslSwarmPkgPath:
+		return dslSwarmSource, dslTypes, true
 	default:
 		return nil, nil, false
 	}

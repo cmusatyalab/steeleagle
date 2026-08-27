@@ -1,7 +1,7 @@
-// Package info declares the DSL's information types, generated at compile time
-// with the const values a mission's manifest file makes available, to prevent
-// string mismatch errors at runtime.
-package info
+// Package swarm declares the DSL's swarm coordination types, generated at
+// compile time with the const values a mission's manifest file makes
+// available, to prevent string mismatch errors at runtime.
+package swarm
 
 // Role is generated to hold all the possible mission roles that can be
 // accessed at runtime.
