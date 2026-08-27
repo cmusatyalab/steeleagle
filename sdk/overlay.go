@@ -66,7 +66,7 @@ func CreateOverlay(capFile *CapFile, sdkTypes, dslTypes map[string][]string, pkg
 // *preprocess.PreprocessError, its LineNo carries over, otherwise LineNo is
 // left zero.
 func toCompileError(err error, file string) *CompileError {
-	compileErr := &CompileError{error: err, File: file}
+	compileErr := &CompileError{Err: err, File: file}
 	var preprocessErr *preprocess.PreprocessError
 	if errors.As(err, &preprocessErr) {
 		compileErr.LineNo = preprocessErr.LineNo

@@ -6,12 +6,12 @@ import (
 	"github.com/cmusatyalab/steeleagle/sdk/params"
 )
 
-// TestAddFeaturesFromGeoJSONReturnsFeatureKeys checks that the returned
+// TestAddFeaturesFromGeoJsonReturnsFeatureKeys checks that the returned
 // feature slice matches the "name" property of each parsed feature, in
 // order.
-func TestAddFeaturesFromGeoJSONReturnsFeatureKeys(t *testing.T) {
+func TestAddFeaturesFromGeoJsonReturnsFeatureKeys(t *testing.T) {
 	m := NewMap()
-	features, err := m.AddFeaturesFromGeoJSON([]byte(sampleGeoJSON))
+	features, err := m.AddFeaturesFromGeoJson([]byte(sampleGeoJSON))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -26,11 +26,11 @@ func TestAddFeaturesFromGeoJSONReturnsFeatureKeys(t *testing.T) {
 	}
 }
 
-// TestAddFeaturesFromGeoJSONPopulatesMap checks that parsed features can be
+// TestAddFeaturesFromGeoJsonPopulatesMap checks that parsed features can be
 // retrieved from the map afterward via GetPolygon/GetLineString.
-func TestAddFeaturesFromGeoJSONPopulatesMap(t *testing.T) {
+func TestAddFeaturesFromGeoJsonPopulatesMap(t *testing.T) {
 	m := NewMap()
-	if _, err := m.AddFeaturesFromGeoJSON([]byte(sampleGeoJSON)); err != nil {
+	if _, err := m.AddFeaturesFromGeoJson([]byte(sampleGeoJSON)); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if _, err := m.GetPolygon("area"); err != nil {
@@ -41,11 +41,11 @@ func TestAddFeaturesFromGeoJSONPopulatesMap(t *testing.T) {
 	}
 }
 
-// TestAddFeaturesFromGeoJSONAppendsToExisting checks that adding features
+// TestAddFeaturesFromGeoJsonAppendsToExisting checks that adding features
 // to a map that already has geometry preserves the existing entries.
-func TestAddFeaturesFromGeoJSONAppendsToExisting(t *testing.T) {
+func TestAddFeaturesFromGeoJsonAppendsToExisting(t *testing.T) {
 	m := testMap()
-	if _, err := m.AddFeaturesFromGeoJSON([]byte(sampleGeoJSON)); err != nil {
+	if _, err := m.AddFeaturesFromGeoJson([]byte(sampleGeoJSON)); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if _, err := m.GetPolygon("poly"); err != nil {
@@ -56,11 +56,83 @@ func TestAddFeaturesFromGeoJSONAppendsToExisting(t *testing.T) {
 	}
 }
 
-// TestAddFeaturesFromGeoJSONInvalidJSON checks that malformed JSON surfaces
+// TestAddFeaturesFromGeoJsonInvalidJSON checks that malformed JSON surfaces
 // an error instead of silently producing an empty map.
-func TestAddFeaturesFromGeoJSONInvalidJSON(t *testing.T) {
+func TestAddFeaturesFromGeoJsonInvalidJSON(t *testing.T) {
 	m := NewMap()
-	if _, err := m.AddFeaturesFromGeoJSON([]byte("not json")); err == nil {
+	if _, err := m.AddFeaturesFromGeoJson([]byte("not json")); err == nil {
+		t.Fatal("expected an error for invalid JSON")
+	}
+}
+
+// TestGetFeatureNamesFromGeoJsonReturnsNames checks that the returned name
+// slice matches the "name" property of each feature, in order.
+func TestGetFeatureNamesFromGeoJsonReturnsNames(t *testing.T) {
+	m := NewMap()
+	names, err := m.GetFeatureNamesFromGeoJson([]byte(sampleGeoJSON))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	want := []string{"Area", "Path"}
+	if len(names) != len(want) {
+		t.Fatalf("expected %d names, got %d", len(want), len(names))
+	}
+	for i, n := range want {
+		if names[i] != n {
+			t.Errorf("name %d: got %q, want %q", i, names[i], n)
+		}
+	}
+}
+
+// TestGetFeatureNamesFromGeoJsonCapitalizesNames checks that every returned
+// name has its first letter capitalized, regardless of the case it was
+// stored in, and that an empty name is handled without panicking.
+func TestGetFeatureNamesFromGeoJsonCapitalizesNames(t *testing.T) {
+	const data = `{
+		"type": "FeatureCollection",
+		"features": [
+			{"type":"Feature","properties":{"name":"lowercase"},"geometry":{"type":"Point","coordinates":[0,0]}},
+			{"type":"Feature","properties":{"name":"AlreadyCapitalized"},"geometry":{"type":"Point","coordinates":[0,0]}},
+			{"type":"Feature","properties":{"name":"ALLCAPS"},"geometry":{"type":"Point","coordinates":[0,0]}},
+			{"type":"Feature","properties":{},"geometry":{"type":"Point","coordinates":[0,0]}}
+		]
+	}`
+	m := NewMap()
+	names, err := m.GetFeatureNamesFromGeoJson([]byte(data))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	want := []string{"Lowercase", "AlreadyCapitalized", "ALLCAPS", ""}
+	if len(names) != len(want) {
+		t.Fatalf("expected %d names, got %d", len(want), len(names))
+	}
+	for i, n := range want {
+		if names[i] != n {
+			t.Errorf("name %d: got %q, want %q", i, names[i], n)
+		}
+	}
+}
+
+// TestGetFeatureNamesFromGeoJsonDoesNotModifyMap checks that reading names
+// out of GeoJSON data does not add any geometry to the map.
+func TestGetFeatureNamesFromGeoJsonDoesNotModifyMap(t *testing.T) {
+	m := testMap()
+	if _, err := m.GetFeatureNamesFromGeoJson([]byte(sampleGeoJSON)); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, err := m.GetPolygon("area"); err == nil {
+		t.Error("expected GetFeatureNamesFromGeoJson not to add features to the map")
+	}
+	if _, err := m.GetPolygon("poly"); err != nil {
+		t.Errorf("expected pre-existing feature %q to survive: %v", "poly", err)
+	}
+}
+
+// TestGetFeatureNamesFromGeoJsonInvalidJSON checks that malformed JSON
+// surfaces an error instead of silently producing an empty slice.
+func TestGetFeatureNamesFromGeoJsonInvalidJSON(t *testing.T) {
+	m := NewMap()
+	if _, err := m.GetFeatureNamesFromGeoJson([]byte("not json")); err == nil {
 		t.Fatal("expected an error for invalid JSON")
 	}
 }

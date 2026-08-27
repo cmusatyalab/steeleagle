@@ -76,10 +76,10 @@ func TestNewMapIsEmpty(t *testing.T) {
 	}
 }
 
-// TestNewMapFromGeoJSONBuildsUsableMap checks that a map built directly
+// TestNewMapFromGeoJsonBuildsUsableMap checks that a map built directly
 // from GeoJSON data can be queried via GetPolygon/GetLineString.
-func TestNewMapFromGeoJSONBuildsUsableMap(t *testing.T) {
-	m, err := NewMapFromGeoJSON(strings.NewReader(sampleGeoJSON))
+func TestNewMapFromGeoJsonBuildsUsableMap(t *testing.T) {
+	m, err := NewMapFromGeoJson(strings.NewReader(sampleGeoJSON))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -91,10 +91,10 @@ func TestNewMapFromGeoJSONBuildsUsableMap(t *testing.T) {
 	}
 }
 
-// TestNewMapFromGeoJSONInvalidJSON checks that malformed GeoJSON input
+// TestNewMapFromGeoJsonInvalidJSON checks that malformed GeoJSON input
 // surfaces an error rather than returning a partially built map.
-func TestNewMapFromGeoJSONInvalidJSON(t *testing.T) {
-	if _, err := NewMapFromGeoJSON(strings.NewReader("not json")); err == nil {
+func TestNewMapFromGeoJsonInvalidJSON(t *testing.T) {
+	if _, err := NewMapFromGeoJson(strings.NewReader("not json")); err == nil {
 		t.Fatal("expected an error for invalid JSON")
 	}
 }

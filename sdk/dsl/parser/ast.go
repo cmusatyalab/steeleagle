@@ -80,6 +80,12 @@ type Attr struct {
 	Value *Value `parser:"@@"`
 }
 
+// Value's Ident alternative accepts a plain Ident ("Fast") or a
+// dot-qualified QualIdent ("params.Poly"), the latter letting a mission
+// reference an enum constant from an explicitly named imported package
+// (matching whatever qualifier -- alias or package name -- its Import
+// stanza uses for that package) rather than only a bare, package-implied
+// name.
 type Value struct {
 	Pos    lexer.Position
 	Float  *float64    `parser:"@Float"`
@@ -87,7 +93,7 @@ type Value struct {
 	String *string     `parser:"| @String"`
 	Array  *ArrayValue `parser:"| @@"`
 	Inline *InlineCtor `parser:"| @@"`
-	Ident  *string     `parser:"| @Ident"`
+	Ident  *string     `parser:"| @(Ident | QualIdent)"`
 }
 
 type ArrayValue struct {
@@ -137,7 +143,12 @@ func (v *Value) StringValue() (s string, ok bool) {
 var dslLexer = lexer.MustSimple([]lexer.SimpleRule{
 	{Name: "Comment", Pattern: `#[^\n]*`},
 	{Name: "Arrow", Pattern: `->`},
-	{Name: "Float", Pattern: `-?\d+(?:\.\d+)?`},
+	// Float requires a fractional part so it doesn't shadow Int: the
+	// lexer tries rules in order and takes the first one that matches at
+	// all (see participle's StatefulLexer.Next), so if Float matched bare
+	// digits too, an integer literal would always lex as Float and Int
+	// would never be reachable.
+	{Name: "Float", Pattern: `-?\d+\.\d+`},
 	{Name: "Int", Pattern: `-?\d+`},
 	{Name: "String", Pattern: `'[^']*'|"[^"]*"`},
 	{Name: "QualIdent", Pattern: `[a-zA-Z][a-zA-Z_\d]*(?:\.[a-zA-Z][a-zA-Z_\d]*)+`},

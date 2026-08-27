@@ -15,6 +15,7 @@ require (
 	github.com/mwitkow/grpc-proxy v0.0.0-20250813121105-2866842de9a5
 	github.com/open-policy-agent/opa v1.19.0
 	github.com/pelletier/go-toml/v2 v2.4.3
+	github.com/peterstace/simplefeatures v0.59.0
 	github.com/rs/zerolog v1.35.1
 	github.com/shirou/gopsutil/v3 v3.24.5
 	go.etcd.io/bbolt v1.5.0
@@ -79,7 +80,6 @@ require (
 	github.com/mdlayher/socket v0.6.1 // indirect
 	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/peterstace/simplefeatures v0.59.0 // indirect
 	github.com/pires/go-proxyproto v0.15.0 // indirect
 	github.com/pjbgf/sha1cd v0.6.0 // indirect
 	github.com/pkg/sftp v1.13.9 // indirect

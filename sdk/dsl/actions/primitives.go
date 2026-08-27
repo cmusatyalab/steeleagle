@@ -60,7 +60,7 @@ var _ dsl.Action = &ReturnToHome{}
 // GoToGlobalPosition orders the vehicle to transit to a global
 // position.
 type GoToGlobalPosition struct {
-	types.GlobalPosition
+	Position types.GlobalPosition
 	// #optional
 	HeadingMode enums.HeadingMode
 	// #optional
@@ -79,7 +79,13 @@ func (i *GoToGlobalPosition) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 	options = append(options, opt.WithSpeed[opt.SetGlobalPositionTargetOption](i.Speed))
 	// #exclude-ifndef services/driver/SetGlobalPositionTargetRequest/angular_speed
 	options = append(options, opt.WithAngularSpeed[opt.SetGlobalPositionTargetOption](i.AngularSpeed))
-	_, err := v.SetGlobalPositionTarget(i.Latitude, i.Longitude, i.Altitude, i.Heading, options...).Wait()
+	_, err := v.SetGlobalPositionTarget(
+        i.Position.Latitude,
+        i.Position.Longitude,
+        i.Position.Altitude,
+        i.Position.Heading,
+        options...,
+    ).Wait()
 	return err
 }
 
@@ -88,7 +94,7 @@ var _ dsl.Action = &GoToGlobalPosition{}
 // GoToRelativePosition orders the vehicle to transit to a relative
 // position.
 type GoToRelativePosition struct {
-	types.RelativePosition
+	Position types.RelativePosition
 	// #optional
 	Speed float32
 	// #optional
@@ -104,7 +110,13 @@ func (i *GoToRelativePosition) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 	// #exclude-ifndef services/driver/SetRelativePositionTargetRequest/angular_speed
 	options = append(options, opt.WithAngularSpeed[opt.SetRelativePositionTargetOption](i.AngularSpeed))
 	options = append(options, opt.WithReferenceFrame[opt.SetRelativePositionTargetOption](i.Frame))
-	_, err := v.SetRelativePositionTarget(i.X, i.Y, i.Z, i.Angle, options...).Wait()
+	_, err := v.SetRelativePositionTarget(
+        i.Position.X,
+        i.Position.Y,
+        i.Position.Z,
+        i.Position.Angle,
+        options...,
+    ).Wait()
 	return err
 }
 
@@ -113,7 +125,7 @@ var _ dsl.Action = &GoToRelativePosition{}
 // SetGimbalPose orders the vehicle to set the pose of its primary
 // gimbal.
 type SetGimbalPose struct {
-	types.Pose
+	Pose types.Pose
 	// #optional
 	AngleMode enums.AngleMode
 	// #optional
@@ -124,7 +136,12 @@ func (i *SetGimbalPose) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 	options := []opt.Option[opt.SetGimbalAngleTargetOption]{}
 	options = append(options, opt.WithAngleMode[opt.SetGimbalAngleTargetOption](i.AngleMode))
 	options = append(options, opt.WithReferenceFrame[opt.SetGimbalAngleTargetOption](i.Frame))
-	_, err := v.SetGimbalAngleTarget(i.Pitch, i.Roll, i.Yaw, options...).Wait()
+	_, err := v.SetGimbalAngleTarget(
+        i.Pose.Pitch,
+        i.Pose.Roll,
+        i.Pose.Yaw,
+        options...,
+    ).Wait()
 	return err
 }
 

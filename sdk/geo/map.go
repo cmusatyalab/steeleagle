@@ -19,15 +19,15 @@ func NewMap() *Map {
 	return &Map{geometry: make(map[params.MapFeature]geom.Geometry)}
 }
 
-// NewMapFromGeoJSON builds a Map from a GeoJSON FeatureCollection, keying
+// NewMapFromGeoJson builds a Map from a GeoJSON FeatureCollection, keying
 // each feature's geometry by its "name" property.
-func NewMapFromGeoJSON(r io.Reader) (*Map, error) {
+func NewMapFromGeoJson(r io.Reader) (*Map, error) {
 	data, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
 	m := NewMap()
-	if _, err := m.AddFeaturesFromGeoJSON(data); err != nil {
+	if _, err := m.AddFeaturesFromGeoJson(data); err != nil {
 		return nil, err
 	}
 	return m, nil

@@ -24,6 +24,7 @@ type DslFsm struct {
 	transitions map[string]map[string]string // action -> event -> next action
 	actions     map[string]dsl.Action
 	events      map[string]dsl.Event
+	data        dsl.MissionData
 	conn        *grpc.ClientConn
 	rootCtx     context.Context // set by Start; scopes every action/event call for the whole mission
 	doneOnce    sync.Once
@@ -31,19 +32,22 @@ type DslFsm struct {
 }
 
 // NewDslFsm creates a DSL runtime for a mission compiled to transitions,
-// actions, and events, that dials out to the vehicle over conn. Call Start
-// to begin executing the mission from its start action.
+// actions, and events, that dials out to the vehicle over conn. data is
+// passed to every action's Execute call and every event's Monitor call. Call
+// Start to begin executing the mission from its start action.
 func NewDslFsm(
 	start string,
 	transitions map[string]map[string]string,
 	actions map[string]dsl.Action,
 	events map[string]dsl.Event,
+	data dsl.MissionData,
 	conn *grpc.ClientConn,
 ) *DslFsm {
 	d := &DslFsm{
 		transitions: transitions,
 		actions:     actions,
 		events:      events,
+		data:        data,
 		conn:        conn,
 		done:        make(chan error, 1),
 	}
@@ -115,7 +119,7 @@ func (d *DslFsm) enterState(state string) {
 
 	go func() {
 		vehicle := sdk.NewVehicleFromContext(stateCtx, d.conn)
-		if err := action.Execute(vehicle); err != nil {
+		if err := action.Execute(vehicle, d.data); err != nil {
 			abort(fmt.Errorf("action %q: %w", state, err))
 			return
 		}
@@ -133,7 +137,7 @@ func (d *DslFsm) enterState(state string) {
 		}
 		go func(name string, event dsl.Event) {
 			vehicle := sdk.NewVehicleFromContext(stateCtx, d.conn)
-			ok, err := event.Monitor(vehicle)
+			ok, err := event.Monitor(vehicle, d.data)
 			if err != nil {
 				abort(fmt.Errorf("event %q: %w", name, err))
 				return

@@ -1,7 +1,7 @@
 package parser
 
 import (
-    "io"
+	"io"
 )
 
 // Parse parses a DSL mission file and unquotes every Override and Import

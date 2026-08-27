@@ -1,190 +1,143 @@
-package main
+package loader
 
 import (
 	"fmt"
-	"go/ast"
-	"go/doc"
 	"go/token"
 	"go/types"
 	"os"
 	"strings"
 
+	"github.com/cmusatyalab/steeleagle/sdk"
 	"golang.org/x/tools/go/packages"
 )
 
-// sdkPkgPath is the main SDK package that holds the base types.
-const sdkPkgPath = "github.com/cmusatyalab/steeleagle/sdk/"
+// dslPkgPath is the base DSL package which contains interface
+// definitions.
+const dslPkgPath = "github.com/cmusatyalab/steeleagle/sdk/dsl"
 
-const (
-	basePkgPath    = "github.com/cmusatyalab/steeleagle/sdk"
-	dslPkgPath     = sdkPkgPath + "dsl"
-	actionsPkgPath = sdkPkgPath + "dsl/actions"
-	typesPkgPath   = sdkPkgPath + "dsl/types"
-	eventsPkgPath  = sdkPkgPath + "dsl/events"
-	enumsPkgPath   = sdkPkgPath + "enums"
-	optPkgPath     = sdkPkgPath + "opt"
-)
-
-// steeleaglePkgs are the base packages that are always imported
-// and kept under the base namespace.
-var steeleaglePkgs = []string{
-	basePkgPath,
-	dslPkgPath,
-	actionsPkgPath,
-	typesPkgPath,
-	eventsPkgPath,
-	enumsPkgPath,
-	optPkgPath,
+// PackageRequest represents an import request for a Go package.
+// A list of these is passed into the loader to load types.
+type PackageRequest struct {
+	Path  string // import path
+	Alias string // import alias
 }
 
-// fieldType holds a type of a baseType field.
-type fieldType struct {
-	Comment string
-	Type    types.Type
+// Field holds a field's type and its comment.
+type Field struct {
+	Name      string     // name of this field (the const name, for an enum value)
+	Comment   string     // comment for this field
+	Value     string     // default value of field (for optionals)
+	Type      types.Type // type for this field
+	Qualifier string     // qualifier for this type
 }
 
-// optionalType holds a single vehicle-capability-gated optional field,
-// discovered from one SetName(argType) method on the type argument T of an
-// opt.Option[T] (or []opt.Option[T]) field.
-type optionalType struct {
-	Comment string
-	Name    string // e.g. "Altitude", from SetAltitude/WithAltitude
-	Type    types.Type
-	Pkg     *types.Package // package declaring the With<Name> constructor
+// Base holds a base type, its fields, and its comment.
+type Base struct {
+	Comment   string     // comment for this base object
+	Type      types.Type // type for this base object
+	Fields    []Field    // list of fields
+	OptFields []Field    // list of optional fields
+	Qualifier string     // qualifier for this type
 }
 
-// baseType holds a base type like an Action, Event, or Datatype.
-type baseType struct {
-	Comment string
-	Type    types.Type
-	Fields  []fieldType
-	Options []optionalType
+// TypeRegistry holds all the imported packages and registers types
+// within them.
+type TypeRegistry struct {
+	Packages    map[string]*packages.Package
+	AliasToPack map[string]*packages.Package
+	PackToAlias map[string]string
+	Actions     map[string]*Base
+	Events      map[string]*Base
+	Datatypes   map[string]*Base
+	Enums       map[string]*Base
 }
 
-// enumValue holds an enum name value and its comment.
-type enumValue struct {
-	Comment string
-	Value   string
-}
-
-// enumType holds an enum Type and its registered values.
-type enumType struct {
-	Comment string
-	Type    types.Type
-	Values  []enumValue
-}
-
-// typeRegistry holds all the imported packages, and registers
-// the types within them.
-type typeRegistry struct {
-	Packages  map[string]*packages.Package
-	Alias     map[string]string // aliases for packages
-	Actions   map[string]baseType
-	Datatypes map[string]baseType
-	Events    map[string]baseType
-	Enums     map[string]enumType
-	Errors    map[string][]string // map from package path to errors
-}
-
-// loadPackages loads all packages in to the type registry and populates
-// Type maps so that it can be queried later. overlay (as produced by
-// scrubPackages) replaces the on-disk content of any file it names, so
-// that capability scrubbing is reflected in the loaded types.
-func loadPackages(imports []*ImportSpec, workspace string, overlay map[string][]byte) (*typeRegistry, error) {
-	registry := &typeRegistry{
-		Packages:  make(map[string]*packages.Package),
-		Alias:     make(map[string]string),
-		Actions:   make(map[string]baseType),
-		Datatypes: make(map[string]baseType),
-		Events:    make(map[string]baseType),
-		Enums:     make(map[string]enumType),
-		Errors:    make(map[string][]string),
+// LoadTypes loads all DSL types present in imports (Actions, Events, and Datatypes).
+// Also loads comments and detects optional types by #optional tags.
+func LoadTypes(imports []*PackageRequest, workspace string, overlay map[string][]byte) (*TypeRegistry, []*sdk.CompileError) {
+	registry := &TypeRegistry{
+		Packages:    make(map[string]*packages.Package),
+		AliasToPack: make(map[string]*packages.Package),
+		PackToAlias: make(map[string]string),
+		Actions:     make(map[string]*Base),
+		Events:      make(map[string]*Base),
+		Datatypes:   make(map[string]*Base),
+		Enums:       make(map[string]*Base),
 	}
-	pkgPaths := steeleaglePkgs
-	seen := map[string]bool{} // keeps track of which packages we've seen
-	for _, p := range pkgPaths {
-		seen[p] = true
-	}
-	for _, imp := range imports { // there are extra packages we need to load
-		if !seen[imp.Path] {
-			seen[imp.Path] = true
-			pkgPaths = append(pkgPaths, imp.Path)
-		}
+	errors := []*sdk.CompileError{}
+
+	// Create a list of packages to import, remembering each one's alias so
+	// it can be attached once the package is actually loaded below.
+	pkgPaths := []string{}
+	aliases := map[string]string{}
+	for _, imp := range imports {
+		pkgPaths = append(pkgPaths, imp.Path)
 		if imp.Alias != "" {
-			registry.Alias[imp.Path] = imp.Alias
+			aliases[imp.Path] = imp.Alias
 		}
 	}
-
-	// Configure the Golang package loader
 	cfg := &packages.Config{
-		Dir: workspace,
-		// See the matching comment in scrub.go's scrubPackages.
-		Env: append(os.Environ(), "GOFLAGS=-mod=mod"),
-		Mode: packages.NeedName | packages.NeedTypes | packages.NeedTypesInfo |
-			packages.NeedSyntax | packages.NeedImports | packages.NeedDeps,
+		Dir:     workspace,
+		Env:     append(os.Environ(), "GOFLAGS=-mod=mod"),
+		Mode:    packages.NeedName | packages.NeedTypes | packages.NeedSyntax,
 		Overlay: overlay,
 	}
 	pkgs, err := packages.Load(cfg, pkgPaths...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load packages: %w", err)
+		return nil, append(errors, &sdk.CompileError{
+			Err: fmt.Errorf("failed to load packages: %w", err),
+		})
 	}
 
-	// Collect errors for each individual package and add the packages to the
-	// package map
+	// Collect package loading errors and register every loaded package.
 	for _, p := range pkgs {
 		for _, e := range p.Errors {
-			registry.Errors[p.PkgPath] = append(registry.Errors[p.PkgPath], e.Error())
+			errors = append(errors, packageError(e, p.PkgPath))
 		}
 		registry.Packages[p.PkgPath] = p
+		if alias, ok := aliases[p.PkgPath]; ok {
+			registry.AliasToPack[alias] = p
+			registry.PackToAlias[p.PkgPath] = alias
+		}
+	}
+	if len(errors) > 0 {
+		return nil, errors
 	}
 
-	// Check to make sure the base DSL package loaded
+	// Lookup the concrete interface definitions in dslPkgPath for
+	// Action, Event, and Datatype. Return a compile error and nil if
+	// dslPkgPath is not included in the imports or the interfaces cannot
+	// be found.
 	dslPkg, ok := registry.Packages[dslPkgPath]
 	if !ok {
-		return nil, fmt.Errorf("could not load base dsl package")
+		return nil, append(errors, &sdk.CompileError{
+			Err: fmt.Errorf("base dsl package %q was not imported", dslPkgPath),
+		})
 	}
-	if errs, ok := registry.Errors[dslPkgPath]; ok {
-		return nil, fmt.Errorf("dsl package loaded with errors: %q", errs)
+	interfaces, err := lookupInterfaces(
+		dslPkg, []string{"Action", "Event", "Datatype"},
+	)
+	if err != nil {
+		return nil, append(errors, &sdk.CompileError{Err: err, File: dslPkgPath})
+	} else if len(interfaces) != 3 {
+		return nil, append(errors, &sdk.CompileError{
+			Err:  fmt.Errorf("expected 3 interfaces back, got %d instead", len(interfaces)),
+			File: dslPkgPath,
+		})
 	}
 
-	// Look up the interfaces for each type
-	actionIface, err := lookupInterface(dslPkg, "Action")
-	if err != nil {
-		return nil, err
-	}
-	eventIface, err := lookupInterface(dslPkg, "Event")
-	if err != nil {
-		return nil, err
-	}
-	datatypeIface, err := lookupInterface(dslPkg, "Datatype")
-	if err != nil {
-		return nil, err
-	}
-
-	// Look up opt.Option, used to recognize a DSL type's optional
-	// (vehicle-capability-gated) fields.
-	optPkg, ok := registry.Packages[optPkgPath]
-	if !ok {
-		return nil, fmt.Errorf("could not load base opt package")
-	}
-	optionType, err := lookupNamedType(optPkg, "Option")
-	if err != nil {
-		return nil, err
-	}
-
-	// Walk all packages looking for DSL interface implementations
-	for _, pkg := range registry.Packages {
-		if pkg.Types == nil {
+	// Pack types into the type registry by interface implementation
+	for k, p := range registry.Packages {
+		if p.Types == nil {
 			continue
 		}
-		qualifier := pkg.Types.Name()
-		if alias, ok := registry.Alias[pkg.PkgPath]; ok {
+		qualifier := p.Types.Name()
+		if alias, ok := registry.PackToAlias[k]; ok {
 			qualifier = alias
 		}
+		docTypes := packageDocTypes(p)
 
-		docTypes, _ := getPackageDoc(pkg)
-
-		scope := pkg.Types.Scope()
+		scope := p.Types.Scope()
 		for _, name := range scope.Names() {
 			if !token.IsExported(name) {
 				continue
@@ -197,231 +150,92 @@ func loadPackages(imports []*ImportSpec, workspace string, overlay map[string][]
 			if !ok {
 				continue
 			}
-			qualifiedName := qualifier + "." + name
 			dt := docTypes[name]
 			comment := ""
 			if dt != nil {
 				comment = strings.TrimSpace(dt.Doc)
 			}
+			qualifiedName := qualifier + "." + name
 
 			switch st := named.Underlying().(type) {
 			case *types.Struct:
-				bt := baseType{
+				idx, err := implements(named, interfaces)
+				if err != nil { // implements more than one interface
+					errors = append(errors, &sdk.CompileError{
+						Err:  fmt.Errorf("%s implements more than one of Action, Event, and Datatype", qualifiedName),
+						File: p.PkgPath,
+					})
+					continue
+				} else if idx < 0 { // doesn't implement any interfaces
+					continue
+				}
+				fields, optFields := structFields(st, dt)
+				b := &Base{
+					Type:      named,
+					Comment:   comment,
+					Fields:    fields,
+					OptFields: optFields,
+				}
+				switch idx {
+				case 0:
+					registry.Actions[qualifiedName] = b
+				case 1:
+					registry.Events[qualifiedName] = b
+				case 2:
+					registry.Datatypes[qualifiedName] = b
+				}
+			case *types.Basic:
+				if st.Kind() != types.Uint32 && st.Kind() != types.String {
+					continue
+				}
+				registry.Enums[qualifiedName] = &Base{
 					Type:    named,
 					Comment: comment,
-					Fields:  structFields(st, dt),
-					Options: structOptions(st, optionType, registry.Packages),
-				}
-				if directlyImplements(named, actionIface) {
-					registry.Actions[qualifiedName] = bt
-				}
-				if directlyImplements(named, eventIface) {
-					registry.Events[qualifiedName] = bt
-				}
-				if directlyImplements(named, datatypeIface) {
-					registry.Datatypes[qualifiedName] = bt
-				}
-			case *types.Basic: // all basic types are classified as enums
-				registry.Enums[qualifiedName] = enumType{
-					Type:    named,
-					Comment: comment,
-					Values:  enumValues(scope, named, dt),
+					Fields:  enumValues(scope, named, dt),
 				}
 			}
 		}
 	}
 
+	if len(errors) > 0 {
+		return nil, errors
+	}
 	return registry, nil
 }
 
-// lookupInterface looks up name in pkg's package scope and returns it as an
-// interface type, e.g. the dsl.Action, dsl.Event, or dsl.Datatype interface.
-func lookupInterface(pkg *packages.Package, name string) (*types.Interface, error) {
-	obj := pkg.Types.Scope().Lookup(name)
-	if obj == nil {
-		return nil, fmt.Errorf("dsl package %q is missing the %s interface", pkg.PkgPath, name)
+// lookupInterfaces looks up a list of interface names in pkg's package scope and returns
+// them as a slice of interfaces.
+func lookupInterfaces(pkg *packages.Package, names []string) ([]*types.Interface, error) {
+	ifaces := []*types.Interface{}
+	for _, name := range names {
+		obj := pkg.Types.Scope().Lookup(name)
+		if obj == nil {
+			return nil, fmt.Errorf("package %q is missing the %s interface", pkg.PkgPath, name)
+		}
+		iface, ok := obj.Type().Underlying().(*types.Interface)
+		if !ok {
+			return nil, fmt.Errorf("%s is not an interface type", name)
+		}
+		ifaces = append(ifaces, iface)
 	}
-	iface, ok := obj.Type().Underlying().(*types.Interface)
-	if !ok {
-		return nil, fmt.Errorf("dsl.%s is not an interface type", name)
-	}
-	return iface, nil
+	return ifaces, nil
 }
 
-// lookupNamedType looks up name in pkg's package scope and returns it as a
-// *types.Named. For a generic type declaration (e.g. opt.Option[T any]),
-// this is its generic, uninstantiated form.
-func lookupNamedType(pkg *packages.Package, name string) (*types.Named, error) {
-	obj := pkg.Types.Scope().Lookup(name)
-	if obj == nil {
-		return nil, fmt.Errorf("package %q is missing %s", pkg.PkgPath, name)
-	}
-	tn, ok := obj.(*types.TypeName)
-	if !ok {
-		return nil, fmt.Errorf("%s in package %q is not a type", name, pkg.PkgPath)
-	}
-	named, ok := tn.Type().(*types.Named)
-	if !ok {
-		return nil, fmt.Errorf("%s in package %q is not a named type", name, pkg.PkgPath)
-	}
-	return named, nil
-}
-
-// directlyImplements reports whether named satisfies iface using only
-// named's own explicitly declared methods, ignoring methods promoted from
-// embedded fields.
-func directlyImplements(named *types.Named, iface *types.Interface) bool {
+// implements reports the index of the interface in iface *named satisfies,
+// returning -1 if none are satisfied or an error if more than one is
+// satisfied.
+func implements(named *types.Named, iface []*types.Interface) (int, error) {
+	idx := -1
 	if named == nil || iface == nil {
-		return false
+		return idx, nil
 	}
-
-	// Check each method implemented against the candidate interface
-	direct := make(map[string]*types.Func, named.NumMethods())
-	for i := 0; i < named.NumMethods(); i++ {
-		m := named.Method(i)
-		direct[m.Id()] = m
-	}
-	for i := 0; i < iface.NumMethods(); i++ {
-		want := iface.Method(i)
-		got, ok := direct[want.Id()]
-		if !ok || !types.Identical(got.Type(), want.Type()) {
-			return false
-		}
-	}
-	return true
-}
-
-// enumValues returns one enumValue per exported package-level constant in
-// scope declared with type t, along with each one's doc/line comment (read
-// from dt, dt.Consts specifically).
-func enumValues(scope *types.Scope, t *types.Named, dt *doc.Type) []enumValue {
-	valueComments := constComments(dt)
-	var values []enumValue
-	for _, name := range scope.Names() {
-		if !token.IsExported(name) {
-			continue
-		}
-		c, ok := scope.Lookup(name).(*types.Const)
-		if !ok {
-			continue
-		}
-		if named, ok := c.Type().(*types.Named); ok && named == t {
-			values = append(values, enumValue{
-				Value:   name,
-				Comment: valueComments[name],
-			})
-		}
-	}
-	return values
-}
-
-// structFields returns one fieldType per field of st, in declaration order,
-// carrying each field's comment (if dt's declaration can be resolved). dt
-// may be nil, in which case every field's Comment is empty.
-func structFields(st *types.Struct, dt *doc.Type) []fieldType {
-	comments := fieldComments(dt)
-	fields := make([]fieldType, st.NumFields())
-	for i := 0; i < st.NumFields(); i++ {
-		f := st.Field(i)
-		fields[i] = fieldType{
-			Type:    f.Type(),
-			Comment: comments[f.Name()],
-		}
-	}
-	return fields
-}
-
-// structOptions scans st's fields for one whose type is an instantiation
-// of optionType (opt.Option[T]), either directly or as a slice element
-// (opt.Option[T] or []opt.Option[T]), and returns the optionalTypes found.
-func structOptions(st *types.Struct, optionType *types.Named, pkgs map[string]*packages.Package) []optionalType {
-	var opts []optionalType
-	for i := 0; i < st.NumFields(); i++ {
-		t := st.Field(i).Type()
-		if slice, ok := t.(*types.Slice); ok {
-			t = slice.Elem()
-		}
-		named, ok := t.(*types.Named)
-		if !ok || named.Origin() != optionType.Origin() {
-			continue
-		}
-		targs := named.TypeArgs()
-		if targs == nil || targs.Len() != 1 {
-			continue
-		}
-		opts = append(opts, optionsFromConstraint(targs.At(0), pkgs)...)
-	}
-	return opts
-}
-
-// optionsFromConstraint walks t's method set (t is the type argument of an
-// opt.Option[T] field) for single-argument, no-result SetName(argType)
-// methods, and returns one optionalType per method found.
-func optionsFromConstraint(t types.Type, pkgs map[string]*packages.Package) []optionalType {
-	ms := types.NewMethodSet(t)
-	var opts []optionalType
-	for i := 0; i < ms.Len(); i++ {
-		fn, ok := ms.At(i).Obj().(*types.Func)
-		if !ok {
-			continue // TODO: log this
-		}
-		name, ok := strings.CutPrefix(fn.Name(), "Set")
-		if !ok || name == "" {
-			continue // TODO: log this
-		}
-		sig, ok := fn.Type().(*types.Signature)
-		if !ok || sig.Params().Len() != 1 || sig.Results().Len() != 0 {
-			continue // TODO: log this
-		}
-
-		// argType defaults to the Set method's own parameter type, but the
-		// With<Name> constructor's parameter type takes precedence when it
-		// can be found: for an enum-typed option, With<Name> takes the
-		// DSL-facing enums.X wrapper type and converts it to the driverpb.X
-		// type Set<Name> actually wants (see opt.WithEndBehavior for an
-		// example) -- callers need the former, since that's the type
-		// With<Name> itself is instantiated and called against.
-		argType := sig.Params().At(0).Type()
-		comment := ""
-		if fn.Pkg() != nil {
-			if pkg, ok := pkgs[fn.Pkg().Path()]; ok {
-				if withFn, ok := pkg.Types.Scope().Lookup("With" + name).(*types.Func); ok {
-					if withSig, ok := withFn.Type().(*types.Signature); ok && withSig.Params().Len() == 1 {
-						argType = withSig.Params().At(0).Type()
-					}
-				}
-				_, funcs := getPackageDoc(pkg)
-				if df, ok := funcs["With"+name]; ok {
-					comment = strings.TrimSpace(df.Doc)
-					// Remove "With" from the start of the comment
-					comment, _ = strings.CutPrefix(comment, "With")
-				}
+	for i, inter := range iface {
+		if types.Implements(types.NewPointer(named), inter) {
+			if idx >= 0 {
+				return idx, fmt.Errorf("ambiguous implementation of more than one interface")
 			}
+			idx = i
 		}
-
-		opts = append(opts, optionalType{
-			Comment: comment,
-			Name:    name,
-			Type:    argType,
-			Pkg:     fn.Pkg(),
-		})
 	}
-	return opts
-}
-
-// embeddedFieldName returns the identifier go/types would use as the field
-// name for an embedded (anonymous) struct field declared with expr.
-func embeddedFieldName(expr ast.Expr) string {
-	switch e := expr.(type) {
-	case *ast.Ident:
-		return e.Name
-	case *ast.SelectorExpr:
-		return e.Sel.Name
-	case *ast.StarExpr:
-		return embeddedFieldName(e.X)
-	case *ast.IndexExpr:
-		return embeddedFieldName(e.X)
-	default:
-		return ""
-	}
+	return idx, nil
 }
