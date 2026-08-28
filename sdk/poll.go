@@ -62,7 +62,7 @@ func actionPoller[Resp isAction](v *vehicleContext, resp Resp) pollFunc {
 				return ErrCancelled
 			case <-v.ctx.Done():
 				return ErrContextExpired
-			default:
+			case <-time.After(w.Interval): // pace polling to w.Interval
 			}
 		}
 	}
@@ -139,7 +139,7 @@ func guidancePoller[S proto.Message, Resp isGuidance[S]](v *vehicleContext, resp
 				return ErrCancelled
 			case <-v.ctx.Done():
 				return ErrContextExpired
-			default:
+			case <-time.After(w.Interval): // pace polling to w.Interval
 			}
 		}
 	}
@@ -215,7 +215,7 @@ func gimbalPoller[S proto.Message, Resp isGimbal[S]](v *vehicleContext, resp Res
 				return ErrCancelled
 			case <-v.ctx.Done():
 				return ErrContextExpired
-			default:
+			case <-time.After(w.Interval): // pace polling to w.Interval
 			}
 		}
 	}

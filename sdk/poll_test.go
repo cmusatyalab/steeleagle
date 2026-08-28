@@ -166,6 +166,36 @@ func TestActionPollerModeMismatchRecoversWithinStall(t *testing.T) {
 	}
 }
 
+// TestActionPollerHonorsPollInterval tests that the poller paces its
+// telemetry fetches to roughly w.Interval apart instead of busy-looping,
+// by bounding how many fetches happen within a fixed timeout window.
+func TestActionPollerHonorsPollInterval(t *testing.T) {
+	resp := driverpb.TakeOffResponse_builder{
+		ExpectedMode:   telemetrypb.Mode_MODE_TAKEOFF,
+		ExpectedStatus: telemetrypb.MotionStatus_MOTION_STATUS_HOLDING,
+	}.Build()
+	tel := telemetrypb.Telemetry_builder{
+		Mode: modeP(telemetrypb.Mode_MODE_TAKEOFF),
+	}.Build()
+	calls := 0
+	v := testVehicleContext(context.Background(), func() (*vehiclepb.GetTelemetryResponse, error) {
+		calls++
+		return vehiclepb.GetTelemetryResponse_builder{Telemetry: tel}.Build(), nil
+	})
+
+	const (
+		timeout  = 220 * time.Millisecond
+		interval = 50 * time.Millisecond
+	)
+	err := actionPoller(v, resp)(opt.WaitOptions{Timeout: timeout, Interval: interval})
+	if !errors.Is(err, ErrTimeout) {
+		t.Fatalf("expected ErrTimeout, got %v", err)
+	}
+	if calls > 10 {
+		t.Fatalf("expected roughly timeout/interval fetches, got %d calls -- interval is not being honored", calls)
+	}
+}
+
 // TestActionPollerTimeout tests an action poller with an expectation timeout.
 func TestActionPollerTimeout(t *testing.T) {
 	resp := driverpb.TakeOffResponse_builder{
