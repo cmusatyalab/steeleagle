@@ -30,6 +30,10 @@ type Patrol struct {
 	SurveySpacing float32 // survey spacing (default to 10.0m, only used in survey mode)
 	// #optional
 	SurveyHeading float32 // survey heading (default to 0.0deg, only used in survey mode)
+	// #optional[3.0]
+	Speed float32
+	// #optional[120.0]
+	AngularSpeed float32
 }
 
 func (p *Patrol) Execute(v sdk.Vehicle, m dsl.MissionData) error {
@@ -46,6 +50,10 @@ func (p *Patrol) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 
 	options := []opt.Option[opt.SetGlobalPositionTargetOption]{}
 	options = append(options, opt.WithAltitudeMode[opt.SetGlobalPositionTargetOption](p.AltitudeMode))
+	// #exclude-ifndef services/driver/SetGlobalPositionTargetRequest/speed
+	options = append(options, opt.WithSpeed[opt.SetGlobalPositionTargetOption](p.Speed))
+	// #exclude-ifndef services/driver/SetGlobalPositionTargetRequest/angular_speed
+	options = append(options, opt.WithAngularSpeed[opt.SetGlobalPositionTargetOption](p.AngularSpeed))
 	for i, n := range points {
 		m.Log.Info().Msgf("transiting to waypoint %d / %d", i, len(points))
 		_, err = v.SetGlobalPositionTarget(
