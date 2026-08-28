@@ -5,7 +5,7 @@ managed:
     - file_option: go_package_prefix
       value: github.com/cmusatyalab/steeleagle/api/go
 plugins:
-  - remote: buf.build/protocolbuffers/go
+  - remote: buf.build/protocolbuffers/go:v1.36.12
     out: api/go
     opt:
       - paths=source_relative
@@ -16,14 +16,14 @@ plugins:
     opt:
       - paths=source_relative
       - default_api_level=API_OPAQUE
-  - remote: buf.build/grpc/go
+  - remote: buf.build/grpc/go:v1.6.2
     out: api/go
     opt: paths=source_relative
-  - remote: buf.build/protocolbuffers/python
+  - remote: buf.build/protocolbuffers/python:v36.0
     out: api/python/src
-  - remote: buf.build/protocolbuffers/pyi
+  - remote: buf.build/protocolbuffers/pyi:v36.0
     out: api/python/src
-  - remote: buf.build/grpc/python
+  - remote: buf.build/grpc/python:v1.83.0
     out: api/python/src
 inputs:
   - directory: api
