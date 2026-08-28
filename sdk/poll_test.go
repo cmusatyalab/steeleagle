@@ -431,6 +431,26 @@ func TestGuidancePollerStallDetected(t *testing.T) {
 	})
 }
 
+// TestGuidancePollerStallDetectedAtZeroDistance tests that reaching the
+// setpoint exactly (distance == 0.0) doesn't permanently disable the stall
+// detector.
+func TestGuidancePollerStallDetectedAtZeroDistance(t *testing.T) {
+	setpoint := commonpb.GlobalPosition_builder{Latitude: f64(0), Longitude: f64(0)}.Build()
+	resp := driverpb.SetGlobalPositionTargetResponse_builder{
+		Setpoint:       setpoint,
+		ExpectedStatus: telemetrypb.MotionStatus_MOTION_STATUS_HOLDING,
+	}.Build()
+	tol := opt.Tolerances{PosTol: 1}
+
+	tel := telemetryForGuidance(setpoint, setpoint, telemetrypb.MotionStatus_MOTION_STATUS_IN_TRANSIT)
+	v := testVehicleContext(context.Background(), constantTelemetry(tel))
+
+	err := guidancePoller(v, resp)(opt.WaitOptions{Timeout: time.Second, Stall: 20 * time.Millisecond, Tolerances: tol})
+	if !errors.Is(err, ErrFailedExpectation) {
+		t.Fatalf("expected ErrFailedExpectation, got %v", err)
+	}
+}
+
 // TestGuidancePollerContextExpired tests a guidance poller with a context
 // timeout.
 func TestGuidancePollerContextExpired(t *testing.T) {

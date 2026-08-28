@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"fmt"
 	"time"
 
 	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
@@ -87,7 +88,8 @@ func guidancePoller[S proto.Message, Resp isGuidance[S]](v *vehicleContext, resp
 		activeMismatch := false
 		mismatch.Stop() // we only want to run this timer when a mismatch is detected
 		defer mismatch.Stop()
-		lastDistance := float32(0.0)
+		var lastDistance float32
+		haveLastDistance := false // distinguishes "no sample yet" from a legitimate 0.0 distance
 		for {
 			t, err := fetchTelemetry(v)
 			// Only do check if we have telemetry and position info
@@ -100,10 +102,13 @@ func guidancePoller[S proto.Message, Resp isGuidance[S]](v *vehicleContext, resp
 						activeMismatch = false
 					}
 					distance, tolCheck, err := getDistance(resp.GetSetpoint(), t, w.Tolerances)
+					// TODO(temporary): remove once the patrol stall investigation is done
+					fmt.Printf("[guidancePoller] distance=%v tolCheck=%v status=%v expectedStatus=%v\n",
+						distance, tolCheck, t.GetMotionStatus(), resp.GetExpectedStatus())
 					// If we are within tolerance and have the right motion status, we have arrived
 					if tolCheck && t.GetMotionStatus() == resp.GetExpectedStatus() {
 						return nil
-					} else if lastDistance != 0.0 { // we have already set lastDistance so we do a stall check
+					} else if haveLastDistance { // we have already set lastDistance so we do a stall check
 						if distance >= lastDistance { // stall is active
 							if !activeStall { // only reset the timer if there is an active stall
 								stall.Stop()
@@ -122,6 +127,7 @@ func guidancePoller[S proto.Message, Resp isGuidance[S]](v *vehicleContext, resp
 						}
 					}
 					lastDistance = distance
+					haveLastDistance = true
 				} else {
 					if !activeMismatch { // wait to see if it is a transient mismatch
 						mismatch.Stop()
@@ -163,7 +169,8 @@ func gimbalPoller[S proto.Message, Resp isGimbal[S]](v *vehicleContext, resp Res
 		activeMismatch := false
 		mismatch.Stop() // we only want to run this timer when a mismatch is detected
 		defer mismatch.Stop()
-		lastDistance := float32(0.0)
+		var lastDistance float32
+		haveLastDistance := false // distinguishes "no sample yet" from a legitimate 0.0 distance
 		for {
 			t, err := fetchTelemetry(v)
 			// Only do check if we have telemetry and gimbal info
@@ -179,7 +186,7 @@ func gimbalPoller[S proto.Message, Resp isGimbal[S]](v *vehicleContext, resp Res
 					// If we are within tolerance and have the right motion status, we have arrived
 					if tolCheck {
 						return nil
-					} else if lastDistance != 0.0 { // we have already set lastDistance so we do a stall check
+					} else if haveLastDistance { // we have already set lastDistance so we do a stall check
 						if distance >= lastDistance { // stall is active
 							if !activeStall { // only reset the timer if there is an active stall
 								stall.Stop()
@@ -198,6 +205,7 @@ func gimbalPoller[S proto.Message, Resp isGimbal[S]](v *vehicleContext, resp Res
 						}
 					}
 					lastDistance = distance
+					haveLastDistance = true
 				} else {
 					if !activeMismatch { // wait to see if it is a transient mismatch
 						mismatch.Stop()

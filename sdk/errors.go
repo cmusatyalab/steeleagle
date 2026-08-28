@@ -11,7 +11,7 @@ import (
 var (
 	ErrFieldNotPresent    = errors.New("field not present, returning default value")
 	ErrCannotVerify       = errors.New("couldn't verify expecation but command completed")
-	ErrFailedExpectation  = errors.New("command stopped but setpoint was not reached")
+	ErrFailedExpectation  = errors.New("command stalled but setpoint was not reached")
 	ErrPermissionDenied   = errors.New("command permission denied by the vehicle")
 	ErrTimeout            = errors.New("timeout occured before command could complete")
 	ErrFailedPrecondition = errors.New("command failed because a pre-condition was not met")
