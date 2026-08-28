@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"fmt"
 	"time"
 
 	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
@@ -201,6 +202,9 @@ func gimbalPoller[S proto.Message, Resp isGimbal[S]](v *vehicleContext, resp Res
 						activeStall = true
 					}
 				} else {
+					// TODO(temporary): remove once the gimbal stall investigation is done
+					fmt.Printf("[gimbalPoller] setpoint mismatch: want=%v gotAny=%v matchErr=%v\n",
+						resp.GetSetpoint(), t.GetGimbalInfo().GetGimbalSetpoint(), matchErr)
 					if !activeMismatch { // wait to see if it is a transient mismatch
 						mismatch.Stop()
 						mismatch.Reset(w.Stall)

@@ -55,11 +55,8 @@ func ensureBaseImports(imports []*parser.ImportSpec) []*parser.ImportSpec {
 // non-empty, it overrides the version used for every import under
 // steeleagleModule (base SDK packages and any mission-declared import of a
 // steeleagle package alike), regardless of any Version the import already
-// carries -- see resolveSteeleagleRef for why callers should pass an
-// already-resolved commit SHA rather than a raw branch/tag name. The caller
-// is responsible for calling the returned cleanup once the workspace is no
-// longer needed.
-func newWorkspace(imports []*parser.ImportSpec, steeleagleRef string) (dir string, cleanup func(), err error) {
+// carries.
+func newWorkspace(imports []*parser.ImportSpec, steeleagleRef string, overridePaths []string) (dir string, cleanup func(), err error) {
 	dir, err = os.MkdirTemp("", "steeleagle-mission-*")
 	if err != nil {
 		return "", nil, fmt.Errorf("creating workspace: %w", err)
@@ -76,7 +73,26 @@ func newWorkspace(imports []*parser.ImportSpec, steeleagleRef string) (dir strin
 		return "", nil, fmt.Errorf("go mod edit: %w\n%s", err, out)
 	}
 
+	overrides, err := resolveOverrides(overridePaths)
+	if err != nil {
+		cleanup()
+		return "", nil, err
+	}
+	for mod, path := range overrides {
+		// A placeholder require paired with a replace needs no network
+		// access to resolve: go build reads path's content directly.
+		if out, err := runIn(dir, "go", "mod", "edit",
+			"-require="+mod+"@v0.0.0-00010101000000-000000000000",
+			"-replace="+mod+"="+path); err != nil {
+			cleanup()
+			return "", nil, fmt.Errorf("go mod edit -replace=%s=%s: %w\n%s", mod, path, err, out)
+		}
+	}
+
 	for _, imp := range imports {
+		if _, ok := overriddenBy(imp.Path, overrides); ok {
+			continue // satisfied by a local override above, not fetched
+		}
 		version := imp.Version
 		if steeleagleRef != "" && isSteeleaglePkg(imp.Path) {
 			version = steeleagleRef
@@ -103,10 +119,58 @@ func isSteeleaglePkg(path string) bool {
 	return path == steeleagleModule || strings.HasPrefix(path, steeleagleModule+"/")
 }
 
+// expandOverridePath expands a leading "~" (as in an OverrideSpec written
+// "~/some/dir") to the current user's home directory, then resolves the
+// result to an absolute path.
+func expandOverridePath(path string) (string, error) {
+	if path == "~" || strings.HasPrefix(path, "~/") {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", fmt.Errorf("resolving home directory for %q: %w", path, err)
+		}
+		path = filepath.Join(home, strings.TrimPrefix(path, "~"))
+	}
+	return filepath.Abs(path)
+}
+
+// resolveOverrides expands each of paths (an Override stanza's raw
+// directory strings) and resolves the module each one declares in its own
+// go.mod, returning a map from that module path to the directory's
+// absolute path.
+func resolveOverrides(paths []string) (map[string]string, error) {
+	if len(paths) == 0 {
+		return nil, nil
+	}
+	overrides := make(map[string]string, len(paths))
+	for _, p := range paths {
+		abs, err := expandOverridePath(p)
+		if err != nil {
+			return nil, fmt.Errorf("override %q: %w", p, err)
+		}
+		out, err := runIn(abs, "go", "list", "-m")
+		if err != nil {
+			return nil, fmt.Errorf("resolving module for override %q: %w\n%s", p, err, out)
+		}
+		overrides[strings.TrimSpace(out)] = abs
+	}
+	return overrides, nil
+}
+
+// overriddenBy reports whether pkgPath is, or is a package beneath, one of
+// overrides' module paths, returning that module path if so.
+func overriddenBy(pkgPath string, overrides map[string]string) (string, bool) {
+	for mod := range overrides {
+		if pkgPath == mod || strings.HasPrefix(pkgPath, mod+"/") {
+			return mod, true
+		}
+	}
+	return "", false
+}
+
 // commitSHARe matches a full or abbreviated git commit hash.
 var commitSHARe = regexp.MustCompile(`^[0-9a-fA-F]{7,40}$`)
 
-// resolveSteeleagleRef resolves ref -- a branch, tag, or commit SHA -- to a
+// resolveSteeleagleRef resolves ref (a branch, tag, or commit SHA) to a
 // commit SHA in the SteelEagle repository, for use as -steeleagle-ref.
 //
 // go get's own "@<branch>" version query goes through the Go module proxy,

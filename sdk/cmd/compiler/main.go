@@ -70,6 +70,13 @@ func main() {
 	}
 	imports = ensureBaseImports(imports)
 
+	var overridePaths []string
+	if mission.Override != nil {
+		for _, o := range mission.Override.Paths {
+			overridePaths = append(overridePaths, o.Path)
+		}
+	}
+
 	var resolvedRef string
 	if *steeleagleRef != "" {
 		resolvedRef, err = resolveSteeleagleRef(*steeleagleRef)
@@ -78,7 +85,7 @@ func main() {
 		}
 	}
 
-	workspace, cleanup, err := newWorkspace(imports, resolvedRef)
+	workspace, cleanup, err := newWorkspace(imports, resolvedRef, overridePaths)
 	if err != nil {
 		fatalf("setting up build workspace: %v", err)
 	}
