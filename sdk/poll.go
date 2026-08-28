@@ -44,7 +44,7 @@ func actionPoller[Resp isAction](v *vehicleContext, resp Resp) pollFunc {
 			if err == nil { // only do check if we have telemetry
 				if resp.GetExpectedMode() == t.GetMode() && resp.GetExpectedStatus() == t.GetMotionStatus() {
 					return nil
-				} else if resp.GetExpectedMode() != t.GetMode() || resp.GetExpectedStatus() != t.GetMotionStatus() {
+				} else if resp.GetExpectedMode() != t.GetMode() {
 					if !activeMismatch { // wait to see if it is a transient mismatch
 						mismatch.Stop()
 						mismatch.Reset(w.Stall)
