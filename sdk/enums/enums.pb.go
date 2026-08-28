@@ -2,7 +2,7 @@
 
 package enums
 
-type Mode int32
+type Mode uint32
 
 const (
 	// #private-ifndef messages/telemetry/Mode/MODE_UNSPECIFIED
@@ -21,7 +21,7 @@ const (
 	ModeEmergency
 )
 
-type MotionStatus int32
+type MotionStatus uint32
 
 const (
 	// #private-ifndef messages/telemetry/MotionStatus/MOTION_STATUS_UNSPECIFIED
@@ -34,7 +34,7 @@ const (
 	MotionStatusStopped
 )
 
-type AlertInfo_BatteryWarning int32
+type AlertInfo_BatteryWarning uint32
 
 const (
 	// #private-ifndef messages/telemetry/AlertInfo_BatteryWarning/BATTERY_WARNING_UNSPECIFIED
@@ -45,7 +45,7 @@ const (
 	AlertInfo_BatteryWarningCritical
 )
 
-type AlertInfo_GpsWarning int32
+type AlertInfo_GpsWarning uint32
 
 const (
 	// #private-ifndef messages/telemetry/AlertInfo_GpsWarning/GPS_WARNING_UNSPECIFIED
@@ -56,7 +56,7 @@ const (
 	AlertInfo_GpsWarningNoFix
 )
 
-type AlertInfo_MagnetometerWarning int32
+type AlertInfo_MagnetometerWarning uint32
 
 const (
 	// #private-ifndef messages/telemetry/AlertInfo_MagnetometerWarning/MAGNETOMETER_WARNING_UNSPECIFIED
@@ -65,7 +65,7 @@ const (
 	AlertInfo_MagnetometerWarningPerturbations
 )
 
-type AlertInfo_ConnectionWarning int32
+type AlertInfo_ConnectionWarning uint32
 
 const (
 	// #private-ifndef messages/telemetry/AlertInfo_ConnectionWarning/CONNECTION_WARNING_UNSPECIFIED
@@ -76,7 +76,7 @@ const (
 	AlertInfo_ConnectionWarningWeakConnection
 )
 
-type AlertInfo_CompassWarning int32
+type AlertInfo_CompassWarning uint32
 
 const (
 	// #private-ifndef messages/telemetry/AlertInfo_CompassWarning/COMPASS_WARNING_UNSPECIFIED
@@ -87,7 +87,7 @@ const (
 	AlertInfo_CompassWarningNoLock
 )
 
-type ReturnToHomeEndBehavior int32
+type ReturnToHomeEndBehavior uint32
 
 const (
 	// #private-ifndef services/control/ReturnToHomeEndBehavior/RETURN_TO_HOME_END_BEHAVIOR_UNSPECIFIED
@@ -98,7 +98,7 @@ const (
 	ReturnToHomeEndBehaviorLand
 )
 
-type AltitudeMode int32
+type AltitudeMode uint32
 
 const (
 	// #private-ifndef services/control/AltitudeMode/ALTITUDE_MODE_UNSPECIFIED
@@ -109,7 +109,7 @@ const (
 	AltitudeModeAbsolute
 )
 
-type HeadingMode int32
+type HeadingMode uint32
 
 const (
 	// #private-ifndef services/control/HeadingMode/HEADING_MODE_UNSPECIFIED
@@ -120,7 +120,7 @@ const (
 	HeadingModeStart
 )
 
-type ReferenceFrame int32
+type ReferenceFrame uint32
 
 const (
 	// #private-ifndef services/control/ReferenceFrame/REFERENCE_FRAME_UNSPECIFIED
@@ -131,7 +131,7 @@ const (
 	ReferenceFrameNeu
 )
 
-type AngleMode int32
+type AngleMode uint32
 
 const (
 	// #private-ifndef services/control/AngleMode/ANGLE_MODE_UNSPECIFIED
@@ -142,7 +142,7 @@ const (
 	AngleModeOffset
 )
 
-type Resolution int32
+type Resolution uint32
 
 const (
 	// #private-ifndef services/stream/Resolution/RESOLUTION_UNSPECIFIED

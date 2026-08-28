@@ -130,7 +130,7 @@ func generateMessage(g *protogen.GeneratedFile, msg *protogen.Message) {
 // type. It instead follows Go's iota syntax.
 func generateEnum(g *protogen.GeneratedFile, enum *protogen.Enum, filePrefix string) {
 	typeName := enum.GoIdent.GoName
-	g.P("type ", typeName, " int32")
+	g.P("type ", typeName, " uint32")
 	g.P()
 	g.P("const (")
 	for i, v := range enum.Values {
