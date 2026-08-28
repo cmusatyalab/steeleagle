@@ -88,8 +88,8 @@ func guidancePoller[S proto.Message, Resp isGuidance[S]](v *vehicleContext, resp
 		activeMismatch := false
 		mismatch.Stop() // we only want to run this timer when a mismatch is detected
 		defer mismatch.Stop()
-		var lastDistance float32
-		haveLastDistance := false // distinguishes "no sample yet" from a legitimate 0.0 distance
+		var minDistance float32
+		haveMinDistance := false // distinguishes "no sample yet" from a legitimate 0.0 minimum
 		for {
 			t, err := fetchTelemetry(v)
 			// Only do check if we have telemetry and position info
@@ -108,26 +108,25 @@ func guidancePoller[S proto.Message, Resp isGuidance[S]](v *vehicleContext, resp
 					// If we are within tolerance and have the right motion status, we have arrived
 					if tolCheck && t.GetMotionStatus() == resp.GetExpectedStatus() {
 						return nil
-					} else if haveLastDistance { // we have already set lastDistance so we do a stall check
-						if distance >= lastDistance { // stall is active
+					} else if !haveMinDistance { // first sample: nothing to compare progress against yet
+						minDistance = distance
+						haveMinDistance = true
+						if err != nil {
 							if !activeStall { // only reset the timer if there is an active stall
 								stall.Stop()
 								stall.Reset(w.Stall)
 								activeStall = true
 							}
-						} else { // stall can be reset
-							stall.Stop()
-							activeStall = false
 						}
-					} else if err != nil {
-						if !activeStall { // only reset the timer if there is an active stall
-							stall.Stop()
-							stall.Reset(w.Stall)
-							activeStall = true
-						}
+					} else if distance < minDistance { // a new best distance: genuine progress
+						minDistance = distance
+						stall.Stop()
+						activeStall = false
+					} else if !activeStall { // no improvement over the best distance seen so far
+						stall.Stop()
+						stall.Reset(w.Stall)
+						activeStall = true
 					}
-					lastDistance = distance
-					haveLastDistance = true
 				} else {
 					if !activeMismatch { // wait to see if it is a transient mismatch
 						mismatch.Stop()
@@ -169,8 +168,8 @@ func gimbalPoller[S proto.Message, Resp isGimbal[S]](v *vehicleContext, resp Res
 		activeMismatch := false
 		mismatch.Stop() // we only want to run this timer when a mismatch is detected
 		defer mismatch.Stop()
-		var lastDistance float32
-		haveLastDistance := false // distinguishes "no sample yet" from a legitimate 0.0 distance
+		var minDistance float32
+		haveMinDistance := false // distinguishes "no sample yet" from a legitimate 0.0 minimum
 		for {
 			t, err := fetchTelemetry(v)
 			// Only do check if we have telemetry and gimbal info
@@ -186,26 +185,25 @@ func gimbalPoller[S proto.Message, Resp isGimbal[S]](v *vehicleContext, resp Res
 					// If we are within tolerance and have the right motion status, we have arrived
 					if tolCheck {
 						return nil
-					} else if haveLastDistance { // we have already set lastDistance so we do a stall check
-						if distance >= lastDistance { // stall is active
+					} else if !haveMinDistance { // first sample: nothing to compare progress against yet
+						minDistance = distance
+						haveMinDistance = true
+						if err != nil {
 							if !activeStall { // only reset the timer if there is an active stall
 								stall.Stop()
 								stall.Reset(w.Stall)
 								activeStall = true
 							}
-						} else { // stall can be reset
-							stall.Stop()
-							activeStall = false
 						}
-					} else if err != nil {
-						if !activeStall { // only reset the timer if there is an active stall
-							stall.Stop()
-							stall.Reset(w.Stall)
-							activeStall = true
-						}
+					} else if distance < minDistance { // a new best distance: genuine progress
+						minDistance = distance
+						stall.Stop()
+						activeStall = false
+					} else if !activeStall { // no improvement over the best distance seen so far
+						stall.Stop()
+						stall.Reset(w.Stall)
+						activeStall = true
 					}
-					lastDistance = distance
-					haveLastDistance = true
 				} else {
 					if !activeMismatch { // wait to see if it is a transient mismatch
 						mismatch.Stop()

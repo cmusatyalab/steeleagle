@@ -429,6 +429,26 @@ func TestGuidancePollerStallDetected(t *testing.T) {
 			t.Errorf("stall fired too early (after %v); wanted at least %v since a fresh stall timer should only start once progress stops", elapsed, minElapsed)
 		}
 	})
+
+	t.Run("oscillating distance still trips the stall timer", func(t *testing.T) {
+		// Distance alternates between two values that never improve on the
+		// best one seen (e.g. GPS noise around a plateau well outside
+		// tolerance)
+		lats := []float64{0.010, 0.009, 0.010, 0.009, 0.010, 0.009, 0.010, 0.009, 0.010, 0.009}
+		call := 0
+		v := testVehicleContext(context.Background(), func() (*vehiclepb.GetTelemetryResponse, error) {
+			lat := lats[call%len(lats)]
+			call++
+			actual := commonpb.GlobalPosition_builder{Latitude: f64(lat), Longitude: f64(0)}.Build()
+			tel := telemetryForGuidance(setpoint, actual, telemetrypb.MotionStatus_MOTION_STATUS_IN_TRANSIT)
+			return vehiclepb.GetTelemetryResponse_builder{Telemetry: tel}.Build(), nil
+		})
+
+		err := guidancePoller(v, resp)(opt.WaitOptions{Timeout: time.Hour, Stall: 30 * time.Millisecond, Interval: time.Millisecond, Tolerances: tol})
+		if !errors.Is(err, ErrFailedExpectation) {
+			t.Fatalf("expected ErrFailedExpectation, got %v", err)
+		}
+	})
 }
 
 // TestGuidancePollerStallDetectedAtZeroDistance tests that reaching the
