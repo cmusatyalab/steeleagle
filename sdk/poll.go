@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"fmt"
 	"time"
 
 	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
@@ -89,6 +90,8 @@ func guidancePoller[S proto.Message, Resp isGuidance[S]](v *vehicleContext, resp
 		defer mismatch.Stop()
 		var minDistance float32
 		haveMinDistance := false
+		var lastPosition *telemetrypb.PositionInfo
+		var lastDistance float32
 		for {
 			t, err := fetchTelemetry(v)
 			// Only do check if we have telemetry and position info
@@ -101,6 +104,8 @@ func guidancePoller[S proto.Message, Resp isGuidance[S]](v *vehicleContext, resp
 						activeMismatch = false
 					}
 					distance, tolCheck, err := getDistance(resp.GetSetpoint(), t, w.Tolerances)
+					lastPosition = t.GetPositionInfo()
+					lastDistance = distance
 					// If we are within tolerance and have the right motion status, we have arrived
 					if tolCheck && t.GetMotionStatus() == resp.GetExpectedStatus() {
 						return nil
@@ -135,7 +140,8 @@ func guidancePoller[S proto.Message, Resp isGuidance[S]](v *vehicleContext, resp
 			case <-timeoutC: // check for a timeout event
 				return ErrTimeout
 			case <-stall.C: // check for a stall event
-				return ErrFailedExpectation
+				return fmt.Errorf("%w: setpoint=%v position=%v minDistance=%v distance=%v",
+					ErrFailedExpectation, resp.GetSetpoint(), lastPosition, minDistance, lastDistance)
 			case <-mismatch.C: // check for a persistent setpoint mismatch
 				return ErrCancelled
 			case <-v.ctx.Done():
@@ -166,6 +172,8 @@ func gimbalPoller[S proto.Message, Resp isGimbal[S]](v *vehicleContext, resp Res
 		defer mismatch.Stop()
 		var minDistance float32
 		haveMinDistance := false
+		var lastGimbal *telemetrypb.GimbalInfo
+		var lastDistance float32
 		for {
 			t, err := fetchTelemetry(v)
 			// Only do check if we have telemetry and gimbal info
@@ -178,6 +186,8 @@ func gimbalPoller[S proto.Message, Resp isGimbal[S]](v *vehicleContext, resp Res
 						activeMismatch = false
 					}
 					distance, tolCheck, err := getDistance(resp.GetSetpoint(), t, w.Tolerances)
+					lastGimbal = t.GetGimbalInfo()
+					lastDistance = distance
 					// If we are within tolerance and have the right motion status, we have arrived
 					if tolCheck {
 						return nil
@@ -212,7 +222,8 @@ func gimbalPoller[S proto.Message, Resp isGimbal[S]](v *vehicleContext, resp Res
 			case <-timeoutC: // check for a timeout event
 				return ErrTimeout
 			case <-stall.C: // check for a stall event
-				return ErrFailedExpectation
+				return fmt.Errorf("%w: setpoint=%v gimbal=%v minDistance=%v distance=%v",
+					ErrFailedExpectation, resp.GetSetpoint(), lastGimbal, minDistance, lastDistance)
 			case <-mismatch.C: // check for a persistent setpoint mismatch
 				return ErrCancelled
 			case <-v.ctx.Done():
