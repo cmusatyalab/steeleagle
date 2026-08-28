@@ -14,6 +14,16 @@ import (
 // or it exits with error.
 type pollFunc func(opt.WaitOptions) error
 
+// timeoutChan returns a channel that fires once after d, or, per
+// WaitOptions.Timeout's documented zero-means-never-time-out contract, a nil
+// channel that never fires when d <= 0.
+func timeoutChan(d time.Duration) <-chan time.Time {
+	if d <= 0 {
+		return nil
+	}
+	return time.NewTimer(d).C
+}
+
 // isAction makes sure that the response represents an action style RPC.
 type isAction interface {
 	GetExpectedMode() telemetrypb.Mode
@@ -24,8 +34,7 @@ type isAction interface {
 // style RPC.
 func actionPoller[Resp isAction](v *vehicleContext, resp Resp) pollFunc {
 	return func(w opt.WaitOptions) error {
-		timeout := time.NewTimer(w.Timeout)
-		defer timeout.Stop()
+		timeoutC := timeoutChan(w.Timeout)
 		for {
 			t, err := fetchTelemetry(v)
 			if err == nil { // only do check if we have telemetry
@@ -36,7 +45,7 @@ func actionPoller[Resp isAction](v *vehicleContext, resp Resp) pollFunc {
 				}
 			}
 			select {
-			case <-timeout.C: // check for a timeout event
+			case <-timeoutC: // check for a timeout event
 				return ErrTimeout
 			case <-v.ctx.Done():
 				return ErrContextExpired
@@ -56,8 +65,7 @@ type isGuidance[S proto.Message] interface {
 // guidance style RPC.
 func guidancePoller[S proto.Message, Resp isGuidance[S]](v *vehicleContext, resp Resp) pollFunc {
 	return func(w opt.WaitOptions) error {
-		timeout := time.NewTimer(w.Timeout)
-		defer timeout.Stop()
+		timeoutC := timeoutChan(w.Timeout)
 		stall := time.NewTimer(w.Stall)
 		activeStall := false
 		stall.Stop() // we only want to run this timer when a stall is detected
@@ -98,7 +106,7 @@ func guidancePoller[S proto.Message, Resp isGuidance[S]](v *vehicleContext, resp
 				}
 			}
 			select {
-			case <-timeout.C: // check for a timeout event
+			case <-timeoutC: // check for a timeout event
 				return ErrTimeout
 			case <-stall.C: // check for a stall event
 				return ErrFailedExpectation
@@ -119,8 +127,7 @@ type isGimbal[S proto.Message] interface {
 // gimbal style RPC.
 func gimbalPoller[S proto.Message, Resp isGimbal[S]](v *vehicleContext, resp Resp) pollFunc {
 	return func(w opt.WaitOptions) error {
-		timeout := time.NewTimer(w.Timeout)
-		defer timeout.Stop()
+		timeoutC := timeoutChan(w.Timeout)
 		stall := time.NewTimer(w.Stall)
 		activeStall := false
 		stall.Stop() // we only want to run this timer when a stall is detected
@@ -161,7 +168,7 @@ func gimbalPoller[S proto.Message, Resp isGimbal[S]](v *vehicleContext, resp Res
 				}
 			}
 			select {
-			case <-timeout.C: // check for a timeout event
+			case <-timeoutC: // check for a timeout event
 				return ErrTimeout
 			case <-stall.C: // check for a stall event
 				return ErrFailedExpectation

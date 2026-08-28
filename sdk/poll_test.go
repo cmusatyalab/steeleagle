@@ -158,6 +158,37 @@ func TestActionPollerTimeout(t *testing.T) {
 	}
 }
 
+// TestActionPollerZeroTimeoutNeverTimesOut tests that an action poller given
+// the zero-value WaitOptions.Timeout doesn't time out.
+func TestActionPollerZeroTimeoutNeverTimesOut(t *testing.T) {
+	resp := driverpb.TakeOffResponse_builder{
+		ExpectedMode:   telemetrypb.Mode_MODE_TAKEOFF,
+		ExpectedStatus: telemetrypb.MotionStatus_MOTION_STATUS_HOLDING,
+	}.Build()
+	// The first telemetry fetch doesn't yet show the expected status; only
+	// the second one does, simulating a real vehicle reaching its
+	// expectation a beat after the command was issued.
+	calls := 0
+	respond := func() (*vehiclepb.GetTelemetryResponse, error) {
+		calls++
+		status := telemetrypb.MotionStatus_MOTION_STATUS_IN_TRANSIT
+		if calls > 1 {
+			status = telemetrypb.MotionStatus_MOTION_STATUS_HOLDING
+		}
+		tel := telemetrypb.Telemetry_builder{
+			Mode:         modeP(telemetrypb.Mode_MODE_TAKEOFF),
+			MotionStatus: motionStatusP(status),
+		}.Build()
+		return vehiclepb.GetTelemetryResponse_builder{Telemetry: tel}.Build(), nil
+	}
+	v := testVehicleContext(context.Background(), respond)
+
+	err := actionPoller(v, resp)(opt.WaitOptions{}) // zero-value Timeout
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 // TestActionPollerTimeout tests an action poller with a context timeout.
 func TestActionPollerContextExpired(t *testing.T) {
 	resp := driverpb.TakeOffResponse_builder{
