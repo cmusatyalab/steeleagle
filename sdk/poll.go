@@ -1,7 +1,6 @@
 package sdk
 
 import (
-	"fmt"
 	"time"
 
 	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
@@ -102,9 +101,6 @@ func guidancePoller[S proto.Message, Resp isGuidance[S]](v *vehicleContext, resp
 						activeMismatch = false
 					}
 					distance, tolCheck, err := getDistance(resp.GetSetpoint(), t, w.Tolerances)
-					// TODO(temporary): remove once the patrol stall investigation is done
-					fmt.Printf("[guidancePoller] distance=%v tolCheck=%v status=%v expectedStatus=%v\n",
-						distance, tolCheck, t.GetMotionStatus(), resp.GetExpectedStatus())
 					// If we are within tolerance and have the right motion status, we have arrived
 					if tolCheck && t.GetMotionStatus() == resp.GetExpectedStatus() {
 						return nil

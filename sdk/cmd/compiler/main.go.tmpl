@@ -92,4 +92,5 @@ func main() {
 	if err := mission.Start(ctx); err != nil {
         log.Fatal().Err(err).Msg("mission exited unexpectedly")
 	}
+    log.Info().Msg("mission complete!")
 }
