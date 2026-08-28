@@ -18,7 +18,7 @@ class Mode(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     MODE_LAND: _ClassVar[Mode]
     MODE_LOITER: _ClassVar[Mode]
     MODE_GUIDED: _ClassVar[Mode]
-    MODE_STOPPED: _ClassVar[Mode]
+    MODE_RETURN_TO_HOME: _ClassVar[Mode]
     MODE_EMERGENCY: _ClassVar[Mode]
 
 class MotionStatus(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
@@ -32,7 +32,7 @@ MODE_TAKEOFF: Mode
 MODE_LAND: Mode
 MODE_LOITER: Mode
 MODE_GUIDED: Mode
-MODE_STOPPED: Mode
+MODE_RETURN_TO_HOME: Mode
 MODE_EMERGENCY: Mode
 MOTION_STATUS_UNSPECIFIED: MotionStatus
 MOTION_STATUS_HOLDING: MotionStatus
