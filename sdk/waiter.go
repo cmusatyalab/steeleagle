@@ -41,7 +41,7 @@ func (w *waiter[Resp]) Wait(options ...opt.WaitOption) (Resp, error) {
 	// Apply options
 	opts := opt.WaitOptions{
 		Interval: 100 * time.Millisecond,
-		Stall:    1 * time.Second,
+		Stall:    5 * time.Second,
 		Tolerances: opt.Tolerances{
 			PosTol:      0.5, // meters
 			AngleTol:    2.0, // degrees
