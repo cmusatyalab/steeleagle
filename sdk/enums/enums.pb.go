@@ -15,8 +15,8 @@ const (
 	ModeLoiter
 	// #private-ifndef messages/telemetry/Mode/MODE_GUIDED
 	ModeGuided
-	// #private-ifndef messages/telemetry/Mode/MODE_STOPPED
-	ModeStopped
+	// #private-ifndef messages/telemetry/Mode/MODE_RETURN_TO_HOME
+	ModeReturnToHome
 	// #private-ifndef messages/telemetry/Mode/MODE_EMERGENCY
 	ModeEmergency
 )

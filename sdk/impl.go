@@ -3,6 +3,7 @@ package sdk
 import (
 	"context"
 
+	commonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/common"
 	driverpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver"
 	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
 	"github.com/cmusatyalab/steeleagle/sdk/opt"
@@ -92,10 +93,12 @@ func (v *vehicleContext) SetGlobalPositionTarget(
 	for _, option := range options {
 		option(req)
 	}
-	req.GetPosition().SetLatitude(latitude)
-	req.GetPosition().SetLongitude(longitude)
-	req.GetPosition().SetAltitude(altitude)
-	req.GetPosition().SetHeading(heading)
+	position := &commonpb.GlobalPosition{}
+	position.SetLatitude(latitude)
+	position.SetLongitude(longitude)
+	position.SetAltitude(altitude)
+	position.SetHeading(heading)
+	req.SetPosition(position)
 	resp, err := v.control.SetGlobalPositionTarget(v.ctx, req)
 
 	return newWaiter[SetGlobalPositionTargetResponse](
@@ -114,10 +117,12 @@ func (v *vehicleContext) SetRelativePositionTarget(
 	for _, option := range options {
 		option(req)
 	}
-	req.GetPosition().SetX(x)
-	req.GetPosition().SetY(y)
-	req.GetPosition().SetZ(z)
-	req.GetPosition().SetAngle(angle)
+	position := &commonpb.RelativePosition{}
+	position.SetX(x)
+	position.SetY(y)
+	position.SetZ(z)
+	position.SetAngle(angle)
+	req.SetPosition(position)
 	resp, err := v.control.SetRelativePositionTarget(v.ctx, req)
 
 	return newWaiter[SetRelativePositionTargetResponse](
@@ -136,10 +141,12 @@ func (v *vehicleContext) SetVelocityTarget(
 	for _, option := range options {
 		option(req)
 	}
-	req.GetVelocity().SetXVel(xVel)
-	req.GetVelocity().SetYVel(yVel)
-	req.GetVelocity().SetZVel(zVel)
-	req.GetVelocity().SetAngularVel(angularVel)
+	velocity := &commonpb.Velocity{}
+	velocity.SetXVel(xVel)
+	velocity.SetYVel(yVel)
+	velocity.SetZVel(zVel)
+	velocity.SetAngularVel(angularVel)
+	req.SetVelocity(velocity)
 	resp, err := v.control.SetVelocityTarget(v.ctx, req)
 
 	return newWaiter[SetVelocityTargetResponse](
@@ -158,9 +165,11 @@ func (v *vehicleContext) SetGimbalAngleTarget(
 	for _, option := range options {
 		option(req)
 	}
-	req.GetPose().SetPitch(pitch)
-	req.GetPose().SetRoll(roll)
-	req.GetPose().SetYaw(yaw)
+	pose := &commonpb.Pose{}
+	pose.SetPitch(pitch)
+	pose.SetRoll(roll)
+	pose.SetYaw(yaw)
+	req.SetPose(pose)
 	resp, err := v.control.SetGimbalAngleTarget(v.ctx, req)
 
 	return newWaiter[SetGimbalAngleTargetResponse](
@@ -175,9 +184,11 @@ func (v *vehicleContext) SetGimbalAngleTarget(
 func (v *vehicleContext) SetGimbalVelocityTarget(
 	pitchVel, rollVel, yawVel float32) *waiter[SetGimbalVelocityTargetResponse] {
 	req := &driverpb.SetGimbalVelocityTargetRequest{}
-	req.GetPoseVelocity().SetPitchVel(pitchVel)
-	req.GetPoseVelocity().SetRollVel(rollVel)
-	req.GetPoseVelocity().SetYawVel(yawVel)
+	pose_vel := &commonpb.PoseVelocity{}
+	pose_vel.SetPitchVel(pitchVel)
+	pose_vel.SetRollVel(rollVel)
+	pose_vel.SetYawVel(yawVel)
+	req.SetPoseVelocity(pose_vel)
 	resp, err := v.control.SetGimbalVelocityTarget(v.ctx, req)
 
 	return newWaiter[SetGimbalVelocityTargetResponse](
