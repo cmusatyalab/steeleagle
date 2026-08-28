@@ -121,8 +121,9 @@ func TestActionPollerImmediateMatch(t *testing.T) {
 	}
 }
 
-// TestActionPollerModeMismatchCancels tests an action poller with a mode switch
-// which should result in an ErrCancelled.
+// TestActionPollerModeMismatchCancels tests an action poller with a mode
+// switch that persists past the stall window, which should result in an
+// ErrCancelled.
 func TestActionPollerModeMismatchCancels(t *testing.T) {
 	resp := driverpb.TakeOffResponse_builder{
 		ExpectedMode:   telemetrypb.Mode_MODE_TAKEOFF,
@@ -133,9 +134,35 @@ func TestActionPollerModeMismatchCancels(t *testing.T) {
 	}.Build()
 	v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-	err := actionPoller(v, resp)(opt.WaitOptions{Timeout: time.Second})
+	err := actionPoller(v, resp)(opt.WaitOptions{Timeout: time.Hour, Stall: 20 * time.Millisecond})
 	if !errors.Is(err, ErrCancelled) {
 		t.Fatalf("expected ErrCancelled, got %v", err)
+	}
+}
+
+// TestActionPollerModeMismatchRecoversWithinStall tests that a mode mismatch
+// which resolves before the stall window elapses.
+func TestActionPollerModeMismatchRecoversWithinStall(t *testing.T) {
+	resp := driverpb.TakeOffResponse_builder{
+		ExpectedMode:   telemetrypb.Mode_MODE_TAKEOFF,
+		ExpectedStatus: telemetrypb.MotionStatus_MOTION_STATUS_HOLDING,
+	}.Build()
+	calls := 0
+	respond := func() (*vehiclepb.GetTelemetryResponse, error) {
+		calls++
+		mode := telemetrypb.Mode_MODE_LOITER
+		status := telemetrypb.MotionStatus_MOTION_STATUS_HOLDING
+		if calls > 1 {
+			mode = telemetrypb.Mode_MODE_TAKEOFF
+		}
+		tel := telemetrypb.Telemetry_builder{Mode: modeP(mode), MotionStatus: motionStatusP(status)}.Build()
+		return vehiclepb.GetTelemetryResponse_builder{Telemetry: tel}.Build(), nil
+	}
+	v := testVehicleContext(context.Background(), respond)
+
+	err := actionPoller(v, resp)(opt.WaitOptions{Timeout: time.Second, Stall: time.Hour})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
@@ -165,9 +192,6 @@ func TestActionPollerZeroTimeoutNeverTimesOut(t *testing.T) {
 		ExpectedMode:   telemetrypb.Mode_MODE_TAKEOFF,
 		ExpectedStatus: telemetrypb.MotionStatus_MOTION_STATUS_HOLDING,
 	}.Build()
-	// The first telemetry fetch doesn't yet show the expected status; only
-	// the second one does, simulating a real vehicle reaching its
-	// expectation a beat after the command was issued.
 	calls := 0
 	respond := func() (*vehiclepb.GetTelemetryResponse, error) {
 		calls++
@@ -228,8 +252,9 @@ func TestGuidancePollerImmediateMatch(t *testing.T) {
 	}
 }
 
-// TestGuidancePollerImmediateMatch tests a guidance poller with a setpoint switch
-// which should result in an ErrCancelled.
+// TestGuidancePollerSetpointChangedCancels tests a guidance poller with a
+// setpoint switch that persists past the stall window, which should result
+// in an ErrCancelled.
 func TestGuidancePollerSetpointChangedCancels(t *testing.T) {
 	setpoint := commonpb.GlobalPosition_builder{Latitude: f64(1), Longitude: f64(1)}.Build()
 	resp := driverpb.SetGlobalPositionTargetResponse_builder{
@@ -243,9 +268,38 @@ func TestGuidancePollerSetpointChangedCancels(t *testing.T) {
 	tel := telemetryForGuidance(otherSetpoint, otherSetpoint, telemetrypb.MotionStatus_MOTION_STATUS_HOLDING)
 	v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-	err := guidancePoller(v, resp)(opt.WaitOptions{Timeout: time.Second})
+	err := guidancePoller(v, resp)(opt.WaitOptions{Timeout: time.Hour, Stall: 20 * time.Millisecond})
 	if !errors.Is(err, ErrCancelled) {
 		t.Fatalf("expected ErrCancelled, got %v", err)
+	}
+}
+
+// TestGuidancePollerSetpointRecoversWithinStall tests that a setpoint
+// mismatch which resolves before the stall window elapses.
+func TestGuidancePollerSetpointRecoversWithinStall(t *testing.T) {
+	setpoint := commonpb.GlobalPosition_builder{Latitude: f64(1), Longitude: f64(1)}.Build()
+	resp := driverpb.SetGlobalPositionTargetResponse_builder{
+		Setpoint:       setpoint,
+		ExpectedStatus: telemetrypb.MotionStatus_MOTION_STATUS_HOLDING,
+	}.Build()
+	tol := opt.Tolerances{PosTol: 5}
+
+	oldSetpoint := commonpb.GlobalPosition_builder{Latitude: f64(0), Longitude: f64(0)}.Build()
+	calls := 0
+	respond := func() (*vehiclepb.GetTelemetryResponse, error) {
+		calls++
+		reported := oldSetpoint
+		if calls > 1 {
+			reported = setpoint
+		}
+		tel := telemetryForGuidance(reported, setpoint, telemetrypb.MotionStatus_MOTION_STATUS_HOLDING)
+		return vehiclepb.GetTelemetryResponse_builder{Telemetry: tel}.Build(), nil
+	}
+	v := testVehicleContext(context.Background(), respond)
+
+	err := guidancePoller(v, resp)(opt.WaitOptions{Timeout: time.Second, Stall: time.Hour, Tolerances: tol})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
@@ -385,7 +439,8 @@ func TestGimbalPollerImmediateMatch(t *testing.T) {
 }
 
 // TestGimbalPollerSetpointChangedCancels tests a gimbal poller with a
-// setpoint switch which should result in an ErrCancelled.
+// setpoint switch that persists past the stall window, which should result
+// in an ErrCancelled.
 func TestGimbalPollerSetpointChangedCancels(t *testing.T) {
 	setpoint := commonpb.Pose_builder{Pitch: f32(10)}.Build()
 	resp := driverpb.SetGimbalAngleTargetResponse_builder{Setpoint: setpoint}.Build()
@@ -394,9 +449,35 @@ func TestGimbalPollerSetpointChangedCancels(t *testing.T) {
 	tel := telemetryForGimbal(otherSetpoint, otherSetpoint)
 	v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-	err := gimbalPoller(v, resp)(opt.WaitOptions{Timeout: time.Second})
+	err := gimbalPoller(v, resp)(opt.WaitOptions{Timeout: time.Hour, Stall: 20 * time.Millisecond})
 	if !errors.Is(err, ErrCancelled) {
 		t.Fatalf("expected ErrCancelled, got %v", err)
+	}
+}
+
+// TestGimbalPollerSetpointRecoversWithinStall tests that a setpoint mismatch
+// which resolves before the stall window elapses.
+func TestGimbalPollerSetpointRecoversWithinStall(t *testing.T) {
+	setpoint := commonpb.Pose_builder{Pitch: f32(10)}.Build()
+	resp := driverpb.SetGimbalAngleTargetResponse_builder{Setpoint: setpoint}.Build()
+	tol := opt.Tolerances{AngleTol: 3}
+
+	oldSetpoint := commonpb.Pose_builder{Pitch: f32(0)}.Build()
+	calls := 0
+	respond := func() (*vehiclepb.GetTelemetryResponse, error) {
+		calls++
+		reported := oldSetpoint
+		if calls > 1 {
+			reported = setpoint
+		}
+		tel := telemetryForGimbal(reported, setpoint)
+		return vehiclepb.GetTelemetryResponse_builder{Telemetry: tel}.Build(), nil
+	}
+	v := testVehicleContext(context.Background(), respond)
+
+	err := gimbalPoller(v, resp)(opt.WaitOptions{Timeout: time.Second, Stall: time.Hour, Tolerances: tol})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 

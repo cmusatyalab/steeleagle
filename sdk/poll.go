@@ -35,18 +35,31 @@ type isAction interface {
 func actionPoller[Resp isAction](v *vehicleContext, resp Resp) pollFunc {
 	return func(w opt.WaitOptions) error {
 		timeoutC := timeoutChan(w.Timeout)
+		mismatch := time.NewTimer(w.Stall)
+		activeMismatch := false
+		mismatch.Stop() // we only want to run this timer when a mismatch is detected
+		defer mismatch.Stop()
 		for {
 			t, err := fetchTelemetry(v)
 			if err == nil { // only do check if we have telemetry
 				if resp.GetExpectedMode() == t.GetMode() && resp.GetExpectedStatus() == t.GetMotionStatus() {
 					return nil
 				} else if resp.GetExpectedMode() != t.GetMode() {
-					return ErrCancelled
+					if !activeMismatch { // wait to see if it is a transient mismatch
+						mismatch.Stop()
+						mismatch.Reset(w.Stall)
+						activeMismatch = true
+					}
+				} else if activeMismatch { // mode matches again, so the mismatch resolved itself
+					mismatch.Stop()
+					activeMismatch = false
 				}
 			}
 			select {
 			case <-timeoutC: // check for a timeout event
 				return ErrTimeout
+			case <-mismatch.C: // check for a persistent mode mismatch
+				return ErrCancelled
 			case <-v.ctx.Done():
 				return ErrContextExpired
 			default:
@@ -70,6 +83,10 @@ func guidancePoller[S proto.Message, Resp isGuidance[S]](v *vehicleContext, resp
 		activeStall := false
 		stall.Stop() // we only want to run this timer when a stall is detected
 		defer stall.Stop()
+		mismatch := time.NewTimer(w.Stall)
+		activeMismatch := false
+		mismatch.Stop() // we only want to run this timer when a mismatch is detected
+		defer mismatch.Stop()
 		lastDistance := float32(0.0)
 		for {
 			t, err := fetchTelemetry(v)
@@ -78,6 +95,10 @@ func guidancePoller[S proto.Message, Resp isGuidance[S]](v *vehicleContext, resp
 				// Check the setpoints to make sure they match
 				matches, matchErr := anyMatches(t.GetPositionInfo().GetSetpoint(), resp.GetSetpoint())
 				if matchErr == nil && matches {
+					if activeMismatch { // setpoint matches again, so the mismatch resolved itself
+						mismatch.Stop()
+						activeMismatch = false
+					}
 					distance, tolCheck, err := getDistance(resp.GetSetpoint(), t, w.Tolerances)
 					// If we are within tolerance and have the right motion status, we have arrived
 					if tolCheck && t.GetMotionStatus() == resp.GetExpectedStatus() {
@@ -102,7 +123,11 @@ func guidancePoller[S proto.Message, Resp isGuidance[S]](v *vehicleContext, resp
 					}
 					lastDistance = distance
 				} else {
-					return ErrCancelled
+					if !activeMismatch { // wait to see if it is a transient mismatch
+						mismatch.Stop()
+						mismatch.Reset(w.Stall)
+						activeMismatch = true
+					}
 				}
 			}
 			select {
@@ -110,6 +135,8 @@ func guidancePoller[S proto.Message, Resp isGuidance[S]](v *vehicleContext, resp
 				return ErrTimeout
 			case <-stall.C: // check for a stall event
 				return ErrFailedExpectation
+			case <-mismatch.C: // check for a persistent setpoint mismatch
+				return ErrCancelled
 			case <-v.ctx.Done():
 				return ErrContextExpired
 			default:
@@ -132,6 +159,10 @@ func gimbalPoller[S proto.Message, Resp isGimbal[S]](v *vehicleContext, resp Res
 		activeStall := false
 		stall.Stop() // we only want to run this timer when a stall is detected
 		defer stall.Stop()
+		mismatch := time.NewTimer(w.Stall)
+		activeMismatch := false
+		mismatch.Stop() // we only want to run this timer when a mismatch is detected
+		defer mismatch.Stop()
 		lastDistance := float32(0.0)
 		for {
 			t, err := fetchTelemetry(v)
@@ -140,6 +171,10 @@ func gimbalPoller[S proto.Message, Resp isGimbal[S]](v *vehicleContext, resp Res
 				// Check the setpoints to make sure they match
 				matches, matchErr := anyMatches(t.GetGimbalInfo().GetGimbalSetpoint(), resp.GetSetpoint())
 				if matchErr == nil && matches {
+					if activeMismatch { // setpoint matches again, so the mismatch resolved itself
+						mismatch.Stop()
+						activeMismatch = false
+					}
 					distance, tolCheck, err := getDistance(resp.GetSetpoint(), t, w.Tolerances)
 					// If we are within tolerance and have the right motion status, we have arrived
 					if tolCheck {
@@ -164,7 +199,11 @@ func gimbalPoller[S proto.Message, Resp isGimbal[S]](v *vehicleContext, resp Res
 					}
 					lastDistance = distance
 				} else {
-					return ErrCancelled
+					if !activeMismatch { // wait to see if it is a transient mismatch
+						mismatch.Stop()
+						mismatch.Reset(w.Stall)
+						activeMismatch = true
+					}
 				}
 			}
 			select {
@@ -172,6 +211,8 @@ func gimbalPoller[S proto.Message, Resp isGimbal[S]](v *vehicleContext, resp Res
 				return ErrTimeout
 			case <-stall.C: // check for a stall event
 				return ErrFailedExpectation
+			case <-mismatch.C: // check for a persistent setpoint mismatch
+				return ErrCancelled
 			case <-v.ctx.Done():
 				return ErrContextExpired
 			default:
