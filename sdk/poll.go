@@ -1,7 +1,6 @@
 package sdk
 
 import (
-	"fmt"
 	"time"
 
 	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
@@ -89,7 +88,7 @@ func guidancePoller[S proto.Message, Resp isGuidance[S]](v *vehicleContext, resp
 		mismatch.Stop() // we only want to run this timer when a mismatch is detected
 		defer mismatch.Stop()
 		var minDistance float32
-		haveMinDistance := false // distinguishes "no sample yet" from a legitimate 0.0 minimum
+		haveMinDistance := false
 		for {
 			t, err := fetchTelemetry(v)
 			// Only do check if we have telemetry and position info
@@ -115,7 +114,7 @@ func guidancePoller[S proto.Message, Resp isGuidance[S]](v *vehicleContext, resp
 								activeStall = true
 							}
 						}
-					} else if distance < minDistance { // a new best distance: genuine progress
+					} else if distance < minDistance { // a new best distance
 						minDistance = distance
 						stall.Stop()
 						activeStall = false
@@ -166,7 +165,7 @@ func gimbalPoller[S proto.Message, Resp isGimbal[S]](v *vehicleContext, resp Res
 		mismatch.Stop() // we only want to run this timer when a mismatch is detected
 		defer mismatch.Stop()
 		var minDistance float32
-		haveMinDistance := false // distinguishes "no sample yet" from a legitimate 0.0 minimum
+		haveMinDistance := false
 		for {
 			t, err := fetchTelemetry(v)
 			// Only do check if we have telemetry and gimbal info
@@ -192,7 +191,7 @@ func gimbalPoller[S proto.Message, Resp isGimbal[S]](v *vehicleContext, resp Res
 								activeStall = true
 							}
 						}
-					} else if distance < minDistance { // a new best distance: genuine progress
+					} else if distance < minDistance { // a new best distance
 						minDistance = distance
 						stall.Stop()
 						activeStall = false
@@ -202,9 +201,6 @@ func gimbalPoller[S proto.Message, Resp isGimbal[S]](v *vehicleContext, resp Res
 						activeStall = true
 					}
 				} else {
-					// TODO(temporary): remove once the gimbal stall investigation is done
-					fmt.Printf("[gimbalPoller] setpoint mismatch: want=%v gotAny=%v matchErr=%v\n",
-						resp.GetSetpoint(), t.GetGimbalInfo().GetGimbalSetpoint(), matchErr)
 					if !activeMismatch { // wait to see if it is a transient mismatch
 						mismatch.Stop()
 						mismatch.Reset(w.Stall)

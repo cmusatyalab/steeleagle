@@ -11,11 +11,10 @@ import (
 )
 
 // getDistance finds the distance between the setpoint and the vehicle
-// position, and returns a normalized tolerance-check distance. Each
-// set sub-field's raw difference divided by its own tolerance, with the
-// maximum taken across every sub-field that was compared along with the
-// pass/fail result (true iff every compared sub-field's normalized
-// distance is <= 1).
+// position, and returns a normalized tolerance-check distance. Each set
+// sub-field's raw difference divided by its own tolerance, summed across
+// every sub-field that was compared, along with the pass/fail result (true
+// iff every compared sub-field's normalized distance is <= 1).
 func getDistance(a proto.Message, t *telemetrypb.Telemetry, tol opt.Tolerances) (float32, bool, error) {
 	switch sp := a.(type) {
 	case *commonpb.GlobalPosition:
@@ -33,10 +32,13 @@ func getDistance(a proto.Message, t *telemetrypb.Telemetry, tol opt.Tolerances) 
 	}
 }
 
-// distAcc accumulates the max normalized (|raw|/tolerance) distance across
-// every sub-field that was actually compared, plus the overall pass/fail.
+// distAcc accumulates the sum of normalized (|raw|/tolerance) distances
+// across every sub-field that was actually compared, plus the overall
+// pass/fail. Summing (rather than taking the max) ensures that progress on
+// any single axis is reflected in the total, so one axis stalling can't
+// hide genuine convergence on another.
 type distAcc struct {
-	max float32
+	sum float32
 	ok  bool
 }
 
@@ -53,14 +55,12 @@ func (d *distAcc) add(raw, tolerance float32) {
 	if tolerance <= 0 {
 		if raw != 0 {
 			d.ok = false
-			d.max = float32(math.Inf(1))
+			d.sum = float32(math.Inf(1))
 		}
 		return
 	}
 	norm := raw / tolerance
-	if norm > d.max {
-		d.max = norm
-	}
+	d.sum += norm
 	if norm > 1 {
 		d.ok = false
 	}
@@ -134,7 +134,7 @@ func globalPositionDistance(sp *commonpb.GlobalPosition, t *telemetrypb.Telemetr
 		acc.add(angularDiff(sp.GetHeading(), gp.GetHeading()), tol.AngleTol)
 	}
 
-	return acc.max, acc.ok, nil
+	return acc.sum, acc.ok, nil
 }
 
 // relativePositionDistance gets the distance for a RelativePosition setpoint.
@@ -175,7 +175,7 @@ func relativePositionDistance(sp *commonpb.RelativePosition, t *telemetrypb.Tele
 		acc.add(angularDiff(sp.GetAngle(), rp.GetAngle()), tol.AngleTol)
 	}
 
-	return acc.max, acc.ok, nil
+	return acc.sum, acc.ok, nil
 }
 
 // velocityDistance gets the distance for a Velocity setpoint.
@@ -216,7 +216,7 @@ func velocityDistance(sp *commonpb.Velocity, t *telemetrypb.Telemetry, tol opt.T
 		acc.add(sp.GetAngularVel()-v.GetAngularVel(), tol.AngSpeedTol)
 	}
 
-	return acc.max, acc.ok, nil
+	return acc.sum, acc.ok, nil
 }
 
 // poseDistance gets the distance for a Pose setpoint.
@@ -251,7 +251,7 @@ func poseDistance(sp *commonpb.Pose, t *telemetrypb.Telemetry, tol opt.Tolerance
 		acc.add(angularDiff(sp.GetYaw(), p.GetYaw()), tol.AngleTol)
 	}
 
-	return acc.max, acc.ok, nil
+	return acc.sum, acc.ok, nil
 }
 
 // poseVelocityDistance gets the distance for a PoseVelocity setpoint.
@@ -286,5 +286,5 @@ func poseVelocityDistance(sp *commonpb.PoseVelocity, t *telemetrypb.Telemetry, t
 		acc.add(sp.GetYawVel()-pv.GetYawVel(), tol.AngSpeedTol)
 	}
 
-	return acc.max, acc.ok, nil
+	return acc.sum, acc.ok, nil
 }

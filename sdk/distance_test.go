@@ -243,8 +243,54 @@ func TestDistanceOnlyComparesSetSubfields(t *testing.T) {
 	}
 }
 
+// TestDistanceSumsAcrossAxesNotMax pins down that getDistance sums the
+// normalized per-axis distances rather than taking their max.
+func TestDistanceSumsAcrossAxesNotMax(t *testing.T) {
+	setpoint := commonpb.RelativePosition_builder{X: f32(0), Y: f32(0)}.Build()
+	tol := opt.Tolerances{PosTol: 1}
+	telemetry := telemetryRelative(commonpb.RelativePosition_builder{X: f32(3), Y: f32(4)}.Build())
+
+	dist, ok, err := getDistance(setpoint, telemetry, tol)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if ok {
+		t.Errorf("expected out-of-tolerance result, got ok=true (dist=%v)", dist)
+	}
+	if dist != 7 {
+		t.Errorf("expected summed normalized distance 3+4=7, got %v (a max-based reduction would give 4)", dist)
+	}
+}
+
+// TestDistanceStuckAxisDoesNotMaskProgress makes sure that a single stuck axis
+// does not cause a stall when other axes are progressing.
+func TestDistanceStuckAxisDoesNotMaskProgress(t *testing.T) {
+	setpoint := commonpb.RelativePosition_builder{X: f32(0), Y: f32(0)}.Build()
+	tol := opt.Tolerances{PosTol: 1}
+
+	steps := []*commonpb.RelativePosition{
+		commonpb.RelativePosition_builder{X: f32(10), Y: f32(5)}.Build(),
+		commonpb.RelativePosition_builder{X: f32(10), Y: f32(3)}.Build(),
+		commonpb.RelativePosition_builder{X: f32(10), Y: f32(1)}.Build(),
+		commonpb.RelativePosition_builder{X: f32(10), Y: f32(0.5)}.Build(),
+		commonpb.RelativePosition_builder{X: f32(10), Y: f32(0.05)}.Build(),
+	}
+
+	var prev float32 = math.MaxFloat32
+	for i, rp := range steps {
+		dist, _, err := getDistance(setpoint, telemetryRelative(rp), tol)
+		if err != nil {
+			t.Fatalf("step %d: unexpected error: %v", i, err)
+		}
+		if dist >= prev {
+			t.Errorf("step %d: distance did not decrease despite Y's progress: got %v, previous %v", i, dist, prev)
+		}
+		prev = dist
+	}
+}
+
 // TestDistanceZeroToleranceRequiresExactMatch checks the distAcc
-// zero-tolerance behavior end to end: a zero tolerance means any nonzero
+// zero-tolerance behavior end to end; a zero tolerance means any nonzero
 // difference fails with an infinite normalized distance.
 func TestDistanceZeroToleranceRequiresExactMatch(t *testing.T) {
 	setpoint := commonpb.RelativePosition_builder{X: f32(5)}.Build()
