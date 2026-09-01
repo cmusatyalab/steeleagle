@@ -1,0 +1,10 @@
+# cmd/dslcompiler/config.toml.template
+listen-port = 50060
+# Pins every github.com/cmusatyalab/steeleagle package NewService loads
+# to this branch/tag/commit (see compiler.NewWorkspace). Required in
+# practice, not optional: this module's real release tags stop at
+# v2.2.1, predating sdk/dsl entirely, so leaving this empty falls
+# through to "latest" and resolves to that stale tag instead of any SDK
+# package this service actually needs. Update this once a real
+# post-sdk/dsl release exists.
+steeleagle-ref = "v4.0-beta"
