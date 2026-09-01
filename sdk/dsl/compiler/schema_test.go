@@ -1,4 +1,5 @@
 // sdk/dsl/compiler/schema_test.go
+
 package compiler
 
 import (
@@ -66,7 +67,7 @@ func TestSchemaFromRegistryPatrolAction(t *testing.T) {
 	if pattern.GetName() != "Pattern" || pattern.GetRequired() {
 		t.Errorf("Pattern field = %+v, want name=Pattern required=false", pattern)
 	}
-	if !pattern.HasEnumType() || pattern.GetEnumType() != "PatrolMode" {
-		t.Errorf("Pattern.EnumType = %q (has=%v), want PatrolMode", pattern.GetEnumType(), pattern.HasEnumType())
+	if !pattern.HasEnumType() || pattern.GetEnumType() != "actions.PatrolMode" {
+		t.Errorf("Pattern.EnumType = %q (has=%v), want actions.PatrolMode", pattern.GetEnumType(), pattern.HasEnumType())
 	}
 }

@@ -1,4 +1,5 @@
 // sdk/dsl/compiler/schema.go
+
 package compiler
 
 import (
@@ -141,7 +142,7 @@ func enumTypeName(registry *loader.TypeRegistry, t types.Type) (string, bool) {
 	if _, ok := registry.Enums[name]; !ok {
 		return "", false
 	}
-	return obj.Name(), true
+	return name, true
 }
 
 // datatypeFor reports the registry.Datatypes entry for t (a named

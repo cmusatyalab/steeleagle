@@ -6,6 +6,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -86,7 +87,8 @@ func main() {
 		}
 	}
 
-	workspace, cleanup, err := compiler.NewWorkspace(imports, resolvedRef, overridePaths)
+	ctx := context.Background()
+	workspace, cleanup, err := compiler.NewWorkspace(ctx, imports, resolvedRef, overridePaths)
 	if err != nil {
 		fatalf("setting up build workspace: %v", err)
 	}
@@ -141,7 +143,7 @@ func main() {
 	if err != nil {
 		fatalf("resolving output path: %v", err)
 	}
-	if err := compiler.TidyAndBuild(workspace, overlayPath, outPath, *arch); err != nil {
+	if err := compiler.TidyAndBuild(ctx, workspace, overlayPath, outPath, *arch); err != nil {
 		fatalf("building mission: %v", err)
 	}
 

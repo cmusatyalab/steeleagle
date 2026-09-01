@@ -4,6 +4,7 @@
 package compiler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -32,7 +33,7 @@ const (
 var basePkgPaths = []string{dslPkgPath, dslActionsPkgPath, dslEventsPkgPath, dslTypesPkgPath}
 
 // EnsureBaseImports returns imports with one *parser.ImportSpec appended
-// entry of basePkgPaths not already present (matched by Path alone,
+// per entry of basePkgPaths not already present (matched by Path alone,
 // ignoring alias/version), each added unaliased so it resolves to its
 // package's own name.
 func EnsureBaseImports(imports []*parser.ImportSpec) []*parser.ImportSpec {
@@ -56,7 +57,7 @@ func EnsureBaseImports(imports []*parser.ImportSpec) []*parser.ImportSpec {
 // SteeleagleModule (base SDK packages and any mission-declared import of a
 // steeleagle package alike), regardless of any Version the import already
 // carries.
-func NewWorkspace(imports []*parser.ImportSpec, steeleagleRef string, overridePaths []string) (dir string, cleanup func(), err error) {
+func NewWorkspace(ctx context.Context, imports []*parser.ImportSpec, steeleagleRef string, overridePaths []string) (dir string, cleanup func(), err error) {
 	dir, err = os.MkdirTemp("", "steeleagle-mission-*")
 	if err != nil {
 		return "", nil, fmt.Errorf("creating workspace: %w", err)
@@ -64,16 +65,16 @@ func NewWorkspace(imports []*parser.ImportSpec, steeleagleRef string, overridePa
 	cleanup = func() { os.RemoveAll(dir) }
 
 	goVersion := strings.TrimPrefix(runtime.Version(), "go")
-	if out, err := runIn(dir, "go", "mod", "init", "steeleagle-mission"); err != nil {
+	if out, err := runIn(ctx, dir, "go", "mod", "init", "steeleagle-mission"); err != nil {
 		cleanup()
 		return "", nil, fmt.Errorf("go mod init: %w\n%s", err, out)
 	}
-	if out, err := runIn(dir, "go", "mod", "edit", "-go="+goVersion); err != nil {
+	if out, err := runIn(ctx, dir, "go", "mod", "edit", "-go="+goVersion); err != nil {
 		cleanup()
 		return "", nil, fmt.Errorf("go mod edit: %w\n%s", err, out)
 	}
 
-	overrides, err := resolveOverrides(overridePaths)
+	overrides, err := resolveOverrides(ctx, overridePaths)
 	if err != nil {
 		cleanup()
 		return "", nil, err
@@ -81,7 +82,7 @@ func NewWorkspace(imports []*parser.ImportSpec, steeleagleRef string, overridePa
 	for mod, path := range overrides {
 		// A placeholder require paired with a replace needs no network
 		// access to resolve: go build reads path's content directly.
-		if out, err := runIn(dir, "go", "mod", "edit",
+		if out, err := runIn(ctx, dir, "go", "mod", "edit",
 			"-require="+mod+"@v0.0.0-00010101000000-000000000000",
 			"-replace="+mod+"="+path); err != nil {
 			cleanup()
@@ -99,13 +100,13 @@ func NewWorkspace(imports []*parser.ImportSpec, steeleagleRef string, overridePa
 		} else if version == "" {
 			version = "latest"
 		}
-		if out, err := runIn(dir, "go", "get", imp.Path+"@"+version); err != nil {
+		if out, err := runIn(ctx, dir, "go", "get", imp.Path+"@"+version); err != nil {
 			cleanup()
 			return "", nil, fmt.Errorf("go get %s@%s: %w\n%s", imp.Path, version, err, out)
 		}
 	}
 
-	if err := localizeSteeleagleModule(dir); err != nil {
+	if err := localizeSteeleagleModule(ctx, dir); err != nil {
 		cleanup()
 		return "", nil, err
 	}
@@ -137,7 +138,7 @@ func expandOverridePath(path string) (string, error) {
 // directory strings) and resolves the module each one declares in its own
 // go.mod, returning a map from that module path to the directory's
 // absolute path.
-func resolveOverrides(paths []string) (map[string]string, error) {
+func resolveOverrides(ctx context.Context, paths []string) (map[string]string, error) {
 	if len(paths) == 0 {
 		return nil, nil
 	}
@@ -147,7 +148,7 @@ func resolveOverrides(paths []string) (map[string]string, error) {
 		if err != nil {
 			return nil, fmt.Errorf("override %q: %w", p, err)
 		}
-		out, err := runIn(abs, "go", "list", "-m")
+		out, err := runIn(ctx, abs, "go", "list", "-m")
 		if err != nil {
 			return nil, fmt.Errorf("resolving module for override %q: %w\n%s", p, err, out)
 		}
@@ -209,8 +210,8 @@ func ResolveSteeleagleRef(ref string) (string, error) {
 // command refuses -overlay replacements for any file beneath GOMODCACHE
 // (https://pkg.go.dev/cmd/go#hdr-Compile_packages_and_dependencies), so the
 // module being scrubbed/const-generated must resolve to a path outside it.
-func localizeSteeleagleModule(workspace string) error {
-	out, err := runIn(workspace, "go", "list", "-m", "-f", "{{.Dir}}", SteeleagleModule)
+func localizeSteeleagleModule(ctx context.Context, workspace string) error {
+	out, err := runIn(ctx, workspace, "go", "list", "-m", "-f", "{{.Dir}}", SteeleagleModule)
 	if err != nil {
 		return fmt.Errorf("locating %s module: %w\n%s", SteeleagleModule, err, out)
 	}
@@ -221,16 +222,17 @@ func localizeSteeleagleModule(workspace string) error {
 		return fmt.Errorf("copying %s module: %w", SteeleagleModule, err)
 	}
 
-	if out, err := runIn(workspace, "go", "mod", "edit", "-replace="+SteeleagleModule+"="+localDir); err != nil {
+	if out, err := runIn(ctx, workspace, "go", "mod", "edit", "-replace="+SteeleagleModule+"="+localDir); err != nil {
 		return fmt.Errorf("go mod edit -replace: %w\n%s", err, out)
 	}
 	return nil
 }
 
 // runIn runs name with args in dir, returning its combined output for
-// error reporting.
-func runIn(dir, name string, args ...string) (string, error) {
-	cmd := exec.Command(name, args...)
+// error reporting. ctx bounds/cancels the subprocess -- see
+// exec.CommandContext.
+func runIn(ctx context.Context, dir, name string, args ...string) (string, error) {
+	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
 	return string(out), err
@@ -285,12 +287,12 @@ func MaterializeOverlay(workspace string, overlay map[string][]byte) (string, er
 // as -overlay so the build sees the scrubbed/const-generated SDK source
 // rather than what CreateOverlay left untouched on disk. If arch is
 // non-empty, GOARCH=arch is set for the build so it cross-compiles.
-func TidyAndBuild(workspace, overlayPath, outPath, arch string) error {
+func TidyAndBuild(ctx context.Context, workspace, overlayPath, outPath, arch string) error {
 	tidyArgs := []string{"mod", "tidy"}
 	if overlayPath != "" {
 		tidyArgs = append(tidyArgs, "-overlay="+overlayPath)
 	}
-	if out, err := runIn(workspace, "go", tidyArgs...); err != nil {
+	if out, err := runIn(ctx, workspace, "go", tidyArgs...); err != nil {
 		return fmt.Errorf("go mod tidy: %w\n%s", err, out)
 	}
 
@@ -303,7 +305,7 @@ func TidyAndBuild(workspace, overlayPath, outPath, arch string) error {
 		buildArgs = append(buildArgs, "-overlay="+overlayPath)
 	}
 	buildArgs = append(buildArgs, ".")
-	cmd := exec.Command("go", buildArgs...)
+	cmd := exec.CommandContext(ctx, "go", buildArgs...)
 	cmd.Dir = workspace
 	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
 	if arch != "" {

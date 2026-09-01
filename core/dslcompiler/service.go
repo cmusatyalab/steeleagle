@@ -1,10 +1,14 @@
 // core/dslcompiler/service.go
+
 package dslcompiler
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -13,6 +17,8 @@ import (
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/compiler"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/loader"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/parser"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // Service implements dslcompilerpb.DslCompilerServiceServer. It loads the
@@ -28,6 +34,8 @@ type Service struct {
 	defaultImports []compiler.ImportEntry
 	defaultRole    string
 	workspace      string
+	overlayPath    string
+	schema         *dslcompilerpb.GetSchemaResponse
 	cleanup        func()
 	buildMu        sync.Mutex
 }
@@ -42,7 +50,13 @@ type Service struct {
 // package this service actually needs. Call Close when done to remove
 // the workspace.
 func NewService(imports []*parser.ImportSpec, steeleagleRef string) (*Service, error) {
-	workspace, cleanup, err := compiler.NewWorkspace(imports, steeleagleRef, nil)
+	// No meaningful cancellation source exists at startup, so this is a
+	// plain background context -- see compiler.NewWorkspace/TidyAndBuild's
+	// context threading, which exists so a request-scoped caller (Build)
+	// can bound/cancel these subprocess calls.
+	ctx := context.Background()
+
+	workspace, cleanup, err := compiler.NewWorkspace(ctx, imports, steeleagleRef, nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating workspace: %w", err)
 	}
@@ -69,6 +83,17 @@ func NewService(imports []*parser.ImportSpec, steeleagleRef string) (*Service, e
 		return nil, fmt.Errorf("scrubbing SDK packages: %v", compileErrs)
 	}
 
+	// Materialize once here and reuse the resulting path for every Build
+	// call -- see Task 4: Build previously discarded this and compiled
+	// unscrubbed source, a latent mismatch with Validate's LoadTypes call
+	// just below, which does type-check against the (currently empty, but
+	// not always) overlay.
+	overlayPath, err := compiler.MaterializeOverlay(workspace, overlay)
+	if err != nil {
+		cleanup()
+		return nil, fmt.Errorf("materializing overlay: %w", err)
+	}
+
 	requests := make([]*loader.PackageRequest, len(imports))
 	for i, imp := range imports {
 		requests[i] = &loader.PackageRequest{Path: imp.Path, Alias: imp.Alias}
@@ -84,10 +109,16 @@ func NewService(imports []*parser.ImportSpec, steeleagleRef string) (*Service, e
 		defaultImports[i] = compiler.ImportEntry{Alias: imp.Alias, Path: imp.Path}
 	}
 
+	const defaultRole = ""
+	schema := compiler.SchemaFromRegistry(registry, defaultImports, defaultRole)
+
 	return &Service{
 		registry:       registry,
 		defaultImports: defaultImports,
+		defaultRole:    defaultRole,
 		workspace:      workspace,
+		overlayPath:    overlayPath,
+		schema:         schema,
 		cleanup:        cleanup,
 	}, nil
 }
@@ -97,9 +128,20 @@ func (s *Service) Close() {
 	s.cleanup()
 }
 
-// GetSchema returns the palette built from the registry NewService loaded.
+// errImportsUnsupported is returned by Validate/Build when a client
+// supplies a non-empty MissionGraph.Imports: compiler.BuildAst turns that
+// field into ast.Import, but compiler.BuildIR never reads ast.Import at
+// all -- it derives generated imports from the registry instead -- so a
+// client-supplied import list currently has zero effect. Rather than
+// silently ignoring it, fail loudly until a follow-on plan wires custom
+// imports through end to end.
+var errImportsUnsupported = errors.New("custom imports are not yet supported by this service")
+
+// GetSchema returns the palette built from the registry NewService loaded,
+// computed once at construction time (see NewService) and cached on s --
+// GetSchema itself does no work beyond returning it.
 func (s *Service) GetSchema(ctx context.Context, req *dslcompilerpb.GetSchemaRequest) (*dslcompilerpb.GetSchemaResponse, error) {
-	return compiler.SchemaFromRegistry(s.registry, s.defaultImports, s.defaultRole), nil
+	return s.schema, nil
 }
 
 // Validate builds an Ast from req.Mission and links it against the
@@ -108,6 +150,13 @@ func (s *Service) GetSchema(ctx context.Context, req *dslcompilerpb.GetSchemaReq
 // node/event instance_id the error message names, if any.
 func (s *Service) Validate(ctx context.Context, req *dslcompilerpb.ValidateRequest) (*dslcompilerpb.ValidateResponse, error) {
 	mission := req.GetMission()
+	if len(mission.GetImports()) > 0 {
+		return dslcompilerpb.ValidateResponse_builder{
+			Ok:     false,
+			Errors: []*dslcompilerpb.CompileError{unattributedError(errImportsUnsupported)},
+		}.Build(), nil
+	}
+
 	ast, err := compiler.BuildAst(mission, s.defaultImports, s.defaultRole)
 	if err != nil {
 		return dslcompilerpb.ValidateResponse_builder{
@@ -185,7 +234,13 @@ func (s *Service) Build(req *dslcompilerpb.BuildRequest, stream dslcompilerpb.Ds
 	s.buildMu.Lock()
 	defer s.buildMu.Unlock()
 
+	ctx := stream.Context()
+
 	mission := req.GetMission()
+	if len(mission.GetImports()) > 0 {
+		return s.sendBuildErrorToAllArches(stream, unattributedError(errImportsUnsupported))
+	}
+
 	ast, err := compiler.BuildAst(mission, s.defaultImports, s.defaultRole)
 	if err != nil {
 		return s.sendBuildErrorToAllArches(stream, unattributedError(err))
@@ -199,15 +254,24 @@ func (s *Service) Build(req *dslcompilerpb.BuildRequest, stream dslcompilerpb.Ds
 	// plan (see Global Constraints) -- this matches running the CLI with
 	// no -cap/-geojson flag.
 	if err := compiler.Generate(ir, nil, nil, s.workspace); err != nil {
-		return fmt.Errorf("generating main.go: %w", err)
+		return status.Errorf(codes.Internal, "generating main.go: %v", err)
 	}
 
-	for _, arch := range targetArches {
-		outPath, err := compiler.AbsOutPath(s.workspace + "/mission-" + arch)
-		if err != nil {
-			return fmt.Errorf("resolving output path for %s: %w", arch, err)
+	for i, arch := range targetArches {
+		if i > 0 {
+			// The client may have disconnected while the previous arch's
+			// build was running -- don't burn a second cross-compile on a
+			// stream nobody is listening to anymore.
+			if err := ctx.Err(); err != nil {
+				return err
+			}
 		}
-		if err := compiler.TidyAndBuild(s.workspace, "", outPath, arch); err != nil {
+
+		outPath, err := compiler.AbsOutPath(filepath.Join(s.workspace, "mission-"+arch))
+		if err != nil {
+			return status.Errorf(codes.Internal, "resolving output path for %s: %v", arch, err)
+		}
+		if err := compiler.TidyAndBuild(ctx, s.workspace, s.overlayPath, outPath, arch); err != nil {
 			if sendErr := stream.Send(dslcompilerpb.BuildChunk_builder{
 				Arch:   arch,
 				Errors: []*dslcompilerpb.CompileError{dslcompilerpb.CompileError_builder{Message: err.Error()}.Build()},
@@ -237,17 +301,33 @@ func (s *Service) sendBuildErrorToAllArches(stream dslcompilerpb.DslCompilerServ
 
 // streamFile sends outPath's contents to stream as a sequence of
 // buildChunkSize-sized BuildChunks for arch, the last one carrying Done.
+// It reads the file in fixed-size chunks rather than loading the whole
+// (potentially 15+MB) binary into memory up front.
 func streamFile(stream dslcompilerpb.DslCompilerService_BuildServer, arch, outPath string) error {
-	data, err := os.ReadFile(outPath)
+	f, err := os.Open(outPath)
 	if err != nil {
-		return fmt.Errorf("reading built binary for %s: %w", arch, err)
+		return fmt.Errorf("opening built binary for %s: %w", arch, err)
 	}
-	for i := 0; i < len(data); i += buildChunkSize {
-		end := min(i+buildChunkSize, len(data))
-		done := end == len(data)
+	defer f.Close()
+
+	info, err := f.Stat()
+	if err != nil {
+		return fmt.Errorf("stat built binary for %s: %w", arch, err)
+	}
+	total := info.Size()
+
+	var buf [buildChunkSize]byte
+	var sent int64
+	for sent < total {
+		n, err := io.ReadFull(f, buf[:])
+		if err != nil && err != io.ErrUnexpectedEOF {
+			return fmt.Errorf("reading built binary for %s: %w", arch, err)
+		}
+		sent += int64(n)
+		done := sent >= total
 		if err := stream.Send(dslcompilerpb.BuildChunk_builder{
 			Arch: arch,
-			Data: data[i:end],
+			Data: buf[:n],
 			Done: done,
 		}.Build()); err != nil {
 			return err

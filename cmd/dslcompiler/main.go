@@ -1,4 +1,5 @@
 // cmd/dslcompiler/main.go
+
 package main
 
 import (
@@ -23,7 +24,7 @@ import (
 // to "config.toml").
 type Config struct {
 	ListenPort    int    `toml:"listen-port"`
-	SteeleagleRef string `toml:"steeleagle-ref"` // see config.toml.template's comment
+	SteeleagleRef string `toml:"steeleagle-ref"` // see config.template.toml's comment
 }
 
 func main() {
@@ -35,12 +36,37 @@ func main() {
 		log.Fatal().Msgf("reading %s: %v", *path, err)
 	}
 	var cfg Config
-	if _, err := toml.Decode(string(data), &cfg); err != nil {
+	md, err := toml.Decode(string(data), &cfg)
+	if err != nil {
 		log.Fatal().Msgf("parsing TOML: %v", err)
+	}
+	if undecoded := md.Undecoded(); len(undecoded) > 0 {
+		fmt.Println("warning: unrecognized keys in config:")
+		for _, k := range undecoded {
+			fmt.Printf("  - %s\n", k)
+		}
+	}
+	if cfg.ListenPort == 0 {
+		log.Fatal().Msg("listen-port is not set in config")
+	}
+
+	// Resolving the ref once here (rather than passing cfg.SteeleagleRef
+	// straight through) matters more for a long-lived daemon than for the
+	// one-shot CLI: ResolveSteeleagleRef's own doc notes the module
+	// proxy's branch->commit cache can lag behind the real branch tip, and
+	// this service resolves once at startup and then serves for days.
+	// Matches sdk/cmd/compiler/main.go's own -steeleagle-ref handling,
+	// including only resolving when a ref was actually given.
+	var resolvedRef string
+	if cfg.SteeleagleRef != "" {
+		resolvedRef, err = compiler.ResolveSteeleagleRef(cfg.SteeleagleRef)
+		if err != nil {
+			log.Fatal().Msgf("resolving steeleagle-ref %s: %v", cfg.SteeleagleRef, err)
+		}
 	}
 
 	log.Info().Msg("loading SDK type registry (this runs \"go get\"/\"go build\" once at startup)")
-	svc, err := dslcompiler.NewService(compiler.EnsureBaseImports(nil), cfg.SteeleagleRef)
+	svc, err := dslcompiler.NewService(compiler.EnsureBaseImports(nil), resolvedRef)
 	if err != nil {
 		log.Fatal().Msgf("loading SDK registry: %v", err)
 	}

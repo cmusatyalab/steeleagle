@@ -60,6 +60,7 @@ mission/*.config.toml
 # for the DSL validator, not user-generated mission scripts
 !sdk/demo.dsl
 !sdk/dsl/testdata/*.dsl
+!sdk/dsl/compiler/testdata/*.dsl
 
 # Generated
 _gen_*

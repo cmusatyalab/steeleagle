@@ -48,10 +48,7 @@ func BuildAst(mission *dslcompilerpb.MissionGraph, defaultImports []ImportEntry,
 		ast.Events = &parser.EventsStanza{Decls: eventDecls}
 	}
 
-	blocks, err := blocksFromEdges(mission.GetEdges())
-	if err != nil {
-		return nil, err
-	}
+	blocks := blocksFromEdges(mission.GetEdges())
 	ast.Mission = &parser.MissionStanza{Start: mission.GetStartId(), Blocks: blocks}
 
 	return ast, nil
@@ -89,7 +86,7 @@ func declsFromEvents(events []*dslcompilerpb.EventInstance) ([]*parser.Decl, err
 	return decls, nil
 }
 
-func blocksFromEdges(edges []*dslcompilerpb.Edge) ([]*parser.DuringBlock, error) {
+func blocksFromEdges(edges []*dslcompilerpb.Edge) []*parser.DuringBlock {
 	var order []string
 	rulesBySource := map[string][]*parser.Rule{}
 	seen := map[string]bool{}
@@ -105,7 +102,7 @@ func blocksFromEdges(edges []*dslcompilerpb.Edge) ([]*parser.DuringBlock, error)
 	for i, src := range order {
 		blocks[i] = &parser.DuringBlock{Action: src, Rules: rulesBySource[src]}
 	}
-	return blocks, nil
+	return blocks
 }
 
 func attrsFromParams(params map[string]*dslcompilerpb.FieldValue) ([]*parser.Attr, error) {

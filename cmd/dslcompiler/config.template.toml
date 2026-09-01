@@ -1,4 +1,4 @@
-# cmd/dslcompiler/config.toml.template
+# cmd/dslcompiler/config.template.toml
 listen-port = 50060
 # Pins every github.com/cmusatyalab/steeleagle package NewService loads
 # to this branch/tag/commit (see compiler.NewWorkspace). Required in

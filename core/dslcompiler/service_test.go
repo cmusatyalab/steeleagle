@@ -1,13 +1,38 @@
 // core/dslcompiler/service_test.go
+
 package dslcompiler
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"testing"
 
 	dslcompilerpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/dslcompiler"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/compiler"
 )
+
+// testSvc is a single Service shared across every test in this file,
+// built once by TestMain. Each of these integration tests would
+// otherwise pay NewService's real "go get" + registry-load cost
+// (fast with a warm module cache, but a needless multiple of the
+// pre-commit hook's 30s -short budget on a cold one) -- sharing one
+// instance removes that redundancy without changing what any
+// individual test exercises.
+var testSvc *Service
+
+func TestMain(m *testing.M) {
+	svc, err := NewService(compiler.EnsureBaseImports(nil), "v4.0-beta")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "NewService() = %v, want nil\n", err)
+		os.Exit(1)
+	}
+	testSvc = svc
+
+	code := m.Run()
+	svc.Close()
+	os.Exit(code)
+}
 
 // TestNewServiceLoadsDefaultRegistryAndServesSchema is an integration test:
 // it starts a real Service against the actual default SDK import set (base
@@ -17,11 +42,7 @@ import (
 // access, same as sdk/dsl/compiler's own tests (NewWorkspace runs a real
 // "go get").
 func TestNewServiceLoadsDefaultRegistryAndServesSchema(t *testing.T) {
-	svc, err := NewService(compiler.EnsureBaseImports(nil), "v4.0-beta")
-	if err != nil {
-		t.Fatalf("NewService() = %v, want nil", err)
-	}
-	defer svc.Close()
+	svc := testSvc
 
 	resp, err := svc.GetSchema(context.Background(), dslcompilerpb.GetSchemaRequest_builder{}.Build())
 	if err != nil {
@@ -50,14 +71,10 @@ func mapKeys[V any](m map[string]V) []string {
 	return keys
 }
 
-// TestValidateGoodMissionReportsOk checks a well-formed graph (the same
-// takeoff -> patrol shape used elsewhere in this plan) validates clean.
+// TestValidateGoodMissionReportsOk checks a well-formed graph (takeoff ->
+// land) validates clean.
 func TestValidateGoodMissionReportsOk(t *testing.T) {
-	svc, err := NewService(compiler.EnsureBaseImports(nil), "v4.0-beta")
-	if err != nil {
-		t.Fatalf("NewService() = %v, want nil", err)
-	}
-	defer svc.Close()
+	svc := testSvc
 
 	mission := dslcompilerpb.MissionGraph_builder{
 		Nodes: []*dslcompilerpb.Node{
@@ -83,11 +100,7 @@ func TestValidateGoodMissionReportsOk(t *testing.T) {
 // action type_name comes back as a CompileError naming the offending
 // node_id, not a generic/opaque failure.
 func TestValidateUnknownActionTypeReportsNodeError(t *testing.T) {
-	svc, err := NewService(compiler.EnsureBaseImports(nil), "v4.0-beta")
-	if err != nil {
-		t.Fatalf("NewService() = %v, want nil", err)
-	}
-	defer svc.Close()
+	svc := testSvc
 
 	mission := dslcompilerpb.MissionGraph_builder{
 		Nodes: []*dslcompilerpb.Node{
@@ -112,6 +125,31 @@ func TestValidateUnknownActionTypeReportsNodeError(t *testing.T) {
 	}
 }
 
+// TestValidateRejectsCustomImports checks that a MissionGraph with a
+// non-empty Imports field is rejected outright (rather than silently
+// having no effect, since compiler.BuildIR never reads ast.Import) --
+// see errImportsUnsupported.
+func TestValidateRejectsCustomImports(t *testing.T) {
+	svc := testSvc
+
+	mission := dslcompilerpb.MissionGraph_builder{
+		Nodes:   []*dslcompilerpb.Node{dslcompilerpb.Node_builder{InstanceId: "takeoff", TypeName: "actions.TakeOff"}.Build()},
+		StartId: "takeoff",
+		Imports: []*dslcompilerpb.ImportSpec{dslcompilerpb.ImportSpec_builder{Path: "example.com/custom"}.Build()},
+	}.Build()
+
+	resp, err := svc.Validate(context.Background(), dslcompilerpb.ValidateRequest_builder{Mission: mission}.Build())
+	if err != nil {
+		t.Fatalf("Validate() = %v, want nil", err)
+	}
+	if resp.GetOk() {
+		t.Fatal("resp.Ok = true, want false for a mission with custom imports")
+	}
+	if len(resp.GetErrors()) != 1 || resp.GetErrors()[0].GetMessage() != errImportsUnsupported.Error() {
+		t.Errorf("errors = %+v, want one error %q", resp.GetErrors(), errImportsUnsupported.Error())
+	}
+}
+
 // fakeBuildStream is a minimal DslCompilerService_BuildServer test double
 // that just accumulates every chunk sent, so the test can assert on the
 // resulting sequence without a real gRPC connection.
@@ -126,6 +164,34 @@ func (f *fakeBuildStream) Send(c *dslcompilerpb.BuildChunk) error {
 }
 func (f *fakeBuildStream) Context() context.Context { return context.Background() }
 
+// TestBuildRejectsCustomImports mirrors
+// TestValidateRejectsCustomImports for the Build RPC: a MissionGraph
+// with a non-empty Imports field should be reported as a CompileError
+// on every arch's chunk, not silently ignored.
+func TestBuildRejectsCustomImports(t *testing.T) {
+	svc := testSvc
+
+	mission := dslcompilerpb.MissionGraph_builder{
+		Nodes:   []*dslcompilerpb.Node{dslcompilerpb.Node_builder{InstanceId: "takeoff", TypeName: "actions.TakeOff"}.Build()},
+		StartId: "takeoff",
+		Imports: []*dslcompilerpb.ImportSpec{dslcompilerpb.ImportSpec_builder{Path: "example.com/custom"}.Build()},
+	}.Build()
+
+	stream := &fakeBuildStream{}
+	err := svc.Build(dslcompilerpb.BuildRequest_builder{Mission: mission}.Build(), stream)
+	if err != nil {
+		t.Fatalf("Build() = %v, want nil", err)
+	}
+	if len(stream.chunks) != len(targetArches) {
+		t.Fatalf("len(chunks) = %d, want %d (one per arch)", len(stream.chunks), len(targetArches))
+	}
+	for _, c := range stream.chunks {
+		if len(c.GetErrors()) != 1 || c.GetErrors()[0].GetMessage() != errImportsUnsupported.Error() {
+			t.Errorf("arch %s errors = %+v, want one error %q", c.GetArch(), c.GetErrors(), errImportsUnsupported.Error())
+		}
+	}
+}
+
 // TestBuildProducesBothArchBinaries is an integration test: it runs the
 // full pipeline (Generate -> go mod tidy -> go build) for a minimal
 // takeoff-only mission, for both amd64 and arm64, and checks each arch's
@@ -135,11 +201,7 @@ func TestBuildProducesBothArchBinaries(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping a real go-build integration test in -short mode")
 	}
-	svc, err := NewService(compiler.EnsureBaseImports(nil), "v4.0-beta")
-	if err != nil {
-		t.Fatalf("NewService() = %v, want nil", err)
-	}
-	defer svc.Close()
+	svc := testSvc
 
 	mission := dslcompilerpb.MissionGraph_builder{
 		Nodes:   []*dslcompilerpb.Node{dslcompilerpb.Node_builder{InstanceId: "takeoff", TypeName: "actions.TakeOff"}.Build()},
@@ -147,7 +209,7 @@ func TestBuildProducesBothArchBinaries(t *testing.T) {
 	}.Build()
 
 	stream := &fakeBuildStream{}
-	err = svc.Build(dslcompilerpb.BuildRequest_builder{Mission: mission}.Build(), stream)
+	err := svc.Build(dslcompilerpb.BuildRequest_builder{Mission: mission}.Build(), stream)
 	if err != nil {
 		t.Fatalf("Build() = %v, want nil", err)
 	}

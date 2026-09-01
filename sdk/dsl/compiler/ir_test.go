@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"context"
 	"os"
 	"strings"
 	"testing"
@@ -34,7 +35,7 @@ func TestBuildIRPatrolMission(t *testing.T) {
 	// resolves to this module's real release tags (stop at v2.2.1,
 	// predating sdk/dsl entirely) rather than the v4.0-beta branch this SDK
 	// work actually lives on. Pin to that branch explicitly.
-	workspace, cleanup, err := NewWorkspace(imports, "v4.0-beta", nil)
+	workspace, cleanup, err := NewWorkspace(context.Background(), imports, "v4.0-beta", nil)
 	if err != nil {
 		t.Fatalf("NewWorkspace() = %v, want nil", err)
 	}

@@ -101,7 +101,12 @@ message FieldValue {
     double float_value = 1;
     int64 int_value = 2;
     string string_value = 3;
-    bool bool_value = 4;   // see "A note on bool-typed fields" above
+    bool bool_value = 4;   // no SDK field is bool-typed today, and the
+                            // DSL grammar has no boolean literal syntax
+                            // to render one into -- constructing an AST
+                            // value for this variant returns an error
+                            // rather than producing something that would
+                            // fail confusingly downstream
     string ident_ref = 5;  // an enum constant name, or a previously
                             // declared node/data instance_id
     FieldValueArray array_value = 6;
