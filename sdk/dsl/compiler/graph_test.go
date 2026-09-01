@@ -120,5 +120,3 @@ func TestBuildAstBoolValueRejected(t *testing.T) {
 		t.Fatal("BuildAst() = nil error, want an error for a bool_value field")
 	}
 }
-
-func strPtr(s string) *string { return &s }
