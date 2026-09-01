@@ -1,7 +1,7 @@
 // Command compiler's workspace helpers create a scratch Go module that a
 // mission's declared imports (plus the base SDK DSL packages) are fetched
 // into, so the rest of the compiler can load and build against them.
-package main
+package compiler
 
 import (
 	"encoding/json"
@@ -27,15 +27,15 @@ const (
 	dslTypesPkgPath   = "github.com/cmusatyalab/steeleagle/sdk/dsl/types"
 )
 
-// basePkgPaths lists the packages ensureBaseImports adds when a mission's
+// basePkgPaths lists the packages EnsureBaseImports adds when a mission's
 // own Import stanza doesn't already mention them.
 var basePkgPaths = []string{dslPkgPath, dslActionsPkgPath, dslEventsPkgPath, dslTypesPkgPath}
 
-// ensureBaseImports returns imports with one *parser.ImportSpec appended
-// per entry of basePkgPaths not already present (matched by Path alone,
+// EnsureBaseImports returns imports with one *parser.ImportSpec appended
+// entry of basePkgPaths not already present (matched by Path alone,
 // ignoring alias/version), each added unaliased so it resolves to its
 // package's own name.
-func ensureBaseImports(imports []*parser.ImportSpec) []*parser.ImportSpec {
+func EnsureBaseImports(imports []*parser.ImportSpec) []*parser.ImportSpec {
 	have := make(map[string]bool, len(imports))
 	for _, imp := range imports {
 		have[imp.Path] = true
@@ -49,14 +49,14 @@ func ensureBaseImports(imports []*parser.ImportSpec) []*parser.ImportSpec {
 	return out
 }
 
-// newWorkspace creates a scratch directory containing a throwaway Go
+// NewWorkspace creates a scratch directory containing a throwaway Go
 // module, then fetches every one of imports into it with "go get" (pinned
 // to Version when one was given, otherwise "latest"). If steeleagleRef is
 // non-empty, it overrides the version used for every import under
-// steeleagleModule (base SDK packages and any mission-declared import of a
+// SteeleagleModule (base SDK packages and any mission-declared import of a
 // steeleagle package alike), regardless of any Version the import already
 // carries.
-func newWorkspace(imports []*parser.ImportSpec, steeleagleRef string, overridePaths []string) (dir string, cleanup func(), err error) {
+func NewWorkspace(imports []*parser.ImportSpec, steeleagleRef string, overridePaths []string) (dir string, cleanup func(), err error) {
 	dir, err = os.MkdirTemp("", "steeleagle-mission-*")
 	if err != nil {
 		return "", nil, fmt.Errorf("creating workspace: %w", err)
@@ -113,10 +113,10 @@ func newWorkspace(imports []*parser.ImportSpec, steeleagleRef string, overridePa
 	return dir, cleanup, nil
 }
 
-// isSteeleaglePkg reports whether path is steeleagleModule itself or a
+// isSteeleaglePkg reports whether path is SteeleagleModule itself or a
 // package beneath it.
 func isSteeleaglePkg(path string) bool {
-	return path == steeleagleModule || strings.HasPrefix(path, steeleagleModule+"/")
+	return path == SteeleagleModule || strings.HasPrefix(path, SteeleagleModule+"/")
 }
 
 // expandOverridePath expands a leading "~" (as in an OverrideSpec written
@@ -170,7 +170,7 @@ func overriddenBy(pkgPath string, overrides map[string]string) (string, bool) {
 // commitSHARe matches a full or abbreviated git commit hash.
 var commitSHARe = regexp.MustCompile(`^[0-9a-fA-F]{7,40}$`)
 
-// resolveSteeleagleRef resolves ref (a branch, tag, or commit SHA) to a
+// ResolveSteeleagleRef resolves ref (a branch, tag, or commit SHA) to a
 // commit SHA in the SteelEagle repository, for use as -steeleagle-ref.
 //
 // go get's own "@<branch>" version query goes through the Go module proxy,
@@ -184,12 +184,12 @@ var commitSHARe = regexp.MustCompile(`^[0-9a-fA-F]{7,40}$`)
 // If ref already looks like a commit SHA, it's returned as-is: ls-remote
 // only resolves refs (branches/tags) advertised by the server, not
 // arbitrary commit hashes.
-func resolveSteeleagleRef(ref string) (string, error) {
+func ResolveSteeleagleRef(ref string) (string, error) {
 	if commitSHARe.MatchString(ref) {
 		return ref, nil
 	}
 
-	repoURL := "https://" + steeleagleModule
+	repoURL := "https://" + SteeleagleModule
 	out, err := exec.Command("git", "ls-remote", repoURL, ref).Output()
 	if err != nil {
 		return "", fmt.Errorf("git ls-remote %s %s: %w", repoURL, ref, err)
@@ -202,7 +202,7 @@ func resolveSteeleagleRef(ref string) (string, error) {
 	return fields[0], nil
 }
 
-// localizeSteeleagleModule copies the fetched steeleagleModule out of the
+// localizeSteeleagleModule copies the fetched SteeleagleModule out of the
 // (read-only, content-addressed) module cache and into workspace, then adds
 // a "replace" directive pointing the module at the copy. CreateOverlay keys
 // its replacements by each package's on-disk GoFiles path, and the "go"
@@ -210,18 +210,18 @@ func resolveSteeleagleRef(ref string) (string, error) {
 // (https://pkg.go.dev/cmd/go#hdr-Compile_packages_and_dependencies), so the
 // module being scrubbed/const-generated must resolve to a path outside it.
 func localizeSteeleagleModule(workspace string) error {
-	out, err := runIn(workspace, "go", "list", "-m", "-f", "{{.Dir}}", steeleagleModule)
+	out, err := runIn(workspace, "go", "list", "-m", "-f", "{{.Dir}}", SteeleagleModule)
 	if err != nil {
-		return fmt.Errorf("locating %s module: %w\n%s", steeleagleModule, err, out)
+		return fmt.Errorf("locating %s module: %w\n%s", SteeleagleModule, err, out)
 	}
 	modDir := strings.TrimSpace(out)
 
 	localDir := filepath.Join(workspace, ".steeleagle-src")
 	if err := os.CopyFS(localDir, os.DirFS(modDir)); err != nil {
-		return fmt.Errorf("copying %s module: %w", steeleagleModule, err)
+		return fmt.Errorf("copying %s module: %w", SteeleagleModule, err)
 	}
 
-	if out, err := runIn(workspace, "go", "mod", "edit", "-replace="+steeleagleModule+"="+localDir); err != nil {
+	if out, err := runIn(workspace, "go", "mod", "edit", "-replace="+SteeleagleModule+"="+localDir); err != nil {
 		return fmt.Errorf("go mod edit -replace: %w\n%s", err, out)
 	}
 	return nil
@@ -243,12 +243,12 @@ type overlayFile struct {
 	Replace map[string]string `json:"Replace"`
 }
 
-// materializeOverlay writes overlay's replacement file contents to disk
+// MaterializeOverlay writes overlay's replacement file contents to disk
 // under workspace and returns the path to a -overlay JSON file describing
 // them, so a subsequent "go build"/"go vet" sees the scrubbed and
 // const-generated source rather than what's actually on disk. Returns ""
 // if overlay is empty (nothing to scrub/generate).
-func materializeOverlay(workspace string, overlay map[string][]byte) (string, error) {
+func MaterializeOverlay(workspace string, overlay map[string][]byte) (string, error) {
 	if len(overlay) == 0 {
 		return "", nil
 	}
@@ -279,13 +279,13 @@ func materializeOverlay(workspace string, overlay map[string][]byte) (string, er
 	return overlayPath, nil
 }
 
-// tidyAndBuild runs "go mod tidy" and then "go build" in workspace,
+// TidyAndBuild runs "go mod tidy" and then "go build" in workspace,
 // producing outPath (an absolute path, since workspace's own directory is
 // discarded once the compiler exits). overlayPath, if non-empty, is passed
 // as -overlay so the build sees the scrubbed/const-generated SDK source
 // rather than what CreateOverlay left untouched on disk. If arch is
 // non-empty, GOARCH=arch is set for the build so it cross-compiles.
-func tidyAndBuild(workspace, overlayPath, outPath, arch string) error {
+func TidyAndBuild(workspace, overlayPath, outPath, arch string) error {
 	tidyArgs := []string{"mod", "tidy"}
 	if overlayPath != "" {
 		tidyArgs = append(tidyArgs, "-overlay="+overlayPath)
@@ -315,9 +315,9 @@ func tidyAndBuild(workspace, overlayPath, outPath, arch string) error {
 	return nil
 }
 
-// absOutPath resolves out (as given on the command line) to an absolute
+// AbsOutPath resolves out (as given on the command line) to an absolute
 // path, so it still lands in the caller's original working directory once
 // builds run with Dir set to the scratch workspace.
-func absOutPath(out string) (string, error) {
+func AbsOutPath(out string) (string, error) {
 	return filepath.Abs(out)
 }

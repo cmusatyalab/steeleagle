@@ -1,4 +1,7 @@
-package main
+// Package compiler implements the DSL mission compiler: it links a
+// parsed mission against a loaded SDK type registry, generates the
+// resulting main.go, and builds it into a standalone mission binary.
+package compiler
 
 import (
 	_ "embed"
@@ -17,7 +20,7 @@ var mainTemplate = template.Must(template.New("main.go.tmpl").Parse(mainTemplate
 
 // templateData is the top-level value main.go.tmpl is executed with.
 type templateData struct {
-	*irResult
+	*IRResult
 	CapTOML string
 	GeoJSON string
 }
@@ -25,8 +28,8 @@ type templateData struct {
 // Generate renders ir as a complete main.go (embedding capTOML and geoJSON
 // verbatim so the built binary can reconstruct its CapFile/Map without the
 // original files) and writes it to filepath.Join(dir, "main.go").
-func Generate(ir *irResult, capTOML, geoJSON []byte, dir string) error {
-	data := &templateData{irResult: ir, CapTOML: string(capTOML), GeoJSON: string(geoJSON)}
+func Generate(ir *IRResult, capTOML, geoJSON []byte, dir string) error {
+	data := &templateData{IRResult: ir, CapTOML: string(capTOML), GeoJSON: string(geoJSON)}
 
 	var buf strings.Builder
 	if err := mainTemplate.Execute(&buf, data); err != nil {

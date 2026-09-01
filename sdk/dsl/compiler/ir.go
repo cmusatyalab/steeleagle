@@ -1,9 +1,9 @@
 // ir.go turns a parsed DSL Ast plus a loaded TypeRegistry into the plain
-// data (irResult) that generate.go feeds into the main.go template: one
+// data (IRResult) that generate.go feeds into the main.go template: one
 // entry per top-level Data/Actions/Events declaration, only carrying the
 // fields the mission actually set or that have a declared default, plus
 // the action/event wiring and transition table for the Mission stanza.
-package main
+package compiler
 
 import (
 	"fmt"
@@ -17,50 +17,50 @@ import (
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/parser"
 )
 
-// varDecl is one generated `var <Name> = <TypeExpr>{ ... }` declaration.
-type varDecl struct {
+// VarDecl is one generated `var <Name> = <TypeExpr>{ ... }` declaration.
+type VarDecl struct {
 	Name   string
 	Type   string
-	Fields []entry
+	Fields []Entry
 }
 
-// entry is a rendered "Name: Value" pair. It covers three template uses:
+// Entry is a rendered "Name: Value" pair. It covers three template uses:
 // a composite literal field ("Altitude: float32(15),"), an actions/events
 // map entry ("\"takeoff\": &takeoff,"), and a transition rule
 // ("\"done\": \"patrol\","); each range site in main.go.tmpl decides
 // whether Name/Value need quoting for its own syntax.
-type entry struct {
+type Entry struct {
 	Name  string
 	Value string
 }
 
-// transitionEntry is one action's outgoing rules, keyed by the action's
+// TransitionEntry is one action's outgoing rules, keyed by the action's
 // declared DSL name (its FSM state name).
-type transitionEntry struct {
+type TransitionEntry struct {
 	State string
-	Rules []entry
+	Rules []Entry
 }
 
-// importEntry is one aliased import the generated file needs beyond the
+// ImportEntry is one aliased import the generated file needs beyond the
 // fixed set the template hard-codes.
-type importEntry struct {
+type ImportEntry struct {
 	Alias string
 	Path  string
 }
 
-// irResult is everything generate.go needs to render main.go.tmpl.
-type irResult struct {
-	Imports     []importEntry
-	Vars        []varDecl
-	Actions     []entry
-	Events      []entry
-	Transitions []transitionEntry
+// IRResult is everything generate.go needs to render main.go.tmpl.
+type IRResult struct {
+	Imports     []ImportEntry
+	Vars        []VarDecl
+	Actions     []Entry
+	Events      []Entry
+	Transitions []TransitionEntry
 	Start       string
 	Role        string
 }
 
 // fixedImports are the packages main.go.tmpl always imports by hand, so
-// buildIR's own qualifier assignment must never reuse (or re-emit) these.
+// BuildIR's own qualifier assignment must never reuse (or re-emit) these.
 var fixedImports = map[string]string{
 	"context": "context",
 	"fmt":     "fmt",
@@ -130,13 +130,13 @@ func (q *qualifiers) typeString(t types.Type) string {
 
 // dynamicImports returns every package qualifier touched beyond
 // fixedImports, sorted by import path for reproducible output.
-func (q *qualifiers) dynamicImports() []importEntry {
-	var out []importEntry
+func (q *qualifiers) dynamicImports() []ImportEntry {
+	var out []ImportEntry
 	for path, alias := range q.pkgAlias {
 		if _, fixed := fixedImportPaths[path]; fixed {
 			continue
 		}
-		out = append(out, importEntry{Alias: alias, Path: path})
+		out = append(out, ImportEntry{Alias: alias, Path: path})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Path < out[j].Path })
 	return out
@@ -150,7 +150,7 @@ var fixedImportPaths = func() map[string]bool {
 	return m
 }()
 
-// irBuilder holds the state threaded through buildIR: the registry decls
+// irBuilder holds the state threaded through BuildIR: the registry decls
 // resolve against, the qualifiers assigned so far, and every top-level
 // var name declared so far (so a later Ident can cross-reference it).
 type irBuilder struct {
@@ -159,17 +159,17 @@ type irBuilder struct {
 	declared map[string]bool
 }
 
-// buildIR resolves ast's Data/Actions/Events/Mission stanzas against
+// BuildIR resolves ast's Data/Actions/Events/Mission stanzas against
 // registry, in that order (so an Actions/Events decl can reference a
 // Data decl by name), producing the plain data generate.go renders.
-func buildIR(ast *parser.Ast, registry *loader.TypeRegistry) (*irResult, error) {
+func BuildIR(ast *parser.Ast, registry *loader.TypeRegistry) (*IRResult, error) {
 	b := &irBuilder{
 		registry: registry,
 		q:        newQualifiers(registry.PackToAlias),
 		declared: map[string]bool{},
 	}
 
-	var vars []varDecl
+	var vars []VarDecl
 	if ast.Data != nil {
 		for _, d := range ast.Data.Decls {
 			v, err := b.addDecl("datatype", d)
@@ -181,7 +181,7 @@ func buildIR(ast *parser.Ast, registry *loader.TypeRegistry) (*irResult, error) 
 	}
 
 	actionNames := map[string]bool{}
-	var actions []entry
+	var actions []Entry
 	if ast.Actions != nil {
 		for _, d := range ast.Actions.Decls {
 			v, err := b.addDecl("action", d)
@@ -189,13 +189,13 @@ func buildIR(ast *parser.Ast, registry *loader.TypeRegistry) (*irResult, error) 
 				return nil, err
 			}
 			vars = append(vars, *v)
-			actions = append(actions, entry{Name: d.Name, Value: "&" + v.Name})
+			actions = append(actions, Entry{Name: d.Name, Value: "&" + v.Name})
 			actionNames[d.Name] = true
 		}
 	}
 
 	eventNames := map[string]bool{}
-	var events []entry
+	var events []Entry
 	if ast.Events != nil {
 		for _, d := range ast.Events.Decls {
 			v, err := b.addDecl("event", d)
@@ -203,7 +203,7 @@ func buildIR(ast *parser.Ast, registry *loader.TypeRegistry) (*irResult, error) 
 				return nil, err
 			}
 			vars = append(vars, *v)
-			events = append(events, entry{Name: d.Name, Value: "&" + v.Name})
+			events = append(events, Entry{Name: d.Name, Value: "&" + v.Name})
 			eventNames[d.Name] = true
 		}
 	}
@@ -215,7 +215,7 @@ func buildIR(ast *parser.Ast, registry *loader.TypeRegistry) (*irResult, error) 
 		return nil, fmt.Errorf("%s: mission start %q is not a declared action", ast.Mission.Pos, ast.Mission.Start)
 	}
 
-	rulesByAction := map[string][]entry{}
+	rulesByAction := map[string][]Entry{}
 	var actionOrder []string
 	for _, blk := range ast.Mission.Blocks {
 		if !actionNames[blk.Action] {
@@ -236,12 +236,12 @@ func buildIR(ast *parser.Ast, registry *loader.TypeRegistry) (*irResult, error) 
 					return nil, fmt.Errorf("%s: event %q already has a transition from %q", r.Pos, r.Event, blk.Action)
 				}
 			}
-			rulesByAction[blk.Action] = append(rulesByAction[blk.Action], entry{Name: r.Event, Value: r.Next})
+			rulesByAction[blk.Action] = append(rulesByAction[blk.Action], Entry{Name: r.Event, Value: r.Next})
 		}
 	}
-	var transitions []transitionEntry
+	var transitions []TransitionEntry
 	for _, action := range actionOrder {
-		transitions = append(transitions, transitionEntry{State: action, Rules: rulesByAction[action]})
+		transitions = append(transitions, TransitionEntry{State: action, Rules: rulesByAction[action]})
 	}
 
 	role := ""
@@ -249,7 +249,7 @@ func buildIR(ast *parser.Ast, registry *loader.TypeRegistry) (*irResult, error) 
 		role = ast.Role.Name
 	}
 
-	return &irResult{
+	return &IRResult{
 		Imports:     b.q.dynamicImports(),
 		Vars:        vars,
 		Actions:     actions,
@@ -263,7 +263,7 @@ func buildIR(ast *parser.Ast, registry *loader.TypeRegistry) (*irResult, error) 
 // addDecl resolves decl against registry's kind bucket ("datatype",
 // "action", or "event"), records decl.Name as declared, and returns its
 // rendered var declaration.
-func (b *irBuilder) addDecl(kind string, decl *parser.Decl) (*varDecl, error) {
+func (b *irBuilder) addDecl(kind string, decl *parser.Decl) (*VarDecl, error) {
 	base, ok := lookupBase(b.registry, kind, string(decl.Type))
 	if !ok {
 		return nil, fmt.Errorf("%s: unknown %s type %q", decl.Pos, kind, decl.Type)
@@ -276,7 +276,7 @@ func (b *irBuilder) addDecl(kind string, decl *parser.Decl) (*varDecl, error) {
 		return nil, err
 	}
 	b.declared[decl.Name] = true
-	return &varDecl{Name: varName(decl.Name), Type: b.q.typeString(base.Type), Fields: fields}, nil
+	return &VarDecl{Name: varName(decl.Name), Type: b.q.typeString(base.Type), Fields: fields}, nil
 }
 
 // lookupBase looks up name in registry's kind bucket ("action", "event",
@@ -301,7 +301,7 @@ func lookupBase(registry *loader.TypeRegistry, kind, name string) (*loader.Base,
 // field when it was explicitly set or (for an optional field left unset)
 // when it declares a default value -- everything else is left to its Go
 // zero value by omission from the composite literal.
-func (b *irBuilder) resolveFields(pos string, required, optional []loader.Field, attrs []*parser.Attr) ([]entry, error) {
+func (b *irBuilder) resolveFields(pos string, required, optional []loader.Field, attrs []*parser.Attr) ([]Entry, error) {
 	given := map[string]*parser.Value{}
 	for _, a := range attrs {
 		if _, dup := given[a.Key]; dup {
@@ -322,7 +322,7 @@ func (b *irBuilder) resolveFields(pos string, required, optional []loader.Field,
 		}
 	}
 
-	var out []entry
+	var out []Entry
 	for _, f := range required {
 		v, ok := given[f.Name]
 		if !ok {
@@ -332,7 +332,7 @@ func (b *irBuilder) resolveFields(pos string, required, optional []loader.Field,
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, entry{Name: f.Name, Value: expr})
+		out = append(out, Entry{Name: f.Name, Value: expr})
 	}
 	for _, f := range optional {
 		if v, ok := given[f.Name]; ok {
@@ -340,13 +340,13 @@ func (b *irBuilder) resolveFields(pos string, required, optional []loader.Field,
 			if err != nil {
 				return nil, err
 			}
-			out = append(out, entry{Name: f.Name, Value: expr})
+			out = append(out, Entry{Name: f.Name, Value: expr})
 			continue
 		}
 		// f.Value carries an optional field's "#optional[value]" default
 		// literal ("" when the field has no declared default).
 		if f.Value != "" {
-			out = append(out, entry{Name: f.Name, Value: b.renderDefault(f.Type, f.Value)})
+			out = append(out, Entry{Name: f.Name, Value: b.renderDefault(f.Type, f.Value)})
 		}
 	}
 	return out, nil

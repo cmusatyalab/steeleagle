@@ -11,6 +11,7 @@ import (
 	"os"
 
 	"github.com/cmusatyalab/steeleagle/sdk"
+	"github.com/cmusatyalab/steeleagle/sdk/dsl/compiler"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/loader"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/parser"
 	"github.com/cmusatyalab/steeleagle/sdk/geo"
@@ -68,7 +69,7 @@ func main() {
 	if mission.Import != nil {
 		imports = mission.Import.Imports
 	}
-	imports = ensureBaseImports(imports)
+	imports = compiler.EnsureBaseImports(imports)
 
 	var overridePaths []string
 	if mission.Override != nil {
@@ -79,13 +80,13 @@ func main() {
 
 	var resolvedRef string
 	if *steeleagleRef != "" {
-		resolvedRef, err = resolveSteeleagleRef(*steeleagleRef)
+		resolvedRef, err = compiler.ResolveSteeleagleRef(*steeleagleRef)
 		if err != nil {
 			fatalf("resolving -steeleagle-ref %s: %v", *steeleagleRef, err)
 		}
 	}
 
-	workspace, cleanup, err := newWorkspace(imports, resolvedRef, overridePaths)
+	workspace, cleanup, err := compiler.NewWorkspace(imports, resolvedRef, overridePaths)
 	if err != nil {
 		fatalf("setting up build workspace: %v", err)
 	}
@@ -96,7 +97,7 @@ func main() {
 		pkgPaths[i] = imp.Path
 	}
 
-	rawPkgs, err := loadSteeleaglePackages(workspace, pkgPaths)
+	rawPkgs, err := compiler.LoadSteeleaglePackages(workspace, pkgPaths)
 	if err != nil {
 		fatalf("loading SDK packages: %v", err)
 	}
@@ -122,25 +123,25 @@ func main() {
 		fatalCompileErrors("loading DSL types", compileErrs)
 	}
 
-	ir, err := buildIR(mission, registry)
+	ir, err := compiler.BuildIR(mission, registry)
 	if err != nil {
 		fatalf("linking mission: %v", err)
 	}
 
-	if err := Generate(ir, capBytes, geoJSONBytes, workspace); err != nil {
+	if err := compiler.Generate(ir, capBytes, geoJSONBytes, workspace); err != nil {
 		fatalf("generating mission: %v", err)
 	}
 
-	overlayPath, err := materializeOverlay(workspace, overlay)
+	overlayPath, err := compiler.MaterializeOverlay(workspace, overlay)
 	if err != nil {
 		fatalf("materializing overlay: %v", err)
 	}
 
-	outPath, err := absOutPath(*out)
+	outPath, err := compiler.AbsOutPath(*out)
 	if err != nil {
 		fatalf("resolving output path: %v", err)
 	}
-	if err := tidyAndBuild(workspace, overlayPath, outPath, *arch); err != nil {
+	if err := compiler.TidyAndBuild(workspace, overlayPath, outPath, *arch); err != nil {
 		fatalf("building mission: %v", err)
 	}
 
