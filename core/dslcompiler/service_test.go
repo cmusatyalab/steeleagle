@@ -111,3 +111,57 @@ func TestValidateUnknownActionTypeReportsNodeError(t *testing.T) {
 		t.Errorf("error.NodeId = %q (has=%v), want %q", got.GetNodeId(), got.HasNodeId(), "bogus")
 	}
 }
+
+// fakeBuildStream is a minimal DslCompilerService_BuildServer test double
+// that just accumulates every chunk sent, so the test can assert on the
+// resulting sequence without a real gRPC connection.
+type fakeBuildStream struct {
+	dslcompilerpb.DslCompilerService_BuildServer
+	chunks []*dslcompilerpb.BuildChunk
+}
+
+func (f *fakeBuildStream) Send(c *dslcompilerpb.BuildChunk) error {
+	f.chunks = append(f.chunks, c)
+	return nil
+}
+func (f *fakeBuildStream) Context() context.Context { return context.Background() }
+
+// TestBuildProducesBothArchBinaries is an integration test: it runs the
+// full pipeline (Generate -> go mod tidy -> go build) for a minimal
+// takeoff-only mission, for both amd64 and arm64, and checks each arch's
+// stream ends with a non-empty binary and no errors. This is slow (two
+// real "go build" cross-compiles) -- skip it in short test runs.
+func TestBuildProducesBothArchBinaries(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping a real go-build integration test in -short mode")
+	}
+	svc, err := NewService(compiler.EnsureBaseImports(nil), "v4.0-beta")
+	if err != nil {
+		t.Fatalf("NewService() = %v, want nil", err)
+	}
+	defer svc.Close()
+
+	mission := dslcompilerpb.MissionGraph_builder{
+		Nodes:   []*dslcompilerpb.Node{dslcompilerpb.Node_builder{InstanceId: "takeoff", TypeName: "actions.TakeOff"}.Build()},
+		StartId: "takeoff",
+	}.Build()
+
+	stream := &fakeBuildStream{}
+	err = svc.Build(dslcompilerpb.BuildRequest_builder{Mission: mission}.Build(), stream)
+	if err != nil {
+		t.Fatalf("Build() = %v, want nil", err)
+	}
+
+	got := map[string][]byte{}
+	for _, c := range stream.chunks {
+		if len(c.GetErrors()) > 0 {
+			t.Fatalf("arch %s errors: %+v", c.GetArch(), c.GetErrors())
+		}
+		got[c.GetArch()] = append(got[c.GetArch()], c.GetData()...)
+	}
+	for _, arch := range []string{"amd64", "arm64"} {
+		if len(got[arch]) == 0 {
+			t.Errorf("no binary bytes received for arch %q", arch)
+		}
+	}
+}

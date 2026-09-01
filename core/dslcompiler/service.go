@@ -4,7 +4,9 @@ package dslcompiler
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
+	"sync"
 
 	dslcompilerpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/dslcompiler"
 	"github.com/cmusatyalab/steeleagle/sdk"
@@ -27,6 +29,7 @@ type Service struct {
 	defaultRole    string
 	workspace      string
 	cleanup        func()
+	buildMu        sync.Mutex
 }
 
 // NewService loads imports (typically compiler.EnsureBaseImports(nil), the
@@ -162,3 +165,93 @@ func attributeError(err error, mission *dslcompilerpb.MissionGraph) *dslcompiler
 // first place in core/dslcompiler that needs it; Task 8 reuses this, it
 // does not redefine it.
 func strPtr(s string) *string { return &s }
+
+const buildArches = "amd64,arm64" // documents the two Build always targets
+
+var targetArches = []string{"amd64", "arm64"}
+
+// buildChunkSize caps how many binary bytes one BuildChunk carries, so a
+// multi-megabyte binary is actually streamed rather than sent as one
+// giant chunk that reintroduces the size-cap problem streaming exists to
+// avoid.
+const buildChunkSize = 256 * 1024
+
+// Build compiles req.Mission to a binary for each of targetArches,
+// streaming each one back in buildChunkSize pieces. Build calls
+// mutate s.workspace's shared main.go/build cache, so buildMu
+// serializes them -- acceptable since Build is an explicit,
+// infrequent user action, never the debounced live-edit path Validate is.
+func (s *Service) Build(req *dslcompilerpb.BuildRequest, stream dslcompilerpb.DslCompilerService_BuildServer) error {
+	s.buildMu.Lock()
+	defer s.buildMu.Unlock()
+
+	mission := req.GetMission()
+	ast, err := compiler.BuildAst(mission, s.defaultImports, s.defaultRole)
+	if err != nil {
+		return s.sendBuildErrorToAllArches(stream, unattributedError(err))
+	}
+	ir, err := compiler.BuildIR(ast, s.registry)
+	if err != nil {
+		return s.sendBuildErrorToAllArches(stream, attributeError(err, mission))
+	}
+
+	// Empty CapFile/GeoJSON: capability scrubbing is out of scope for this
+	// plan (see Global Constraints) -- this matches running the CLI with
+	// no -cap/-geojson flag.
+	if err := compiler.Generate(ir, nil, nil, s.workspace); err != nil {
+		return fmt.Errorf("generating main.go: %w", err)
+	}
+
+	for _, arch := range targetArches {
+		outPath, err := compiler.AbsOutPath(s.workspace + "/mission-" + arch)
+		if err != nil {
+			return fmt.Errorf("resolving output path for %s: %w", arch, err)
+		}
+		if err := compiler.TidyAndBuild(s.workspace, "", outPath, arch); err != nil {
+			if sendErr := stream.Send(dslcompilerpb.BuildChunk_builder{
+				Arch:   arch,
+				Errors: []*dslcompilerpb.CompileError{dslcompilerpb.CompileError_builder{Message: err.Error()}.Build()},
+			}.Build()); sendErr != nil {
+				return sendErr
+			}
+			continue
+		}
+		if err := streamFile(stream, arch, outPath); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Service) sendBuildErrorToAllArches(stream dslcompilerpb.DslCompilerService_BuildServer, ce *dslcompilerpb.CompileError) error {
+	for _, arch := range targetArches {
+		if err := stream.Send(dslcompilerpb.BuildChunk_builder{
+			Arch:   arch,
+			Errors: []*dslcompilerpb.CompileError{ce},
+		}.Build()); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// streamFile sends outPath's contents to stream as a sequence of
+// buildChunkSize-sized BuildChunks for arch, the last one carrying Done.
+func streamFile(stream dslcompilerpb.DslCompilerService_BuildServer, arch, outPath string) error {
+	data, err := os.ReadFile(outPath)
+	if err != nil {
+		return fmt.Errorf("reading built binary for %s: %w", arch, err)
+	}
+	for i := 0; i < len(data); i += buildChunkSize {
+		end := min(i+buildChunkSize, len(data))
+		done := end == len(data)
+		if err := stream.Send(dslcompilerpb.BuildChunk_builder{
+			Arch: arch,
+			Data: data[i:end],
+			Done: done,
+		}.Build()); err != nil {
+			return err
+		}
+	}
+	return nil
+}
