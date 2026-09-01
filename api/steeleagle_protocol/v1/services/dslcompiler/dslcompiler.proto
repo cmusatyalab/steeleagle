@@ -1,0 +1,154 @@
+// SPDX-FileCopyrightText: 2026 Carnegie Mellon University - Satyalab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+package steeleagle_protocol.v1.services.dslcompiler;
+
+option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/dslcompiler;dslcompiler";
+
+/*
+ * Serves the FSM builder's palette, validates a canvas-authored mission
+ * against the real Go SDK, and compiles a validated mission to a runnable
+ * binary. Hosted as a standalone persistent service (cmd/dslcompiler) so
+ * its SDK type registry and build workspace/cache are loaded once and
+ * reused across requests, called by the GCS backend (gcs/react/backend).
+ */
+service DslCompilerService {
+  // Returns the palette: every Action/Event/Datatype/Enum the currently
+  // loaded SDK registry exposes, plus the default Import/Role stanza
+  // content a client should prepend when generating DSL text.
+  rpc GetSchema(GetSchemaRequest) returns (GetSchemaResponse) {}
+
+  // Type-checks a canvas-shaped mission against the SDK registry without
+  // building anything. Called on every canvas edit (frontend debounces
+  // ~500ms), so this must stay fast: it never touches the filesystem.
+  rpc Validate(ValidateRequest) returns (ValidateResponse) {}
+
+  // Compiles a canvas-shaped mission to a binary for each of amd64 and
+  // arm64, streamed back in chunks since a compiled binary can exceed
+  // gRPC's default unary message size. Not called on every edit -- only
+  // on an explicit user action.
+  rpc Build(BuildRequest) returns (stream BuildChunk) {}
+}
+
+message GetSchemaRequest {}
+
+message GetSchemaResponse {
+  map<string, TypeSchema> actions = 1;
+  map<string, TypeSchema> events = 2;
+  map<string, TypeSchema> datatypes = 3;
+  map<string, EnumSchema> enums = 4;
+  repeated ImportSpec imports = 5;
+  string default_role = 6;
+}
+
+message ImportSpec {
+  string alias = 1; // empty means "use the package's own name"
+  string path = 2;
+  string version = 3; // empty means "latest"
+}
+
+message TypeSchema {
+  string description = 1;
+  repeated FieldSchema fields = 2;
+}
+
+message EnumSchema {
+  string description = 1;
+  repeated string values = 2; // constant names, e.g. "PatrolModeSurvey"
+}
+
+message FieldSchema {
+  string name = 1;
+  string type = 2; // "string" | "number" | "integer" | "boolean" | "array" | "object"
+  bool required = 3;
+  string description = 4;
+  optional string default_value = 5;
+  optional string object_type = 6;       // set when type == "object": qualified datatype name
+  repeated FieldSchema nested_fields = 7; // set when type == "object", depth-capped at 2
+  optional string enum_type = 8;         // set when this field's value must be an enum constant name
+}
+
+message Node {
+  string instance_id = 1;
+  string type_name = 2; // qualified, e.g. "actions.Patrol"
+  map<string, FieldValue> params = 3;
+}
+
+message EventInstance {
+  string instance_id = 1;
+  string type_name = 2; // qualified, e.g. "events.SomeEvent"
+  map<string, FieldValue> params = 3;
+}
+
+message Edge {
+  string source = 1;   // a Node's instance_id
+  string event_id = 2; // an EventInstance's instance_id, or "done"
+  string target = 3;   // a Node's instance_id
+}
+
+// FieldValue is a typed oneof mirroring sdk/dsl/parser.Value's own union
+// (Float | Int | String | Array | Inline | Ident) instead of a bare
+// string, so the wire format states which kind of value it's sending
+// rather than making the server infer it from the target field's schema
+// type. See the spec's "Graph -> AST Construction" section for the full
+// rationale (enum-constant ambiguity, composite-value references, and
+// undefined array encoding are the three concrete problems a plain string
+// encoding has that this avoids).
+message FieldValue {
+  oneof value {
+    double float_value = 1;
+    int64 int_value = 2;
+    string string_value = 3;
+    bool bool_value = 4;   // see "A note on bool-typed fields" above
+    string ident_ref = 5;  // an enum constant name, or a previously
+                            // declared node/data instance_id
+    FieldValueArray array_value = 6;
+    InlineCtorValue inline_value = 7;
+  }
+}
+
+message FieldValueArray {
+  repeated FieldValue elems = 1;
+}
+
+message InlineCtorValue {
+  string type_name = 1; // qualified datatype name, e.g. "types.Pose"
+  map<string, FieldValue> args = 2;
+}
+
+message MissionGraph {
+  repeated Node nodes = 1;
+  repeated EventInstance events = 2;
+  repeated Edge edges = 3;
+  string start_id = 4;
+  optional string role = 5;         // defaults to GetSchemaResponse.default_role if unset
+  repeated ImportSpec imports = 6;  // defaults to GetSchemaResponse.imports if empty
+}
+
+message CompileError {
+  optional string node_id = 1;
+  optional string event_id = 2;
+  string message = 3;
+}
+
+message ValidateRequest {
+  MissionGraph mission = 1;
+}
+
+message ValidateResponse {
+  bool ok = 1;
+  repeated CompileError errors = 2;
+}
+
+message BuildRequest {
+  MissionGraph mission = 1;
+}
+
+message BuildChunk {
+  string arch = 1; // "amd64" | "arm64"
+  bytes data = 2;
+  bool done = 3; // true on the final chunk for this arch
+  repeated CompileError errors = 4; // set (data/done unset) if this arch failed to compile
+}
