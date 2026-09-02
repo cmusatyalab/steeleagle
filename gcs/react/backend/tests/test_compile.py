@@ -268,8 +268,9 @@ async def test_compile_duplicate_instance_id_returns_error():
         edges=[],
         start_id="patrol",
     )
-    result = await compile_mission(req, _ok_client(), _schema())
+    client = _ok_client()
+    result = await compile_mission(req, client, _schema())
     assert "errors" in result
     assert any("patrol" in e["message"] for e in result["errors"])
     # Duplicate-id is caught locally, before ever calling Validate.
-    assert len(_ok_client().validate_calls) == 0
+    assert len(client.validate_calls) == 0
