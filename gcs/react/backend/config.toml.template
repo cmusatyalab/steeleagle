@@ -12,3 +12,6 @@ redis_port = 6379
 redis_username = "steeleagle"
 redis_password = ""
 webserver = "http://localhost:8080"
+
+[dslcompiler]
+controller = "localhost:50060"

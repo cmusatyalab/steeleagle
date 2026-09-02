@@ -41,8 +41,12 @@ from steeleagle_sdk.dsl.compiler.registry import (
     get_action,
     get_event,
 )
+from steeleagle_protocol.v1.services.dslcompiler import (
+    dslcompiler_pb2_grpc,
+)
 from steeleagle_protocol.v1.services.swarm import swarm_pb2_grpc
 
+from app.dslcompiler_client import DslCompilerClient
 from app.swarm_client import SwarmClient, VehicleResult
 
 IDENTITY_MD = (("identity", "server"),)
@@ -219,6 +223,8 @@ with open("config.toml") as file:
 
 backend_connections: dict[str, BackendConnection] = {}
 connection_manager = ConnectionManager()
+dslcompiler_channel: grpc.aio.Channel | None = None
+dslcompiler_client: DslCompilerClient | None = None
 
 
 @asynccontextmanager
@@ -257,6 +263,14 @@ async def lifespan(app: FastAPI):
     else:
         logger.info(f"Using default backend '{list(backend_connections.keys())[0]}'")
 
+    global dslcompiler_channel, dslcompiler_client
+    dslcompiler_channel = grpc.aio.insecure_channel(cfg["dslcompiler"]["controller"])
+    dslcompiler_stub = dslcompiler_pb2_grpc.DslCompilerServiceStub(dslcompiler_channel)
+    dslcompiler_client = DslCompilerClient(dslcompiler_stub)
+    logger.info(
+        f"Opened DslCompilerService stub at GRPC endpoint: {cfg['dslcompiler']['controller']}"
+    )
+
     _dsl_load_all()
 
     global _dsl_parser
@@ -273,6 +287,8 @@ async def lifespan(app: FastAPI):
     for _name, conn in backend_connections.items():
         await conn.grpc_channel.close()
         conn.redis_connection.close()
+    if dslcompiler_channel is not None:
+        await dslcompiler_channel.close()
 
 
 app = FastAPI(lifespan=lifespan)
@@ -291,6 +307,14 @@ def _current_connection() -> BackendConnection:
     if backend_key is None:
         return backend_connections[list(backend_connections)[0]]
     return backend_connections[backend_key]
+
+
+def _current_dslcompiler_client() -> DslCompilerClient:
+    if dslcompiler_client is None:
+        raise HTTPException(
+            status_code=503, detail="dslcompiler client not initialized"
+        )
+    return dslcompiler_client
 
 
 async def _remote_imagery_broadcaster(vehicle: str):

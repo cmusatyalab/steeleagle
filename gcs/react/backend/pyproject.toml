@@ -26,6 +26,11 @@ dependencies = [
 [tool.uv.sources]
 # this should point at the v3.x worktree that has the sdk until it can be ported
 steeleagle_sdk = { path =  "../../../../steeleagle/sdk", editable = true }
+# local override until api/python is tagged+published with the dslcompiler
+# proto (see .github/workflows/publish-steeleagle-protocol.yml) -- remove
+# once steeleagle-protocol>=0.1.21 (or whatever version includes it) is
+# released and bump the version pin in [project.dependencies] instead.
+steeleagle-protocol = { path = "../../../api/python", editable = true }
 
 [dependency-groups]
 dev = [
