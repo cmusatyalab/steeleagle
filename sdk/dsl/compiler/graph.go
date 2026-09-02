@@ -163,3 +163,156 @@ func valueFromFieldValue(fv *dslcompilerpb.FieldValue) (*parser.Value, error) {
 		return nil, fmt.Errorf("empty FieldValue")
 	}
 }
+
+// AstToGraph converts a parsed parser.Ast back into a MissionGraph -- the
+// mechanical reverse of BuildAst above, used by ParseDsl to turn raw DSL
+// text (which only the real lexer/parser can read) into the same
+// canvas-shaped wire format Validate/Build accept. ast.Mission must be
+// set (a DSL file with no Mission stanza has no start_id to report).
+func AstToGraph(ast *parser.Ast) (*dslcompilerpb.MissionGraph, error) {
+	if ast.Mission == nil {
+		return nil, fmt.Errorf("DSL has no Mission stanza")
+	}
+
+	var actionDecls []*parser.Decl
+	if ast.Actions != nil {
+		actionDecls = ast.Actions.Decls
+	}
+	nodes, err := nodesFromDecls(actionDecls)
+	if err != nil {
+		return nil, err
+	}
+
+	var eventDecls []*parser.Decl
+	if ast.Events != nil {
+		eventDecls = ast.Events.Decls
+	}
+	events, err := eventsFromDecls(eventDecls)
+	if err != nil {
+		return nil, err
+	}
+
+	mg := dslcompilerpb.MissionGraph_builder{
+		Nodes:   nodes,
+		Events:  events,
+		Edges:   edgesFromBlocks(ast.Mission.Blocks),
+		StartId: ast.Mission.Start,
+	}
+	if ast.Role != nil {
+		mg.Role = strPtr(ast.Role.Name)
+	}
+	if ast.Import != nil {
+		mg.Imports = importSpecsFromAst(ast.Import.Imports)
+	}
+	return mg.Build(), nil
+}
+
+func importSpecsFromAst(specs []*parser.ImportSpec) []*dslcompilerpb.ImportSpec {
+	out := make([]*dslcompilerpb.ImportSpec, len(specs))
+	for i, s := range specs {
+		out[i] = dslcompilerpb.ImportSpec_builder{Alias: s.Alias, Path: s.Path, Version: s.Version}.Build()
+	}
+	return out
+}
+
+func nodesFromDecls(decls []*parser.Decl) ([]*dslcompilerpb.Node, error) {
+	if len(decls) == 0 {
+		return nil, nil
+	}
+	nodes := make([]*dslcompilerpb.Node, len(decls))
+	for i, d := range decls {
+		params, err := paramsFromAttrs(d.Attrs)
+		if err != nil {
+			return nil, fmt.Errorf("decl %q: %w", d.Name, err)
+		}
+		nodes[i] = dslcompilerpb.Node_builder{InstanceId: d.Name, TypeName: string(d.Type), Params: params}.Build()
+	}
+	return nodes, nil
+}
+
+func eventsFromDecls(decls []*parser.Decl) ([]*dslcompilerpb.EventInstance, error) {
+	if len(decls) == 0 {
+		return nil, nil
+	}
+	events := make([]*dslcompilerpb.EventInstance, len(decls))
+	for i, d := range decls {
+		params, err := paramsFromAttrs(d.Attrs)
+		if err != nil {
+			return nil, fmt.Errorf("decl %q: %w", d.Name, err)
+		}
+		events[i] = dslcompilerpb.EventInstance_builder{InstanceId: d.Name, TypeName: string(d.Type), Params: params}.Build()
+	}
+	return events, nil
+}
+
+func edgesFromBlocks(blocks []*parser.DuringBlock) []*dslcompilerpb.Edge {
+	var edges []*dslcompilerpb.Edge
+	for _, b := range blocks {
+		for _, r := range b.Rules {
+			edges = append(edges, dslcompilerpb.Edge_builder{Source: b.Action, EventId: r.Event, Target: r.Next}.Build())
+		}
+	}
+	return edges
+}
+
+func paramsFromAttrs(attrs []*parser.Attr) (map[string]*dslcompilerpb.FieldValue, error) {
+	if len(attrs) == 0 {
+		return nil, nil
+	}
+	out := make(map[string]*dslcompilerpb.FieldValue, len(attrs))
+	for _, a := range attrs {
+		fv, err := fieldValueFromValue(a.Value)
+		if err != nil {
+			return nil, fmt.Errorf("field %q: %w", a.Key, err)
+		}
+		out[a.Key] = fv
+	}
+	return out, nil
+}
+
+// fieldValueFromValue converts one parser.Value into a wire FieldValue --
+// the mechanical reverse of valueFromFieldValue above. v.String holds the
+// RAW lexed token including its surrounding quotes; v.StringValue()
+// strips them, matching how the rest of the compiler (resolveValue)
+// already reads a String value.
+func fieldValueFromValue(v *parser.Value) (*dslcompilerpb.FieldValue, error) {
+	switch {
+	case v.Float != nil:
+		return dslcompilerpb.FieldValue_builder{FloatValue: v.Float}.Build(), nil
+	case v.Int != nil:
+		return dslcompilerpb.FieldValue_builder{IntValue: v.Int}.Build(), nil
+	case v.String != nil:
+		s, ok := v.StringValue()
+		if !ok {
+			return nil, fmt.Errorf("malformed string value")
+		}
+		return dslcompilerpb.FieldValue_builder{StringValue: &s}.Build(), nil
+	case v.Array != nil:
+		elems := make([]*dslcompilerpb.FieldValue, len(v.Array.Elems))
+		for i, e := range v.Array.Elems {
+			fv, err := fieldValueFromValue(e)
+			if err != nil {
+				return nil, err
+			}
+			elems[i] = fv
+		}
+		return dslcompilerpb.FieldValue_builder{
+			ArrayValue: dslcompilerpb.FieldValueArray_builder{Elems: elems}.Build(),
+		}.Build(), nil
+	case v.Inline != nil:
+		args, err := paramsFromAttrs(v.Inline.Args)
+		if err != nil {
+			return nil, err
+		}
+		return dslcompilerpb.FieldValue_builder{
+			InlineValue: dslcompilerpb.InlineCtorValue_builder{
+				TypeName: string(v.Inline.Type),
+				Args:     args,
+			}.Build(),
+		}.Build(), nil
+	case v.Ident != nil:
+		return dslcompilerpb.FieldValue_builder{IdentRef: v.Ident}.Build(), nil
+	default:
+		return nil, fmt.Errorf("empty parser.Value")
+	}
+}
