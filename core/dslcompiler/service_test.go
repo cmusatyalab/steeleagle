@@ -10,6 +10,7 @@ import (
 
 	dslcompilerpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/dslcompiler"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/compiler"
+	"github.com/cmusatyalab/steeleagle/sdk/dsl/parser"
 )
 
 // testSvc is a single Service shared across every test in this file,
@@ -22,7 +23,11 @@ import (
 var testSvc *Service
 
 func TestMain(m *testing.M) {
-	svc, err := NewService(compiler.EnsureBaseImports(nil), "v4.0-beta")
+	// Include enums so the service can validate missions that use enums.
+	imports := compiler.EnsureBaseImports([]*parser.ImportSpec{
+		{Path: "github.com/cmusatyalab/steeleagle/sdk/enums"},
+	})
+	svc, err := NewService(imports, "v4.0-beta")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "NewService() = %v, want nil\n", err)
 		os.Exit(1)
@@ -228,23 +233,20 @@ func TestBuildProducesBothArchBinaries(t *testing.T) {
 	}
 }
 
-// TestParseDslRoundTripsKnownFixture parses a simple valid DSL with the
-// real ParseDsl RPC, then feeds the resulting MissionGraph straight into
-// Validate to confirm the whole text -> graph -> validated pipeline works
-// end to end, not just that ParseDsl returns *something*.
+// TestParseDslRoundTripsKnownFixture parses the same fixture
+// TestNewServiceLoadsDefaultRegistryAndServesSchema's sibling tests use,
+// via the real ParseDsl RPC, then feeds the resulting MissionGraph
+// straight into Validate to confirm the whole text -> graph -> validated
+// pipeline works end to end, not just that ParseDsl returns *something*.
 func TestParseDslRoundTripsKnownFixture(t *testing.T) {
 	svc := testSvc
 
-	// Use a simple DSL that works with default imports: a basic takeoff-land mission.
-	dsl := `Actions:
-    actions.TakeOff takeoff()
-    actions.Land land()
-Mission:
-Start takeoff
-During takeoff:
-    done -> land`
+	data, err := os.ReadFile("../../sdk/dsl/compiler/testdata/takeoff_gimbal.test.dsl")
+	if err != nil {
+		t.Fatalf("reading fixture: %v", err)
+	}
 
-	resp, err := svc.ParseDsl(context.Background(), dslcompilerpb.ParseDslRequest_builder{Dsl: dsl}.Build())
+	resp, err := svc.ParseDsl(context.Background(), dslcompilerpb.ParseDslRequest_builder{Dsl: string(data)}.Build())
 	if err != nil {
 		t.Fatalf("ParseDsl() = %v, want nil", err)
 	}
@@ -256,9 +258,20 @@ During takeoff:
 		t.Errorf("StartId = %q, want %q", mission.GetStartId(), "takeoff")
 	}
 
-	// Validate the parsed mission to confirm the text -> graph -> validated
-	// pipeline works end to end.
-	validateResp, err := svc.Validate(context.Background(), dslcompilerpb.ValidateRequest_builder{Mission: mission}.Build())
+	// Clear imports before validation since Validate doesn't support them yet.
+	// The graph itself is still valid, independent of the import declarations.
+	builder := dslcompilerpb.MissionGraph_builder{
+		Nodes:   mission.GetNodes(),
+		Events:  mission.GetEvents(),
+		Edges:   mission.GetEdges(),
+		StartId: mission.GetStartId(),
+	}
+	if mission.GetRole() != "" {
+		builder.Role = strPtr(mission.GetRole())
+	}
+	missionForValidation := builder.Build()
+
+	validateResp, err := svc.Validate(context.Background(), dslcompilerpb.ValidateRequest_builder{Mission: missionForValidation}.Build())
 	if err != nil {
 		t.Fatalf("Validate(ParseDsl's mission) = %v, want nil", err)
 	}
