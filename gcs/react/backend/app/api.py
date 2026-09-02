@@ -6,7 +6,6 @@ import logging
 import os
 import time
 from contextlib import asynccontextmanager
-from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
@@ -29,16 +28,10 @@ from pydantic import (
     Field,
     NonNegativeFloat,
     NonNegativeInt,
-    ValidationError,
 )
 from pydantic_extra_types.coordinate import Latitude, Longitude
 from rich.logging import RichHandler
-from steeleagle_sdk.dsl.compiler.ir import ActionIR, EventIR, MissionIR
 from steeleagle_sdk.dsl.compiler.loader import load_all as _dsl_load_all
-from steeleagle_sdk.dsl.compiler.registry import (
-    get_action,
-    get_event,
-)
 from steeleagle_protocol.v1.services.dslcompiler import (
     dslcompiler_pb2,
     dslcompiler_pb2_grpc,
@@ -934,12 +927,128 @@ class CompileRequest(BaseModel):
     start_id: str
 
 
-def compile_mission(request: CompileRequest) -> dict:
-    """Pure function — safe to call from tests without the full app running."""
-    _dsl_load_all()
+def _field_value_from_python(
+    value, field_schema: dslcompiler_pb2.FieldSchema | None
+) -> dslcompiler_pb2.FieldValue:
+    """Converts one plain-JSON param value (what the current frontend still
+    sends -- Phase 2 is what will let it send FieldValue's oneof kind
+    explicitly) into a typed FieldValue, using field_schema (when known)
+    to resolve the one real ambiguity: whether a string names an enum
+    constant (ident_ref) or is a literal string value. bool is checked
+    before int since Python's bool is an int subclass."""
+    if isinstance(value, bool):
+        return dslcompiler_pb2.FieldValue(bool_value=value)
+    if (
+        field_schema is not None
+        and field_schema.HasField("enum_type")
+        and isinstance(value, str)
+    ):
+        return dslcompiler_pb2.FieldValue(ident_ref=value)
+    if isinstance(value, int):
+        return dslcompiler_pb2.FieldValue(int_value=value)
+    if isinstance(value, float):
+        return dslcompiler_pb2.FieldValue(float_value=value)
+    if isinstance(value, str):
+        return dslcompiler_pb2.FieldValue(string_value=value)
+    if isinstance(value, list):
+        return dslcompiler_pb2.FieldValue(
+            array_value=dslcompiler_pb2.FieldValueArray(
+                elems=[_field_value_from_python(v, None) for v in value]
+            )
+        )
+    if isinstance(value, dict):
+        nested_by_name = (
+            {f.name: f for f in field_schema.nested_fields} if field_schema else {}
+        )
+        return dslcompiler_pb2.FieldValue(
+            inline_value=dslcompiler_pb2.InlineCtorValue(
+                type_name=field_schema.object_type if field_schema else "",
+                args={
+                    k: _field_value_from_python(v, nested_by_name.get(k))
+                    for k, v in value.items()
+                },
+            )
+        )
+    raise HTTPException(status_code=422, detail=f"Unsupported param value: {value!r}")
+
+
+def _params_to_field_values(
+    params: dict, fields_by_name: dict[str, dslcompiler_pb2.FieldSchema]
+) -> dict[str, dslcompiler_pb2.FieldValue]:
+    return {
+        k: _field_value_from_python(v, fields_by_name.get(k)) for k, v in params.items()
+    }
+
+
+def _mission_graph_from_request(
+    request: "CompileRequest", schema: dslcompiler_pb2.GetSchemaResponse
+) -> dslcompiler_pb2.MissionGraph:
+    """Translates the frontend's bare-name, untyped-JSON graph shape into
+    the qualified-name, typed-FieldValue MissionGraph Validate/Build
+    expect. An unknown bare type_name is passed through unqualified
+    rather than rejected here -- Validate's own registry lookup reports a
+    clear "unknown type" error naming it, so there's no need to duplicate
+    that check locally (see the design doc's Graph -> AST Construction
+    section on what stays a local structural check vs. what Validate
+    itself is responsible for)."""
+    action_index = _type_name_index(schema.actions.keys())
+    event_index = _type_name_index(schema.events.keys())
+
+    nodes = [
+        dslcompiler_pb2.Node(
+            instance_id=n.instance_id,
+            type_name=action_index.get(n.type_name, n.type_name),
+            params=_params_to_field_values(
+                n.params,
+                {
+                    f.name: f
+                    for f in schema.actions.get(
+                        action_index.get(n.type_name, n.type_name),
+                        dslcompiler_pb2.TypeSchema(),
+                    ).fields
+                },
+            ),
+        )
+        for n in request.nodes
+    ]
+    events = [
+        dslcompiler_pb2.EventInstance(
+            instance_id=e.instance_id,
+            type_name=event_index.get(e.type_name, e.type_name),
+            params=_params_to_field_values(
+                e.params,
+                {
+                    f.name: f
+                    for f in schema.events.get(
+                        event_index.get(e.type_name, e.type_name),
+                        dslcompiler_pb2.TypeSchema(),
+                    ).fields
+                },
+            ),
+        )
+        for e in request.events
+    ]
+    edges = [
+        dslcompiler_pb2.Edge(source=e.source, event_id=e.event_id, target=e.target)
+        for e in request.edges
+    ]
+    return dslcompiler_pb2.MissionGraph(
+        nodes=nodes, events=events, edges=edges, start_id=request.start_id
+    )
+
+
+async def compile_mission(
+    request: CompileRequest,
+    client: DslCompilerClient,
+    schema: dslcompiler_pb2.GetSchemaResponse,
+) -> dict:
+    """Pure-ish function (one gRPC call) -- safe to test with a
+    FakeDslCompilerClient, no live server needed. Structural checks
+    (duplicate ids, dangling edges, start_id) run locally first, exactly
+    as before; only "does this type/these params actually type-check
+    against the SDK" now goes over gRPC to Validate."""
     errors: list[dict] = []
 
-    # Check for duplicate instance_ids
     seen_ids: set[str] = set()
     for node in request.nodes:
         if node.instance_id in seen_ids:
@@ -961,38 +1070,6 @@ def compile_mission(request: CompileRequest) -> dict:
             )
         seen_event_ids.add(ev.instance_id)
 
-    # Validate all type_names exist and params are valid
-    for node in request.nodes:
-        cls = get_action(node.type_name)
-        if cls is None:
-            errors.append(
-                {
-                    "node_id": node.instance_id,
-                    "message": f"Unknown action type: {node.type_name}",
-                }
-            )
-            continue
-        try:
-            cls(**node.params)
-        except (ValidationError, TypeError) as exc:
-            errors.append({"node_id": node.instance_id, "message": str(exc)})
-
-    for ev in request.events:
-        cls = get_event(ev.type_name)
-        if cls is None:
-            errors.append(
-                {
-                    "event_id": ev.instance_id,
-                    "message": f"Unknown event type: {ev.type_name}",
-                }
-            )
-            continue
-        try:
-            cls(**ev.params)
-        except (ValidationError, TypeError) as exc:
-            errors.append({"event_id": ev.instance_id, "message": str(exc)})
-
-    # Validate start_id refers to a known node
     node_ids = {n.instance_id for n in request.nodes}
     if request.start_id not in node_ids:
         errors.append(
@@ -1002,7 +1079,6 @@ def compile_mission(request: CompileRequest) -> dict:
             }
         )
 
-    # Validate edge referential integrity
     event_ids = {ev.instance_id for ev in request.events} | {"done"}
     for edge in request.edges:
         if edge.source not in node_ids:
@@ -1030,41 +1106,54 @@ def compile_mission(request: CompileRequest) -> dict:
     if errors:
         return {"errors": errors}
 
-    # Build MissionIR
-    actions = {
-        n.instance_id: ActionIR(
-            type_name=n.type_name,
-            action_id=n.instance_id,
-            attributes=n.params,
-        )
-        for n in request.nodes
-    }
-    events = {
-        e.instance_id: EventIR(
-            type_name=e.type_name,
-            event_id=e.instance_id,
-            attributes=e.params,
-        )
-        for e in request.events
-    }
+    mission = _mission_graph_from_request(request, schema)
+    validate_resp = await client.validate(mission)
+    if not validate_resp.ok:
+        return {
+            "errors": [
+                {
+                    "node_id": e.node_id if e.HasField("node_id") else None,
+                    "event_id": e.event_id if e.HasField("event_id") else None,
+                    "message": e.message,
+                }
+                for e in validate_resp.errors
+            ]
+        }
 
     transitions: dict[str, dict[str, str]] = {}
     for edge in request.edges:
         transitions.setdefault(edge.source, {})[edge.event_id] = edge.target
 
-    mission_ir = MissionIR(
-        actions=actions,
-        events=events,
-        data={},
-        start_action_id=request.start_id,
-        transitions=transitions,
-    )
-    return {"mission": asdict(mission_ir)}
+    return {
+        "mission": {
+            "actions": {
+                n.instance_id: {
+                    "type_name": n.type_name,
+                    "action_id": n.instance_id,
+                    "attributes": n.params,
+                }
+                for n in request.nodes
+            },
+            "events": {
+                e.instance_id: {
+                    "type_name": e.type_name,
+                    "event_id": e.instance_id,
+                    "attributes": e.params,
+                }
+                for e in request.events
+            },
+            "data": {},
+            "start_action_id": request.start_id,
+            "transitions": transitions,
+        }
+    }
 
 
 @app.post("/api/compile")
 async def compile_mission_route(request: CompileRequest) -> dict:
-    return compile_mission(request)
+    client = _current_dslcompiler_client()
+    schema = await client.get_schema()
+    return await compile_mission(request, client, schema)
 
 
 # Serve Vite static files
