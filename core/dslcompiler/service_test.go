@@ -227,3 +227,61 @@ func TestBuildProducesBothArchBinaries(t *testing.T) {
 		}
 	}
 }
+
+// TestParseDslRoundTripsKnownFixture parses a simple valid DSL with the
+// real ParseDsl RPC, then feeds the resulting MissionGraph straight into
+// Validate to confirm the whole text -> graph -> validated pipeline works
+// end to end, not just that ParseDsl returns *something*.
+func TestParseDslRoundTripsKnownFixture(t *testing.T) {
+	svc := testSvc
+
+	// Use a simple DSL that works with default imports: a basic takeoff-land mission.
+	dsl := `Actions:
+    actions.TakeOff takeoff()
+    actions.Land land()
+Mission:
+Start takeoff
+During takeoff:
+    done -> land`
+
+	resp, err := svc.ParseDsl(context.Background(), dslcompilerpb.ParseDslRequest_builder{Dsl: dsl}.Build())
+	if err != nil {
+		t.Fatalf("ParseDsl() = %v, want nil", err)
+	}
+	if !resp.GetOk() {
+		t.Fatalf("ParseDsl() ok = false, errors = %+v", resp.GetErrors())
+	}
+	mission := resp.GetMission()
+	if mission.GetStartId() != "takeoff" {
+		t.Errorf("StartId = %q, want %q", mission.GetStartId(), "takeoff")
+	}
+
+	// Validate the parsed mission to confirm the text -> graph -> validated
+	// pipeline works end to end.
+	validateResp, err := svc.Validate(context.Background(), dslcompilerpb.ValidateRequest_builder{Mission: mission}.Build())
+	if err != nil {
+		t.Fatalf("Validate(ParseDsl's mission) = %v, want nil", err)
+	}
+	if !validateResp.GetOk() {
+		t.Errorf("Validate(ParseDsl's mission) ok = false, errors = %+v", validateResp.GetErrors())
+	}
+}
+
+// TestParseDslReportsSyntaxError checks malformed DSL text comes back as
+// a clean ok=false response with a populated error, not a gRPC-level
+// error -- matching Validate's own fail-soft convention for
+// client-caused problems.
+func TestParseDslReportsSyntaxError(t *testing.T) {
+	svc := testSvc
+
+	resp, err := svc.ParseDsl(context.Background(), dslcompilerpb.ParseDslRequest_builder{Dsl: "this is not valid DSL {{{"}.Build())
+	if err != nil {
+		t.Fatalf("ParseDsl() = %v, want nil", err)
+	}
+	if resp.GetOk() {
+		t.Fatal("ParseDsl() ok = true, want false for malformed input")
+	}
+	if len(resp.GetErrors()) == 0 {
+		t.Error("ParseDsl() Errors is empty, want at least one error")
+	}
+}

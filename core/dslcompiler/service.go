@@ -175,6 +175,33 @@ func (s *Service) Validate(ctx context.Context, req *dslcompilerpb.ValidateReque
 	return dslcompilerpb.ValidateResponse_builder{Ok: true}.Build(), nil
 }
 
+// ParseDsl parses raw DSL text with the real lexer/parser and converts
+// the result to a MissionGraph via compiler.AstToGraph -- the reverse
+// direction of Validate/Build, which never touch the text parser at all.
+// Both a syntax error and an AstToGraph error (e.g. no Mission stanza)
+// come back as a normal ok=false response, matching Validate's
+// fail-soft convention: these are client-input problems, not server
+// errors.
+func (s *Service) ParseDsl(ctx context.Context, req *dslcompilerpb.ParseDslRequest) (*dslcompilerpb.ParseDslResponse, error) {
+	ast, err := parser.Parse("upload.dsl", strings.NewReader(req.GetDsl()))
+	if err != nil {
+		return dslcompilerpb.ParseDslResponse_builder{
+			Ok:     false,
+			Errors: []*dslcompilerpb.CompileError{unattributedError(err)},
+		}.Build(), nil
+	}
+
+	mission, err := compiler.AstToGraph(ast)
+	if err != nil {
+		return dslcompilerpb.ParseDslResponse_builder{
+			Ok:     false,
+			Errors: []*dslcompilerpb.CompileError{unattributedError(err)},
+		}.Build(), nil
+	}
+
+	return dslcompilerpb.ParseDslResponse_builder{Ok: true, Mission: mission}.Build(), nil
+}
+
 func unattributedError(err error) *dslcompilerpb.CompileError {
 	return dslcompilerpb.CompileError_builder{Message: err.Error()}.Build()
 }
