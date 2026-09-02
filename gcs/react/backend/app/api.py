@@ -36,12 +36,11 @@ from rich.logging import RichHandler
 from steeleagle_sdk.dsl.compiler.ir import ActionIR, EventIR, MissionIR
 from steeleagle_sdk.dsl.compiler.loader import load_all as _dsl_load_all
 from steeleagle_sdk.dsl.compiler.registry import (
-    _ACTIONS,
-    _EVENTS,
     get_action,
     get_event,
 )
 from steeleagle_protocol.v1.services.dslcompiler import (
+    dslcompiler_pb2,
     dslcompiler_pb2_grpc,
 )
 from steeleagle_protocol.v1.services.swarm import swarm_pb2_grpc
@@ -686,83 +685,6 @@ async def command(req: Command) -> JSONResponse:
     )
 
 
-def _resolve_ref(prop: dict, defs: dict) -> dict:
-    """Follow a single $ref pointer in a JSON Schema fragment."""
-    if "$ref" in prop:
-        ref_name = prop["$ref"].split("/")[-1]
-        return defs.get(ref_name, prop)
-    return prop
-
-
-def _unwrap_anyof(prop: dict) -> dict:
-    """Unwrap anyOf by selecting the best non-null branch.
-
-    - If exactly one non-null branch exists (Optional pattern), return it.
-    - If multiple non-null branches exist, prefer a scalar type branch
-      (string, number, integer, boolean) over array/object.
-    """
-    if "anyOf" in prop:
-        non_null = [t for t in prop["anyOf"] if t.get("type") != "null"]
-        if len(non_null) == 1:
-            return non_null[0]
-        if len(non_null) > 1:
-            _SCALAR_TYPES = ("string", "number", "integer", "boolean")
-            scalar = next((t for t in non_null if t.get("type") in _SCALAR_TYPES), None)
-            if scalar is not None:
-                return scalar
-    return prop
-
-
-def _extract_fields_from_schema(schema: dict, defs: dict, depth: int = 0) -> list[dict]:
-    """Extract fields from a raw JSON Schema dict. Recurses into $defs for nested object types."""
-    properties = schema.get("properties", {})
-    required_set = set(schema.get("required", []))
-    fields = []
-    for name, raw_prop in properties.items():
-        prop = _resolve_ref(raw_prop, defs)
-        prop = _unwrap_anyof(prop)
-        prop = _resolve_ref(prop, defs)
-
-        field_type = prop.get("type", "object")
-        if field_type not in ("string", "number", "integer", "boolean", "array"):
-            field_type = "object"
-
-        entry: dict = {
-            "name": name,
-            "type": field_type,
-            "required": name in required_set,
-            "description": raw_prop.get("description", prop.get("description", "")),
-        }
-        if "default" in raw_prop:
-            entry["default"] = raw_prop["default"]
-
-        if field_type == "object":
-            ref_raw = (
-                raw_prop
-                if "$ref" in raw_prop
-                else (next((t for t in raw_prop.get("anyOf", []) if "$ref" in t), {}))
-            )
-            ref_name = ref_raw.get("$ref", "").split("/")[-1]
-            if ref_name:
-                entry["object_type"] = ref_name
-                if depth < 2:
-                    nested_schema = defs.get(ref_name, {})
-                    if nested_schema:
-                        entry["nested_fields"] = _extract_fields_from_schema(
-                            nested_schema, defs, depth + 1
-                        )
-
-        fields.append(entry)
-    return fields
-
-
-def _extract_fields(cls) -> list[dict]:
-    """Return a flat field list from a Pydantic model class."""
-    schema = cls.model_json_schema()
-    defs = schema.get("$defs", {})
-    return _extract_fields_from_schema(schema, defs, depth=0)
-
-
 _GRAMMAR_PATH = Path(steeleagle_sdk.__path__[0]) / "dsl" / "grammar" / "dronedsl.lark"
 _dsl_parser: Lark | None = None
 
@@ -913,35 +835,78 @@ async def parse_dsl(request: ParseDslRequest):
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
-def build_schema_response() -> dict:
-    """Pure function — safe to call from tests without the full app running."""
-    result: dict = {"actions": {}, "events": {}}
-    for _type_name, cls in _ACTIONS.items():
-        display = cls.__name__  # original CamelCase name
-        result["actions"][display] = {
-            "description": (cls.__doc__ or "").strip().splitlines()[0]
-            if cls.__doc__
-            else "",
-            "fields": _extract_fields(cls),
+def _bare_name(qualified: str) -> str:
+    """'actions.Patrol' -> 'Patrol'. Every qualified name this service
+    produces is 'qualifier.Name' with no further dots in the qualifier
+    (see the dslcompiler design doc's Schema section), so the part after
+    the last '.' is always the bare display name."""
+    return qualified.rsplit(".", 1)[-1]
+
+
+def _type_name_index(qualified_names) -> dict[str, str]:
+    """Builds a bare-name -> qualified-name lookup, e.g. {'Patrol':
+    'actions.Patrol'}. If two qualified names share a bare name (not the
+    case for the current default import set), the later one wins --
+    matches today's flat, collision-free Python-SDK-era registry closely
+    enough that this isn't worth guarding further here."""
+    return {_bare_name(name): name for name in qualified_names}
+
+
+def _field_schema_to_dict(field: dslcompiler_pb2.FieldSchema) -> dict:
+    entry: dict = {
+        "name": field.name,
+        "type": field.type,
+        "required": field.required,
+        "description": field.description,
+    }
+    if field.HasField("default_value"):
+        entry["default"] = field.default_value
+    if field.HasField("object_type"):
+        entry["object_type"] = _bare_name(field.object_type)
+    if field.HasField("enum_type"):
+        entry["enum_type"] = _bare_name(field.enum_type)
+    if field.nested_fields:
+        entry["nested_fields"] = [_field_schema_to_dict(f) for f in field.nested_fields]
+    return entry
+
+
+def _type_schemas_to_dict(schemas: dict[str, dslcompiler_pb2.TypeSchema]) -> dict:
+    return {
+        _bare_name(name): {
+            "description": ts.description,
+            "fields": [_field_schema_to_dict(f) for f in ts.fields],
         }
-    for _type_name, cls in _EVENTS.items():
-        display = cls.__name__
-        result["events"][display] = {
-            "description": (cls.__doc__ or "").strip().splitlines()[0]
-            if cls.__doc__
-            else "",
-            "fields": _extract_fields(cls),
-        }
+        for name, ts in schemas.items()
+    }
+
+
+def build_schema_response(resp: dslcompiler_pb2.GetSchemaResponse) -> dict:
+    """Pure function -- translates the dslcompiler service's qualified-name
+    schema into the bare-name-keyed shape the frontend already consumes
+    (see this plan's Global Constraints on why bare names are load-bearing
+    here, not cosmetic)."""
+    result = {
+        "actions": _type_schemas_to_dict(resp.actions),
+        "events": _type_schemas_to_dict(resp.events),
+        "imports": [
+            {"alias": imp.alias, "path": imp.path, "version": imp.version}
+            for imp in resp.imports
+        ],
+        "default_role": resp.default_role,
+    }
     if not result["actions"] and not result["events"]:
         raise HTTPException(
-            status_code=500, detail="Schema registry is empty — DSL load failed"
+            status_code=500,
+            detail="Schema registry is empty — dslcompiler service returned nothing",
         )
     return result
 
 
 @app.get("/api/schema")
 async def get_schema():
-    return build_schema_response()
+    client = _current_dslcompiler_client()
+    resp = await client.get_schema()
+    return build_schema_response(resp)
 
 
 class CompileNode(BaseModel):
