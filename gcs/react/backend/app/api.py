@@ -6,6 +6,7 @@ import logging
 import os
 import time
 from contextlib import asynccontextmanager
+from typing import Literal
 
 import cv2
 import grpc
@@ -16,7 +17,7 @@ import toml
 from colorhash import ColorHash
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import (
     BaseModel,
@@ -1056,6 +1057,62 @@ async def compile_mission_route(request: CompileRequest) -> dict:
     client = _current_dslcompiler_client()
     schema = await client.get_schema()
     return await compile_mission(request, client, schema)
+
+
+class BuildMissionRequest(CompileRequest):
+    arch: Literal["amd64", "arm64"]
+
+
+async def _build_stream_for_arch(client: DslCompilerClient, mission, arch: str):
+    """Relays only the BuildChunks for arch out of the service's combined
+    amd64+arm64 stream, yielding raw bytes. Raises HTTPException (rather
+    than yielding an error indicator) if the FIRST chunk seen for arch
+    carries errors, since that happens before any response bytes have
+    been sent -- the caller must consume at least one item from this
+    generator inside a try/except before handing it to StreamingResponse,
+    exactly as the route below does, or the error will surface as a
+    broken stream instead of a clean 422."""
+    stream = client.build(mission)
+    async for chunk in stream:
+        if chunk.arch != arch:
+            continue
+        if chunk.errors:
+            detail = "; ".join(e.message for e in chunk.errors)
+            raise HTTPException(
+                status_code=422, detail=f"Build failed for {arch}: {detail}"
+            )
+        yield chunk.data
+        if chunk.done:
+            return
+
+
+@app.post("/api/build")
+async def build_route(request: BuildMissionRequest):
+    client = _current_dslcompiler_client()
+    schema = await client.get_schema()
+    mission = _mission_graph_from_request(request, schema)
+
+    stream = _build_stream_for_arch(client, mission, request.arch)
+    try:
+        first_piece = await anext(stream)
+    except StopAsyncIteration:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Build stream ended without producing arch '{request.arch}'",
+        ) from None
+
+    async def _relay():
+        yield first_piece
+        async for piece in stream:
+            yield piece
+
+    return StreamingResponse(
+        _relay(),
+        media_type="application/octet-stream",
+        headers={
+            "Content-Disposition": f'attachment; filename="mission-{request.arch}"'
+        },
+    )
 
 
 # Serve Vite static files
