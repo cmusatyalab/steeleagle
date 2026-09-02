@@ -20,6 +20,14 @@ service DslCompilerService {
   // content a client should prepend when generating DSL text.
   rpc GetSchema(GetSchemaRequest) returns (GetSchemaResponse) {}
 
+  // Parses raw DSL text (e.g. a hand-edited .dsl file, or the DSL tab's
+  // "Apply" action) into a canvas-shaped MissionGraph -- the mechanical
+  // reverse of the Node/Edge construction Validate/Build do from a
+  // MissionGraph. Unlike Validate/Build, this goes through the real
+  // participle-based lexer/parser (sdk/dsl/parser.Parse), since the input
+  // here genuinely is DSL source text, not an already-structured request.
+  rpc ParseDsl(ParseDslRequest) returns (ParseDslResponse) {}
+
   // Type-checks a canvas-shaped mission against the SDK registry without
   // building anything. Called on every canvas edit (frontend debounces
   // ~500ms), so this must stay fast: it never touches the filesystem.
@@ -156,4 +164,14 @@ message BuildChunk {
   bytes data = 2;
   bool done = 3; // true on the final chunk for this arch
   repeated CompileError errors = 4; // set (data/done unset) if this arch failed to compile
+}
+
+message ParseDslRequest {
+  string dsl = 1;
+}
+
+message ParseDslResponse {
+  bool ok = 1;
+  MissionGraph mission = 2;      // set (errors empty) on success
+  repeated CompileError errors = 3; // set (mission unset) on a parse/syntax error
 }

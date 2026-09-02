@@ -1185,7 +1185,12 @@ type FieldValue_builder struct {
 	IntValue    *int64
 	StringValue *string
 	BoolValue   *bool
-	IdentRef    *string
+	// DSL grammar has no boolean literal syntax
+	// to render one into -- constructing an AST
+	// value for this variant returns an error
+	// rather than producing something that would
+	// fail confusingly downstream
+	IdentRef *string
 	// declared node/data instance_id
 	ArrayValue  *FieldValueArray
 	InlineValue *InlineCtorValue
@@ -1247,10 +1252,15 @@ type fieldValue_StringValue struct {
 }
 
 type fieldValue_BoolValue struct {
-	BoolValue bool `protobuf:"varint,4,opt,name=bool_value,json=boolValue,proto3,oneof"` // see "A note on bool-typed fields" above
+	BoolValue bool `protobuf:"varint,4,opt,name=bool_value,json=boolValue,proto3,oneof"` // no SDK field is bool-typed today, and the
 }
 
 type fieldValue_IdentRef struct {
+	// DSL grammar has no boolean literal syntax
+	// to render one into -- constructing an AST
+	// value for this variant returns an error
+	// rather than producing something that would
+	// fail confusingly downstream
 	IdentRef string `protobuf:"bytes,5,opt,name=ident_ref,json=identRef,proto3,oneof"` // an enum constant name, or a previously
 }
 
@@ -2001,6 +2011,161 @@ func (b0 BuildChunk_builder) Build() *BuildChunk {
 	return m0
 }
 
+type ParseDslRequest struct {
+	state          protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Dsl string                 `protobuf:"bytes,1,opt,name=dsl,proto3"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *ParseDslRequest) Reset() {
+	*x = ParseDslRequest{}
+	mi := &file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ParseDslRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ParseDslRequest) ProtoMessage() {}
+
+func (x *ParseDslRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *ParseDslRequest) GetDsl() string {
+	if x != nil {
+		return x.xxx_hidden_Dsl
+	}
+	return ""
+}
+
+func (x *ParseDslRequest) SetDsl(v string) {
+	x.xxx_hidden_Dsl = v
+}
+
+type ParseDslRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Dsl string
+}
+
+func (b0 ParseDslRequest_builder) Build() *ParseDslRequest {
+	m0 := &ParseDslRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Dsl = b.Dsl
+	return m0
+}
+
+type ParseDslResponse struct {
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ok      bool                   `protobuf:"varint,1,opt,name=ok,proto3"`
+	xxx_hidden_Mission *MissionGraph          `protobuf:"bytes,2,opt,name=mission,proto3"`
+	xxx_hidden_Errors  *[]*CompileError       `protobuf:"bytes,3,rep,name=errors,proto3"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *ParseDslResponse) Reset() {
+	*x = ParseDslResponse{}
+	mi := &file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ParseDslResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ParseDslResponse) ProtoMessage() {}
+
+func (x *ParseDslResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *ParseDslResponse) GetOk() bool {
+	if x != nil {
+		return x.xxx_hidden_Ok
+	}
+	return false
+}
+
+func (x *ParseDslResponse) GetMission() *MissionGraph {
+	if x != nil {
+		return x.xxx_hidden_Mission
+	}
+	return nil
+}
+
+func (x *ParseDslResponse) GetErrors() []*CompileError {
+	if x != nil {
+		if x.xxx_hidden_Errors != nil {
+			return *x.xxx_hidden_Errors
+		}
+	}
+	return nil
+}
+
+func (x *ParseDslResponse) SetOk(v bool) {
+	x.xxx_hidden_Ok = v
+}
+
+func (x *ParseDslResponse) SetMission(v *MissionGraph) {
+	x.xxx_hidden_Mission = v
+}
+
+func (x *ParseDslResponse) SetErrors(v []*CompileError) {
+	x.xxx_hidden_Errors = &v
+}
+
+func (x *ParseDslResponse) HasMission() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Mission != nil
+}
+
+func (x *ParseDslResponse) ClearMission() {
+	x.xxx_hidden_Mission = nil
+}
+
+type ParseDslResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ok      bool
+	Mission *MissionGraph
+	Errors  []*CompileError
+}
+
+func (b0 ParseDslResponse_builder) Build() *ParseDslResponse {
+	m0 := &ParseDslResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ok = b.Ok
+	x.xxx_hidden_Mission = b.Mission
+	x.xxx_hidden_Errors = &b.Errors
+	return m0
+}
+
 var File_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto protoreflect.FileDescriptor
 
 const file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_rawDesc = "" +
@@ -2122,14 +2287,21 @@ const file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_rawDesc
 	"\x04arch\x18\x01 \x01(\tR\x04arch\x12\x12\n" +
 	"\x04data\x18\x02 \x01(\fR\x04data\x12\x12\n" +
 	"\x04done\x18\x03 \x01(\bR\x04done\x12Q\n" +
-	"\x06errors\x18\x04 \x03(\v29.steeleagle_protocol.v1.services.dslcompiler.CompileErrorR\x06errors2\xb0\x03\n" +
+	"\x06errors\x18\x04 \x03(\v29.steeleagle_protocol.v1.services.dslcompiler.CompileErrorR\x06errors\"#\n" +
+	"\x0fParseDslRequest\x12\x10\n" +
+	"\x03dsl\x18\x01 \x01(\tR\x03dsl\"\xca\x01\n" +
+	"\x10ParseDslResponse\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\x12S\n" +
+	"\amission\x18\x02 \x01(\v29.steeleagle_protocol.v1.services.dslcompiler.MissionGraphR\amission\x12Q\n" +
+	"\x06errors\x18\x03 \x03(\v29.steeleagle_protocol.v1.services.dslcompiler.CompileErrorR\x06errors2\xbc\x04\n" +
 	"\x12DslCompilerService\x12\x8c\x01\n" +
 	"\tGetSchema\x12=.steeleagle_protocol.v1.services.dslcompiler.GetSchemaRequest\x1a>.steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse\"\x00\x12\x89\x01\n" +
+	"\bParseDsl\x12<.steeleagle_protocol.v1.services.dslcompiler.ParseDslRequest\x1a=.steeleagle_protocol.v1.services.dslcompiler.ParseDslResponse\"\x00\x12\x89\x01\n" +
 	"\bValidate\x12<.steeleagle_protocol.v1.services.dslcompiler.ValidateRequest\x1a=.steeleagle_protocol.v1.services.dslcompiler.ValidateResponse\"\x00\x12\x7f\n" +
 	"\x05Build\x129.steeleagle_protocol.v1.services.dslcompiler.BuildRequest\x1a7.steeleagle_protocol.v1.services.dslcompiler.BuildChunk\"\x000\x01B\xe5\x02\n" +
 	"/com.steeleagle_protocol.v1.services.dslcompilerB\x10DslcompilerProtoP\x01ZTgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/dslcompiler\xa2\x02\x04SVSD\xaa\x02*SteeleagleProtocol.V1.Services.Dslcompiler\xca\x02*SteeleagleProtocol\\V1\\Services\\Dslcompiler\xe2\x026SteeleagleProtocol\\V1\\Services\\Dslcompiler\\GPBMetadata\xea\x02-SteeleagleProtocol::V1::Services::Dslcompilerb\x06proto3"
 
-var file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
+var file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
 var file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_goTypes = []any{
 	(*GetSchemaRequest)(nil),  // 0: steeleagle_protocol.v1.services.dslcompiler.GetSchemaRequest
 	(*GetSchemaResponse)(nil), // 1: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse
@@ -2149,28 +2321,30 @@ var file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_goTypes =
 	(*ValidateResponse)(nil),  // 15: steeleagle_protocol.v1.services.dslcompiler.ValidateResponse
 	(*BuildRequest)(nil),      // 16: steeleagle_protocol.v1.services.dslcompiler.BuildRequest
 	(*BuildChunk)(nil),        // 17: steeleagle_protocol.v1.services.dslcompiler.BuildChunk
-	nil,                       // 18: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.ActionsEntry
-	nil,                       // 19: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.EventsEntry
-	nil,                       // 20: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.DatatypesEntry
-	nil,                       // 21: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.EnumsEntry
-	nil,                       // 22: steeleagle_protocol.v1.services.dslcompiler.Node.ParamsEntry
-	nil,                       // 23: steeleagle_protocol.v1.services.dslcompiler.EventInstance.ParamsEntry
-	nil,                       // 24: steeleagle_protocol.v1.services.dslcompiler.InlineCtorValue.ArgsEntry
+	(*ParseDslRequest)(nil),   // 18: steeleagle_protocol.v1.services.dslcompiler.ParseDslRequest
+	(*ParseDslResponse)(nil),  // 19: steeleagle_protocol.v1.services.dslcompiler.ParseDslResponse
+	nil,                       // 20: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.ActionsEntry
+	nil,                       // 21: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.EventsEntry
+	nil,                       // 22: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.DatatypesEntry
+	nil,                       // 23: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.EnumsEntry
+	nil,                       // 24: steeleagle_protocol.v1.services.dslcompiler.Node.ParamsEntry
+	nil,                       // 25: steeleagle_protocol.v1.services.dslcompiler.EventInstance.ParamsEntry
+	nil,                       // 26: steeleagle_protocol.v1.services.dslcompiler.InlineCtorValue.ArgsEntry
 }
 var file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_depIdxs = []int32{
-	18, // 0: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.actions:type_name -> steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.ActionsEntry
-	19, // 1: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.events:type_name -> steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.EventsEntry
-	20, // 2: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.datatypes:type_name -> steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.DatatypesEntry
-	21, // 3: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.enums:type_name -> steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.EnumsEntry
+	20, // 0: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.actions:type_name -> steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.ActionsEntry
+	21, // 1: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.events:type_name -> steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.EventsEntry
+	22, // 2: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.datatypes:type_name -> steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.DatatypesEntry
+	23, // 3: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.enums:type_name -> steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.EnumsEntry
 	2,  // 4: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.imports:type_name -> steeleagle_protocol.v1.services.dslcompiler.ImportSpec
 	5,  // 5: steeleagle_protocol.v1.services.dslcompiler.TypeSchema.fields:type_name -> steeleagle_protocol.v1.services.dslcompiler.FieldSchema
 	5,  // 6: steeleagle_protocol.v1.services.dslcompiler.FieldSchema.nested_fields:type_name -> steeleagle_protocol.v1.services.dslcompiler.FieldSchema
-	22, // 7: steeleagle_protocol.v1.services.dslcompiler.Node.params:type_name -> steeleagle_protocol.v1.services.dslcompiler.Node.ParamsEntry
-	23, // 8: steeleagle_protocol.v1.services.dslcompiler.EventInstance.params:type_name -> steeleagle_protocol.v1.services.dslcompiler.EventInstance.ParamsEntry
+	24, // 7: steeleagle_protocol.v1.services.dslcompiler.Node.params:type_name -> steeleagle_protocol.v1.services.dslcompiler.Node.ParamsEntry
+	25, // 8: steeleagle_protocol.v1.services.dslcompiler.EventInstance.params:type_name -> steeleagle_protocol.v1.services.dslcompiler.EventInstance.ParamsEntry
 	10, // 9: steeleagle_protocol.v1.services.dslcompiler.FieldValue.array_value:type_name -> steeleagle_protocol.v1.services.dslcompiler.FieldValueArray
 	11, // 10: steeleagle_protocol.v1.services.dslcompiler.FieldValue.inline_value:type_name -> steeleagle_protocol.v1.services.dslcompiler.InlineCtorValue
 	9,  // 11: steeleagle_protocol.v1.services.dslcompiler.FieldValueArray.elems:type_name -> steeleagle_protocol.v1.services.dslcompiler.FieldValue
-	24, // 12: steeleagle_protocol.v1.services.dslcompiler.InlineCtorValue.args:type_name -> steeleagle_protocol.v1.services.dslcompiler.InlineCtorValue.ArgsEntry
+	26, // 12: steeleagle_protocol.v1.services.dslcompiler.InlineCtorValue.args:type_name -> steeleagle_protocol.v1.services.dslcompiler.InlineCtorValue.ArgsEntry
 	6,  // 13: steeleagle_protocol.v1.services.dslcompiler.MissionGraph.nodes:type_name -> steeleagle_protocol.v1.services.dslcompiler.Node
 	7,  // 14: steeleagle_protocol.v1.services.dslcompiler.MissionGraph.events:type_name -> steeleagle_protocol.v1.services.dslcompiler.EventInstance
 	8,  // 15: steeleagle_protocol.v1.services.dslcompiler.MissionGraph.edges:type_name -> steeleagle_protocol.v1.services.dslcompiler.Edge
@@ -2179,24 +2353,28 @@ var file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_depIdxs =
 	13, // 18: steeleagle_protocol.v1.services.dslcompiler.ValidateResponse.errors:type_name -> steeleagle_protocol.v1.services.dslcompiler.CompileError
 	12, // 19: steeleagle_protocol.v1.services.dslcompiler.BuildRequest.mission:type_name -> steeleagle_protocol.v1.services.dslcompiler.MissionGraph
 	13, // 20: steeleagle_protocol.v1.services.dslcompiler.BuildChunk.errors:type_name -> steeleagle_protocol.v1.services.dslcompiler.CompileError
-	3,  // 21: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.ActionsEntry.value:type_name -> steeleagle_protocol.v1.services.dslcompiler.TypeSchema
-	3,  // 22: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.EventsEntry.value:type_name -> steeleagle_protocol.v1.services.dslcompiler.TypeSchema
-	3,  // 23: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.DatatypesEntry.value:type_name -> steeleagle_protocol.v1.services.dslcompiler.TypeSchema
-	4,  // 24: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.EnumsEntry.value:type_name -> steeleagle_protocol.v1.services.dslcompiler.EnumSchema
-	9,  // 25: steeleagle_protocol.v1.services.dslcompiler.Node.ParamsEntry.value:type_name -> steeleagle_protocol.v1.services.dslcompiler.FieldValue
-	9,  // 26: steeleagle_protocol.v1.services.dslcompiler.EventInstance.ParamsEntry.value:type_name -> steeleagle_protocol.v1.services.dslcompiler.FieldValue
-	9,  // 27: steeleagle_protocol.v1.services.dslcompiler.InlineCtorValue.ArgsEntry.value:type_name -> steeleagle_protocol.v1.services.dslcompiler.FieldValue
-	0,  // 28: steeleagle_protocol.v1.services.dslcompiler.DslCompilerService.GetSchema:input_type -> steeleagle_protocol.v1.services.dslcompiler.GetSchemaRequest
-	14, // 29: steeleagle_protocol.v1.services.dslcompiler.DslCompilerService.Validate:input_type -> steeleagle_protocol.v1.services.dslcompiler.ValidateRequest
-	16, // 30: steeleagle_protocol.v1.services.dslcompiler.DslCompilerService.Build:input_type -> steeleagle_protocol.v1.services.dslcompiler.BuildRequest
-	1,  // 31: steeleagle_protocol.v1.services.dslcompiler.DslCompilerService.GetSchema:output_type -> steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse
-	15, // 32: steeleagle_protocol.v1.services.dslcompiler.DslCompilerService.Validate:output_type -> steeleagle_protocol.v1.services.dslcompiler.ValidateResponse
-	17, // 33: steeleagle_protocol.v1.services.dslcompiler.DslCompilerService.Build:output_type -> steeleagle_protocol.v1.services.dslcompiler.BuildChunk
-	31, // [31:34] is the sub-list for method output_type
-	28, // [28:31] is the sub-list for method input_type
-	28, // [28:28] is the sub-list for extension type_name
-	28, // [28:28] is the sub-list for extension extendee
-	0,  // [0:28] is the sub-list for field type_name
+	12, // 21: steeleagle_protocol.v1.services.dslcompiler.ParseDslResponse.mission:type_name -> steeleagle_protocol.v1.services.dslcompiler.MissionGraph
+	13, // 22: steeleagle_protocol.v1.services.dslcompiler.ParseDslResponse.errors:type_name -> steeleagle_protocol.v1.services.dslcompiler.CompileError
+	3,  // 23: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.ActionsEntry.value:type_name -> steeleagle_protocol.v1.services.dslcompiler.TypeSchema
+	3,  // 24: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.EventsEntry.value:type_name -> steeleagle_protocol.v1.services.dslcompiler.TypeSchema
+	3,  // 25: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.DatatypesEntry.value:type_name -> steeleagle_protocol.v1.services.dslcompiler.TypeSchema
+	4,  // 26: steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse.EnumsEntry.value:type_name -> steeleagle_protocol.v1.services.dslcompiler.EnumSchema
+	9,  // 27: steeleagle_protocol.v1.services.dslcompiler.Node.ParamsEntry.value:type_name -> steeleagle_protocol.v1.services.dslcompiler.FieldValue
+	9,  // 28: steeleagle_protocol.v1.services.dslcompiler.EventInstance.ParamsEntry.value:type_name -> steeleagle_protocol.v1.services.dslcompiler.FieldValue
+	9,  // 29: steeleagle_protocol.v1.services.dslcompiler.InlineCtorValue.ArgsEntry.value:type_name -> steeleagle_protocol.v1.services.dslcompiler.FieldValue
+	0,  // 30: steeleagle_protocol.v1.services.dslcompiler.DslCompilerService.GetSchema:input_type -> steeleagle_protocol.v1.services.dslcompiler.GetSchemaRequest
+	18, // 31: steeleagle_protocol.v1.services.dslcompiler.DslCompilerService.ParseDsl:input_type -> steeleagle_protocol.v1.services.dslcompiler.ParseDslRequest
+	14, // 32: steeleagle_protocol.v1.services.dslcompiler.DslCompilerService.Validate:input_type -> steeleagle_protocol.v1.services.dslcompiler.ValidateRequest
+	16, // 33: steeleagle_protocol.v1.services.dslcompiler.DslCompilerService.Build:input_type -> steeleagle_protocol.v1.services.dslcompiler.BuildRequest
+	1,  // 34: steeleagle_protocol.v1.services.dslcompiler.DslCompilerService.GetSchema:output_type -> steeleagle_protocol.v1.services.dslcompiler.GetSchemaResponse
+	19, // 35: steeleagle_protocol.v1.services.dslcompiler.DslCompilerService.ParseDsl:output_type -> steeleagle_protocol.v1.services.dslcompiler.ParseDslResponse
+	15, // 36: steeleagle_protocol.v1.services.dslcompiler.DslCompilerService.Validate:output_type -> steeleagle_protocol.v1.services.dslcompiler.ValidateResponse
+	17, // 37: steeleagle_protocol.v1.services.dslcompiler.DslCompilerService.Build:output_type -> steeleagle_protocol.v1.services.dslcompiler.BuildChunk
+	34, // [34:38] is the sub-list for method output_type
+	30, // [30:34] is the sub-list for method input_type
+	30, // [30:30] is the sub-list for extension type_name
+	30, // [30:30] is the sub-list for extension extendee
+	0,  // [0:30] is the sub-list for field type_name
 }
 
 func init() { file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_init() }
@@ -2222,7 +2400,7 @@ func file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_rawDesc), len(file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   25,
+			NumMessages:   27,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

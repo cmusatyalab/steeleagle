@@ -25,6 +25,11 @@ class DslCompilerServiceStub:
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_dslcompiler_dot_dslcompiler__pb2.GetSchemaRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_dslcompiler_dot_dslcompiler__pb2.GetSchemaResponse.FromString,
                 _registered_method=True)
+        self.ParseDsl = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.dslcompiler.DslCompilerService/ParseDsl',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_dslcompiler_dot_dslcompiler__pb2.ParseDslRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_dslcompiler_dot_dslcompiler__pb2.ParseDslResponse.FromString,
+                _registered_method=True)
         self.Validate = channel.unary_unary(
                 '/steeleagle_protocol.v1.services.dslcompiler.DslCompilerService/Validate',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_dslcompiler_dot_dslcompiler__pb2.ValidateRequest.SerializeToString,
@@ -50,6 +55,18 @@ class DslCompilerServiceServicer:
         """Returns the palette: every Action/Event/Datatype/Enum the currently
         loaded SDK registry exposes, plus the default Import/Role stanza
         content a client should prepend when generating DSL text.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ParseDsl(self, request, context):
+        """Parses raw DSL text (e.g. a hand-edited .dsl file, or the DSL tab's
+        "Apply" action) into a canvas-shaped MissionGraph -- the mechanical
+        reverse of the Node/Edge construction Validate/Build do from a
+        MissionGraph. Unlike Validate/Build, this goes through the real
+        participle-based lexer/parser (sdk/dsl/parser.Parse), since the input
+        here genuinely is DSL source text, not an already-structured request.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -81,6 +98,11 @@ def add_DslCompilerServiceServicer_to_server(servicer, server):
                     servicer.GetSchema,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_dslcompiler_dot_dslcompiler__pb2.GetSchemaRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_dslcompiler_dot_dslcompiler__pb2.GetSchemaResponse.SerializeToString,
+            ),
+            'ParseDsl': grpc.unary_unary_rpc_method_handler(
+                    servicer.ParseDsl,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_dslcompiler_dot_dslcompiler__pb2.ParseDslRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_dslcompiler_dot_dslcompiler__pb2.ParseDslResponse.SerializeToString,
             ),
             'Validate': grpc.unary_unary_rpc_method_handler(
                     servicer.Validate,
@@ -126,6 +148,33 @@ class DslCompilerService:
             '/steeleagle_protocol.v1.services.dslcompiler.DslCompilerService/GetSchema',
             steeleagle__protocol_dot_v1_dot_services_dot_dslcompiler_dot_dslcompiler__pb2.GetSchemaRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_dslcompiler_dot_dslcompiler__pb2.GetSchemaResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ParseDsl(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/steeleagle_protocol.v1.services.dslcompiler.DslCompilerService/ParseDsl',
+            steeleagle__protocol_dot_v1_dot_services_dot_dslcompiler_dot_dslcompiler__pb2.ParseDslRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_dslcompiler_dot_dslcompiler__pb2.ParseDslResponse.FromString,
             options,
             channel_credentials,
             insecure,

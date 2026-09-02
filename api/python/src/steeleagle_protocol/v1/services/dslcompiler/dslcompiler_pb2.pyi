@@ -240,3 +240,19 @@ class BuildChunk(_message.Message):
     done: bool
     errors: _containers.RepeatedCompositeFieldContainer[CompileError]
     def __init__(self, arch: _Optional[str] = ..., data: _Optional[bytes] = ..., done: _Optional[bool] = ..., errors: _Optional[_Iterable[_Union[CompileError, _Mapping]]] = ...) -> None: ...
+
+class ParseDslRequest(_message.Message):
+    __slots__ = ("dsl",)
+    DSL_FIELD_NUMBER: _ClassVar[int]
+    dsl: str
+    def __init__(self, dsl: _Optional[str] = ...) -> None: ...
+
+class ParseDslResponse(_message.Message):
+    __slots__ = ("ok", "mission", "errors")
+    OK_FIELD_NUMBER: _ClassVar[int]
+    MISSION_FIELD_NUMBER: _ClassVar[int]
+    ERRORS_FIELD_NUMBER: _ClassVar[int]
+    ok: bool
+    mission: MissionGraph
+    errors: _containers.RepeatedCompositeFieldContainer[CompileError]
+    def __init__(self, ok: _Optional[bool] = ..., mission: _Optional[_Union[MissionGraph, _Mapping]] = ..., errors: _Optional[_Iterable[_Union[CompileError, _Mapping]]] = ...) -> None: ...

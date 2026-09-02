@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	DslCompilerService_GetSchema_FullMethodName = "/steeleagle_protocol.v1.services.dslcompiler.DslCompilerService/GetSchema"
+	DslCompilerService_ParseDsl_FullMethodName  = "/steeleagle_protocol.v1.services.dslcompiler.DslCompilerService/ParseDsl"
 	DslCompilerService_Validate_FullMethodName  = "/steeleagle_protocol.v1.services.dslcompiler.DslCompilerService/Validate"
 	DslCompilerService_Build_FullMethodName     = "/steeleagle_protocol.v1.services.dslcompiler.DslCompilerService/Build"
 )
@@ -42,6 +43,13 @@ type DslCompilerServiceClient interface {
 	// loaded SDK registry exposes, plus the default Import/Role stanza
 	// content a client should prepend when generating DSL text.
 	GetSchema(ctx context.Context, in *GetSchemaRequest, opts ...grpc.CallOption) (*GetSchemaResponse, error)
+	// Parses raw DSL text (e.g. a hand-edited .dsl file, or the DSL tab's
+	// "Apply" action) into a canvas-shaped MissionGraph -- the mechanical
+	// reverse of the Node/Edge construction Validate/Build do from a
+	// MissionGraph. Unlike Validate/Build, this goes through the real
+	// participle-based lexer/parser (sdk/dsl/parser.Parse), since the input
+	// here genuinely is DSL source text, not an already-structured request.
+	ParseDsl(ctx context.Context, in *ParseDslRequest, opts ...grpc.CallOption) (*ParseDslResponse, error)
 	// Type-checks a canvas-shaped mission against the SDK registry without
 	// building anything. Called on every canvas edit (frontend debounces
 	// ~500ms), so this must stay fast: it never touches the filesystem.
@@ -65,6 +73,16 @@ func (c *dslCompilerServiceClient) GetSchema(ctx context.Context, in *GetSchemaR
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetSchemaResponse)
 	err := c.cc.Invoke(ctx, DslCompilerService_GetSchema_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dslCompilerServiceClient) ParseDsl(ctx context.Context, in *ParseDslRequest, opts ...grpc.CallOption) (*ParseDslResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ParseDslResponse)
+	err := c.cc.Invoke(ctx, DslCompilerService_ParseDsl_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -114,6 +132,13 @@ type DslCompilerServiceServer interface {
 	// loaded SDK registry exposes, plus the default Import/Role stanza
 	// content a client should prepend when generating DSL text.
 	GetSchema(context.Context, *GetSchemaRequest) (*GetSchemaResponse, error)
+	// Parses raw DSL text (e.g. a hand-edited .dsl file, or the DSL tab's
+	// "Apply" action) into a canvas-shaped MissionGraph -- the mechanical
+	// reverse of the Node/Edge construction Validate/Build do from a
+	// MissionGraph. Unlike Validate/Build, this goes through the real
+	// participle-based lexer/parser (sdk/dsl/parser.Parse), since the input
+	// here genuinely is DSL source text, not an already-structured request.
+	ParseDsl(context.Context, *ParseDslRequest) (*ParseDslResponse, error)
 	// Type-checks a canvas-shaped mission against the SDK registry without
 	// building anything. Called on every canvas edit (frontend debounces
 	// ~500ms), so this must stay fast: it never touches the filesystem.
@@ -135,6 +160,9 @@ type UnimplementedDslCompilerServiceServer struct{}
 
 func (UnimplementedDslCompilerServiceServer) GetSchema(context.Context, *GetSchemaRequest) (*GetSchemaResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSchema not implemented")
+}
+func (UnimplementedDslCompilerServiceServer) ParseDsl(context.Context, *ParseDslRequest) (*ParseDslResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ParseDsl not implemented")
 }
 func (UnimplementedDslCompilerServiceServer) Validate(context.Context, *ValidateRequest) (*ValidateResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Validate not implemented")
@@ -181,6 +209,24 @@ func _DslCompilerService_GetSchema_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DslCompilerService_ParseDsl_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ParseDslRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DslCompilerServiceServer).ParseDsl(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DslCompilerService_ParseDsl_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DslCompilerServiceServer).ParseDsl(ctx, req.(*ParseDslRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _DslCompilerService_Validate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ValidateRequest)
 	if err := dec(in); err != nil {
@@ -220,6 +266,10 @@ var DslCompilerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSchema",
 			Handler:    _DslCompilerService_GetSchema_Handler,
+		},
+		{
+			MethodName: "ParseDsl",
+			Handler:    _DslCompilerService_ParseDsl_Handler,
 		},
 		{
 			MethodName: "Validate",
