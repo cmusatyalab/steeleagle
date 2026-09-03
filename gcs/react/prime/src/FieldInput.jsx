@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { InputText } from 'primereact/inputtext';
 import { InputNumber } from 'primereact/inputnumber';
 import { Dropdown } from 'primereact/dropdown';
@@ -7,16 +7,20 @@ function FloatInput({ value, onChange, className }) {
     const [text, setText] = useState(() =>
         value === undefined || value === null ? '' : String(value)
     );
-    const editingRef = useRef(false);
-
-    useEffect(() => {
-        if (!editingRef.current) {
-            setText(value === undefined || value === null ? '' : String(value));
-        }
-    }, [value]);
+    const [editing, setEditing] = useState(false);
+    // Resync the local edit buffer from an external value change during
+    // render, not in an effect -- React's "adjusting state when a prop
+    // changes" pattern. prevValue tracks what text was last derived from
+    // so this only fires on an actual external change, not every render,
+    // and never while the user is actively typing.
+    const [prevValue, setPrevValue] = useState(value);
+    if (!editing && value !== prevValue) {
+        setPrevValue(value);
+        setText(value === undefined || value === null ? '' : String(value));
+    }
 
     const handleChange = (e) => {
-        editingRef.current = true;
+        setEditing(true);
         const raw = e.target.value;
         // Allow only valid float-in-progress characters
         if (raw !== '' && raw !== '-' && !/^-?\d*\.?\d*$/.test(raw)) return;
@@ -28,7 +32,7 @@ function FloatInput({ value, onChange, className }) {
     };
 
     const handleBlur = () => {
-        editingRef.current = false;
+        setEditing(false);
         const parsed = parseFloat(text);
         if (!isNaN(parsed)) {
             onChange(parsed);
