@@ -226,10 +226,12 @@ class ValidateResponse(_message.Message):
     def __init__(self, ok: _Optional[bool] = ..., errors: _Optional[_Iterable[_Union[CompileError, _Mapping]]] = ...) -> None: ...
 
 class BuildRequest(_message.Message):
-    __slots__ = ("mission",)
+    __slots__ = ("mission", "geojson")
     MISSION_FIELD_NUMBER: _ClassVar[int]
+    GEOJSON_FIELD_NUMBER: _ClassVar[int]
     mission: MissionGraph
-    def __init__(self, mission: _Optional[_Union[MissionGraph, _Mapping]] = ...) -> None: ...
+    geojson: bytes
+    def __init__(self, mission: _Optional[_Union[MissionGraph, _Mapping]] = ..., geojson: _Optional[bytes] = ...) -> None: ...
 
 class BuildChunk(_message.Message):
     __slots__ = ("arch", "data", "done", "errors")

@@ -158,6 +158,7 @@ message ValidateResponse {
 
 message BuildRequest {
   MissionGraph mission = 1;
+  bytes geojson = 2; // optional: embedded verbatim in the compiled binary (main.go.tmpl's missionGeoJson) so any params.MapFeature the mission references resolves at runtime. Empty means no map -- a mission that references one will fail at mission runtime, not compile time.
 }
 
 message BuildChunk {

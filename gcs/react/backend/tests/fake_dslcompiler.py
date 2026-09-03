@@ -25,6 +25,7 @@ class FakeDslCompilerClient:
         self._build_chunks = build_chunks
         self.validate_calls: list[dslcompiler_pb2.MissionGraph] = []
         self.build_calls: list[dslcompiler_pb2.MissionGraph] = []
+        self.build_geojson_calls: list[bytes] = []
 
     async def get_schema(self) -> dslcompiler_pb2.GetSchemaResponse:
         assert self._schema is not None, "FakeDslCompilerClient: no schema configured"
@@ -46,11 +47,12 @@ class FakeDslCompilerClient:
         return self._parse_dsl_response
 
     async def build(
-        self, mission: dslcompiler_pb2.MissionGraph
+        self, mission: dslcompiler_pb2.MissionGraph, geojson: bytes = b""
     ) -> AsyncIterator[dslcompiler_pb2.BuildChunk]:
         assert self._build_chunks is not None, (
             "FakeDslCompilerClient: no build_chunks configured"
         )
         self.build_calls.append(mission)
+        self.build_geojson_calls.append(geojson)
         for chunk in self._build_chunks:
             yield chunk

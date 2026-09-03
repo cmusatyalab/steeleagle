@@ -573,7 +573,7 @@ function PlanPage({ theme }) {
         if (!compiledMission) return;
         setBuilding(arch);
         try {
-            const body = { ...buildMissionRequestBody(), arch };
+            const body = { ...buildMissionRequestBody(), arch, geojson: features };
             const resp = await fetch(getApiUrl('/api/build'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

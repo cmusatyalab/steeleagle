@@ -27,14 +27,22 @@ class DslCompilerClient:
         return await self._stub.ParseDsl(dslcompiler_pb2.ParseDslRequest(dsl=dsl))
 
     def build(
-        self, mission: dslcompiler_pb2.MissionGraph, timeout: float = 300.0
+        self,
+        mission: dslcompiler_pb2.MissionGraph,
+        geojson: bytes = b"",
+        timeout: float = 300.0,
     ) -> AsyncIterator[dslcompiler_pb2.BuildChunk]:
         """Returns an async iterator of BuildChunk immediately (no await
         here) -- matches grpc.aio's unary_stream call semantics, same as
         swarm_client's _collect_stream(self._stub.SwarmStartMission(...))
         pattern. timeout defaults to 300s since a real `go build` (two
         archs, cold module cache) can genuinely take minutes -- far past
-        grpc's ~few-second default expectations for a hung stream."""
+        grpc's ~few-second default expectations for a hung stream.
+        geojson is embedded verbatim in the compiled binary so any
+        params.MapFeature the mission references resolves at mission
+        runtime; empty means no map (a mission that references one will
+        fail at runtime, not compile time)."""
         return self._stub.Build(
-            dslcompiler_pb2.BuildRequest(mission=mission), timeout=timeout
+            dslcompiler_pb2.BuildRequest(mission=mission, geojson=geojson),
+            timeout=timeout,
         )

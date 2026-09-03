@@ -3,6 +3,7 @@
 package dslcompiler
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -225,6 +226,60 @@ func TestBuildProducesBothArchBinaries(t *testing.T) {
 		if len(got[arch]) == 0 {
 			t.Errorf("no binary bytes received for arch %q", arch)
 		}
+	}
+}
+
+// TestBuildEmbedsGeojson checks that BuildRequest.Geojson actually
+// reaches the compiled binary (main.go.tmpl's missionGeoJson), not just
+// that a mission referencing a params.MapFeature compiles -- resolving
+// Area="AreaB" only proves the compile-time string-conversion path
+// works (see sdk/dsl/compiler/ir.go's resolveValue); it says nothing
+// about whether the vehicle can find "AreaB" at mission runtime, which
+// depends entirely on this embedding actually happening.
+func TestBuildEmbedsGeojson(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping a real go-build integration test in -short mode")
+	}
+	svc := testSvc
+
+	area := "AreaB"
+	altitude := 15.0
+	mission := dslcompilerpb.MissionGraph_builder{
+		Nodes: []*dslcompilerpb.Node{
+			dslcompilerpb.Node_builder{
+				InstanceId: "patrol",
+				TypeName:   "actions.Patrol",
+				Params: map[string]*dslcompilerpb.FieldValue{
+					"Area":     dslcompilerpb.FieldValue_builder{StringValue: &area}.Build(),
+					"Altitude": dslcompilerpb.FieldValue_builder{FloatValue: &altitude}.Build(),
+				},
+			}.Build(),
+		},
+		StartId: "patrol",
+	}.Build()
+
+	geojson := []byte(`{"type":"FeatureCollection","features":[{"type":"Feature","properties":{"name":"AreaB"},"geometry":{"type":"Polygon","coordinates":[[[-79.9,40.4],[-79.89,40.4],[-79.89,40.41],[-79.9,40.4]]]}}]}`)
+
+	stream := &fakeBuildStream{}
+	err := svc.Build(dslcompilerpb.BuildRequest_builder{Mission: mission, Geojson: geojson}.Build(), stream)
+	if err != nil {
+		t.Fatalf("Build() = %v, want nil", err)
+	}
+
+	binary := []byte{}
+	for _, c := range stream.chunks {
+		if len(c.GetErrors()) > 0 {
+			t.Fatalf("arch %s errors: %+v", c.GetArch(), c.GetErrors())
+		}
+		if c.GetArch() == "amd64" {
+			binary = append(binary, c.GetData()...)
+		}
+	}
+	if len(binary) == 0 {
+		t.Fatal("no amd64 binary bytes received")
+	}
+	if !bytes.Contains(binary, []byte("AreaB")) {
+		t.Error("compiled binary does not contain the embedded GeoJSON's feature name \"AreaB\" -- Geojson isn't reaching compiler.Generate")
 	}
 }
 

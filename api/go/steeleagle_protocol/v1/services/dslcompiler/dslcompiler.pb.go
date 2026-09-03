@@ -1856,6 +1856,7 @@ func (b0 ValidateResponse_builder) Build() *ValidateResponse {
 type BuildRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Mission *MissionGraph          `protobuf:"bytes,1,opt,name=mission,proto3"`
+	xxx_hidden_Geojson []byte                 `protobuf:"bytes,2,opt,name=geojson,proto3"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1892,8 +1893,22 @@ func (x *BuildRequest) GetMission() *MissionGraph {
 	return nil
 }
 
+func (x *BuildRequest) GetGeojson() []byte {
+	if x != nil {
+		return x.xxx_hidden_Geojson
+	}
+	return nil
+}
+
 func (x *BuildRequest) SetMission(v *MissionGraph) {
 	x.xxx_hidden_Mission = v
+}
+
+func (x *BuildRequest) SetGeojson(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Geojson = v
 }
 
 func (x *BuildRequest) HasMission() bool {
@@ -1911,6 +1926,7 @@ type BuildRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Mission *MissionGraph
+	Geojson []byte
 }
 
 func (b0 BuildRequest_builder) Build() *BuildRequest {
@@ -1918,6 +1934,7 @@ func (b0 BuildRequest_builder) Build() *BuildRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Mission = b.Mission
+	x.xxx_hidden_Geojson = b.Geojson
 	return m0
 }
 
@@ -2295,9 +2312,10 @@ const file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_rawDesc
 	"\amission\x18\x01 \x01(\v29.steeleagle_protocol.v1.services.dslcompiler.MissionGraphR\amission\"u\n" +
 	"\x10ValidateResponse\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\x12Q\n" +
-	"\x06errors\x18\x02 \x03(\v29.steeleagle_protocol.v1.services.dslcompiler.CompileErrorR\x06errors\"c\n" +
+	"\x06errors\x18\x02 \x03(\v29.steeleagle_protocol.v1.services.dslcompiler.CompileErrorR\x06errors\"}\n" +
 	"\fBuildRequest\x12S\n" +
-	"\amission\x18\x01 \x01(\v29.steeleagle_protocol.v1.services.dslcompiler.MissionGraphR\amission\"\x9b\x01\n" +
+	"\amission\x18\x01 \x01(\v29.steeleagle_protocol.v1.services.dslcompiler.MissionGraphR\amission\x12\x18\n" +
+	"\ageojson\x18\x02 \x01(\fR\ageojson\"\x9b\x01\n" +
 	"\n" +
 	"BuildChunk\x12\x12\n" +
 	"\x04arch\x18\x01 \x01(\tR\x04arch\x12\x12\n" +

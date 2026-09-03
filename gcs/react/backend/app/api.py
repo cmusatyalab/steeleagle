@@ -1111,9 +1111,12 @@ async def compile_mission_route(request: CompileRequest) -> dict:
 
 class BuildMissionRequest(CompileRequest):
     arch: Literal["amd64", "arm64"]
+    geojson: str = ""  # the Map tab's drawn features, raw GeoJSON text; "" means no map
 
 
-async def _build_stream_for_arch(client: DslCompilerClient, mission, arch: str):
+async def _build_stream_for_arch(
+    client: DslCompilerClient, mission, arch: str, geojson: bytes = b""
+):
     """Relays only the BuildChunks for arch out of the service's combined
     amd64+arm64 stream, yielding raw bytes. Raises HTTPException (rather
     than yielding an error indicator) if the FIRST chunk seen for arch
@@ -1122,7 +1125,7 @@ async def _build_stream_for_arch(client: DslCompilerClient, mission, arch: str):
     generator inside a try/except before handing it to StreamingResponse,
     exactly as the route below does, or the error will surface as a
     broken stream instead of a clean 422."""
-    stream = client.build(mission)
+    stream = client.build(mission, geojson=geojson)
     async for chunk in stream:
         if chunk.arch != arch:
             continue
@@ -1150,7 +1153,9 @@ async def build_route(request: BuildMissionRequest):
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
 
-    stream = _build_stream_for_arch(client, mission, request.arch)
+    stream = _build_stream_for_arch(
+        client, mission, request.arch, geojson=request.geojson.encode("utf-8")
+    )
     try:
         first_piece = await anext(stream)
     except StopAsyncIteration:

@@ -277,10 +277,13 @@ func (s *Service) Build(req *dslcompilerpb.BuildRequest, stream dslcompilerpb.Ds
 		return s.sendBuildErrorToAllArches(stream, attributeError(err, mission))
 	}
 
-	// Empty CapFile/GeoJSON: capability scrubbing is out of scope for this
-	// plan (see Global Constraints) -- this matches running the CLI with
-	// no -cap/-geojson flag.
-	if err := compiler.Generate(ir, nil, nil, s.workspace); err != nil {
+	// Empty CapFile: capability scrubbing is out of scope for this plan
+	// (see Global Constraints) -- this matches running the CLI with no
+	// -cap flag. GeoJSON, when the request carries one, is embedded
+	// verbatim (main.go.tmpl's missionGeoJson) so any params.MapFeature
+	// the mission references resolves at mission runtime -- matches the
+	// CLI's -geojson flag.
+	if err := compiler.Generate(ir, nil, req.GetGeojson(), s.workspace); err != nil {
 		return status.Errorf(codes.Internal, "generating main.go: %v", err)
 	}
 
@@ -343,10 +346,17 @@ func streamFile(stream dslcompilerpb.DslCompilerService_BuildServer, arch, outPa
 	}
 	total := info.Size()
 
-	var buf [buildChunkSize]byte
 	var sent int64
 	for sent < total {
-		n, err := io.ReadFull(f, buf[:])
+		// A fresh slice every iteration, not a reused buffer -- Send's
+		// real gRPC implementation copies Data onto the wire
+		// synchronously, so a reused buffer happens to be safe there,
+		// but any other StreamServer (an in-process fake in tests, or
+		// a future one) that stores the *BuildChunk by reference would
+		// see every "already sent" chunk's Data retroactively mutate
+		// to whatever the buffer holds by the time streaming ends.
+		buf := make([]byte, buildChunkSize)
+		n, err := io.ReadFull(f, buf)
 		if err != nil && err != io.ErrUnexpectedEOF {
 			return fmt.Errorf("reading built binary for %s: %w", arch, err)
 		}

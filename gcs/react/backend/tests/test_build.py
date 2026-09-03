@@ -133,3 +133,24 @@ async def test_build_route_500_when_stream_never_produces_requested_arch(monkeyp
     with pytest.raises(HTTPException) as exc_info:
         await build_route(_request(arch="amd64"))
     assert exc_info.value.status_code == 500
+
+
+async def test_build_route_forwards_geojson_to_client(monkeypatch):
+    chunks = [dslcompiler_pb2.BuildChunk(arch="amd64", data=b"AAAA", done=True)]
+    fake = FakeDslCompilerClient(schema=_schema(), build_chunks=chunks)
+    monkeypatch.setattr(api, "dslcompiler_client", fake)
+
+    geojson_text = '{"type": "FeatureCollection", "features": []}'
+    await build_route(_request(geojson=geojson_text))
+
+    assert fake.build_geojson_calls[0] == geojson_text.encode("utf-8")
+
+
+async def test_build_route_defaults_to_empty_geojson(monkeypatch):
+    chunks = [dslcompiler_pb2.BuildChunk(arch="amd64", data=b"AAAA", done=True)]
+    fake = FakeDslCompilerClient(schema=_schema(), build_chunks=chunks)
+    monkeypatch.setattr(api, "dslcompiler_client", fake)
+
+    await build_route(_request())
+
+    assert fake.build_geojson_calls[0] == b""
