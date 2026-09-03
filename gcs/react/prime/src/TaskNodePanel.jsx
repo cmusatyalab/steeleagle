@@ -3,7 +3,7 @@ import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
 import FieldInput from './FieldInput.jsx';
 
-function TaskNodePanel({ visible, onHide, node, schema, namedAreas, onUpdate, onUpdateId, onDelete }) {
+function TaskNodePanel({ visible, onHide, node, schema, namedAreas, enums, onUpdate, onUpdateId, onDelete }) {
     if (!node) return null;
     const { type_name, instance_id, params } = node.data;
     const fields = schema?.fields ?? [];
@@ -43,6 +43,7 @@ function TaskNodePanel({ visible, onHide, node, schema, namedAreas, onUpdate, on
                             value={params[f.name]}
                             onChange={val => updateParam(f.name, val)}
                             namedAreas={namedAreas}
+                            enums={enums}
                         />
                     </div>
                 ))}

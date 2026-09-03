@@ -54,7 +54,28 @@ function FloatInput({ value, onChange, className }) {
     );
 }
 
-function FieldInput({ field, value, onChange, namedAreas = [] }) {
+function FieldInput({ field, value, onChange, namedAreas = [], enums = {} }) {
+    if (field.enum_type) {
+        const enumSchema = enums[field.enum_type];
+        const values = enumSchema?.values ?? [];
+        // Values follow the SDK's "<EnumType><Value>" const-naming
+        // convention (e.g. "PatrolModeCorridor") -- strip the type-name
+        // prefix for a readable label while still sending the full name
+        // as the ident_ref value the compiler expects.
+        const options = values.map(v => ({
+            label: v.startsWith(field.enum_type) ? v.slice(field.enum_type.length) : v,
+            value: v,
+        }));
+        return (
+            <Dropdown
+                value={value ?? field.default ?? null}
+                options={options.length ? options : [{ label: '(no values)', value: null }]}
+                onChange={e => onChange(e.value)}
+                className="w-full"
+                placeholder={`Select ${field.enum_type}`}
+            />
+        );
+    }
     if (field.type === 'boolean') {
         return (
             <Dropdown
@@ -111,6 +132,7 @@ function FieldInput({ field, value, onChange, namedAreas = [] }) {
                                     value={nestedValue}
                                     onChange={val => onChange({ ...(value || {}), [nf.name]: val })}
                                     namedAreas={namedAreas}
+                                    enums={enums}
                                 />
                             )}
                         </div>

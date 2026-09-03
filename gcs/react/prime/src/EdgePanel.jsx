@@ -2,7 +2,7 @@ import { Sidebar } from 'primereact/sidebar';
 import { Button } from 'primereact/button';
 import FieldInput from './FieldInput.jsx';
 
-function EdgePanel({ visible, onHide, edge, eventInstance, eventSchema, sourceLabel, targetLabel, onUpdateEvent, onDeleteEdge }) {
+function EdgePanel({ visible, onHide, edge, eventInstance, eventSchema, enums, sourceLabel, targetLabel, onUpdateEvent, onDeleteEdge }) {
     if (!edge) return null;
 
     const eventId = edge.data?.eventId ?? 'done';
@@ -56,6 +56,7 @@ function EdgePanel({ visible, onHide, edge, eventInstance, eventSchema, sourceLa
                             field={f}
                             value={params[f.name]}
                             onChange={val => updateParam(f.name, val)}
+                            enums={enums}
                         />
                     </div>
                 ))}

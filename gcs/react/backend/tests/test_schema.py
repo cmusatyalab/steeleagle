@@ -33,9 +33,14 @@ def _patrol_schema() -> dslcompiler_pb2.GetSchemaResponse:
     detection_found = dslcompiler_pb2.TypeSchema(
         description="Fires when an object is detected.", fields=[target_field]
     )
+    patrol_mode = dslcompiler_pb2.EnumSchema(
+        description="Patrol pattern.",
+        values=["PatrolModeCorridor", "PatrolModeSurvey"],
+    )
     return dslcompiler_pb2.GetSchemaResponse(
         actions={"actions.Patrol": patrol},
         events={"events.DetectionFound": detection_found},
+        enums={"actions.PatrolMode": patrol_mode},
         default_role="Patrol",
         imports=[
             dslcompiler_pb2.ImportSpec(
@@ -80,6 +85,16 @@ def test_schema_waypoints_field_has_bare_object_type():
     patrol_fields = {f["name"]: f for f in schema["actions"]["Patrol"]["fields"]}
     assert patrol_fields["waypoints"]["type"] == "object"
     assert patrol_fields["waypoints"].get("object_type") == "Waypoints"
+
+
+def test_schema_enum_keyed_by_bare_name_with_values():
+    schema = build_schema_response(_patrol_schema())
+    assert "PatrolMode" in schema["enums"]
+    assert "actions.PatrolMode" not in schema["enums"]
+    assert schema["enums"]["PatrolMode"]["values"] == [
+        "PatrolModeCorridor",
+        "PatrolModeSurvey",
+    ]
 
 
 def test_schema_event_detectionfound_keyed_by_bare_name():

@@ -795,6 +795,16 @@ def _type_schemas_to_dict(schemas: dict[str, dslcompiler_pb2.TypeSchema]) -> dic
     }
 
 
+def _enum_schemas_to_dict(schemas: dict[str, dslcompiler_pb2.EnumSchema]) -> dict:
+    return {
+        _bare_name(name): {
+            "description": es.description,
+            "values": list(es.values),
+        }
+        for name, es in schemas.items()
+    }
+
+
 def build_schema_response(resp: dslcompiler_pb2.GetSchemaResponse) -> dict:
     """Pure function -- translates the dslcompiler service's qualified-name
     schema into the bare-name-keyed shape the frontend already consumes
@@ -803,6 +813,7 @@ def build_schema_response(resp: dslcompiler_pb2.GetSchemaResponse) -> dict:
     result = {
         "actions": _type_schemas_to_dict(resp.actions),
         "events": _type_schemas_to_dict(resp.events),
+        "enums": _enum_schemas_to_dict(resp.enums),
         "imports": [
             {"alias": imp.alias, "path": imp.path, "version": imp.version}
             for imp in resp.imports

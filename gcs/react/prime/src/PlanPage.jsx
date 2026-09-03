@@ -367,7 +367,7 @@ function PlanPage({ theme }) {
     const [edges, setEdges] = useState([]);
     const [eventInstances, setEventInstances] = useState([]);
     const [startNodeId, setStartNodeId] = useState(null);
-    const [schema, setSchema] = useState({ actions: {}, events: {} });
+    const [schema, setSchema] = useState({ actions: {}, events: {}, enums: {} });
     const [compiledMission, setCompiledMission] = useState(null);
     const [features, setFeatures] = useState(JSON.stringify({ type: 'FeatureCollection', features: [] }));
     const [panelNodeId, setPanelNodeId] = useState(null);
@@ -884,6 +884,7 @@ function PlanPage({ theme }) {
                         node={panelNode}
                         schema={panelNode ? schema.actions[panelNode.data.type_name] : null}
                         namedAreas={getNamedAreas(features)}
+                        enums={schema.enums}
                         onUpdate={updateNodeParams}
                         onUpdateId={updateNodeId}
                         onDelete={deleteNodeById}
@@ -895,6 +896,7 @@ function PlanPage({ theme }) {
                         edge={panelEdge}
                         eventInstance={panelEventInstance}
                         eventSchema={panelEventInstance ? schema.events[panelEventInstance.type_name] : null}
+                        enums={schema.enums}
                         sourceLabel={panelEdgeSourceLabel}
                         targetLabel={panelEdgeTargetLabel}
                         onUpdateEvent={updateEventParams}
