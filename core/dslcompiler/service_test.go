@@ -10,7 +10,6 @@ import (
 
 	dslcompilerpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/dslcompiler"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/compiler"
-	"github.com/cmusatyalab/steeleagle/sdk/dsl/parser"
 )
 
 // testSvc is a single Service shared across every test in this file,
@@ -23,11 +22,7 @@ import (
 var testSvc *Service
 
 func TestMain(m *testing.M) {
-	// Include enums so the service can validate missions that use enums.
-	imports := compiler.EnsureBaseImports([]*parser.ImportSpec{
-		{Path: "github.com/cmusatyalab/steeleagle/sdk/enums"},
-	})
-	svc, err := NewService(imports, "v4.0-beta")
+	svc, err := NewService(compiler.EnsureBaseImports(nil), "v4.0-beta")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "NewService() = %v, want nil\n", err)
 		os.Exit(1)

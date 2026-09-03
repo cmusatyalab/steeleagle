@@ -19,18 +19,23 @@ import (
 
 // Base SDK packages every generated mission needs regardless of what the
 // mission itself declares: dsl for the Action/Event/Datatype interfaces and
-// MissionData, and actions/events/types for the primitives most missions
-// build on.
+// MissionData, actions/events/types for the primitives most missions
+// build on, and enums for the enum constants those primitives' fields are
+// typed with (Patrol.AltitudeMode, SetGimbalPose.AngleMode,
+// ReturnToHome.EndBehavior, ...) -- without it registry.Enums is empty, no
+// field can ever report an enum_type in the schema, and no ident_ref can
+// resolve to an enum constant.
 const (
 	dslPkgPath        = "github.com/cmusatyalab/steeleagle/sdk/dsl"
 	dslActionsPkgPath = "github.com/cmusatyalab/steeleagle/sdk/dsl/actions"
 	dslEventsPkgPath  = "github.com/cmusatyalab/steeleagle/sdk/dsl/events"
 	dslTypesPkgPath   = "github.com/cmusatyalab/steeleagle/sdk/dsl/types"
+	enumsPkgPath      = "github.com/cmusatyalab/steeleagle/sdk/enums"
 )
 
 // basePkgPaths lists the packages EnsureBaseImports adds when a mission's
 // own Import stanza doesn't already mention them.
-var basePkgPaths = []string{dslPkgPath, dslActionsPkgPath, dslEventsPkgPath, dslTypesPkgPath}
+var basePkgPaths = []string{dslPkgPath, dslActionsPkgPath, dslEventsPkgPath, dslTypesPkgPath, enumsPkgPath}
 
 // EnsureBaseImports returns imports with one *parser.ImportSpec appended
 // per entry of basePkgPaths not already present (matched by Path alone,

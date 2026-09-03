@@ -274,3 +274,24 @@ async def test_compile_duplicate_instance_id_returns_error():
     assert any("patrol" in e["message"] for e in result["errors"])
     # Duplicate-id is caught locally, before ever calling Validate.
     assert len(client.validate_calls) == 0
+
+
+async def test_compile_unsupported_param_value_returns_error_not_raise():
+    req = CompileRequest(
+        nodes=[
+            CompileNode(
+                instance_id="take_off",
+                type_name="TakeOff",
+                params={"take_off_altitude": None},
+            )
+        ],
+        events=[],
+        edges=[],
+        start_id="take_off",
+    )
+    client = _ok_client()
+    result = await compile_mission(req, client, _schema())
+    assert "errors" in result
+    assert any("Unsupported param value" in e["message"] for e in result["errors"])
+    # The unsupported value is caught before ever calling Validate.
+    assert len(client.validate_calls) == 0

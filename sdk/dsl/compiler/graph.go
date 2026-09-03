@@ -2,10 +2,31 @@ package compiler
 
 import (
 	"fmt"
+	"regexp"
 
 	dslcompilerpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/dslcompiler"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/parser"
 )
+
+// identRe is the same character class as the lexer's Ident token rule
+// (see parser.lexerRules' `[a-zA-Z][a-zA-Z_\d]*`), anchored so it matches
+// the WHOLE candidate. A graph-built Decl.Name bypasses the lexer
+// entirely, but still ends up embedded unquoted in generated Go source as
+// a variable name (main.go.tmpl's `var {{.Name}} = ...`), so anything the
+// hand-written-DSL path could never produce -- a newline, a brace, a
+// space, a leading digit -- must be rejected here instead of being
+// compiled into the mission binary.
+var identRe = regexp.MustCompile(`^[a-zA-Z][a-zA-Z_0-9]*$`)
+
+// validateInstanceID rejects an instance id that isn't a legal DSL
+// identifier. See identRe on why this is a security boundary and not just
+// a tidiness check.
+func validateInstanceID(id string) error {
+	if !identRe.MatchString(id) {
+		return fmt.Errorf("invalid instance id %q: must be a valid identifier", id)
+	}
+	return nil
+}
 
 // BuildAst constructs a parser.Ast directly from a MissionGraph -- the
 // canvas-shaped request the GCS backend sends -- without going through
@@ -65,6 +86,9 @@ func importSpecsFromEntries(entries []ImportEntry) []*parser.ImportSpec {
 func declsFromNodes(nodes []*dslcompilerpb.Node) ([]*parser.Decl, error) {
 	decls := make([]*parser.Decl, len(nodes))
 	for i, n := range nodes {
+		if err := validateInstanceID(n.GetInstanceId()); err != nil {
+			return nil, err
+		}
 		attrs, err := attrsFromParams(n.GetParams())
 		if err != nil {
 			return nil, fmt.Errorf("node %q: %w", n.GetInstanceId(), err)
@@ -77,6 +101,9 @@ func declsFromNodes(nodes []*dslcompilerpb.Node) ([]*parser.Decl, error) {
 func declsFromEvents(events []*dslcompilerpb.EventInstance) ([]*parser.Decl, error) {
 	decls := make([]*parser.Decl, len(events))
 	for i, e := range events {
+		if err := validateInstanceID(e.GetInstanceId()); err != nil {
+			return nil, err
+		}
 		attrs, err := attrsFromParams(e.GetParams())
 		if err != nil {
 			return nil, fmt.Errorf("event %q: %w", e.GetInstanceId(), err)

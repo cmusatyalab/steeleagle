@@ -124,6 +124,79 @@ func TestBuildAstBoolValueRejected(t *testing.T) {
 	}
 }
 
+// TestBuildAstRejectsInvalidInstanceID is a security regression test: an
+// instance_id reaches BuildAst straight from untrusted JSON on the GCS
+// backend's unauthenticated /api/build route, and Decl.Name is emitted
+// UNQUOTED into the generated mission's main.go as a Go variable name --
+// so anything the lexer's own Ident rule would reject must be rejected
+// here too, or it becomes arbitrary Go source compiled into a binary the
+// requester then downloads.
+func TestBuildAstRejectsInvalidInstanceID(t *testing.T) {
+	// Each of these is illegal per the lexer's `[a-zA-Z][a-zA-Z_\d]*`
+	// Ident rule; the first is the actual injection shape.
+	bad := map[string]string{
+		"newline + Go source": "takeoff\nvar injected = doEvil()\nvar x",
+		"build directive":     "takeoff\n//go:linkname foo\nvar x",
+		"leading digit":       "1takeoff",
+		"braces":              "takeoff{}",
+		"space":               "take off",
+		"empty":               "",
+		"dotted qualified":    "actions.takeoff",
+	}
+	for name, id := range bad {
+		t.Run("node/"+name, func(t *testing.T) {
+			mission := dslcompilerpb.MissionGraph_builder{
+				Nodes: []*dslcompilerpb.Node{
+					dslcompilerpb.Node_builder{InstanceId: id, TypeName: "actions.TakeOff"}.Build(),
+				},
+				StartId: id,
+			}.Build()
+			if _, err := BuildAst(mission, nil, ""); err == nil {
+				t.Fatalf("BuildAst() = nil error for node instance_id %q, want an error", id)
+			}
+		})
+		t.Run("event/"+name, func(t *testing.T) {
+			mission := dslcompilerpb.MissionGraph_builder{
+				Nodes: []*dslcompilerpb.Node{
+					dslcompilerpb.Node_builder{InstanceId: "takeoff", TypeName: "actions.TakeOff"}.Build(),
+				},
+				Events: []*dslcompilerpb.EventInstance{
+					dslcompilerpb.EventInstance_builder{InstanceId: id, TypeName: "events.Done"}.Build(),
+				},
+				StartId: "takeoff",
+			}.Build()
+			if _, err := BuildAst(mission, nil, ""); err == nil {
+				t.Fatalf("BuildAst() = nil error for event instance_id %q, want an error", id)
+			}
+		})
+	}
+}
+
+// TestBuildAstAcceptsValidInstanceID guards the other half of
+// TestBuildAstRejectsInvalidInstanceID: ordinary identifiers -- including
+// the underscores and digits the lexer's Ident rule allows after the
+// first character -- must still pass.
+func TestBuildAstAcceptsValidInstanceID(t *testing.T) {
+	for _, id := range []string{"takeoff", "take_off_2", "P"} {
+		mission := dslcompilerpb.MissionGraph_builder{
+			Nodes: []*dslcompilerpb.Node{
+				dslcompilerpb.Node_builder{InstanceId: id, TypeName: "actions.TakeOff"}.Build(),
+			},
+			Events: []*dslcompilerpb.EventInstance{
+				dslcompilerpb.EventInstance_builder{InstanceId: id + "_ev", TypeName: "events.Done"}.Build(),
+			},
+			StartId: id,
+		}.Build()
+		ast, err := BuildAst(mission, nil, "")
+		if err != nil {
+			t.Fatalf("BuildAst() = %v for instance_id %q, want nil", err, id)
+		}
+		if got := ast.Actions.Decls[0].Name; got != id {
+			t.Errorf("decl name = %q, want %q", got, id)
+		}
+	}
+}
+
 // TestAstToGraphRoundTripsKnownFixture parses testdata/takeoff_gimbal.test.dsl
 // (the same fixture ir_test.go uses) with the real lexer and checks
 // AstToGraph reconstructs the exact graph shape that file encodes: two

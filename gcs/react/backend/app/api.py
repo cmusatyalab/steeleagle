@@ -252,12 +252,21 @@ async def lifespan(app: FastAPI):
         logger.info(f"Using default backend '{list(backend_connections.keys())[0]}'")
 
     global dslcompiler_channel, dslcompiler_client
-    dslcompiler_channel = grpc.aio.insecure_channel(cfg["dslcompiler"]["controller"])
-    dslcompiler_stub = dslcompiler_pb2_grpc.DslCompilerServiceStub(dslcompiler_channel)
-    dslcompiler_client = DslCompilerClient(dslcompiler_stub)
-    logger.info(
-        f"Opened DslCompilerService stub at GRPC endpoint: {cfg['dslcompiler']['controller']}"
-    )
+    dsl_cfg = cfg.get("dslcompiler")
+    if dsl_cfg and dsl_cfg.get("controller"):
+        dslcompiler_channel = grpc.aio.insecure_channel(dsl_cfg["controller"])
+        dslcompiler_stub = dslcompiler_pb2_grpc.DslCompilerServiceStub(
+            dslcompiler_channel
+        )
+        dslcompiler_client = DslCompilerClient(dslcompiler_stub)
+        logger.info(
+            f"Opened DslCompilerService stub at GRPC endpoint: {dsl_cfg['controller']}"
+        )
+    else:
+        logger.warning(
+            "no [dslcompiler] config section (or no 'controller' key) — "
+            "FSM-builder routes will return 503 until config.toml is updated"
+        )
 
     yield
     # Cleanup
@@ -717,6 +726,11 @@ def parse_dsl_response_to_dict(resp: dslcompiler_pb2.ParseDslResponse) -> dict:
             for e in mission.edges
         ],
         "start_id": mission.start_id,
+        "role": mission.role,
+        "imports": [
+            {"alias": imp.alias, "path": imp.path, "version": imp.version}
+            for imp in mission.imports
+        ],
     }
 
 
@@ -727,7 +741,12 @@ class ParseDslRequest(BaseModel):
 @app.post("/api/parse_dsl")
 async def parse_dsl(request: ParseDslRequest):
     client = _current_dslcompiler_client()
-    resp = await client.parse_dsl(request.dsl)
+    try:
+        resp = await client.parse_dsl(request.dsl)
+    except grpc.aio.AioRpcError as e:
+        raise HTTPException(
+            status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
+        ) from e
     return parse_dsl_response_to_dict(resp)
 
 
@@ -801,7 +820,12 @@ def build_schema_response(resp: dslcompiler_pb2.GetSchemaResponse) -> dict:
 @app.get("/api/schema")
 async def get_schema():
     client = _current_dslcompiler_client()
-    resp = await client.get_schema()
+    try:
+        resp = await client.get_schema()
+    except grpc.aio.AioRpcError as e:
+        raise HTTPException(
+            status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
+        ) from e
     return build_schema_response(resp)
 
 
@@ -872,7 +896,7 @@ def _field_value_from_python(
                 },
             )
         )
-    raise HTTPException(status_code=422, detail=f"Unsupported param value: {value!r}")
+    raise ValueError(f"Unsupported param value: {value!r}")
 
 
 def _params_to_field_values(
@@ -1009,8 +1033,16 @@ async def compile_mission(
     if errors:
         return {"errors": errors}
 
-    mission = _mission_graph_from_request(request, schema)
-    validate_resp = await client.validate(mission)
+    try:
+        mission = _mission_graph_from_request(request, schema)
+    except ValueError as e:
+        return {"errors": [{"node_id": None, "message": str(e)}]}
+    try:
+        validate_resp = await client.validate(mission)
+    except grpc.aio.AioRpcError as e:
+        raise HTTPException(
+            status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
+        ) from e
     if not validate_resp.ok:
         return {
             "errors": [
@@ -1055,7 +1087,12 @@ async def compile_mission(
 @app.post("/api/compile")
 async def compile_mission_route(request: CompileRequest) -> dict:
     client = _current_dslcompiler_client()
-    schema = await client.get_schema()
+    try:
+        schema = await client.get_schema()
+    except grpc.aio.AioRpcError as e:
+        raise HTTPException(
+            status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
+        ) from e
     return await compile_mission(request, client, schema)
 
 
@@ -1089,8 +1126,16 @@ async def _build_stream_for_arch(client: DslCompilerClient, mission, arch: str):
 @app.post("/api/build")
 async def build_route(request: BuildMissionRequest):
     client = _current_dslcompiler_client()
-    schema = await client.get_schema()
-    mission = _mission_graph_from_request(request, schema)
+    try:
+        schema = await client.get_schema()
+    except grpc.aio.AioRpcError as e:
+        raise HTTPException(
+            status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
+        ) from e
+    try:
+        mission = _mission_graph_from_request(request, schema)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
 
     stream = _build_stream_for_arch(client, mission, request.arch)
     try:
@@ -1100,6 +1145,10 @@ async def build_route(request: BuildMissionRequest):
             status_code=500,
             detail=f"Build stream ended without producing arch '{request.arch}'",
         ) from None
+    except grpc.aio.AioRpcError as e:
+        raise HTTPException(
+            status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
+        ) from e
 
     async def _relay():
         yield first_piece

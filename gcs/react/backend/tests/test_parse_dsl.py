@@ -34,6 +34,12 @@ def test_parse_dsl_translates_nodes_events_edges():
             dslcompiler_pb2.Edge(source="takeoff", event_id="done", target="gimbal")
         ],
         start_id="takeoff",
+        role="explorer",
+        imports=[
+            dslcompiler_pb2.ImportSpec(
+                alias="", path="github.com/cmusatyalab/steeleagle/sdk/enums", version=""
+            )
+        ],
     )
     resp = dslcompiler_pb2.ParseDslResponse(ok=True, mission=mission)
 
@@ -45,6 +51,14 @@ def test_parse_dsl_translates_nodes_events_edges():
     assert result["nodes"][1]["params"]["AngleMode"] == "enums.AngleModeAbsolute"
     assert result["edges"] == [
         {"source": "takeoff", "event_id": "done", "target": "gimbal"}
+    ]
+    assert result["role"] == "explorer"
+    assert result["imports"] == [
+        {
+            "alias": "",
+            "path": "github.com/cmusatyalab/steeleagle/sdk/enums",
+            "version": "",
+        }
     ]
 
 
