@@ -55,6 +55,26 @@ function FloatInput({ value, onChange, className }) {
 }
 
 function FieldInput({ field, value, onChange, namedAreas = [], enums = {} }) {
+    if (field.map_feature) {
+        // Valid values aren't a fixed compile-time list (unlike a real
+        // enum) -- they're whatever named areas the user has drawn on
+        // the Map tab. The compiler accepts any string here and only
+        // the vehicle, at mission runtime, resolves it against the
+        // mission's own GeoJSON -- so this dropdown (sourced from the
+        // areas actually drawn) is the only real typo guard there is.
+        return (
+            <Dropdown
+                value={value ?? null}
+                options={namedAreas.length
+                    ? namedAreas.map(a => ({ label: a, value: a }))
+                    : [{ label: '(draw an area on the Map tab)', value: null }]
+                }
+                onChange={e => onChange(e.value)}
+                className="w-full"
+                placeholder="Select area"
+            />
+        );
+    }
     if (field.enum_type) {
         const enumSchema = enums[field.enum_type];
         const values = enumSchema?.values ?? [];
@@ -111,30 +131,16 @@ function FieldInput({ field, value, onChange, namedAreas = [], enums = {} }) {
             <div style={{ border: '1px solid #2a3a4a', borderRadius: 4, padding: '6px 8px', marginTop: 2 }}>
                 {field.nested_fields.map(nf => {
                     const nestedValue = value?.[nf.name];
-                    const isWaypointsArea = field.object_type === 'Waypoints' && nf.name === 'area';
                     return (
                         <div key={nf.name} style={{ marginBottom: 4 }}>
                             <label style={{ fontSize: 9, color: '#888', display: 'block' }}>{nf.name}</label>
-                            {isWaypointsArea ? (
-                                <Dropdown
-                                    value={nestedValue ?? null}
-                                    options={namedAreas.length
-                                        ? namedAreas.map(a => ({ label: a, value: a }))
-                                        : [{ label: '(draw area on Map tab)', value: null }]
-                                    }
-                                    onChange={e => onChange({ ...(value || {}), [nf.name]: e.value })}
-                                    className="w-full"
-                                    placeholder="Select area"
-                                />
-                            ) : (
-                                <FieldInput
-                                    field={nf}
-                                    value={nestedValue}
-                                    onChange={val => onChange({ ...(value || {}), [nf.name]: val })}
-                                    namedAreas={namedAreas}
-                                    enums={enums}
-                                />
-                            )}
+                            <FieldInput
+                                field={nf}
+                                value={nestedValue}
+                                onChange={val => onChange({ ...(value || {}), [nf.name]: val })}
+                                namedAreas={namedAreas}
+                                enums={enums}
+                            />
                         </div>
                     );
                 })}

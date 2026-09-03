@@ -780,6 +780,8 @@ def _field_schema_to_dict(field: dslcompiler_pb2.FieldSchema) -> dict:
         entry["object_type"] = _bare_name(field.object_type)
     if field.HasField("enum_type"):
         entry["enum_type"] = _bare_name(field.enum_type)
+    if field.map_feature:
+        entry["map_feature"] = True
     if field.nested_fields:
         entry["nested_fields"] = [_field_schema_to_dict(f) for f in field.nested_fields]
     return entry

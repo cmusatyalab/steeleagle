@@ -70,4 +70,48 @@ func TestSchemaFromRegistryPatrolAction(t *testing.T) {
 	if !pattern.HasEnumType() || pattern.GetEnumType() != "actions.PatrolMode" {
 		t.Errorf("Pattern.EnumType = %q (has=%v), want actions.PatrolMode", pattern.GetEnumType(), pattern.HasEnumType())
 	}
+	if altitude.GetMapFeature() {
+		t.Errorf("Altitude.MapFeature = true, want false (it's not a params.MapFeature field)")
+	}
+}
+
+// TestSchemaFromRegistryMapFeatureField checks that a field of type
+// sdk/params.MapFeature sets map_feature -- identified directly by
+// package path + name, not via the registry (registry.Enums never
+// carries a MapFeature entry, since CreateOverlay's sdkTypes is always
+// nil for the long-lived dslcompiler service; see isMapFeatureType).
+func TestSchemaFromRegistryMapFeatureField(t *testing.T) {
+	float32Type := types.Typ[types.Float32]
+	paramsPkg := types.NewPackage("github.com/cmusatyalab/steeleagle/sdk/params", "params")
+	mapFeature := types.NewNamed(
+		types.NewTypeName(0, paramsPkg, "MapFeature", nil), types.Typ[types.String], nil,
+	)
+
+	registry := &loader.TypeRegistry{
+		Actions: map[string]*loader.Base{
+			"actions.Patrol": {
+				Fields: []loader.Field{
+					{Name: "Area", Type: mapFeature, Comment: "area to patrol"},
+					{Name: "Altitude", Type: float32Type, Comment: "altitude"},
+				},
+			},
+		},
+		Events:    map[string]*loader.Base{},
+		Datatypes: map[string]*loader.Base{},
+		Enums:     map[string]*loader.Base{},
+	}
+
+	resp := SchemaFromRegistry(registry, nil, "")
+	fields := resp.GetActions()["actions.Patrol"].GetFields()
+	if len(fields) != 2 {
+		t.Fatalf("len(fields) = %d, want 2", len(fields))
+	}
+
+	area := fields[0]
+	if area.GetName() != "Area" || area.GetType() != "string" || !area.GetMapFeature() {
+		t.Errorf("Area field = %+v, want name=Area type=string map_feature=true", area)
+	}
+	if area.HasEnumType() {
+		t.Errorf("Area.EnumType = %q, want unset (MapFeature isn't a registry enum)", area.GetEnumType())
+	}
 }

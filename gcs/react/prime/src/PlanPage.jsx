@@ -91,6 +91,13 @@ function generateDsl(nodes, edges, eventInstances, startNodeId, schema) {
         }
         if (typeof val === 'boolean') return val ? 'true' : 'false';
         if (val === '') return null;
+        // An enum field's value is an unquoted ident_ref (e.g.
+        // PatrolModeSurvey) the compiler resolves against the SDK's
+        // generated consts -- everything else (map_feature area names
+        // included) is a plain string value and must round-trip through
+        // Apply/parse_dsl as one, or the parser reads it as an
+        // (unresolvable) identifier instead.
+        if (typeof val === 'string' && !fieldSchema?.enum_type) return JSON.stringify(val);
         return String(val);
     }
 
@@ -149,6 +156,20 @@ function generateDsl(nodes, edges, eventInstances, startNodeId, schema) {
     parts.push(`Mission:\n${missionContent}`);
 
     return parts.join('\n\n');
+}
+
+// Coerces a FieldSchema's raw string default (the proto's wire type,
+// regardless of the field's own kind) to the JS type params actually
+// need: a number for number/integer fields, a boolean for boolean
+// fields, the string as-is otherwise (including enum idents and
+// map_feature area names, which are genuinely strings).
+function coerceDefault(field) {
+    if (field.type === 'number' || field.type === 'integer') {
+        const n = Number(field.default);
+        return Number.isNaN(n) ? field.default : n;
+    }
+    if (field.type === 'boolean') return field.default === 'true';
+    return field.default;
 }
 
 // Extract named areas from GeoJSON features string
@@ -210,10 +231,15 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
         const id = nextNodeId();
         const isFirst = nodes.length === 0;
 
-        // Build defaults from schema
+        // Build defaults from schema. field.default is always a raw string
+        // (FieldSchema.default_value's wire type) regardless of the
+        // field's actual kind -- coerce it to match, or a number/boolean
+        // field silently carries a string default all the way to /api/build,
+        // which fails with a Go type error ("10.0" isn't a float32) that
+        // Validate's lighter checking never catches.
         const fields = schema.actions[typeName]?.fields ?? [];
         const defaultParams = Object.fromEntries(
-            fields.filter(f => 'default' in f).map(f => [f.name, f.default])
+            fields.filter(f => 'default' in f).map(f => [f.name, coerceDefault(f)])
         );
 
         const base = typeName.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '');

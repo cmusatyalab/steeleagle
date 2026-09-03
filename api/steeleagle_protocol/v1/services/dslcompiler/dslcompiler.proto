@@ -76,6 +76,7 @@ message FieldSchema {
   optional string object_type = 6;       // set when type == "object": qualified datatype name
   repeated FieldSchema nested_fields = 7; // set when type == "object", depth-capped at 2
   optional string enum_type = 8;         // set when this field's value must be an enum constant name
+  bool map_feature = 9; // set when this field's value should name a map area from the mission's own GeoJSON (sdk/params.MapFeature) -- not validated at compile time, resolved by the vehicle at mission runtime
 }
 
 message Node {

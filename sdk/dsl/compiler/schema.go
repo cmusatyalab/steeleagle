@@ -66,7 +66,14 @@ func enumSchemas(bases map[string]*loader.Base) map[string]*dslcompilerpb.EnumSc
 // struct, i.e. a registered Datatype) -> "object" with object_type set
 // and (depth-capped at 2) nested_fields populated from that Datatype's
 // own Base. A named non-struct type whose Base lives in registry.Enums
-// additionally sets enum_type, regardless of its "type" bucket.
+// additionally sets enum_type, regardless of its "type" bucket. A field
+// of type sdk/params.MapFeature sets map_feature instead: unlike a real
+// enum, valid values aren't a fixed compile-time list -- they're
+// whatever named areas the mission's own GeoJSON declares, resolved by
+// the vehicle at mission runtime (see resolveValue's plain-string case
+// in ir.go, which is why no registry entry is needed for this to
+// compile). map_feature just tells the frontend which fields deserve
+// the drawn-area dropdown instead of a bare text box.
 //
 // NOTE on pointer usage below: this proto's Opaque API only generates a
 // pointer type in a _builder struct for a field the .proto marks
@@ -86,6 +93,9 @@ func fieldSchema(registry *loader.TypeRegistry, f loader.Field, required bool, d
 
 	if enumName, ok := enumTypeName(registry, f.Type); ok {
 		fs.EnumType = strPtr(enumName)
+	}
+	if isMapFeatureType(f.Type) {
+		fs.MapFeature = true
 	}
 
 	switch t := f.Type.Underlying().(type) {
@@ -143,6 +153,29 @@ func enumTypeName(registry *loader.TypeRegistry, t types.Type) (string, bool) {
 		return "", false
 	}
 	return name, true
+}
+
+// sdkParamsPkgPath duplicates the unexported constant of the same name
+// in sdk/overlay.go -- that package (sdk) can't be imported here
+// without an import cycle (sdk/dsl/compiler is itself part of what
+// NewWorkspace/sdk.CreateOverlay operate on), and this is the only
+// piece of it schema.go needs.
+const sdkParamsPkgPath = "github.com/cmusatyalab/steeleagle/sdk/params"
+
+// isMapFeatureType reports whether t (possibly behind a pointer) is
+// sdk/params.MapFeature, identified directly by package path + name --
+// unlike enumTypeName/datatypeFor this doesn't consult the registry,
+// since MapFeature is deliberately never populated into
+// registry.Enums (see CreateOverlay's sdkTypes, always nil for the
+// long-lived dslcompiler service).
+func isMapFeatureType(t types.Type) bool {
+	named, ok := underlyingNamed(t)
+	if !ok {
+		return false
+	}
+	obj := named.Obj()
+	pkg := obj.Pkg()
+	return pkg != nil && pkg.Path() == sdkParamsPkgPath && obj.Name() == "MapFeature"
 }
 
 // datatypeFor reports the registry.Datatypes entry for t (a named

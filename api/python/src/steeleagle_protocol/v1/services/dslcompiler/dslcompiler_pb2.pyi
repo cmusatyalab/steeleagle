@@ -81,7 +81,7 @@ class EnumSchema(_message.Message):
     def __init__(self, description: _Optional[str] = ..., values: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class FieldSchema(_message.Message):
-    __slots__ = ("name", "type", "required", "description", "default_value", "object_type", "nested_fields", "enum_type")
+    __slots__ = ("name", "type", "required", "description", "default_value", "object_type", "nested_fields", "enum_type", "map_feature")
     NAME_FIELD_NUMBER: _ClassVar[int]
     TYPE_FIELD_NUMBER: _ClassVar[int]
     REQUIRED_FIELD_NUMBER: _ClassVar[int]
@@ -90,6 +90,7 @@ class FieldSchema(_message.Message):
     OBJECT_TYPE_FIELD_NUMBER: _ClassVar[int]
     NESTED_FIELDS_FIELD_NUMBER: _ClassVar[int]
     ENUM_TYPE_FIELD_NUMBER: _ClassVar[int]
+    MAP_FEATURE_FIELD_NUMBER: _ClassVar[int]
     name: str
     type: str
     required: bool
@@ -98,7 +99,8 @@ class FieldSchema(_message.Message):
     object_type: str
     nested_fields: _containers.RepeatedCompositeFieldContainer[FieldSchema]
     enum_type: str
-    def __init__(self, name: _Optional[str] = ..., type: _Optional[str] = ..., required: _Optional[bool] = ..., description: _Optional[str] = ..., default_value: _Optional[str] = ..., object_type: _Optional[str] = ..., nested_fields: _Optional[_Iterable[_Union[FieldSchema, _Mapping]]] = ..., enum_type: _Optional[str] = ...) -> None: ...
+    map_feature: bool
+    def __init__(self, name: _Optional[str] = ..., type: _Optional[str] = ..., required: _Optional[bool] = ..., description: _Optional[str] = ..., default_value: _Optional[str] = ..., object_type: _Optional[str] = ..., nested_fields: _Optional[_Iterable[_Union[FieldSchema, _Mapping]]] = ..., enum_type: _Optional[str] = ..., map_feature: _Optional[bool] = ...) -> None: ...
 
 class Node(_message.Message):
     __slots__ = ("instance_id", "type_name", "params")

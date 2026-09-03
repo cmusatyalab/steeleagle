@@ -435,6 +435,7 @@ type FieldSchema struct {
 	xxx_hidden_ObjectType   *string                `protobuf:"bytes,6,opt,name=object_type,json=objectType,proto3,oneof"`
 	xxx_hidden_NestedFields *[]*FieldSchema        `protobuf:"bytes,7,rep,name=nested_fields,json=nestedFields,proto3"`
 	xxx_hidden_EnumType     *string                `protobuf:"bytes,8,opt,name=enum_type,json=enumType,proto3,oneof"`
+	xxx_hidden_MapFeature   bool                   `protobuf:"varint,9,opt,name=map_feature,json=mapFeature,proto3"`
 	XXX_raceDetectHookData  protoimpl.RaceDetectHookData
 	XXX_presence            [1]uint32
 	unknownFields           protoimpl.UnknownFields
@@ -533,6 +534,13 @@ func (x *FieldSchema) GetEnumType() string {
 	return ""
 }
 
+func (x *FieldSchema) GetMapFeature() bool {
+	if x != nil {
+		return x.xxx_hidden_MapFeature
+	}
+	return false
+}
+
 func (x *FieldSchema) SetName(v string) {
 	x.xxx_hidden_Name = v
 }
@@ -551,12 +559,12 @@ func (x *FieldSchema) SetDescription(v string) {
 
 func (x *FieldSchema) SetDefaultValue(v string) {
 	x.xxx_hidden_DefaultValue = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 9)
 }
 
 func (x *FieldSchema) SetObjectType(v string) {
 	x.xxx_hidden_ObjectType = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 9)
 }
 
 func (x *FieldSchema) SetNestedFields(v []*FieldSchema) {
@@ -565,7 +573,11 @@ func (x *FieldSchema) SetNestedFields(v []*FieldSchema) {
 
 func (x *FieldSchema) SetEnumType(v string) {
 	x.xxx_hidden_EnumType = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 9)
+}
+
+func (x *FieldSchema) SetMapFeature(v bool) {
+	x.xxx_hidden_MapFeature = v
 }
 
 func (x *FieldSchema) HasDefaultValue() bool {
@@ -615,6 +627,7 @@ type FieldSchema_builder struct {
 	ObjectType   *string
 	NestedFields []*FieldSchema
 	EnumType     *string
+	MapFeature   bool
 }
 
 func (b0 FieldSchema_builder) Build() *FieldSchema {
@@ -626,18 +639,19 @@ func (b0 FieldSchema_builder) Build() *FieldSchema {
 	x.xxx_hidden_Required = b.Required
 	x.xxx_hidden_Description = b.Description
 	if b.DefaultValue != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 9)
 		x.xxx_hidden_DefaultValue = b.DefaultValue
 	}
 	if b.ObjectType != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 9)
 		x.xxx_hidden_ObjectType = b.ObjectType
 	}
 	x.xxx_hidden_NestedFields = &b.NestedFields
 	if b.EnumType != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 9)
 		x.xxx_hidden_EnumType = b.EnumType
 	}
+	x.xxx_hidden_MapFeature = b.MapFeature
 	return m0
 }
 
@@ -2204,7 +2218,7 @@ const file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_rawDesc
 	"\n" +
 	"EnumSchema\x12 \n" +
 	"\vdescription\x18\x01 \x01(\tR\vdescription\x12\x16\n" +
-	"\x06values\x18\x02 \x03(\tR\x06values\"\xf4\x02\n" +
+	"\x06values\x18\x02 \x03(\tR\x06values\"\x95\x03\n" +
 	"\vFieldSchema\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04type\x18\x02 \x01(\tR\x04type\x12\x1a\n" +
@@ -2214,7 +2228,9 @@ const file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_rawDesc
 	"\vobject_type\x18\x06 \x01(\tH\x01R\n" +
 	"objectType\x88\x01\x01\x12]\n" +
 	"\rnested_fields\x18\a \x03(\v28.steeleagle_protocol.v1.services.dslcompiler.FieldSchemaR\fnestedFields\x12 \n" +
-	"\tenum_type\x18\b \x01(\tH\x02R\benumType\x88\x01\x01B\x10\n" +
+	"\tenum_type\x18\b \x01(\tH\x02R\benumType\x88\x01\x01\x12\x1f\n" +
+	"\vmap_feature\x18\t \x01(\bR\n" +
+	"mapFeatureB\x10\n" +
 	"\x0e_default_valueB\x0e\n" +
 	"\f_object_typeB\f\n" +
 	"\n" +

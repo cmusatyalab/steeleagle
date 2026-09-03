@@ -23,9 +23,12 @@ def _patrol_schema() -> dslcompiler_pb2.GetSchemaResponse:
     hover_time_field = dslcompiler_pb2.FieldSchema(
         name="hover_time", type="number", required=False, description=""
     )
+    map_feature_area_field = dslcompiler_pb2.FieldSchema(
+        name="Area", type="string", required=True, description="", map_feature=True
+    )
     patrol = dslcompiler_pb2.TypeSchema(
         description="Patrol a set of waypoints.",
-        fields=[waypoints_field, hover_time_field],
+        fields=[waypoints_field, hover_time_field, map_feature_area_field],
     )
     target_field = dslcompiler_pb2.FieldSchema(
         name="target", type="object", required=True, description=""
@@ -95,6 +98,14 @@ def test_schema_enum_keyed_by_bare_name_with_values():
         "PatrolModeCorridor",
         "PatrolModeSurvey",
     ]
+
+
+def test_schema_map_feature_field_is_flagged():
+    schema = build_schema_response(_patrol_schema())
+    patrol_fields = {f["name"]: f for f in schema["actions"]["Patrol"]["fields"]}
+    assert patrol_fields["Area"]["map_feature"] is True
+    # Fields that aren't sdk/params.MapFeature don't get the key at all.
+    assert "map_feature" not in patrol_fields["hover_time"]
 
 
 def test_schema_event_detectionfound_keyed_by_bare_name():
