@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { Button } from 'primereact/button';
+import { SplitButton } from 'primereact/splitbutton';
 import { Toast } from 'primereact/toast';
 import { InputTextarea } from 'primereact/inputtextarea';
 import {
@@ -9,7 +10,6 @@ import {
     useReactFlow, ReactFlowProvider,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import tokml from 'tokml';
 import MapDraw from './MapDraw.jsx';
 import TaskNode from './TaskNode.jsx';
 import SelfLoopEdge from './SelfLoopEdge.jsx';
@@ -102,7 +102,9 @@ function generateDsl(nodes, edges, eventInstances, startNodeId, schema) {
             const sv = serializeVal(v, fsWithOwner);
             if (sv !== null) parts.push(`${k} = ${sv}`);
         }
-        return parts.length ? `(${parts.join(', ')})` : '';
+        // Grammar requires the parens literally, even with no attrs inside
+        // (sdk/dsl/parser/ast.go's Decl: `"(" (Attr (","Attr)*)? ")"`).
+        return `(${parts.join(', ')})`;
     }
 
     const actionLines = nodes.map(n => {
@@ -131,6 +133,15 @@ function generateDsl(nodes, edges, eventInstances, startNodeId, schema) {
     }).filter(Boolean);
 
     const parts = [];
+    if (schema.default_role) parts.push(`Role ${schema.default_role}:`);
+    if (schema.imports?.length) {
+        const importLines = schema.imports.map(imp => {
+            const alias = imp.alias ? `${imp.alias} ` : '';
+            const version = imp.version ? ` ${imp.version}` : '';
+            return `    ${alias}"${imp.path}"${version}`;
+        });
+        parts.push(`Import:\n${importLines.join('\n')}`);
+    }
     if (dataEntries.length) parts.push(`Data:\n${dataEntries.join('\n')}`);
     parts.push(`Actions:\n${actionLines.join('\n')}`);
     if (eventLines.length) parts.push(`Events:\n${eventLines.join('\n')}`);
@@ -351,7 +362,7 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
     );
 }
 
-function PlanPage({ squadList, theme }) {
+function PlanPage({ theme }) {
     const [nodes, setNodes] = useState([]);
     const [edges, setEdges] = useState([]);
     const [eventInstances, setEventInstances] = useState([]);
@@ -367,8 +378,11 @@ function PlanPage({ squadList, theme }) {
     const panelEdgeSourceLabel = panelEdge ? (nodes.find(n => n.id === panelEdge.source)?.data.instance_id ?? panelEdge.source) : '';
     const panelEdgeTargetLabel = panelEdge ? (nodes.find(n => n.id === panelEdge.target)?.data.instance_id ?? panelEdge.target) : '';
     const [compiling, setCompiling] = useState(false);
-    const [deploying, setDeploying] = useState(false);
+    const [building, setBuilding] = useState(null); // arch currently downloading, or null
     const [loadingDsl, setLoadingDsl] = useState(false);
+    const [applyingDsl, setApplyingDsl] = useState(false);
+    const [dslEdited, setDslEdited] = useState(false);
+    const [dslText, setDslText] = useState('');
     const fileInputRef = useRef(null);
     const toast = useRef(null);
     const [validationIssues, setValidationIssues] = useState({});
@@ -467,6 +481,23 @@ function PlanPage({ squadList, theme }) {
 
     const startNode = nodes.find(n => n.id === startNodeId);
 
+    function buildMissionRequestBody() {
+        return {
+            nodes: nodes.map(n => ({
+                instance_id: n.data.instance_id,
+                type_name: n.data.type_name,
+                params: n.data.params,
+            })),
+            events: eventInstances,
+            edges: edges.map(e => ({
+                source: nodes.find(n => n.id === e.source)?.data.instance_id,
+                event_id: e.data?.eventId ?? 'done',
+                target: nodes.find(n => n.id === e.target)?.data.instance_id,
+            })),
+            start_id: startNode?.data.instance_id,
+        };
+    }
+
     async function handleCompile() {
         if (!startNodeId) {
             toast.current.show({ severity: 'warn', summary: 'No start state', detail: 'Right-click a node and set it as the start state.' });
@@ -474,20 +505,7 @@ function PlanPage({ squadList, theme }) {
         }
         setCompiling(true);
         try {
-            const body = {
-                nodes: nodes.map(n => ({
-                    instance_id: n.data.instance_id,
-                    type_name: n.data.type_name,
-                    params: n.data.params,
-                })),
-                events: eventInstances,
-                edges: edges.map(e => ({
-                    source: nodes.find(n => n.id === e.source)?.data.instance_id,
-                    event_id: e.data?.eventId ?? 'done',
-                    target: nodes.find(n => n.id === e.target)?.data.instance_id,
-                })),
-                start_id: startNode?.data.instance_id,
-            };
+            const body = buildMissionRequestBody();
             const resp = await fetch(getApiUrl('/api/compile'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -525,38 +543,33 @@ function PlanPage({ squadList, theme }) {
         URL.revokeObjectURL(url);
     }
 
-    async function handleDeploy() {
-        if (!compiledMission) {
-            toast.current.show({ severity: 'warn', summary: 'Not compiled', detail: 'Compile the mission first.' });
-            return;
-        }
-        if (!squadList || squadList.length === 0) {
-            toast.current.show({ severity: 'warn', summary: 'No vehicles', detail: 'Select at least one vehicle in the Control panel first.' });
-            return;
-        }
-        setDeploying(true);
+    async function handleDownloadBinary(arch) {
+        if (!compiledMission) return;
+        setBuilding(arch);
         try {
-            const utf8ToB64 = (str) => btoa(unescape(encodeURIComponent(str)));
-            const featObj = typeof features === 'string' ? JSON.parse(features) : features;
-            const kmlString = tokml(featObj);
-            const kml = utf8ToB64(kmlString);
-            const dsl = utf8ToB64(JSON.stringify(compiledMission));
-            const resp = await fetch(getApiUrl('/api/upload'), {
+            const body = { ...buildMissionRequestBody(), arch };
+            const resp = await fetch(getApiUrl('/api/build'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ kml, dsl, vehicles: squadList }),
+                body: JSON.stringify(body),
             });
             if (!resp.ok) {
                 let detail = `Server error ${resp.status}`;
                 try { const err = await resp.json(); detail = err.detail ?? detail; } catch { detail = await resp.text().catch(() => detail); }
-                toast.current.show({ severity: 'error', summary: 'Deploy failed', detail });
-            } else {
-                toast.current.show({ severity: 'success', summary: 'Deployed', detail: `Mission sent to ${squadList.join(', ')}.` });
+                toast.current.show({ severity: 'error', summary: 'Build failed', detail });
+                return;
             }
+            const blob = await resp.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `mission-${arch}`;
+            a.click();
+            URL.revokeObjectURL(url);
         } catch (e) {
-            toast.current.show({ severity: 'error', summary: 'Deploy failed', detail: e.message });
+            toast.current.show({ severity: 'error', summary: 'Build failed', detail: e.message });
         } finally {
-            setDeploying(false);
+            setBuilding(null);
         }
     }
 
@@ -597,6 +610,8 @@ function PlanPage({ squadList, theme }) {
         setEventInstances([]);
         setStartNodeId(null);
         setCompiledMission(null);
+        setDslEdited(false);
+        setDslText('');
     }
 
     function loadFromParsed(parsed) {
@@ -643,6 +658,24 @@ function PlanPage({ squadList, theme }) {
         setEventInstances(parsed.events);
         setStartNodeId(parsed.start_id ?? (rfNodes[0]?.id ?? null));
         setCompiledMission(null);
+        // Canvas now reflects this parse; drop any stale frozen DSL-tab edit
+        // so the tab goes back to mirroring liveDsl.
+        setDslEdited(false);
+        setDslText('');
+    }
+
+    async function parseDslText(text) {
+        const resp = await fetch(getApiUrl('/api/parse_dsl'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dsl: text }),
+        });
+        if (!resp.ok) {
+            let detail = `Server error ${resp.status}`;
+            try { const err = await resp.json(); detail = err.detail ?? detail; } catch { /* keep default */ }
+            throw new Error(detail);
+        }
+        return resp.json();
     }
 
     async function handleLoadDsl(file) {
@@ -650,25 +683,33 @@ function PlanPage({ squadList, theme }) {
         setLoadingDsl(true);
         try {
             const text = await file.text();
-            const resp = await fetch(getApiUrl('/api/parse_dsl'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ dsl: text }),
-            });
-            if (!resp.ok) {
-                const err = await resp.json();
-                toast.current.show({ severity: 'error', summary: 'DSL parse error', detail: err.detail });
-                return;
-            }
-            const parsed = await resp.json();
+            const parsed = await parseDslText(text);
             loadFromParsed(parsed);
             toast.current.show({ severity: 'success', summary: 'DSL loaded', detail: `${parsed.nodes.length} actions, ${parsed.events.length} events` });
         } catch (e) {
-            toast.current.show({ severity: 'error', summary: 'Load failed', detail: e.message });
+            toast.current.show({ severity: 'error', summary: 'DSL parse error', detail: e.message });
         } finally {
             setLoadingDsl(false);
             if (fileInputRef.current) fileInputRef.current.value = '';
         }
+    }
+
+    async function handleApplyDsl() {
+        setApplyingDsl(true);
+        try {
+            const parsed = await parseDslText(dslText);
+            loadFromParsed(parsed);
+            toast.current.show({ severity: 'success', summary: 'DSL applied', detail: `${parsed.nodes.length} actions, ${parsed.events.length} events` });
+        } catch (e) {
+            toast.current.show({ severity: 'error', summary: 'DSL parse error', detail: e.message });
+        } finally {
+            setApplyingDsl(false);
+        }
+    }
+
+    function handleDiscardDsl() {
+        setDslEdited(false);
+        setDslText('');
     }
 
     function handleExportDsl() {
@@ -683,6 +724,12 @@ function PlanPage({ squadList, theme }) {
     }
 
     const liveDsl = nodes.length > 0 ? generateDsl(nodes, edges, eventInstances, startNodeId, schema) : '# Add nodes to see DSL preview';
+    const displayDsl = dslEdited ? dslText : liveDsl;
+
+    const buildArchOptions = [
+        { label: 'Download amd64', icon: 'pi pi-download', command: () => handleDownloadBinary('amd64') },
+        { label: 'Download arm64', icon: 'pi pi-download', command: () => handleDownloadBinary('arm64') },
+    ];
 
     const nodesWithWarnings = useMemo(
         () => nodes.map(n => ({
@@ -773,14 +820,15 @@ function PlanPage({ squadList, theme }) {
                                 disabled={!compiledMission}
                                 onClick={handleDownload}
                             />
-                            <Button
-                                label={`Deploy → ${squadList?.length ? squadList.join(', ') : 'no vehicles'}`}
-                                icon="pi pi-send"
+                            <SplitButton
+                                label={building ? `Building ${building}…` : 'Download amd64'}
+                                icon="pi pi-download"
                                 size="small"
-                                severity="success"
+                                outlined
                                 disabled={!compiledMission}
-                                loading={deploying}
-                                onClick={handleDeploy}
+                                loading={!!building}
+                                onClick={() => handleDownloadBinary('amd64')}
+                                model={buildArchOptions}
                             />
                         </div>
 
@@ -860,7 +908,7 @@ function PlanPage({ squadList, theme }) {
                     </div>
                 </TabPanel>
 
-                <TabPanel header="DSL Preview" leftIcon="pi pi-code mr-2" headerClassName="mr-2">
+                <TabPanel header="DSL" leftIcon="pi pi-code mr-2" headerClassName="mr-2">
                     <div className="flex flex-column" style={{ height: 'calc(100vh - 180px)' }}>
                         <div className="flex gap-2 align-items-center p-2" style={{ borderBottom: '1px solid #2a3a4a', flexShrink: 0 }}>
                             <Button
@@ -880,11 +928,34 @@ function PlanPage({ squadList, theme }) {
                                     onClick={handleDownload}
                                 />
                             )}
+                            {dslEdited && (
+                                <>
+                                    <Button
+                                        label="Apply"
+                                        icon="pi pi-check"
+                                        size="small"
+                                        severity="success"
+                                        loading={applyingDsl}
+                                        onClick={handleApplyDsl}
+                                    />
+                                    <Button
+                                        label="Discard"
+                                        icon="pi pi-times"
+                                        size="small"
+                                        outlined
+                                        disabled={applyingDsl}
+                                        onClick={handleDiscardDsl}
+                                    />
+                                    <span className="text-sm" style={{ color: '#e8c87a' }}>
+                                        ⚠ unapplied edits — canvas changes won't appear here until Apply/Discard
+                                    </span>
+                                </>
+                            )}
                         </div>
                         <InputTextarea
                             style={{ flex: 1, width: '100%', fontFamily: 'monospace', fontSize: 12, resize: 'none' }}
-                            readOnly
-                            value={liveDsl}
+                            value={displayDsl}
+                            onChange={e => { setDslEdited(true); setDslText(e.target.value); }}
                         />
                     </div>
                 </TabPanel>
