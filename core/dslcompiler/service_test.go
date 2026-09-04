@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	dslcompilerpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/dslcompiler"
@@ -123,6 +124,40 @@ func TestValidateUnknownActionTypeReportsNodeError(t *testing.T) {
 	got := resp.GetErrors()[0]
 	if !got.HasNodeId() || got.GetNodeId() != "bogus" {
 		t.Errorf("error.NodeId = %q (has=%v), want %q", got.GetNodeId(), got.HasNodeId(), "bogus")
+	}
+}
+
+// TestValidateMissingRequiredFieldHasNoPositionPrefix checks that a
+// graph-built mission's field-validation error (which has no real
+// source position, since it never passed through the lexer) is not
+// prefixed with the meaningless "0:0: " sentinel that a naive
+// lexer.Position{}.String() would otherwise produce.
+func TestValidateMissingRequiredFieldHasNoPositionPrefix(t *testing.T) {
+	svc := testSvc
+
+	mission := dslcompilerpb.MissionGraph_builder{
+		Nodes: []*dslcompilerpb.Node{
+			dslcompilerpb.Node_builder{InstanceId: "patrol", TypeName: "actions.Patrol"}.Build(),
+		},
+		StartId: "patrol",
+	}.Build()
+
+	resp, err := svc.Validate(context.Background(), dslcompilerpb.ValidateRequest_builder{Mission: mission}.Build())
+	if err != nil {
+		t.Fatalf("Validate() = %v, want nil", err)
+	}
+	if resp.GetOk() {
+		t.Fatal("resp.Ok = true, want false for a Patrol node missing its required fields")
+	}
+	if len(resp.GetErrors()) != 1 {
+		t.Fatalf("len(errors) = %d, want 1", len(resp.GetErrors()))
+	}
+	got := resp.GetErrors()[0].GetMessage()
+	if strings.HasPrefix(got, "0:0") {
+		t.Errorf("error message = %q, want no leading 0:0 position prefix", got)
+	}
+	if !strings.Contains(got, "missing required field") {
+		t.Errorf("error message = %q, want it to mention a missing required field", got)
 	}
 }
 

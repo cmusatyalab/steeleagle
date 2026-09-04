@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/alecthomas/participle/v2/lexer"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/loader"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/parser"
 )
@@ -77,5 +78,21 @@ func TestBuildIRPatrolMission(t *testing.T) {
 	}
 	if !sawTakeoffToGimbal {
 		t.Errorf("expected a done->gimbal transition from takeoff, got %+v", ir.Transitions)
+	}
+}
+
+// TestPosPrefixDistinguishesRealAndZeroPositions is a unit test for
+// posPrefix's contract: a real lexer.Position (as any parsed DSL text
+// produces, always starting at 1:1) renders as "line:col: ", while the
+// zero value (what a graph-built AST node always has, since it never
+// passes through the lexer -- see graph.go) renders as "" rather than
+// the meaningless "0:0: " a naive Position.String() call would give.
+func TestPosPrefixDistinguishesRealAndZeroPositions(t *testing.T) {
+	if got := posPrefix(lexer.Position{}); got != "" {
+		t.Errorf("posPrefix(zero value) = %q, want empty string", got)
+	}
+	real := lexer.Position{Filename: "m.dsl", Line: 3, Column: 5}
+	if got, want := posPrefix(real), "m.dsl:3:5: "; got != want {
+		t.Errorf("posPrefix(real) = %q, want %q", got, want)
 	}
 }

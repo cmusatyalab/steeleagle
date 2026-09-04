@@ -13,9 +13,22 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/alecthomas/participle/v2/lexer"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/loader"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/parser"
 )
+
+// posPrefix formats pos as an error-message prefix ("line:col: "), or ""
+// when pos is the zero value. A graph-built AST (see graph.go) never sets
+// Pos, since there's no source text to derive one from; a real lexed
+// position is never the zero value (participle's lexer starts at 1:1), so
+// this exactly distinguishes "has a real position" from "doesn't."
+func posPrefix(pos lexer.Position) string {
+	if pos == (lexer.Position{}) {
+		return ""
+	}
+	return pos.String() + ": "
+}
 
 // VarDecl is one generated `var <Name> = <TypeExpr>{ ... }` declaration.
 type VarDecl struct {
@@ -212,28 +225,28 @@ func BuildIR(ast *parser.Ast, registry *loader.TypeRegistry) (*IRResult, error) 
 		return nil, fmt.Errorf("mission is missing a Mission stanza")
 	}
 	if !actionNames[ast.Mission.Start] {
-		return nil, fmt.Errorf("%s: mission start %q is not a declared action", ast.Mission.Pos, ast.Mission.Start)
+		return nil, fmt.Errorf("%smission start %q is not a declared action", posPrefix(ast.Mission.Pos), ast.Mission.Start)
 	}
 
 	rulesByAction := map[string][]Entry{}
 	var actionOrder []string
 	for _, blk := range ast.Mission.Blocks {
 		if !actionNames[blk.Action] {
-			return nil, fmt.Errorf("%s: During %q is not a declared action", blk.Pos, blk.Action)
+			return nil, fmt.Errorf("%sDuring %q is not a declared action", posPrefix(blk.Pos), blk.Action)
 		}
 		if _, seen := rulesByAction[blk.Action]; !seen {
 			actionOrder = append(actionOrder, blk.Action)
 		}
 		for _, r := range blk.Rules {
 			if r.Event != "done" && !eventNames[r.Event] {
-				return nil, fmt.Errorf("%s: event %q is not a declared event", r.Pos, r.Event)
+				return nil, fmt.Errorf("%sevent %q is not a declared event", posPrefix(r.Pos), r.Event)
 			}
 			if !actionNames[r.Next] {
-				return nil, fmt.Errorf("%s: transition target %q is not a declared action", r.Pos, r.Next)
+				return nil, fmt.Errorf("%stransition target %q is not a declared action", posPrefix(r.Pos), r.Next)
 			}
 			for _, existing := range rulesByAction[blk.Action] {
 				if existing.Name == r.Event {
-					return nil, fmt.Errorf("%s: event %q already has a transition from %q", r.Pos, r.Event, blk.Action)
+					return nil, fmt.Errorf("%sevent %q already has a transition from %q", posPrefix(r.Pos), r.Event, blk.Action)
 				}
 			}
 			rulesByAction[blk.Action] = append(rulesByAction[blk.Action], Entry{Name: r.Event, Value: r.Next})
@@ -266,12 +279,12 @@ func BuildIR(ast *parser.Ast, registry *loader.TypeRegistry) (*IRResult, error) 
 func (b *irBuilder) addDecl(kind string, decl *parser.Decl) (*VarDecl, error) {
 	base, ok := lookupBase(b.registry, kind, string(decl.Type))
 	if !ok {
-		return nil, fmt.Errorf("%s: unknown %s type %q", decl.Pos, kind, decl.Type)
+		return nil, fmt.Errorf("%sunknown %s type %q", posPrefix(decl.Pos), kind, decl.Type)
 	}
 	if b.declared[decl.Name] {
-		return nil, fmt.Errorf("%s: %q is declared more than once", decl.Pos, decl.Name)
+		return nil, fmt.Errorf("%s%q is declared more than once", posPrefix(decl.Pos), decl.Name)
 	}
-	fields, err := b.resolveFields(decl.Pos.String(), base.Fields, base.OptFields, decl.Attrs)
+	fields, err := b.resolveFields(decl.Pos, base.Fields, base.OptFields, decl.Attrs)
 	if err != nil {
 		return nil, err
 	}
@@ -301,11 +314,11 @@ func lookupBase(registry *loader.TypeRegistry, kind, name string) (*loader.Base,
 // field when it was explicitly set or (for an optional field left unset)
 // when it declares a default value -- everything else is left to its Go
 // zero value by omission from the composite literal.
-func (b *irBuilder) resolveFields(pos string, required, optional []loader.Field, attrs []*parser.Attr) ([]Entry, error) {
+func (b *irBuilder) resolveFields(pos lexer.Position, required, optional []loader.Field, attrs []*parser.Attr) ([]Entry, error) {
 	given := map[string]*parser.Value{}
 	for _, a := range attrs {
 		if _, dup := given[a.Key]; dup {
-			return nil, fmt.Errorf("%s: field %q set more than once", pos, a.Key)
+			return nil, fmt.Errorf("%sfield %q set more than once", posPrefix(pos), a.Key)
 		}
 		given[a.Key] = a.Value
 	}
@@ -318,7 +331,7 @@ func (b *irBuilder) resolveFields(pos string, required, optional []loader.Field,
 	}
 	for key := range given {
 		if _, ok := known[key]; !ok {
-			return nil, fmt.Errorf("%s: unknown field %q", pos, key)
+			return nil, fmt.Errorf("%sunknown field %q", posPrefix(pos), key)
 		}
 	}
 
@@ -326,7 +339,7 @@ func (b *irBuilder) resolveFields(pos string, required, optional []loader.Field,
 	for _, f := range required {
 		v, ok := given[f.Name]
 		if !ok {
-			return nil, fmt.Errorf("%s: missing required field %q", pos, f.Name)
+			return nil, fmt.Errorf("%smissing required field %q", posPrefix(pos), f.Name)
 		}
 		expr, err := b.resolveValue(f.Type, v)
 		if err != nil {
@@ -380,7 +393,7 @@ func (b *irBuilder) resolveValue(want types.Type, v *parser.Value) (string, erro
 	case v.Array != nil:
 		elem, ok := sliceElem(want)
 		if !ok {
-			return "", fmt.Errorf("%s: array value given for non-array field", v.Pos)
+			return "", fmt.Errorf("%sarray value given for non-array field", posPrefix(v.Pos))
 		}
 		var sb strings.Builder
 		fmt.Fprintf(&sb, "%s{\n", b.q.typeString(want))
@@ -394,20 +407,20 @@ func (b *irBuilder) resolveValue(want types.Type, v *parser.Value) (string, erro
 		sb.WriteString("}")
 		return sb.String(), nil
 	case v.Inline != nil:
-		return b.resolveInline(want, v.Inline, v.Pos.String())
+		return b.resolveInline(want, v.Inline, v.Pos)
 	case v.Ident != nil:
-		return b.resolveIdent(want, *v.Ident, v.Pos.String())
+		return b.resolveIdent(want, *v.Ident, v.Pos)
 	default:
-		return "", fmt.Errorf("%s: empty value", v.Pos)
+		return "", fmt.Errorf("%sempty value", posPrefix(v.Pos))
 	}
 }
 
 // resolveInline renders ctor as a nested composite literal for a
 // registered Datatype, taking its address when want expects a pointer.
-func (b *irBuilder) resolveInline(want types.Type, ctor *parser.InlineCtor, pos string) (string, error) {
+func (b *irBuilder) resolveInline(want types.Type, ctor *parser.InlineCtor, pos lexer.Position) (string, error) {
 	base, ok := lookupBase(b.registry, "datatype", string(ctor.Type))
 	if !ok {
-		return "", fmt.Errorf("%s: unknown datatype %q", pos, ctor.Type)
+		return "", fmt.Errorf("%sunknown datatype %q", posPrefix(pos), ctor.Type)
 	}
 	fields, err := b.resolveFields(pos, base.Fields, base.OptFields, ctor.Args)
 	if err != nil {
@@ -430,7 +443,7 @@ func (b *irBuilder) resolveInline(want types.Type, ctor *parser.InlineCtor, pos 
 // constant of want's type, then (bare only; a cross-reference is always to
 // a name in this same generated file, never another package) as a
 // cross-reference to a previously declared top-level var.
-func (b *irBuilder) resolveIdent(want types.Type, ident, pos string) (string, error) {
+func (b *irBuilder) resolveIdent(want types.Type, ident string, pos lexer.Position) (string, error) {
 	if expr, ok := b.resolveEnumConst(want, ident); ok {
 		return expr, nil
 	}
@@ -441,7 +454,7 @@ func (b *irBuilder) resolveIdent(want types.Type, ident, pos string) (string, er
 		}
 		return expr, nil
 	}
-	return "", fmt.Errorf("%s: %q is neither a known enum value nor a previously declared name", pos, ident)
+	return "", fmt.Errorf("%s%q is neither a known enum value nor a previously declared name", posPrefix(pos), ident)
 }
 
 // resolveEnumConst looks up want's enum values in the registry (matching
