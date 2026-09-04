@@ -94,11 +94,7 @@ def _ok_client() -> FakeDslCompilerClient:
 
 async def test_compile_minimal_mission():
     result = await compile_mission(_minimal_request(), _ok_client(), _schema())
-    assert "mission" in result
-    mission = result["mission"]
-    assert mission["start_action_id"] == "take_off"
-    assert "take_off" in mission["actions"]
-    assert mission["actions"]["take_off"]["type_name"] == "TakeOff"
+    assert result == {"ok": True}
 
 
 async def test_compile_sends_qualified_type_name_and_typed_params():
@@ -154,9 +150,14 @@ async def test_compile_transitions():
         ],
         start_id="take_off",
     )
-    result = await compile_mission(req, _ok_client(), _schema())
-    assert result["mission"]["transitions"]["take_off"]["done"] == "patrol"
-    assert result["mission"]["transitions"]["patrol"]["done"] == "patrol"
+    client = _ok_client()
+    result = await compile_mission(req, client, _schema())
+    assert result == {"ok": True}
+    sent_edges = client.validate_calls[0].edges
+    assert [(e.source, e.event_id, e.target) for e in sent_edges] == [
+        ("take_off", "done", "patrol"),
+        ("patrol", "done", "patrol"),
+    ]
 
 
 async def test_compile_with_events():
@@ -185,9 +186,14 @@ async def test_compile_with_events():
         ],
         start_id="patrol",
     )
-    result = await compile_mission(req, _ok_client(), _schema())
-    assert "person_seen" in result["mission"]["events"]
-    assert result["mission"]["transitions"]["patrol"]["person_seen"] == "track"
+    client = _ok_client()
+    result = await compile_mission(req, client, _schema())
+    assert result == {"ok": True}
+    sent = client.validate_calls[0]
+    assert [e.instance_id for e in sent.events] == ["person_seen"]
+    assert [(e.source, e.event_id, e.target) for e in sent.edges] == [
+        ("patrol", "person_seen", "track")
+    ]
 
 
 async def test_compile_unknown_type_name_reports_go_error():

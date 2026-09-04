@@ -1068,33 +1068,7 @@ async def compile_mission(
             ]
         }
 
-    transitions: dict[str, dict[str, str]] = {}
-    for edge in request.edges:
-        transitions.setdefault(edge.source, {})[edge.event_id] = edge.target
-
-    return {
-        "mission": {
-            "actions": {
-                n.instance_id: {
-                    "type_name": n.type_name,
-                    "action_id": n.instance_id,
-                    "attributes": n.params,
-                }
-                for n in request.nodes
-            },
-            "events": {
-                e.instance_id: {
-                    "type_name": e.type_name,
-                    "event_id": e.instance_id,
-                    "attributes": e.params,
-                }
-                for e in request.events
-            },
-            "data": {},
-            "start_action_id": request.start_id,
-            "transitions": transitions,
-        }
-    }
+    return {"ok": True}
 
 
 @app.post("/api/compile")

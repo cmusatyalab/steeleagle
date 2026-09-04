@@ -394,7 +394,7 @@ function PlanPage({ theme }) {
     const [eventInstances, setEventInstances] = useState([]);
     const [startNodeId, setStartNodeId] = useState(null);
     const [schema, setSchema] = useState({ actions: {}, events: {}, enums: {} });
-    const [compiledMission, setCompiledMission] = useState(null);
+    const [missionCompiled, setMissionCompiled] = useState(false);
     const [features, setFeatures] = useState(JSON.stringify({ type: 'FeatureCollection', features: [] }));
     const [panelNodeId, setPanelNodeId] = useState(null);
     const panelNode = panelNodeId ? nodes.find(n => n.id === panelNodeId) : null;
@@ -547,9 +547,9 @@ function PlanPage({ theme }) {
                     data: { ...n.data, _hasError: errorIds.has(n.data.instance_id) },
                 })));
             } else {
-                setCompiledMission(result.mission);
+                setMissionCompiled(true);
                 setNodes(ns => ns.map(n => ({ ...n, data: { ...n.data, _hasError: false } })));
-                toast.current.show({ severity: 'success', summary: 'Compiled', detail: 'mission.json ready.' });
+                toast.current.show({ severity: 'success', summary: 'Compiled', detail: 'Mission is valid — ready to build.' });
             }
         } catch (e) {
             toast.current.show({ severity: 'error', summary: 'Compile failed', detail: e.message });
@@ -558,19 +558,8 @@ function PlanPage({ theme }) {
         }
     }
 
-    function handleDownload() {
-        if (!compiledMission) return;
-        const blob = new Blob([JSON.stringify(compiledMission, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'mission.json';
-        a.click();
-        URL.revokeObjectURL(url);
-    }
-
     async function handleDownloadBinary(arch) {
-        if (!compiledMission) return;
+        if (!missionCompiled) return;
         setBuilding(arch);
         try {
             const body = { ...buildMissionRequestBody(), arch, geojson: features };
@@ -635,7 +624,7 @@ function PlanPage({ theme }) {
         setEdges([]);
         setEventInstances([]);
         setStartNodeId(null);
-        setCompiledMission(null);
+        setMissionCompiled(false);
         setDslEdited(false);
         setDslText('');
     }
@@ -683,7 +672,7 @@ function PlanPage({ theme }) {
         setEdges(rfEdges);
         setEventInstances(parsed.events);
         setStartNodeId(parsed.start_id ?? (rfNodes[0]?.id ?? null));
-        setCompiledMission(null);
+        setMissionCompiled(false);
         // Canvas now reflects this parse; drop any stale frozen DSL-tab edit
         // so the tab goes back to mirroring liveDsl.
         setDslEdited(false);
@@ -838,20 +827,12 @@ function PlanPage({ theme }) {
                                 loading={compiling}
                                 onClick={handleCompile}
                             />
-                            <Button
-                                label="Download .json"
-                                icon="pi pi-download"
-                                size="small"
-                                outlined
-                                disabled={!compiledMission}
-                                onClick={handleDownload}
-                            />
                             <SplitButton
                                 label={building ? `Building ${building}…` : 'Download amd64'}
                                 icon="pi pi-download"
                                 size="small"
                                 outlined
-                                disabled={!compiledMission}
+                                disabled={!missionCompiled}
                                 loading={!!building}
                                 onClick={() => handleDownloadBinary('amd64')}
                                 model={buildArchOptions}
@@ -947,15 +928,6 @@ function PlanPage({ theme }) {
                                 disabled={nodes.length === 0}
                                 onClick={handleExportDsl}
                             />
-                            {compiledMission && (
-                                <Button
-                                    label="Download .json"
-                                    icon="pi pi-download"
-                                    size="small"
-                                    outlined
-                                    onClick={handleDownload}
-                                />
-                            )}
                             {dslEdited && (
                                 <>
                                     <Button
