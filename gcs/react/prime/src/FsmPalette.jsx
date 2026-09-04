@@ -18,7 +18,11 @@ function FsmPalette({ onSchemaLoaded }) {
 
     useEffect(() => {
         fetch(getApiUrl('/api/schema'))
-            .then(r => r.json())
+            .then(async r => {
+                const data = await r.json();
+                if (!r.ok) throw new Error(data.detail || `HTTP error! status: ${r.status}`);
+                return data;
+            })
             .then(data => {
                 setSchema(data);
                 onSchemaLoaded(data);
