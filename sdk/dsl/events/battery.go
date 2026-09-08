@@ -11,14 +11,16 @@ import (
 	"github.com/cmusatyalab/steeleagle/sdk/dsl"
 )
 
-// BatteryLow fires once the vehicle's battery percentage drops to or below
-// Threshold.
-type BatteryLow struct {
+// Battery fires once the vehicle's battery percentage satisfies Comparator
+// against Threshold (e.g. LessOrEqual for a low-battery warning,
+// GreaterOrEqual to detect a full charge).
+type Battery struct {
 	// #optional[20]
-	Threshold uint32 // battery percentage
+	Threshold  uint32 // battery percentage
+	Comparator Comparator
 }
 
-func (e *BatteryLow) Monitor(v sdk.Vehicle, m dsl.MissionData) (bool, error) {
+func (e *Battery) Monitor(v sdk.Vehicle, m dsl.MissionData) (bool, error) {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 	for {
@@ -38,11 +40,11 @@ func (e *BatteryLow) Monitor(v sdk.Vehicle, m dsl.MissionData) (bool, error) {
 			if err != nil {
 				continue
 			}
-			if pct <= e.Threshold {
+			if compareUint32(pct, e.Threshold, e.Comparator) {
 				return true, nil
 			}
 		}
 	}
 }
 
-var _ dsl.Event = &BatteryLow{}
+var _ dsl.Event = &Battery{}
