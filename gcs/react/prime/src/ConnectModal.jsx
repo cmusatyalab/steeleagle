@@ -6,7 +6,7 @@ import { Dropdown } from 'primereact/dropdown';
 import FieldInput from './FieldInput.jsx';
 
 function NewEventForm({ schema, onAdd }) {
-    const eventTypes = Object.keys(schema.events || {});
+    const eventTypes = Object.keys(schema.events || {}).sort();
     const [typeName, setTypeName] = useState(eventTypes[0] ?? '');
     const [instanceId, setInstanceId] = useState('');
     const [params, setParams] = useState({});

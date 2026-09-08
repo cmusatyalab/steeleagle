@@ -49,7 +49,7 @@ function FsmPalette({ onSchemaLoaded }) {
                 <i className={`pi pi-${actionsOpen ? 'chevron-down' : 'chevron-right'}`} style={{ fontSize: 10 }} />
                 <span style={{ fontSize: 12, color: 'var(--palette-header)', textTransform: 'uppercase', letterSpacing: 1 }}>Actions</span>
             </div>
-            {actionsOpen && Object.keys(schema.actions).map(typeName => (
+            {actionsOpen && Object.keys(schema.actions).sort().map(typeName => (
                 <div
                     key={typeName}
                     draggable
