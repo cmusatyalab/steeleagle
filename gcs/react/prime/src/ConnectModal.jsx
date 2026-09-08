@@ -49,6 +49,7 @@ function NewEventForm({ schema, onAdd }) {
                         field={f}
                         value={params[f.name]}
                         onChange={val => updateParam(f.name, val)}
+                        enums={schema.enums}
                     />
                 </div>
             ))}
