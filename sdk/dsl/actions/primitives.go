@@ -34,6 +34,17 @@ func (i *Land) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 
 var _ dsl.Action = &Land{}
 
+// Hold orders the vehicle to hold/loiter at its current position,
+// cancelling any ongoing movement command.
+type Hold struct{}
+
+func (i *Hold) Execute(v sdk.Vehicle, m dsl.MissionData) error {
+	_, err := v.Hold().Wait()
+	return err
+}
+
+var _ dsl.Action = &Hold{}
+
 // ReturnToHome orders the vehicle to return to its start position.
 type ReturnToHome struct {
 	// #optional
@@ -80,12 +91,12 @@ func (i *GoToGlobalPosition) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 	// #exclude-ifndef services/driver/SetGlobalPositionTargetRequest/angular_speed
 	options = append(options, opt.WithAngularSpeed[opt.SetGlobalPositionTargetOption](i.AngularSpeed))
 	_, err := v.SetGlobalPositionTarget(
-        i.Position.Latitude,
-        i.Position.Longitude,
-        i.Position.Altitude,
-        i.Position.Heading,
-        options...,
-    ).Wait()
+		i.Position.Latitude,
+		i.Position.Longitude,
+		i.Position.Altitude,
+		i.Position.Heading,
+		options...,
+	).Wait()
 	return err
 }
 
@@ -111,12 +122,12 @@ func (i *GoToRelativePosition) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 	options = append(options, opt.WithAngularSpeed[opt.SetRelativePositionTargetOption](i.AngularSpeed))
 	options = append(options, opt.WithReferenceFrame[opt.SetRelativePositionTargetOption](i.Frame))
 	_, err := v.SetRelativePositionTarget(
-        i.Position.X,
-        i.Position.Y,
-        i.Position.Z,
-        i.Position.Angle,
-        options...,
-    ).Wait()
+		i.Position.X,
+		i.Position.Y,
+		i.Position.Z,
+		i.Position.Angle,
+		options...,
+	).Wait()
 	return err
 }
 
@@ -137,11 +148,11 @@ func (i *SetGimbalPose) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 	options = append(options, opt.WithAngleMode[opt.SetGimbalAngleTargetOption](i.AngleMode))
 	options = append(options, opt.WithReferenceFrame[opt.SetGimbalAngleTargetOption](i.Frame))
 	_, err := v.SetGimbalAngleTarget(
-        i.Pose.Pitch,
-        i.Pose.Roll,
-        i.Pose.Yaw,
-        options...,
-    ).Wait()
+		i.Pose.Pitch,
+		i.Pose.Roll,
+		i.Pose.Yaw,
+		options...,
+	).Wait()
 	return err
 }
 
