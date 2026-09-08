@@ -1,38 +1,37 @@
-import { useRef, useState, useMemo } from 'react';
-import { Knob } from 'primereact/knob';
+import { useState, useMemo, useCallback } from 'react';
 import { Button } from 'primereact/button';
-import { ToggleButton } from 'primereact/togglebutton';
-import { Message } from 'primereact/message';
 import { Chip } from 'primereact/chip';
-import { OverlayPanel } from 'primereact/overlaypanel';
 import { Panel } from 'primereact/panel';
 import { Toolbar } from 'primereact/toolbar';
 import { ButtonGroup } from 'primereact/buttongroup';
 import { Tooltip } from 'primereact/tooltip';
 import { FileUpload } from 'primereact/fileupload';
-import { MultiSelect } from 'primereact/multiselect';
-import { Dropdown } from 'primereact/dropdown';
 import { Image } from 'primereact/image';
-import { DataTable } from 'primereact/datatable';
-import { Column } from 'primereact/column';
-import { Divider } from 'primereact/divider';
+import { Dropdown } from 'primereact/dropdown';
 import React from 'react';
 import { getApiUrl } from './urls.js';
-import Status from './Status.jsx';
+import VehicleGrid from './VehicleGrid.jsx';
 import Mapbox from './Mapbox.jsx';
-import { CONTROL_MAPPINGS } from './controlMappings.js';
+import { toggleVehicleInSquad, recallControlGroup, squadMatchesGroup } from './squadUtils.js';
+import { sortVehiclesForDisplay, vehicleStatus, vehicleStatusColor, vehicleStatusRailFill, isVehicleDisconnected } from './mapUtils.js';
 
 const cancelOptions = { icon: 'pi pi-fw pi-times', iconOnly: true, className: 'custom-cancel-btn p-button-danger' };
 const chooseOptions = { label: 'Select...', icon: 'pi pi-fw pi-file', iconOnly: false, className: 'custom-choose-btn p-button-primary' };
 const uploadOptions = { icon: 'pi pi-fw pi-cloud-upload', iconOnly: true, className: 'custom-upload-btn p-button-info' };
+const controlGroupDigits = ['1', '2', '3'];
 
-function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, setTracking, toast, onCommand,
-  manualControl, setManualControl, squadList, setSquadList, basePlanarVelocity, setBasePlanarVelocity,
-  baseAngularVelocity, setBaseAngularVelocity, gamepadDeadzone, setGamepadDeadzone, takeOffAltitude, setTakeOffAltitude,
-  showDetections, onToggleDetections, gimbalVelocity, setGimbalVelocity }) {
+// Shared between the map and the video panel next to it so they're always
+// the same height (passed to Mapbox as mapHeight, overriding its own
+// '20rem' default) -- bumped up from that default now that removing the
+// Swarm Controls Panel wrapper below frees up the vertical room for it.
+const videoPanelHeight = '26rem';
+
+function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, setTracking,
+  showDetections, onToggleDetections, toast, onCommand,
+  setManualControl, squadList, setSquadList, takeOffAltitude, controlGroups }) {
   const [mapPanelSize] = useState(0);
-  const op = useRef(null);
-  const op2 = useRef(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const sortedVehicles = useMemo(() => sortVehiclesForDisplay(vehicles, squadList), [vehicles, squadList]);
   const onProgress = () => {
     toast.current.show({ severity: 'info', summary: 'In Progress', detail: 'Uploading files...' });
   };
@@ -131,148 +130,157 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
   ), [uploadHandler, onMissionStart, onProgress, onUploadComplete]);
 
   const controlButtons = useMemo(() => (
-    <>
-      <div className="flex flex-column justify-content-end gap-1">
-        <ButtonGroup className="w-full md:w-20rem flex align-content-center justify-content-center">
-          <Button className="w-6" outlined size="small" icon="pi pi-check-circle" label="Arm" onClick={() => onCommand({ arm: true })} />
-          <Button className="w-6" outlined size="small" iconPos="right" icon="pi pi-times-circle " label="Disarm" onClick={() => onCommand({ arm: false })} />
-        </ButtonGroup>
-        <ButtonGroup className="w-full md:w-20rem flex align-content-center justify-content-center">
-          <Button className="w-6" outlined size="small" icon="pi pi-arrow-up" label="Takeoff" onClick={() => onCommand({ takeoff: takeOffAltitude })} />
-          <Button className="w-6" outlined size="small" iconPos="right" icon="pi pi-arrow-down" label="Land" onClick={() => onCommand({ land: true })} />
-        </ButtonGroup>
-        <ButtonGroup className="w-full md:w-20rem flex align-content-center justify-content-center">
-          <Button className="w-6" outlined size="small" icon="pi pi-home" label="RTH" onClick={() => onCommand({ rth: true })} />
-          <Button className="w-6" outlined size="small" iconPos="right" icon="pi pi-stop-circle" label="Hold" onClick={() => onCommand({ hold: true })} />
-        </ButtonGroup>
-      </div>
-    </>
+    <div className="flex flex-row flex-wrap gap-2">
+      <ButtonGroup>
+        <Button outlined size="small" icon="pi pi-check-circle" label="Arm" onClick={() => onCommand({ arm: true })} />
+        <Button outlined size="small" iconPos="right" icon="pi pi-times-circle" label="Disarm" onClick={() => onCommand({ arm: false })} />
+      </ButtonGroup>
+      <ButtonGroup>
+        <Button outlined size="small" icon="pi pi-arrow-up" label="Takeoff" onClick={() => onCommand({ takeoff: takeOffAltitude })} />
+        <Button outlined size="small" iconPos="right" icon="pi pi-arrow-down" label="Land" onClick={() => onCommand({ land: true })} />
+      </ButtonGroup>
+      <ButtonGroup>
+        <Button outlined size="small" icon="pi pi-home" label="RTH" onClick={() => onCommand({ rth: true })} />
+        <Button outlined size="small" iconPos="right" icon="pi pi-stop-circle" label="Hold" onClick={() => onCommand({ hold: true })} />
+      </ButtonGroup>
+    </div>
   ), [onCommand, takeOffAltitude]);
 
   const vehicleNames = useMemo(() => vehicles.map(v => v.name), [vehicles]);
+  const connectedVehicleNames = useMemo(
+    () => vehicles.filter(v => !isVehicleDisconnected(v)).map(v => v.name),
+    [vehicles]
+  );
 
-  const squadComponent = useMemo(() => (
-    <>
-      <MultiSelect className="flex justify-content-center w-full md:w-20rem" value={squadList} onChange={(e) => setSquadList(e.value)} options={vehicleNames} useOptionAsValue display="chip"
-        placeholder="Squad Selection" maxSelectedLabels={2} selectedItemsLabel="{0} vehicles selected." />
-    </>
-  ), [squadList, setSquadList, vehicleNames]);
+  const onSelectAllSquad = useCallback(() => setSquadList([...connectedVehicleNames]), [connectedVehicleNames, setSquadList]);
+  const onClearSquad = useCallback(() => setSquadList([]), [setSquadList]);
+  const onRecallGroup = useCallback((digit) => setSquadList(recallControlGroup(controlGroups, digit)), [controlGroups, setSquadList]);
 
-  const overlayContent = useMemo(() => (
-    <>
-      <div className="flex flex-row gap-2">
-        <div className="flex flex-column flex-wrap align-content-center m-2">
-          <Knob className="flex align-items-center justify-content-center" value={basePlanarVelocity} onChange={(e) => setBasePlanarVelocity(e.value)} min={1} max={10} valueTemplate={'{value}m/s'} />
-          <Chip className="flex align-items-center justify-content-center" label="Base Planar Velocity" icon="pi pi-sliders-v" />
+  const onToggleVehicle = (name) => setSquadList((prev) => toggleVehicleInSquad(prev, name));
+
+  const squadHeaderTemplate = (options) => (
+    <div className={`${options.className} flex-column align-items-stretch`}>
+      <div className="flex align-items-center justify-content-between mb-2">
+        <div className="flex align-items-center gap-1">
+          <Button size="small" rounded text label="" icon="pi pi-chevron-left" tooltip="Collapse" tooltipOptions={{ position: 'bottom' }} onClick={() => setSidebarCollapsed(true)} aria-label="Collapse squad list" />
+          <span className="font-bold">Squad</span>
         </div>
-        <div className="flex flex-column flex-wrap align-content-center m-2">
-          <Knob className="flex align-items-center justify-content-center" value={baseAngularVelocity} onChange={(e) => setBaseAngularVelocity(e.value)} min={15} max={180} step={15} valueTemplate={'{value}°/s'} />
-          <Chip className="flex align-items-center justify-content-center" label="Base Angular Velocity" icon="pi pi-chart-pie" />
-        </div>
-        <div className="flex flex-column flex-wrap align-content-center m-2">
-          <Knob className="flex align-items-center justify-content-center" value={gimbalVelocity} onChange={(e) => setGimbalVelocity(e.value)} min={5} max={45} step={5} valueTemplate={'{value}°/s'} />
-          <Chip className="flex align-items-center justify-content-center" label="Gimbal Velocity" icon="pi pi-expand" />
-        </div>
+        <Chip label={`${(squadList ?? []).length}/${vehicleNames.length} selected`} icon="pi pi-users" />
       </div>
-      <div className="flex flex-row gap-2">
-        <div className="flex flex-column flex-wrap align-content-center m-2">
-          <Knob className="flex align-items-center justify-content-center" value={gamepadDeadzone} onChange={(e) => setGamepadDeadzone(e.value)} min={5} max={50} step={5} valueTemplate={'{value}%'} />
-          <Chip className="flex align-items-center justify-content-center" label="Gamepad Deadzone" icon="pi pi-bullseye" />
+      <div className="flex align-items-center justify-content-between flex-wrap gap-2">
+        <div className="flex align-items-center gap-1">
+          <Button size="small" rounded text label="" icon="pi pi-check-square" tooltip="Select All" tooltipOptions={{ position: 'bottom' }} onClick={onSelectAllSquad} aria-label="Select All" />
+          <Button size="small" rounded text label="" icon="pi pi-times" tooltip="Clear" tooltipOptions={{ position: 'bottom' }} onClick={onClearSquad} aria-label="Clear" />
         </div>
-        <div className="flex flex-column flex-wrap align-content-center m-2">
-          <Knob className="flex align-items-center justify-content-center" value={takeOffAltitude} onChange={(e) => setTakeOffAltitude(e.value)} min={1} max={10} step={1} valueTemplate={'{value}m'} />
-          <Chip className="flex align-items-center justify-content-center" label="Takeoff Altitude" icon="pi pi-sort-numeric-up-alt" />
-        </div>
+        <ButtonGroup>
+          {controlGroupDigits.map((digit) => {
+            const hasVehicles = controlGroups[digit]?.length > 0;
+            const isActive = hasVehicles && squadMatchesGroup(squadList, controlGroups, digit);
+            return (
+            <Button
+              key={digit}
+              size="small"
+              outlined={!hasVehicles}
+              severity={!hasVehicles ? 'secondary' : isActive ? 'success' : undefined}
+              label={digit}
+              tooltip={`Group ${digit}: ${(controlGroups[digit] ?? []).length} vehicles${isActive ? ' (currently selected)' : ''}`}
+              tooltipOptions={{ position: 'bottom' }}
+              onClick={() => onRecallGroup(digit)}
+            />
+            );
+          })}
+        </ButtonGroup>
       </div>
-      <div className="flex flex-row gap-2">
-        <div className="flex flex-column flex-wrap justify-content-center align-content-center m-2">
-          <ToggleButton onLabel="Tracking On" offLabel="Tracking Off" onIcon="pi pi-bullseye" offIcon="pi pi-map"
-            checked={tracking} onChange={(e) => setTracking(e.value)} className="flex" tooltip="When enabled, the map will recenter on the selected vehicle." />
-        </div>
-        <div className="flex flex-column flex-wrap justify-content-center align-content-center m-2">
-          <ToggleButton onLabel="Show Detections" offLabel="Hide Detections" onIcon="pi pi-expand" offIcon="pi pi-expand"
-            checked={showDetections} onChange={(e) => onToggleDetections(e.value)} className="flex" tooltip="When enabled, the video stream will show detection bounding boxes." />
-        </div>
-
-
-      </div>
-      <Divider />
-      <div className="flex flex-column m-2">
-        <span className="font-bold mb-2">Control Mappings</span>
-        <DataTable value={CONTROL_MAPPINGS} size="small" scrollable scrollHeight="300px">
-          <Column field="action" header="Action" />
-          <Column field="keyboard" header="Keyboard" />
-          <Column field="gamepad" header="Gamepad" />
-        </DataTable>
-      </div>
-    </>
-
-  ), [baseAngularVelocity, setBaseAngularVelocity, basePlanarVelocity, setBasePlanarVelocity,
-    gamepadDeadzone, setGamepadDeadzone, tracking, setTracking, takeOffAltitude, setTakeOffAltitude,
-    showDetections, onToggleDetections, gimbalVelocity, setGimbalVelocity]);
-
-  const swarmHeaderTemplate = (options) => {
-    const className = `${options.className} justify-content-space-between`;
-
-    return (
-      <div className={className}>
-        <div className="flex align-items-center gap-2">
-          <span className="font-bold">Swarm Controls</span>
-        </div>
-        <div className="flex align-items-center gap-2" >
-          {manualControl && <Message severity="success" text="Manual Control Enabled" />}
-          {!manualControl && <Message severity="error" text="Manual Control Disabled" />}
-          {squadComponent}
-          <Button size="small" rounded text label="" icon="pi pi-cog" onClick={(e) => op2.current.toggle(e)} />
-          <OverlayPanel ref={op2}><span>Swarm Settings</span></OverlayPanel>
-          {options.togglerElement}
-        </div>
-      </div>
-    );
-  };
-  const headerTemplate = (options) => {
-    const className = `${options.className} justify-content-space-between`;
-
-    return (
-      <div className={className}>
-        <div className="flex align-items-center gap-2">
-          <span className="font-bold">Vehicle Details</span>
-        </div>
-        <div className="flex align-items-center gap-2">
-          <Dropdown value={selectedVehicle} checkmark={true} onChange={(e) => setSelectedVehicle(e.value)} options={vehicleNames} useOptionAsValue optionLabel="name"
-            placeholder="Select a Vehicle" className="w-full md:w-14rem" />
-          <Button size="small" rounded text label="" icon="pi pi-cog" onClick={(e) => op.current.toggle(e)} />
-          <OverlayPanel ref={op}>{overlayContent}</OverlayPanel>
-          {options.togglerElement}
-        </div>
-      </div>
-    );
-  };
-
-  const selectedVehicleData = useMemo(
-    () => vehicles.find(v => v.name === selectedVehicle),
-    [vehicles, selectedVehicle]
+    </div>
   );
 
   return (
     <>
-      <div className="flex flex-column">
-        <Panel headerTemplate={headerTemplate} className="h-full" >
-          <div className="grid m-0">
-            <div className="col-12 lg:col-5 p-2">
-              <Mapbox selectedVehicle={selectedVehicle} vehicles={vehicles} mapPanelSize={mapPanelSize} tracking={tracking} />
+      <div className="flex flex-column lg:flex-row m-0">
+        <div
+          className={sidebarCollapsed ? "p-2" : "p-2 w-full lg:w-3"}
+          style={sidebarCollapsed ? { width: '56px', flexShrink: 0 } : undefined}
+        >
+          {sidebarCollapsed ? (
+            <div className="flex flex-column align-items-center gap-3 pt-2">
+              <Button size="small" rounded text label="" icon="pi pi-chevron-right" tooltip="Expand" tooltipOptions={{ position: 'right' }} onClick={() => setSidebarCollapsed(false)} aria-label="Expand squad list" />
+              {sortedVehicles.map((v) => {
+                const disconnected = isVehicleDisconnected(v);
+                const status = vehicleStatus(disconnected, !!(squadList && squadList.includes(v.name)));
+                return (
+                  <span
+                    key={v.name}
+                    title={`${v.name} (${status})`}
+                    onClick={disconnected ? undefined : () => onToggleVehicle(v.name)}
+                    style={{
+                      width: '12px', height: '12px', borderRadius: '50%',
+                      cursor: disconnected ? 'not-allowed' : 'pointer',
+                      backgroundColor: vehicleStatusRailFill(status),
+                      border: `2px solid ${vehicleStatusColor(status)}`,
+                      opacity: disconnected ? 0.6 : 1,
+                    }}
+                  />
+                );
+              })}
             </div>
-            <div className="col-12 lg:col-4 p-2">
-              <Image height="100%" width="100%" pt={{ image: { id: 'image_stream' } }} src="nostream.png" />
+          ) : (
+            <Panel headerTemplate={squadHeaderTemplate} className="h-full">
+              <div className="grid m-0" style={{ maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
+                <VehicleGrid vehicles={sortedVehicles} selectable squadList={squadList} onToggle={onToggleVehicle} cardColumnClass="col-12 p-2" />
+              </div>
+            </Panel>
+          )}
+        </div>
+        <div className="p-2 flex-1" style={{ minWidth: 0 }}>
+          <div className="flex flex-column">
+            <div className="flex align-items-center gap-2 mb-2 px-2 py-1 border-round" style={{ backgroundColor: 'var(--surface-card)', border: '1px solid var(--surface-border)' }}>
+              {/* Left/center/right flex-1 sections roughly align with the map
+                  and video panels below: the left slot is reserved for a
+                  future map-tileset dropdown, not built yet. */}
+              <div className="flex-1" />
+              <div className="flex align-items-center gap-1">
+                <Button
+                  size="small"
+                  outlined={!tracking}
+                  severity={tracking ? undefined : 'secondary'}
+                  icon={tracking ? 'pi pi-bullseye' : 'pi pi-map'}
+                  tooltip={`Tracking ${tracking ? 'On' : 'Off'}: recenters the map on the selected vehicle`}
+                  tooltipOptions={{ position: 'bottom' }}
+                  onClick={() => setTracking(!tracking)}
+                  aria-label="Toggle tracking"
+                />
+                <Button
+                  size="small"
+                  outlined={!showDetections}
+                  severity={showDetections ? undefined : 'secondary'}
+                  icon={showDetections ? 'pi pi-eye' : 'pi pi-eye-slash'}
+                  tooltip={`Detections ${showDetections ? 'Shown' : 'Hidden'}: toggles bounding boxes on the video stream`}
+                  tooltipOptions={{ position: 'bottom' }}
+                  onClick={() => onToggleDetections(!showDetections)}
+                  aria-label="Toggle show detections"
+                />
+              </div>
+              <div className="flex-1 flex justify-content-end">
+                <Dropdown value={selectedVehicle} checkmark={true} onChange={(e) => setSelectedVehicle(e.value)} options={vehicleNames} useOptionAsValue optionLabel="name"
+                  placeholder="Select Video Feed" className="w-full md:w-14rem" />
+              </div>
             </div>
-            <div className="col-12 lg:col-3 p-2">
-              <Status vehicle={selectedVehicleData} />
+            <div className="grid m-0">
+              <div className="col-12 lg:col-6 p-2">
+                <Mapbox selectedVehicle={selectedVehicle} vehicles={vehicles} mapPanelSize={mapPanelSize} tracking={tracking}
+                  mapHeight={videoPanelHeight} squadList={squadList} onToggleVehicle={onToggleVehicle} controlGroups={controlGroups} />
+              </div>
+              <div className="col-12 lg:col-6 p-2">
+                <div style={{ height: videoPanelHeight, backgroundColor: '#000' }}>
+                  <Image imageStyle={{ width: '100%', height: '100%', objectFit: 'contain' }} pt={{ image: { id: 'image_stream' } }} src="nostream.png" />
+                </div>
+              </div>
+            </div>
+            <div className="my-2" style={{ overflowX: 'auto' }}>
+              <Toolbar className="w-full flex-nowrap" start={controlButtons} end={missonControls} />
             </div>
           </div>
-        </Panel>
-        <Panel headerTemplate={swarmHeaderTemplate} className="my-2 h-full">
-          <Toolbar className="w-full" start={controlButtons} end={missonControls} />
-        </Panel>
+        </div>
       </div>
     </>
   );

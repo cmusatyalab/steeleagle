@@ -474,64 +474,71 @@ async def get_objects() -> list[Detection]:
     return data
 
 
+def _build_vehicle(drone_name: str, fields: dict, telem: list) -> Vehicle:
+    """Build a Vehicle from its Redis hash fields and latest telemetry entry.
+
+    Raises KeyError if a required Redis field is missing (including no
+    telemetry entry at all), or ValueError -- pydantic's ValidationError is
+    a ValueError subclass, so this also covers a malformed/out-of-range
+    value such as an out-of-range lat/long sentinel (e.g. 500, 500) from a
+    vehicle with no GPS fix. Callers should catch both and skip just this
+    vehicle rather than failing the whole endpoint.
+    """
+    if not telem:
+        raise KeyError("telemetry")
+    t = telem[0][1]
+    home_loc = Location(
+        lat=fields["position_info.home_lat"],
+        long=fields["position_info.home_long"],
+        alt=fields["position_info.home_alt"],
+    )
+    current = Location(
+        lat=t["latitude"],
+        long=t["longitude"],
+        alt=max(0, float(t["rel_altitude"])),
+    )
+    vel = Velocity(
+        x_vel=t["v_body_forward"],
+        y_vel=t["v_body_lateral"],
+        z_vel=t["v_body_altitude"],
+        angular_vel=t["v_body_angular"],
+    )
+    return Vehicle(
+        name=drone_name,
+        model=fields["model"],
+        battery=t["battery"],
+        sats=t["sats"],
+        mag=fields["mag"],
+        last_updated=round(time.time() - float(fields["last_seen"]), 2),
+        home=home_loc,
+        current=current,
+        bearing=t["bearing"],
+        velocity=vel,
+    )
+
+
 @app.get("/api/remote/vehicles")
 async def get_vehicles() -> list[Vehicle]:
     data = []
-    current = Location(lat=42, long=-79, alt=0)
-    bearing = 0
     if backend_key is None:
         conn = backend_connections[list(backend_connections)[0]].redis_connection
     else:
         conn = backend_connections[backend_key].redis_connection
     red = conn
     for k in red.keys("vehicle:*"):
-        fields = red.hgetall(k)
         drone_name = k.split(":")[-1]
-        fields["name"] = drone_name
+        fields = red.hgetall(k)
+        telem = red.xrevrange(f"telemetry:{drone_name}", "+", "-", 1)
         try:
-            home_loc = Location(
-                lat=fields["position_info.home_lat"],
-                long=fields["position_info.home_long"],
-                alt=fields["position_info.home_alt"],
-            )
-            if red.exists(f"telemetry:{drone_name}"):
-                telem = red.xrevrange(f"telemetry:{drone_name}", "+", "-", 1)
-                for item in telem:
-                    t = item[1]
-                    current = Location(
-                        lat=t["latitude"],
-                        long=t["longitude"],
-                        alt=max(0, float(t["rel_altitude"])),
-                    )
-                    bearing = t["bearing"]
-                    vel = Velocity(
-                        x_vel=t["v_body_forward"],
-                        y_vel=t["v_body_lateral"],
-                        z_vel=t["v_body_altitude"],
-                        angular_vel=t["v_body_angular"],
-                    )
-            data.append(
-                Vehicle(
-                    name=fields["name"],
-                    model=fields["model"],
-                    battery=t["battery"],
-                    sats=t["sats"],
-                    mag=fields["mag"],
-                    last_updated=round(time.time() - float(fields["last_seen"]), 2),
-                    home=home_loc,
-                    current=current,
-                    bearing=bearing,
-                    velocity=vel,
-                )
-            )
+            data.append(_build_vehicle(drone_name, fields, telem))
         except KeyError as e:
             logger.error(
-                f"Vehicle '{drone_name}' is missing required field {e} in Redis"
+                f"Vehicle '{drone_name}' is missing required field {e} in Redis, skipping"
             )
-            raise HTTPException(
-                status_code=502,
-                detail=f"Vehicle '{drone_name}' is missing required field {e}",
-            ) from e
+        except ValueError as e:
+            logger.error(
+                f"Vehicle '{drone_name}' has invalid telemetry data, skipping: {e}"
+            )
 
     return data
 

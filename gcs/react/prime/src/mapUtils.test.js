@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature } from './mapUtils.js';
+import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature, vehicleColor, vehicleSpeed, isVehicleDisconnected, vehicleStatus, vehicleStatusColor, vehicleStatusRailFill, vehicleStatusMapColor, vehicleStatusTextColor, sortVehiclesForDisplay } from './mapUtils.js';
 
 const SAMPLE_FC = {
     type: 'FeatureCollection',
@@ -126,5 +126,156 @@ describe('bboxFromFeature', () => {
         expect(bbox[1]).toBeCloseTo(39.999);
         expect(bbox[2]).toBeCloseTo(-79.999);
         expect(bbox[3]).toBeCloseTo(40.001);
+    });
+});
+
+describe('vehicleColor', () => {
+    it('returns a hex color string', () => {
+        expect(vehicleColor('vehicle-1')).toMatch(/^#[0-9a-f]{6}$/i);
+    });
+
+    it('is deterministic for the same name', () => {
+        expect(vehicleColor('vehicle-1')).toBe(vehicleColor('vehicle-1'));
+    });
+
+    it('differs for different names', () => {
+        expect(vehicleColor('vehicle-1')).not.toBe(vehicleColor('vehicle-2'));
+    });
+});
+
+describe('vehicleSpeed', () => {
+    it('returns 0 for a stationary vehicle', () => {
+        expect(vehicleSpeed({ x_vel: 0, y_vel: 0, z_vel: 0 })).toBe(0);
+    });
+
+    it('returns the magnitude for a single-axis velocity', () => {
+        expect(vehicleSpeed({ x_vel: 3, y_vel: 0, z_vel: 0 })).toBe(3);
+    });
+
+    it('computes the Euclidean norm across all three axes', () => {
+        // 3-4-12 generalizes the 3-4-5 triple to three dimensions: sqrt(9+16+144) = 13
+        expect(vehicleSpeed({ x_vel: 3, y_vel: 4, z_vel: 12 })).toBe(13);
+    });
+
+    it('treats negative components the same as positive (speed has no direction)', () => {
+        expect(vehicleSpeed({ x_vel: -3, y_vel: -4, z_vel: 0 })).toBe(5);
+    });
+
+    it('returns 0 for a null or undefined velocity', () => {
+        expect(vehicleSpeed(null)).toBe(0);
+        expect(vehicleSpeed(undefined)).toBe(0);
+    });
+});
+
+describe('isVehicleDisconnected', () => {
+    it('is false when telemetry was just seen', () => {
+        expect(isVehicleDisconnected({ last_updated: 0 })).toBe(false);
+    });
+
+    it('is false right at the boundary', () => {
+        expect(isVehicleDisconnected({ last_updated: 5 })).toBe(false);
+    });
+
+    it('is true once telemetry is stale beyond the boundary', () => {
+        expect(isVehicleDisconnected({ last_updated: 5.01 })).toBe(true);
+    });
+});
+
+describe('vehicleStatus', () => {
+    it('is "offline" when disconnected, regardless of selection', () => {
+        expect(vehicleStatus(true, false)).toBe('offline');
+        expect(vehicleStatus(true, true)).toBe('offline');
+    });
+
+    it('is "selected" when connected and selected', () => {
+        expect(vehicleStatus(false, true)).toBe('selected');
+    });
+
+    it('is "online" when connected and not selected', () => {
+        expect(vehicleStatus(false, false)).toBe('online');
+    });
+});
+
+describe('vehicleStatusColor', () => {
+    it('returns a distinct color per status', () => {
+        const colors = ['offline', 'online', 'selected'].map(vehicleStatusColor);
+        expect(new Set(colors).size).toBe(3);
+    });
+
+    it('uses red for offline, blue for online, and (unchanged) green for selected', () => {
+        expect(vehicleStatusColor('offline')).toBe('var(--red-500)');
+        expect(vehicleStatusColor('online')).toBe('var(--blue-500)');
+        expect(vehicleStatusColor('selected')).toBe('var(--green-500)');
+    });
+});
+
+describe('vehicleStatusRailFill', () => {
+    it('keeps a dim grey fill for offline so it still reads as inactive, not just red', () => {
+        expect(vehicleStatusRailFill('offline')).toBe('var(--gray-500)');
+    });
+
+    it('matches vehicleStatusColor for online and selected', () => {
+        expect(vehicleStatusRailFill('online')).toBe(vehicleStatusColor('online'));
+        expect(vehicleStatusRailFill('selected')).toBe(vehicleStatusColor('selected'));
+    });
+});
+
+describe('vehicleStatusMapColor', () => {
+    it('returns a distinct color per status', () => {
+        const colors = ['offline', 'online', 'selected'].map(vehicleStatusMapColor);
+        expect(new Set(colors).size).toBe(3);
+    });
+
+    it('matches vehicleStatusColor\'s blue for "online", so a vehicle\'s marker and card read as the same color', () => {
+        expect(vehicleStatusMapColor('online')).toBe(vehicleStatusColor('online'));
+    });
+
+    it('uses a muted grey (not red) for "offline" -- red markers scattered across the map read as too busy', () => {
+        expect(vehicleStatusMapColor('offline')).toBe('var(--gray-500)');
+    });
+});
+
+describe('vehicleStatusTextColor', () => {
+    it('returns a distinct color per status', () => {
+        const colors = ['offline', 'online', 'selected'].map(vehicleStatusTextColor);
+        expect(new Set(colors).size).toBe(3);
+    });
+
+    it('uses white for the selected status, for contrast against its green marker', () => {
+        expect(vehicleStatusTextColor('selected')).toBe('#ffffff');
+    });
+
+    it('stays a neutral grey scale for offline/online, independent of the blue marker chevron', () => {
+        expect(vehicleStatusTextColor('offline')).toBe('var(--gray-500)');
+        expect(vehicleStatusTextColor('online')).toBe('var(--gray-200)');
+        expect(vehicleStatusTextColor('online')).not.toBe(vehicleStatusMapColor('online'));
+    });
+});
+
+describe('sortVehiclesForDisplay', () => {
+    const v = (name, last_updated) => ({ name, last_updated });
+
+    it('puts selected vehicles before online, and online before offline', () => {
+        const vehicles = [v('offline-1', 10), v('online-1', 0), v('selected-1', 0)];
+        const result = sortVehiclesForDisplay(vehicles, ['selected-1']);
+        expect(result.map((x) => x.name)).toEqual(['selected-1', 'online-1', 'offline-1']);
+    });
+
+    it('sorts alphabetically by name within the same status group', () => {
+        const vehicles = [v('bravo', 0), v('alpha', 0), v('charlie', 0)];
+        const result = sortVehiclesForDisplay(vehicles, []);
+        expect(result.map((x) => x.name)).toEqual(['alpha', 'bravo', 'charlie']);
+    });
+
+    it('treats a null squadList as no selection', () => {
+        const vehicles = [v('a', 0), v('b', 0)];
+        const result = sortVehiclesForDisplay(vehicles, null);
+        expect(result.map((x) => x.name)).toEqual(['a', 'b']);
+    });
+
+    it('does not mutate the input array', () => {
+        const vehicles = [v('b', 0), v('a', 0)];
+        sortVehiclesForDisplay(vehicles, []);
+        expect(vehicles.map((x) => x.name)).toEqual(['b', 'a']);
     });
 });

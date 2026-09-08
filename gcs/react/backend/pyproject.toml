@@ -19,6 +19,7 @@ dependencies = [
     "opencv-python",
     "numpy",
     "colorhash",
+    "randomname",
     "requests",
 ]
 

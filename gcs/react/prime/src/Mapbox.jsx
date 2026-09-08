@@ -1,16 +1,52 @@
-import { useState } from 'react'
 import { useRef, useEffect } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { MAPBOX_TOKEN } from './config.js';
-import ColorHash from 'color-hash'
+import { vehicleColor, isVehicleDisconnected, vehicleStatus, vehicleStatusMapColor, vehicleStatusTextColor } from './mapUtils.js'
+import { vehicleControlGroupDigits } from './squadUtils.js'
 
-function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObjects, mapHeight }) {
+// No ring/badge here anymore -- the whole marker element rotates with
+// `rotation: v.bearing` below, so anything drawn on it would visibly spin
+// as the vehicle turns. Status is carried by fill color alone, which
+// rotating doesn't affect. Quick-squad membership moved to the popup
+// label instead (see the .setHTML call below).
+//
+// Dimming for offline vehicles is applied to an inner <g>, never to the
+// outer <svg> returned here. mapboxgl.Marker takes this exact element as
+// `this._element` and, because this map has terrain enabled, overwrites
+// `this._element.style.opacity` itself every render frame to fade markers
+// occluded behind terrain -- fighting any opacity we set directly on it
+// and producing a periodic flash for markers near an occlusion boundary
+// (stationary/offline markers are the ones likely to sit still on such a
+// boundary). Mapbox never reaches into a nested element, so opacity set
+// there is untouched by that logic.
+function createVehicleMarkerElement(color, opacity = 1) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  el.setAttribute('width', '34');
+  el.setAttribute('height', '34');
+  el.setAttribute('viewBox', '0 0 34 34');
+
+  const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  group.style.opacity = String(opacity);
+
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', 'M17 6 L26 27 L17 22 L8 27 Z');
+  // Assigned via style rather than the fill attribute so the CSS
+  // var(--...) status color resolves against the page's theme tokens.
+  path.style.fill = color;
+  path.setAttribute('stroke', '#ffffff');
+  path.setAttribute('stroke-width', '1.5');
+  path.setAttribute('stroke-linejoin', 'round');
+  group.appendChild(path);
+  el.appendChild(group);
+
+  return el;
+}
+
+function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObjects, mapHeight, squadList, onToggleVehicle, controlGroups }) {
   const mapRef = useRef()
   const mapContainerRef = useRef()
-  const [currentLoc, setCurrentLoc] = useState(null);
   const markerRefs = useRef([]); // To store references to all markers
-  var colorHash = new ColorHash();
   useEffect(() => {
     mapboxgl.accessToken = `${MAPBOX_TOKEN}`;
 
@@ -49,11 +85,21 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObj
       }
     }, 100);
 
-
-
+    // The map container's width changes whenever the squad sidebar
+    // collapses/expands (or the window resizes). Mapbox GL doesn't detect
+    // that on its own -- it only repaints the canvas at whatever size it
+    // measured on creation -- so without this the map stays the old size
+    // and the freed-up space just shows as empty grey padding.
+    const resizeObserver = new ResizeObserver(() => {
+      if (mapRef.current) {
+        mapRef.current.resize();
+      }
+    });
+    resizeObserver.observe(mapContainerRef.current);
 
     return () => {
       clearTimeout(timer);
+      resizeObserver.disconnect();
       mapRef.current.remove();
     }
   }, []);
@@ -76,15 +122,27 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObj
     markerRefs.current.forEach(marker => marker.remove());
     markerRefs.current = [];
     vehicles.forEach(v => {
-      let marker = new mapboxgl.Marker({ "color": colorHash.hex(v.name), rotation: v.bearing, rotationAlignment: 'map' })
+      const isSelected = !!(squadList && squadList.includes(v.name));
+      const status = vehicleStatus(isVehicleDisconnected(v), isSelected);
+      const groupDigits = vehicleControlGroupDigits(controlGroups ?? {}, v.name);
+      const chipsHtml = groupDigits.map((d) => `<span class="squad-chip">${d}</span>`).join('');
+      const offline = status === 'offline';
+      let marker = new mapboxgl.Marker({ element: createVehicleMarkerElement(vehicleStatusMapColor(status), offline ? 0.6 : 1), rotation: v.bearing, rotationAlignment: 'map' })
         .setLngLat([v.current.long, v.current.lat])
-        .setPopup(new mapboxgl.Popup({ focusAfterOpen: false }).setHTML(`<strong style="color:black">${v.name} (${v.current.alt.toFixed(2)} m)</strong>`))
+        .setPopup(
+          new mapboxgl.Popup({ offset: 20, anchor: 'top', focusAfterOpen: false, closeButton: false, closeOnClick: false, className: 'vehicle-label-popup' })
+            .setHTML(`<strong style="color:${vehicleStatusTextColor(status)}">${chipsHtml}${v.name}<br>${v.current.alt.toFixed(2)} m</strong>`)
+        )
         .addTo(mapRef.current);
       marker.togglePopup();
       const markerDiv = marker.getElement();
 
-      markerDiv.addEventListener('mouseenter', () => marker.togglePopup());
-      markerDiv.addEventListener('mouseleave', () => marker.togglePopup());
+      if (onToggleVehicle && !offline) {
+        markerDiv.style.cursor = 'pointer';
+        markerDiv.addEventListener('click', () => onToggleVehicle(v.name));
+      } else if (offline) {
+        markerDiv.style.cursor = 'not-allowed';
+      }
 
       if (tracking && v.name === selectedVehicle) {
         mapRef.current.flyTo({
@@ -108,7 +166,7 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObj
         circle.setAttribute('cx', '8');
         circle.setAttribute('cy', '8');
         circle.setAttribute('r', '7');
-        circle.setAttribute('fill', colorHash.hex(d.cls));
+        circle.setAttribute('fill', vehicleColor(d.cls));
         circle.setAttribute('stroke', '#fff');
         circle.setAttribute('stroke-width', '2');
 
@@ -126,7 +184,7 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObj
       });
     }
 
-  }, [vehicles, detectedObjects]);
+  }, [vehicles, detectedObjects, squadList, controlGroups]);
 
   useEffect(() => {
     let v = vehicles.find(v => v.name === selectedVehicle);
