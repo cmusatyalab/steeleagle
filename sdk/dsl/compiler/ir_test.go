@@ -18,6 +18,9 @@ import (
 // by the CLI smoke test), BuildIR must still return the expected start
 // action and transition shape.
 func TestBuildIRPatrolMission(t *testing.T) {
+	if testing.Short() {
+		t.Skip("fetches real modules over the network via NewWorkspace; skipped under -short")
+	}
 	dslPath := "testdata/takeoff_gimbal.test.dsl"
 	f, err := os.Open(dslPath)
 	if err != nil {
