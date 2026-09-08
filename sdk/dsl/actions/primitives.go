@@ -157,3 +157,25 @@ func (i *SetGimbalPose) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 }
 
 var _ dsl.Action = &SetGimbalPose{}
+
+// SetVelocity orders the vehicle to accelerate towards a target velocity.
+type SetVelocity struct {
+	Velocity types.Velocity
+	// #optional
+	Frame enums.ReferenceFrame
+}
+
+func (i *SetVelocity) Execute(v sdk.Vehicle, m dsl.MissionData) error {
+	options := []opt.Option[opt.SetVelocityTargetOption]{}
+	options = append(options, opt.WithReferenceFrame[opt.SetVelocityTargetOption](i.Frame))
+	_, err := v.SetVelocityTarget(
+		i.Velocity.XVel,
+		i.Velocity.YVel,
+		i.Velocity.ZVel,
+		i.Velocity.AngularVel,
+		options...,
+	).Wait()
+	return err
+}
+
+var _ dsl.Action = &SetVelocity{}
