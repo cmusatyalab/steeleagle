@@ -179,3 +179,20 @@ func (i *SetVelocity) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 }
 
 var _ dsl.Action = &SetVelocity{}
+
+// SetGimbalVelocity orders the vehicle to actuate its primary gimbal at
+// a target angular velocity.
+type SetGimbalVelocity struct {
+	PoseVelocity types.PoseVelocity
+}
+
+func (i *SetGimbalVelocity) Execute(v sdk.Vehicle, m dsl.MissionData) error {
+	_, err := v.SetGimbalVelocityTarget(
+		i.PoseVelocity.PitchVel,
+		i.PoseVelocity.RollVel,
+		i.PoseVelocity.YawVel,
+	).Wait()
+	return err
+}
+
+var _ dsl.Action = &SetGimbalVelocity{}
