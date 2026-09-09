@@ -54,6 +54,19 @@ function FloatInput({ value, onChange, className }) {
     );
 }
 
+// unsetDisplay picks what to show for a field the user hasn't touched
+// yet. A required field has no compiler-side fallback -- showing
+// zeroValue here would look filled in even though nothing gets written
+// to params until onChange fires, so the DSL would omit it and the
+// compiler would reject it as missing. null renders blank instead,
+// matching the required-field asterisk already shown next to its
+// label. A non-required field's schema default (or zeroValue, when it
+// has none) is safe to show since that's exactly what an omitted
+// optional field compiles to anyway.
+function unsetDisplay(field, zeroValue) {
+    return field.required ? null : (field.default ?? zeroValue);
+}
+
 function FieldInput({ field, value, onChange, namedAreas = [], enums = {} }) {
     if (field.map_feature) {
         // Valid values aren't a fixed compile-time list (unlike a real
@@ -99,7 +112,7 @@ function FieldInput({ field, value, onChange, namedAreas = [], enums = {} }) {
     if (field.type === 'boolean') {
         return (
             <Dropdown
-                value={value ?? field.default ?? false}
+                value={value ?? unsetDisplay(field, false)}
                 options={[{ label: 'true', value: true }, { label: 'false', value: false }]}
                 onChange={e => onChange(e.value)}
                 className="w-full"
@@ -109,7 +122,7 @@ function FieldInput({ field, value, onChange, namedAreas = [], enums = {} }) {
     if (field.type === 'number') {
         return (
             <FloatInput
-                value={value === undefined ? (field.default ?? 0) : value}
+                value={value === undefined ? unsetDisplay(field, 0) : value}
                 onChange={onChange}
                 className="w-full"
             />
@@ -118,7 +131,7 @@ function FieldInput({ field, value, onChange, namedAreas = [], enums = {} }) {
     if (field.type === 'integer') {
         return (
             <InputNumber
-                value={value === undefined ? (field.default ?? 0) : value}
+                value={value === undefined ? unsetDisplay(field, 0) : value}
                 onChange={e => onChange(e.value)}
                 className="w-full"
                 useGrouping={false}
