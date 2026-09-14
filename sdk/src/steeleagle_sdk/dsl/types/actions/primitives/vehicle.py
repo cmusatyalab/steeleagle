@@ -5,10 +5,10 @@ from ....compiler.registry import register_action
 
 # API imports
 from ...base import Action
-from ...datatypes import common as common
-from ...datatypes import control as params
+from ...datatypes.primitives import common as common
+from ...datatypes.primitives import vehicle as params
 # Type imports
-from ...datatypes.common import Response
+from ...datatypes.primitives.common import Response
 from ...utils import consume_last
 
 

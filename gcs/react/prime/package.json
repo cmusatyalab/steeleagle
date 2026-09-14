@@ -7,11 +7,13 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "dependencies": {
     "@mapbox/mapbox-gl-draw": "^1.5.1",
     "@microsoft/fetch-event-source": "^2.0.1",
+    "@tmcw/togeojson": "^7.1.2",
     "@xyflow/react": "^12.10.0",
     "chart.js": "^4.5.1",
     "color-hash": "^2.0.2",
@@ -23,7 +25,8 @@
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-gamepad-tl": "^1.0.1",
-    "react-use-websocket": "^4.13.0"
+    "react-use-websocket": "^4.13.0",
+    "tokml": "^0.4.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
@@ -34,6 +37,8 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
-    "vite": "^7.2.4"
+    "jsdom": "^29.1.1",
+    "vite": "^7.2.4",
+    "vitest": "^4.1.9"
   }
 }

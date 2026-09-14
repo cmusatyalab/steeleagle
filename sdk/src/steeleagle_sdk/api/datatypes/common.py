@@ -135,3 +135,15 @@ class Location(Datatype):
     longitude: float | None = 0.0
     altitude: float | None = 0.0
     heading: float | None = 0.0
+
+
+class Area(Datatype):
+    """A named boundary polygon in global coordinates.
+
+    Attributes:
+        name (str): area/placemark name
+        points (List[Location]): boundary vertices, in order
+    """
+
+    name: str = ""
+    points: list[Location] = []

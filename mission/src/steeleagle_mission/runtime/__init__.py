@@ -5,6 +5,7 @@ import logging
 
 import grpc
 from steeleagle_sdk.api.compute import Compute
+from steeleagle_sdk.api.datatypes.map import Map
 from steeleagle_sdk.api.mission_store import MissionStore
 from steeleagle_sdk.api.vehicle import Vehicle
 from steeleagle_sdk.dsl import types
@@ -23,24 +24,30 @@ _STARTED: bool = False
 _LOCK = asyncio.Lock()
 
 
+def is_running() -> bool:
+    """
+    Check if a mission FSM task is alive.
+    """
+    return _STARTED and _FSM_TASK is not None and not _FSM_TASK.done()
+
+
 async def init(
     name: str,
     mission: MissionIR,
     vehicle_address: str,
     telemetry_address: str,
     result_address: str,
-    map_obj,
-) -> None:
+    map_obj: Map | None,
+) -> bool:
     """
     Initialize runtime singletons and start the MissionFSM loop.
-    Safe to call multiple times — subsequent calls are ignored.
-    """
+   """
     global _CHANNEL, _STORE, _FSM, _FSM_TASK, _STARTED
 
     async with _LOCK:
         if _STARTED:
             logger.warning("Runtime already started; skipping re-init.")
-            return
+            return False
 
         logger.info("Starting runtime...")
         try:
@@ -66,6 +73,7 @@ async def init(
             _STARTED = True
 
             logger.info("Runtime started successfully (vehicle=%s).", vehicle_address)
+            return True
 
         except Exception:
             logger.exception("Runtime failed to start; cleaning up partial init.")
@@ -84,7 +92,6 @@ async def init(
 async def term() -> None:
     """
     Stop the FSM task, shut down streams, and close the gRPC channel.
-    Safe to call multiple times.
     """
     global _CHANNEL, _STORE, _FSM, _FSM_TASK, _STARTED
 
@@ -113,6 +120,9 @@ async def term() -> None:
         types.COMPUTE = None
         types.MAP = None
 
+        if _CHANNEL:
+            with contextlib.suppress(Exception):
+                await _CHANNEL.close()
         _CHANNEL = None
         _STARTED = False
 
