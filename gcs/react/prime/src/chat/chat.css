@@ -1,0 +1,527 @@
+/* Chat page styles: colors use PrimeReact theme variables so the page tracks
+   the active light/dark mode theme automatically. */
+
+.se-chat-page {
+    height: calc(100vh - 180px);
+    width: 100%;
+    text-align: left;
+    overflow: hidden;
+}
+
+.se-chat-splitter {
+    height: 100%;
+    width: 100%;
+    border: none;
+    background: transparent;
+}
+
+/* min-width: 0 lets the flex panels shrink instead of overflowing to the
+   right (the classic flexbox min-content overflow). The chat window keeps its
+   full width and the sidebar shrinks toward the left when space is tight. */
+.se-chat-splitter__side {
+    overflow: hidden;
+    min-width: 0;
+}
+
+.se-chat-splitter__main {
+    overflow: hidden;
+    min-width: 0;
+}
+
+/* ---------- Sidebar ---------- */
+.se-chat-sidebar {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-width: 0;
+    background: var(--surface-ground);
+    border-right: 1px solid var(--surface-border);
+}
+
+.se-chat-sidebar__top {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--surface-border);
+    display: flex;
+    flex-direction: column;
+}
+
+.se-chat-sidebar__list {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0.5rem;
+}
+
+.se-chat-sidebar__empty {
+    padding: 1rem;
+    font-size: 0.85rem;
+    color: var(--text-color-secondary);
+    text-align: center;
+}
+
+.se-chat-conv {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.6rem;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 2px;
+    transition: background 0.15s;
+}
+
+.se-chat-conv:hover {
+    background: var(--surface-hover);
+}
+
+.se-chat-conv--active {
+    background: var(--highlight-bg);
+}
+
+.se-chat-conv__body {
+    flex: 1;
+    min-width: 0;
+}
+
+.se-chat-conv__title {
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: var(--text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    max-width: 100%;
+}
+
+/* Reserve bold width so selecting a conversation doesn't widen the sidebar. */
+.se-chat-conv__title::before {
+    content: attr(data-title);
+    display: block;
+    font-weight: 600;
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    pointer-events: none;
+    user-select: none;
+}
+
+.se-chat-conv--active .se-chat-conv__title {
+    color: var(--highlight-text-color);
+    font-weight: 600;
+}
+
+.se-chat-conv__meta {
+    font-size: 0.72rem;
+    color: var(--text-color-secondary);
+}
+
+.se-chat-conv__actions {
+    display: flex;
+    gap: 0.1rem;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.se-chat-conv:hover .se-chat-conv__actions,
+.se-chat-conv--active .se-chat-conv__actions {
+    opacity: 1;
+}
+
+/* ---------- Chat window ---------- */
+.se-chat-window {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-width: 0;
+    background: var(--surface-card);
+}
+
+.se-chat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--surface-border);
+    flex-shrink: 0;
+    min-width: 0;
+}
+
+.se-chat-header__title {
+    display: flex;
+    align-items: center;
+    color: var(--text-color);
+    font-weight: 600;
+    min-width: 0;
+    flex: 1;
+}
+
+.se-chat-header__name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.se-chat-header .p-tag {
+    flex-shrink: 0;
+}
+
+.se-chat-live-tag {
+    cursor: default;
+}
+
+.se-chat-header__title .pi {
+    flex-shrink: 0;
+}
+
+/* ---------- Messages ---------- */
+.se-chat-messages {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.se-chat-system {
+    align-self: center;
+    max-width: 80%;
+    text-align: center;
+    font-size: 0.82rem;
+    color: var(--text-color-secondary);
+    background: var(--surface-ground);
+    border: 1px solid var(--surface-border);
+    border-radius: 10px;
+    padding: 0.5rem 0.85rem;
+}
+
+.se-chat-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    max-width: 80%;
+}
+
+.se-chat-row--user {
+    align-self: flex-end;
+    flex-direction: row;
+}
+
+.se-chat-avatar {
+    flex-shrink: 0;
+}
+
+/* The SteelEagle logo is already a circular image so fill the avatar circle direclty. */
+.se-chat-avatar--assistant {
+    background: transparent;
+}
+
+.se-chat-avatar--assistant img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.se-chat-avatar--user {
+    background: var(--surface-300);
+    color: var(--text-color);
+}
+
+.se-chat-bubble-wrap {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.se-chat-row--user .se-chat-bubble-wrap {
+    align-items: flex-end;
+}
+
+.se-chat-bubble {
+    padding: 0.55rem 0.8rem;
+    border-radius: 12px;
+    line-height: 1.45;
+    font-size: 0.9rem;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
+.se-chat-bubble--assistant {
+    background: var(--surface-ground);
+    color: var(--text-color);
+    border: 1px solid var(--surface-border);
+    border-top-left-radius: 3px;
+}
+
+.se-chat-bubble--user {
+    background: var(--primary-color);
+    color: var(--primary-color-text);
+    border-top-right-radius: 3px;
+}
+
+.se-chat-bubble__text {
+    white-space: pre-wrap;
+}
+
+.se-chat-bubble__md {
+    font-size: inherit;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+.se-chat-bubble__md > :first-child {
+    margin-top: 0 !important;
+}
+
+.se-chat-bubble__md > :last-child {
+    margin-bottom: 0 !important;
+}
+
+/* Reset theme defaults first, then add a small gap only between siblings. */
+.se-chat-bubble__md :is(p, ul, ol, pre, blockquote, h1, h2, h3, h4) {
+    margin: 0;
+}
+
+.se-chat-bubble__md :is(p, ul, ol, pre, blockquote, h1, h2, h3, h4)
+    + :is(p, ul, ol, pre, blockquote, h1, h2, h3, h4) {
+    margin-top: 0.35em;
+}
+
+/* Title/label paragraph right above a list or code fence should stay tight. */
+.se-chat-bubble__md p + ul,
+.se-chat-bubble__md p + ol,
+.se-chat-bubble__md p + pre,
+.se-chat-bubble__md :is(h1, h2, h3, h4) + :is(ul, ol, pre) {
+    margin-top: 0.1em;
+}
+
+.se-chat-bubble__md p:empty {
+    display: none;
+}
+
+.se-chat-bubble__md h1,
+.se-chat-bubble__md h2,
+.se-chat-bubble__md h3,
+.se-chat-bubble__md h4 {
+    font-size: 1em;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.se-chat-bubble__md ul,
+.se-chat-bubble__md ol {
+    padding-left: 1.2em;
+}
+
+.se-chat-bubble__md li + li {
+    margin-top: 0.08em;
+}
+
+.se-chat-bubble__md code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.9em;
+}
+
+.se-chat-bubble__md :not(pre) > code {
+    padding: 0.1em 0.35em;
+    border-radius: 0.25rem;
+    background: color-mix(in srgb, var(--surface-ground) 70%, transparent);
+}
+
+.se-chat-bubble__md pre {
+    padding: 0.45rem 0.65rem;
+    border-radius: 0.4rem;
+    overflow-x: auto;
+    background: var(--surface-ground);
+    border: 1px solid var(--surface-border);
+}
+
+.se-chat-bubble__md pre code {
+    font-size: 0.82em;
+    white-space: pre;
+    line-height: 1.35;
+}
+
+.se-chat-bubble__time {
+    font-size: 0.68rem;
+    color: var(--text-color-secondary);
+    margin-top: 0.2rem;
+}
+
+/* ---------- Apply artifact card ---------- */
+.se-chat-artifacts {
+    margin-top: 0.4rem;
+    width: 100%;
+}
+
+.se-chat-apply-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--surface-border);
+    border-radius: 10px;
+    background: var(--surface-card);
+}
+
+.se-chat-apply-card__info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-color);
+}
+
+.se-chat-apply-card__info .pi {
+    color: var(--primary-color);
+}
+
+.se-chat-apply-card__title {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.se-chat-apply-card__meta {
+    font-size: 0.72rem;
+    color: var(--text-color-secondary);
+}
+
+/* ---------- Suggestions (empty state) ---------- */
+.se-chat-suggestions {
+    margin: auto 0;
+    align-self: center;
+    text-align: center;
+}
+
+.se-chat-suggestions__label {
+    font-size: 0.8rem;
+    color: var(--text-color-secondary);
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.se-chat-suggestions__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+    max-width: 560px;
+}
+
+.se-chat-suggestion {
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--surface-border);
+    border-radius: 10px;
+    background: var(--surface-ground);
+    color: var(--text-color);
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.se-chat-suggestion:hover {
+    background: var(--surface-hover);
+    border-color: var(--primary-color);
+}
+
+.se-chat-suggestions__disclaimer {
+    margin: 0.85rem 0 0;
+    font-size: 0.75rem;
+    color: var(--text-color-secondary);
+    max-width: 560px;
+}
+
+/* ---------- Typing indicator ---------- */
+.se-chat-typing {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 1.2em;
+}
+
+.se-chat-typing span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-color-secondary);
+    animation: se-chat-blink 1.2s infinite ease-in-out both;
+}
+
+.se-chat-typing span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.se-chat-typing span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes se-chat-blink {
+    0%, 80%, 100% { opacity: 0.2; }
+    40% { opacity: 1; }
+}
+
+/* ---------- Composer ---------- */
+.se-chat-composer {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--surface-border);
+    flex-shrink: 0;
+}
+
+.se-chat-composer__input {
+    flex: 1;
+    resize: none;
+    max-height: 160px;
+}
+
+.se-chat-composer__btn {
+    flex-shrink: 0;
+}
+
+/* Adjust send-plane-icon alignment */
+.se-chat-composer__btn .pi-send {
+    transform: translateX(-1px);
+}
+
+.se-chat-composer__mic {
+    flex-shrink: 0;
+    align-self: flex-end;
+}
+
+.se-chat-composer__mic--recording {
+    animation: se-chat-mic-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes se-chat-mic-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
+    }
+    70% {
+        box-shadow: 0 0 0 0.5rem rgba(239, 68, 68, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+    .se-chat-row,
+    .se-chat-system {
+        max-width: 95%;
+    }
+
+    .se-chat-suggestions__grid {
+        grid-template-columns: 1fr;
+    }
+}
