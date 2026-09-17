@@ -86,6 +86,16 @@ export function vehicleStatusTextColor(status) {
     return TEXT_STATUS_COLORS[status];
 }
 
+const CARDINAL_DIRECTIONS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+
+// 8-point compass label for a bearing in degrees (0-360, wrapping either
+// direction). Each direction spans 45 degrees centered on its own value,
+// e.g. 324 deg rounds to 315 (NW), 180 deg lands exactly on S.
+export function bearingToCardinal(bearing) {
+    const normalized = ((bearing % 360) + 360) % 360;
+    return CARDINAL_DIRECTIONS[Math.round(normalized / 45) % 8];
+}
+
 const STATUS_SORT_RANK = { selected: 0, online: 1, offline: 2 };
 
 // Selected vehicles first, then online, then offline (sinks to the

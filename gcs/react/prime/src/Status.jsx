@@ -4,7 +4,7 @@ import { Badge } from 'primereact/badge';
 import { ProgressBar } from 'primereact/progressbar';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSatellite } from '@fortawesome/free-solid-svg-icons';
-import { vehicleSpeed, isVehicleDisconnected, vehicleStatus, vehicleStatusColor } from './mapUtils.js';
+import { vehicleSpeed, isVehicleDisconnected, vehicleStatus, vehicleStatusColor, bearingToCardinal } from './mapUtils.js';
 
 const cardPassthrough = {
     body: { style: { padding: '0.4rem 0.75rem' } },
@@ -76,7 +76,7 @@ function Status({ vehicle, selectable, selected, onToggle }) {
                     <span className="flex-1" />
                     <span className="text-xs text-color-secondary flex align-items-center gap-1">
                         <i className="pi pi-arrow-up" style={{ display: 'inline-block', transform: `rotate(${vehicle.bearing}deg)`, fontSize: '0.65rem' }} />
-                        {Math.round(vehicle.bearing)}°
+                        {Math.round(vehicle.bearing)}° {bearingToCardinal(vehicle.bearing)}
                     </span>
                     <span className="text-xs text-color-secondary">{speed.toFixed(1)} m/s</span>
                     <span className="text-xs text-color-secondary flex align-items-center gap-1">
