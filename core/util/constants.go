@@ -39,6 +39,9 @@ const pluginDir string = "plugins"
 // (e.g. "driver", "mission", "extra")
 const installedPluginDir string = "plugins"
 
+// Directory where uploaded mission binaries live
+const missionDir string = "missions"
+
 // The run hook that processes are started from within containers
 const bindDir string = "steeleagle"
 const runHook string = "run.sh"

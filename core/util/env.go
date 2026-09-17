@@ -68,6 +68,17 @@ func GetPluginDirByName(name, parent string) (string, error) {
 	return pluginPath, nil
 }
 
+// GetMissionDir returns the persistent directory uploaded mission binaries
+// are stored in, creating it if it does not exist.
+func GetMissionDir() (string, error) {
+	dir := filepath.Join(GetDataHome(), projectDir, missionDir)
+	err := os.MkdirAll(dir, 0755)
+	if err != nil {
+		return "", err
+	}
+	return dir, nil
+}
+
 // GetVehicleRuntimeDir returns the vehicle runtime directory, creating it if
 // it does not exist.
 func GetVehicleDir() (string, error) {
