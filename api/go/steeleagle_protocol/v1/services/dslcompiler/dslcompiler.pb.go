@@ -283,8 +283,10 @@ func (b0 ImportSpec_builder) Build() *ImportSpec {
 
 type TypeSchema struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Description string                 `protobuf:"bytes,1,opt,name=description,proto3"`
+	xxx_hidden_Description *string                `protobuf:"bytes,1,opt,name=description,proto3,oneof"`
 	xxx_hidden_Fields      *[]*FieldSchema        `protobuf:"bytes,2,rep,name=fields,proto3"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -316,7 +318,10 @@ func (x *TypeSchema) ProtoReflect() protoreflect.Message {
 
 func (x *TypeSchema) GetDescription() string {
 	if x != nil {
-		return x.xxx_hidden_Description
+		if x.xxx_hidden_Description != nil {
+			return *x.xxx_hidden_Description
+		}
+		return ""
 	}
 	return ""
 }
@@ -331,17 +336,30 @@ func (x *TypeSchema) GetFields() []*FieldSchema {
 }
 
 func (x *TypeSchema) SetDescription(v string) {
-	x.xxx_hidden_Description = v
+	x.xxx_hidden_Description = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 2)
 }
 
 func (x *TypeSchema) SetFields(v []*FieldSchema) {
 	x.xxx_hidden_Fields = &v
 }
 
+func (x *TypeSchema) HasDescription() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *TypeSchema) ClearDescription() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Description = nil
+}
+
 type TypeSchema_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Description string
+	Description *string
 	Fields      []*FieldSchema
 }
 
@@ -349,15 +367,20 @@ func (b0 TypeSchema_builder) Build() *TypeSchema {
 	m0 := &TypeSchema{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_Description = b.Description
+	if b.Description != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 2)
+		x.xxx_hidden_Description = b.Description
+	}
 	x.xxx_hidden_Fields = &b.Fields
 	return m0
 }
 
 type EnumSchema struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Description string                 `protobuf:"bytes,1,opt,name=description,proto3"`
+	xxx_hidden_Description *string                `protobuf:"bytes,1,opt,name=description,proto3,oneof"`
 	xxx_hidden_Values      []string               `protobuf:"bytes,2,rep,name=values,proto3"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -389,7 +412,10 @@ func (x *EnumSchema) ProtoReflect() protoreflect.Message {
 
 func (x *EnumSchema) GetDescription() string {
 	if x != nil {
-		return x.xxx_hidden_Description
+		if x.xxx_hidden_Description != nil {
+			return *x.xxx_hidden_Description
+		}
+		return ""
 	}
 	return ""
 }
@@ -402,17 +428,30 @@ func (x *EnumSchema) GetValues() []string {
 }
 
 func (x *EnumSchema) SetDescription(v string) {
-	x.xxx_hidden_Description = v
+	x.xxx_hidden_Description = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 2)
 }
 
 func (x *EnumSchema) SetValues(v []string) {
 	x.xxx_hidden_Values = v
 }
 
+func (x *EnumSchema) HasDescription() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *EnumSchema) ClearDescription() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Description = nil
+}
+
 type EnumSchema_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Description string
+	Description *string
 	Values      []string
 }
 
@@ -420,7 +459,10 @@ func (b0 EnumSchema_builder) Build() *EnumSchema {
 	m0 := &EnumSchema{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_Description = b.Description
+	if b.Description != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 2)
+		x.xxx_hidden_Description = b.Description
+	}
 	x.xxx_hidden_Values = b.Values
 	return m0
 }
@@ -430,7 +472,7 @@ type FieldSchema struct {
 	xxx_hidden_Name         string                 `protobuf:"bytes,1,opt,name=name,proto3"`
 	xxx_hidden_Type         string                 `protobuf:"bytes,2,opt,name=type,proto3"`
 	xxx_hidden_Required     bool                   `protobuf:"varint,3,opt,name=required,proto3"`
-	xxx_hidden_Description  string                 `protobuf:"bytes,4,opt,name=description,proto3"`
+	xxx_hidden_Description  *string                `protobuf:"bytes,4,opt,name=description,proto3,oneof"`
 	xxx_hidden_DefaultValue *string                `protobuf:"bytes,5,opt,name=default_value,json=defaultValue,proto3,oneof"`
 	xxx_hidden_ObjectType   *string                `protobuf:"bytes,6,opt,name=object_type,json=objectType,proto3,oneof"`
 	xxx_hidden_NestedFields *[]*FieldSchema        `protobuf:"bytes,7,rep,name=nested_fields,json=nestedFields,proto3"`
@@ -490,7 +532,10 @@ func (x *FieldSchema) GetRequired() bool {
 
 func (x *FieldSchema) GetDescription() string {
 	if x != nil {
-		return x.xxx_hidden_Description
+		if x.xxx_hidden_Description != nil {
+			return *x.xxx_hidden_Description
+		}
+		return ""
 	}
 	return ""
 }
@@ -554,7 +599,8 @@ func (x *FieldSchema) SetRequired(v bool) {
 }
 
 func (x *FieldSchema) SetDescription(v string) {
-	x.xxx_hidden_Description = v
+	x.xxx_hidden_Description = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 9)
 }
 
 func (x *FieldSchema) SetDefaultValue(v string) {
@@ -580,6 +626,13 @@ func (x *FieldSchema) SetMapFeature(v bool) {
 	x.xxx_hidden_MapFeature = v
 }
 
+func (x *FieldSchema) HasDescription() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
 func (x *FieldSchema) HasDefaultValue() bool {
 	if x == nil {
 		return false
@@ -599,6 +652,11 @@ func (x *FieldSchema) HasEnumType() bool {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
+}
+
+func (x *FieldSchema) ClearDescription() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_Description = nil
 }
 
 func (x *FieldSchema) ClearDefaultValue() {
@@ -622,7 +680,7 @@ type FieldSchema_builder struct {
 	Name         string
 	Type         string
 	Required     bool
-	Description  string
+	Description  *string
 	DefaultValue *string
 	ObjectType   *string
 	NestedFields []*FieldSchema
@@ -637,7 +695,10 @@ func (b0 FieldSchema_builder) Build() *FieldSchema {
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Type = b.Type
 	x.xxx_hidden_Required = b.Required
-	x.xxx_hidden_Description = b.Description
+	if b.Description != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 9)
+		x.xxx_hidden_Description = b.Description
+	}
 	if b.DefaultValue != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 9)
 		x.xxx_hidden_DefaultValue = b.DefaultValue
@@ -2227,27 +2288,30 @@ const file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_rawDesc
 	"ImportSpec\x12\x14\n" +
 	"\x05alias\x18\x01 \x01(\tR\x05alias\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x12\x18\n" +
-	"\aversion\x18\x03 \x01(\tR\aversion\"\x80\x01\n" +
+	"\aversion\x18\x03 \x01(\tR\aversion\"\x95\x01\n" +
 	"\n" +
-	"TypeSchema\x12 \n" +
-	"\vdescription\x18\x01 \x01(\tR\vdescription\x12P\n" +
-	"\x06fields\x18\x02 \x03(\v28.steeleagle_protocol.v1.services.dslcompiler.FieldSchemaR\x06fields\"F\n" +
+	"TypeSchema\x12%\n" +
+	"\vdescription\x18\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x12P\n" +
+	"\x06fields\x18\x02 \x03(\v28.steeleagle_protocol.v1.services.dslcompiler.FieldSchemaR\x06fieldsB\x0e\n" +
+	"\f_description\"[\n" +
 	"\n" +
-	"EnumSchema\x12 \n" +
-	"\vdescription\x18\x01 \x01(\tR\vdescription\x12\x16\n" +
-	"\x06values\x18\x02 \x03(\tR\x06values\"\x95\x03\n" +
+	"EnumSchema\x12%\n" +
+	"\vdescription\x18\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x16\n" +
+	"\x06values\x18\x02 \x03(\tR\x06valuesB\x0e\n" +
+	"\f_description\"\xaa\x03\n" +
 	"\vFieldSchema\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04type\x18\x02 \x01(\tR\x04type\x12\x1a\n" +
-	"\brequired\x18\x03 \x01(\bR\brequired\x12 \n" +
-	"\vdescription\x18\x04 \x01(\tR\vdescription\x12(\n" +
-	"\rdefault_value\x18\x05 \x01(\tH\x00R\fdefaultValue\x88\x01\x01\x12$\n" +
-	"\vobject_type\x18\x06 \x01(\tH\x01R\n" +
+	"\brequired\x18\x03 \x01(\bR\brequired\x12%\n" +
+	"\vdescription\x18\x04 \x01(\tH\x00R\vdescription\x88\x01\x01\x12(\n" +
+	"\rdefault_value\x18\x05 \x01(\tH\x01R\fdefaultValue\x88\x01\x01\x12$\n" +
+	"\vobject_type\x18\x06 \x01(\tH\x02R\n" +
 	"objectType\x88\x01\x01\x12]\n" +
 	"\rnested_fields\x18\a \x03(\v28.steeleagle_protocol.v1.services.dslcompiler.FieldSchemaR\fnestedFields\x12 \n" +
-	"\tenum_type\x18\b \x01(\tH\x02R\benumType\x88\x01\x01\x12\x1f\n" +
+	"\tenum_type\x18\b \x01(\tH\x03R\benumType\x88\x01\x01\x12\x1f\n" +
 	"\vmap_feature\x18\t \x01(\bR\n" +
-	"mapFeatureB\x10\n" +
+	"mapFeatureB\x0e\n" +
+	"\f_descriptionB\x10\n" +
 	"\x0e_default_valueB\x0e\n" +
 	"\f_object_typeB\f\n" +
 	"\n" +
@@ -2416,6 +2480,8 @@ func file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_init() {
 	if File_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto != nil {
 		return
 	}
+	file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_msgTypes[3].OneofWrappers = []any{}
+	file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_msgTypes[4].OneofWrappers = []any{}
 	file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_msgTypes[5].OneofWrappers = []any{}
 	file_steeleagle_protocol_v1_services_dslcompiler_dslcompiler_proto_msgTypes[9].OneofWrappers = []any{
 		(*fieldValue_FloatValue)(nil),

@@ -58,12 +58,12 @@ message ImportSpec {
 }
 
 message TypeSchema {
-  string description = 1;
+  optional string description = 1;
   repeated FieldSchema fields = 2;
 }
 
 message EnumSchema {
-  string description = 1;
+  optional string description = 1;
   repeated string values = 2; // constant names, e.g. "PatrolModeSurvey"
 }
 
@@ -71,7 +71,7 @@ message FieldSchema {
   string name = 1;
   string type = 2; // "string" | "number" | "integer" | "boolean" | "array" | "object"
   bool required = 3;
-  string description = 4;
+  optional string description = 4;
   optional string default_value = 5;
   optional string object_type = 6;       // set when type == "object": qualified datatype name
   repeated FieldSchema nested_fields = 7; // set when type == "object", depth-capped at 2

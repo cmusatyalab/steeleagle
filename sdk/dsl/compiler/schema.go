@@ -42,7 +42,11 @@ func typeSchemas(registry *loader.TypeRegistry, bases map[string]*loader.Base) m
 		for _, f := range base.OptFields {
 			fields = append(fields, fieldSchema(registry, f, false, 0))
 		}
-		out[name] = dslcompilerpb.TypeSchema_builder{Description: base.Comment, Fields: fields}.Build()
+		ts := dslcompilerpb.TypeSchema_builder{Fields: fields}
+		if base.Comment != "" {
+			ts.Description = strPtr(base.Comment)
+		}
+		out[name] = ts.Build()
 	}
 	return out
 }
@@ -54,7 +58,11 @@ func enumSchemas(bases map[string]*loader.Base) map[string]*dslcompilerpb.EnumSc
 		for i, f := range base.Fields {
 			values[i] = f.Name
 		}
-		out[name] = dslcompilerpb.EnumSchema_builder{Description: base.Comment, Values: values}.Build()
+		es := dslcompilerpb.EnumSchema_builder{Values: values}
+		if base.Comment != "" {
+			es.Description = strPtr(base.Comment)
+		}
+		out[name] = es.Build()
 	}
 	return out
 }
@@ -77,15 +85,17 @@ func enumSchemas(bases map[string]*loader.Base) map[string]*dslcompilerpb.EnumSc
 //
 // NOTE on pointer usage below: this proto's Opaque API only generates a
 // pointer type in a _builder struct for a field the .proto marks
-// `optional` (DefaultValue/ObjectType/EnumType here), or a oneof member.
-// Every plain (non-optional) field -- Name, Required, Description, Type
+// `optional` (Description/DefaultValue/ObjectType/EnumType here), or a
+// oneof member. Every plain (non-optional) field -- Name, Required, Type
 // -- is a concrete value (string/bool) in the builder, not a pointer.
 // Wrapping those in strPtr/boolPtr is a compile error, not just style.
 func fieldSchema(registry *loader.TypeRegistry, f loader.Field, required bool, depth int) *dslcompilerpb.FieldSchema {
 	fs := dslcompilerpb.FieldSchema_builder{
-		Name:        f.Name,
-		Required:    required,
-		Description: f.Comment,
+		Name:     f.Name,
+		Required: required,
+	}
+	if f.Comment != "" {
+		fs.Description = strPtr(f.Comment)
 	}
 	if f.Value != "" {
 		fs.DefaultValue = strPtr(f.Value)
