@@ -4,6 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { MAPBOX_TOKEN } from './config.js';
 import { vehicleColor, isVehicleDisconnected, vehicleStatus, vehicleStatusMapColor, vehicleStatusTextColor } from './mapUtils.js'
 import { vehicleControlGroupDigits } from './squadUtils.js'
+import { STYLE_URLS, applyBasemapConfig, applySatelliteLayerVisibility } from './mapStyles.js'
 
 // No ring/badge here anymore -- the whole marker element rotates with
 // `rotation: v.bearing` below, so anything drawn on it would visibly spin
@@ -43,10 +44,11 @@ function createVehicleMarkerElement(color, opacity = 1) {
   return el;
 }
 
-function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObjects, mapHeight, squadList, onToggleVehicle, controlGroups }) {
+function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObjects, mapHeight, squadList, onToggleVehicle, controlGroups, mapStyle }) {
   const mapRef = useRef()
   const mapContainerRef = useRef()
   const markerRefs = useRef([]); // To store references to all markers
+  const isFirstStyleEffect = useRef(true);
   useEffect(() => {
     mapboxgl.accessToken = `${MAPBOX_TOKEN}`;
 
@@ -55,18 +57,21 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObj
       style: 'mapbox://styles/mapbox/standard',
       center: [-79.94299, 40.44353],
       zoom: 13.03,
-      config: {
-        basemap: {
-          lightPreset: "dusk",
-          showPedestrianRoads: false,
-          showPointOfInterestLabels: false,
-          showTransitLabels: false,
-          showAdminBoundaries: false,
-          font: "Montserrat",
-        }
-      },
     });
 
+    mapRef.current.on('load', () => {
+      mapRef.current.addControl(new mapboxgl.NavigationControl());
+    });
+
+    // DEM/terrain and the basemap declutter config (dusk lighting,
+    // decluttered labels/3D objects for Standard, hidden POI/place layers
+    // for the classic satellite style -- see mapStyles.js) don't survive a
+    // setStyle call (see the mapStyle effect below), so these are
+    // re-applied on every style.load, not just the first -- unlike the
+    // NavigationControl above, which is added once. The Map constructor's
+    // `config` option silently fails to apply against the Standard style,
+    // which is why this happens imperatively here instead (see
+    // applyBasemapConfig's comment in mapStyles.js).
     mapRef.current.on('style.load', () => {
       mapRef.current.addSource('mapbox-dem', {
         type: 'raster-dem',
@@ -75,7 +80,10 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObj
         maxzoom: 14
       });
       mapRef.current.setTerrain({ source: 'mapbox-dem', exaggeration: 1.0 });
-      mapRef.current.addControl(new mapboxgl.NavigationControl());
+      applyBasemapConfig(mapRef.current);
+      mapRef.current.setConfigProperty('basemap', 'lightPreset', 'dusk');
+      mapRef.current.setConfigProperty('basemap', 'font', 'Montserrat');
+      applySatelliteLayerVisibility(mapRef.current);
     });
 
     // Add a small delay to ensure container is fully rendered
@@ -103,6 +111,12 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObj
       mapRef.current.remove();
     }
   }, []);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+    if (isFirstStyleEffect.current) { isFirstStyleEffect.current = false; return; }
+    mapRef.current.setStyle(STYLE_URLS[mapStyle]);
+  }, [mapStyle]);
 
   // Handle drawer width changes
   useEffect(() => {

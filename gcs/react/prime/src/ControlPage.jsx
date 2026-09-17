@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Button } from 'primereact/button';
 import { Toolbar } from 'primereact/toolbar';
 import { ButtonGroup } from 'primereact/buttongroup';
@@ -10,6 +10,7 @@ import React from 'react';
 import { getApiUrl } from './urls.js';
 import Mapbox from './Mapbox.jsx';
 import { toggleVehicleInSquad } from './squadUtils.js';
+import { STYLE_OPTIONS } from './mapStyles.js';
 
 const cancelOptions = { icon: 'pi pi-fw pi-times', iconOnly: true, className: 'custom-cancel-btn p-button-danger' };
 const chooseOptions = { label: 'Select...', icon: 'pi pi-fw pi-file', iconOnly: false, className: 'custom-choose-btn p-button-primary' };
@@ -25,6 +26,7 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
   showDetections, onToggleDetections, toast, onCommand,
   setManualControl, squadList, setSquadList, takeOffAltitude, controlGroups }) {
   const mapPanelSize = 0;
+  const [mapStyle, setMapStyle] = useState('streets');
   const onProgress = () => {
     toast.current.show({ severity: 'info', summary: 'In Progress', detail: 'Uploading files...' });
   };
@@ -148,15 +150,18 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
       <div className="flex flex-column">
         <div className="flex align-items-center gap-2 mb-2 px-2 py-1 border-round" style={{ backgroundColor: 'var(--surface-card)', border: '1px solid var(--surface-border)' }}>
           {/* Left/center/right flex-1 sections roughly align with the map
-              and video panels below: the left slot is reserved for a
-              future map-tileset dropdown, not built yet. */}
-          <div className="flex-1" />
+              and video panels below. */}
+          <div className="flex-1 flex justify-content-start">
+            <Dropdown value={mapStyle} options={STYLE_OPTIONS} onChange={(e) => setMapStyle(e.value)}
+              className="w-full md:w-9rem" />
+          </div>
           <div className="flex align-items-center gap-1">
             <Button
               size="small"
               outlined={!tracking}
               severity={tracking ? undefined : 'secondary'}
               icon={tracking ? 'pi pi-bullseye' : 'pi pi-map'}
+              label="Vehicle Tracking"
               tooltip={`Tracking ${tracking ? 'On' : 'Off'}: recenters the map on the selected vehicle`}
               tooltipOptions={{ position: 'bottom' }}
               onClick={() => setTracking(!tracking)}
@@ -167,6 +172,7 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
               outlined={!showDetections}
               severity={showDetections ? undefined : 'secondary'}
               icon={showDetections ? 'pi pi-eye' : 'pi pi-eye-slash'}
+              label="Show Detections"
               tooltip={`Detections ${showDetections ? 'Shown' : 'Hidden'}: toggles bounding boxes on the video stream`}
               tooltipOptions={{ position: 'bottom' }}
               onClick={() => onToggleDetections(!showDetections)}
@@ -181,7 +187,7 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
         <div className="grid m-0">
           <div className="col-12 lg:col-6 p-2">
             <Mapbox selectedVehicle={selectedVehicle} vehicles={vehicles} mapPanelSize={mapPanelSize} tracking={tracking}
-              mapHeight={videoPanelHeight} squadList={squadList} onToggleVehicle={onToggleVehicle} controlGroups={controlGroups} />
+              mapHeight={videoPanelHeight} squadList={squadList} onToggleVehicle={onToggleVehicle} controlGroups={controlGroups} mapStyle={mapStyle} />
           </div>
           <div className="col-12 lg:col-6 p-2">
             <div style={{ height: videoPanelHeight, backgroundColor: '#000' }}>

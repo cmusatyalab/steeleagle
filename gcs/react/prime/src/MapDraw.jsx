@@ -7,17 +7,8 @@ import { MAPBOX_TOKEN } from './config.js';
 import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';
 import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature } from './mapUtils.js';
+import { STYLE_URLS, STYLE_OPTIONS, applyBasemapConfig, applySatelliteLayerVisibility } from './mapStyles.js';
 import FeatureList from './FeatureList.jsx';
-
-const STYLE_URLS = {
-    streets: 'mapbox://styles/mapbox/standard',
-    satellite: 'mapbox://styles/mapbox/satellite-streets-v12',
-};
-
-const STYLE_OPTIONS = [
-    { label: 'Streets', value: 'streets' },
-    { label: 'Satellite', value: 'satellite' },
-];
 
 const DRAW_STYLES = [
     {
@@ -109,22 +100,19 @@ function MapDraw({ features, setFeatures, toast }) {
             style: 'mapbox://styles/mapbox/standard',
             center: [-79.94299, 40.44353],
             zoom: 13.03,
-            config: {
-                basemap: {
-                    lightPreset: 'day',
-                    showPedestrianRoads: false,
-                    showPointOfInterestLabels: false,
-                    showTransitLabels: false,
-                    showAdminBoundaries: false,
-                    font: 'Montserrat',
-                }
-            },
         });
 
         mapRef.current.on('load', () => {
             mapRef.current.addControl(new mapboxgl.NavigationControl());
         });
 
+        // The Map constructor's `config` option silently fails to apply
+        // against the Standard style, so the basemap declutter config
+        // (decluttered labels/3D objects for Standard, hidden POI/place
+        // layers for the classic satellite style -- see mapStyles.js) is
+        // applied imperatively here instead, same as the DEM/terrain
+        // below. Both are re-applied on every style.load (not just the
+        // first) since setStyle() below doesn't preserve them.
         mapRef.current.on('style.load', () => {
             mapRef.current.addSource('mapbox-dem', {
                 type: 'raster-dem',
@@ -133,6 +121,10 @@ function MapDraw({ features, setFeatures, toast }) {
                 maxzoom: 14,
             });
             mapRef.current.setTerrain({ source: 'mapbox-dem', exaggeration: 1.0 });
+            applyBasemapConfig(mapRef.current);
+            mapRef.current.setConfigProperty('basemap', 'lightPreset', 'day');
+            mapRef.current.setConfigProperty('basemap', 'font', 'Montserrat');
+            applySatelliteLayerVisibility(mapRef.current);
         });
 
         draw.current = new MapboxDraw({ displayControlsDefault: true, defaultMode: 'draw_polygon', styles: DRAW_STYLES });
@@ -194,7 +186,9 @@ function MapDraw({ features, setFeatures, toast }) {
         try {
             const bbox = bboxFromFeature(feature);
             mapRef.current?.fitBounds(bbox, { padding: 60, maxZoom: 18 });
-        } catch (_) {}
+        } catch {
+            // Unsupported/degenerate geometry -- leave the map view as-is.
+        }
     }
 
     function handleDeleteFeature(id) {
