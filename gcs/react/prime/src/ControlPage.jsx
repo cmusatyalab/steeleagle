@@ -1,7 +1,5 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useMemo } from 'react';
 import { Button } from 'primereact/button';
-import { Chip } from 'primereact/chip';
-import { Panel } from 'primereact/panel';
 import { Toolbar } from 'primereact/toolbar';
 import { ButtonGroup } from 'primereact/buttongroup';
 import { Tooltip } from 'primereact/tooltip';
@@ -10,15 +8,12 @@ import { Image } from 'primereact/image';
 import { Dropdown } from 'primereact/dropdown';
 import React from 'react';
 import { getApiUrl } from './urls.js';
-import VehicleGrid from './VehicleGrid.jsx';
 import Mapbox from './Mapbox.jsx';
-import { toggleVehicleInSquad, recallControlGroup, squadMatchesGroup } from './squadUtils.js';
-import { sortVehiclesForDisplay, vehicleStatus, vehicleStatusColor, vehicleStatusRailFill, isVehicleDisconnected } from './mapUtils.js';
+import { toggleVehicleInSquad } from './squadUtils.js';
 
 const cancelOptions = { icon: 'pi pi-fw pi-times', iconOnly: true, className: 'custom-cancel-btn p-button-danger' };
 const chooseOptions = { label: 'Select...', icon: 'pi pi-fw pi-file', iconOnly: false, className: 'custom-choose-btn p-button-primary' };
 const uploadOptions = { icon: 'pi pi-fw pi-cloud-upload', iconOnly: true, className: 'custom-upload-btn p-button-info' };
-const controlGroupDigits = ['1', '2', '3'];
 
 // Shared between the map and the video panel next to it so they're always
 // the same height (passed to Mapbox as mapHeight, overriding its own
@@ -29,9 +24,7 @@ const videoPanelHeight = '26rem';
 function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, setTracking,
   showDetections, onToggleDetections, toast, onCommand,
   setManualControl, squadList, setSquadList, takeOffAltitude, controlGroups }) {
-  const [mapPanelSize] = useState(0);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const sortedVehicles = useMemo(() => sortVehiclesForDisplay(vehicles, squadList), [vehicles, squadList]);
+  const mapPanelSize = 0;
   const onProgress = () => {
     toast.current.show({ severity: 'info', summary: 'In Progress', detail: 'Uploading files...' });
   };
@@ -147,142 +140,60 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
   ), [onCommand, takeOffAltitude]);
 
   const vehicleNames = useMemo(() => vehicles.map(v => v.name), [vehicles]);
-  const connectedVehicleNames = useMemo(
-    () => vehicles.filter(v => !isVehicleDisconnected(v)).map(v => v.name),
-    [vehicles]
-  );
-
-  const onSelectAllSquad = useCallback(() => setSquadList([...connectedVehicleNames]), [connectedVehicleNames, setSquadList]);
-  const onClearSquad = useCallback(() => setSquadList([]), [setSquadList]);
-  const onRecallGroup = useCallback((digit) => setSquadList(recallControlGroup(controlGroups, digit)), [controlGroups, setSquadList]);
 
   const onToggleVehicle = (name) => setSquadList((prev) => toggleVehicleInSquad(prev, name));
 
-  const squadHeaderTemplate = (options) => (
-    <div className={`${options.className} flex-column align-items-stretch`}>
-      <div className="flex align-items-center justify-content-between mb-2">
-        <div className="flex align-items-center gap-1">
-          <Button size="small" rounded text label="" icon="pi pi-chevron-left" tooltip="Collapse" tooltipOptions={{ position: 'bottom' }} onClick={() => setSidebarCollapsed(true)} aria-label="Collapse squad list" />
-          <span className="font-bold">Squad</span>
-        </div>
-        <Chip label={`${(squadList ?? []).length}/${vehicleNames.length} selected`} icon="pi pi-users" />
-      </div>
-      <div className="flex align-items-center justify-content-between flex-wrap gap-2">
-        <div className="flex align-items-center gap-1">
-          <Button size="small" rounded text label="" icon="pi pi-check-square" tooltip="Select All" tooltipOptions={{ position: 'bottom' }} onClick={onSelectAllSquad} aria-label="Select All" />
-          <Button size="small" rounded text label="" icon="pi pi-times" tooltip="Clear" tooltipOptions={{ position: 'bottom' }} onClick={onClearSquad} aria-label="Clear" />
-        </div>
-        <ButtonGroup>
-          {controlGroupDigits.map((digit) => {
-            const hasVehicles = controlGroups[digit]?.length > 0;
-            const isActive = hasVehicles && squadMatchesGroup(squadList, controlGroups, digit);
-            return (
-            <Button
-              key={digit}
-              size="small"
-              outlined={!hasVehicles}
-              severity={!hasVehicles ? 'secondary' : isActive ? 'success' : undefined}
-              label={digit}
-              tooltip={`Group ${digit}: ${(controlGroups[digit] ?? []).length} vehicles${isActive ? ' (currently selected)' : ''}`}
-              tooltipOptions={{ position: 'bottom' }}
-              onClick={() => onRecallGroup(digit)}
-            />
-            );
-          })}
-        </ButtonGroup>
-      </div>
-    </div>
-  );
-
   return (
-    <>
-      <div className="flex flex-column lg:flex-row m-0">
-        <div
-          className={sidebarCollapsed ? "p-2" : "p-2 w-full lg:w-3"}
-          style={sidebarCollapsed ? { width: '56px', flexShrink: 0 } : undefined}
-        >
-          {sidebarCollapsed ? (
-            <div className="flex flex-column align-items-center gap-3 pt-2">
-              <Button size="small" rounded text label="" icon="pi pi-chevron-right" tooltip="Expand" tooltipOptions={{ position: 'right' }} onClick={() => setSidebarCollapsed(false)} aria-label="Expand squad list" />
-              {sortedVehicles.map((v) => {
-                const disconnected = isVehicleDisconnected(v);
-                const status = vehicleStatus(disconnected, !!(squadList && squadList.includes(v.name)));
-                return (
-                  <span
-                    key={v.name}
-                    title={`${v.name} (${status})`}
-                    onClick={disconnected ? undefined : () => onToggleVehicle(v.name)}
-                    style={{
-                      width: '12px', height: '12px', borderRadius: '50%',
-                      cursor: disconnected ? 'not-allowed' : 'pointer',
-                      backgroundColor: vehicleStatusRailFill(status),
-                      border: `2px solid ${vehicleStatusColor(status)}`,
-                      opacity: disconnected ? 0.6 : 1,
-                    }}
-                  />
-                );
-              })}
-            </div>
-          ) : (
-            <Panel headerTemplate={squadHeaderTemplate} className="h-full">
-              <div className="grid m-0" style={{ maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
-                <VehicleGrid vehicles={sortedVehicles} selectable squadList={squadList} onToggle={onToggleVehicle} cardColumnClass="col-12 p-2" />
-              </div>
-            </Panel>
-          )}
+    <div className="p-2">
+      <div className="flex flex-column">
+        <div className="flex align-items-center gap-2 mb-2 px-2 py-1 border-round" style={{ backgroundColor: 'var(--surface-card)', border: '1px solid var(--surface-border)' }}>
+          {/* Left/center/right flex-1 sections roughly align with the map
+              and video panels below: the left slot is reserved for a
+              future map-tileset dropdown, not built yet. */}
+          <div className="flex-1" />
+          <div className="flex align-items-center gap-1">
+            <Button
+              size="small"
+              outlined={!tracking}
+              severity={tracking ? undefined : 'secondary'}
+              icon={tracking ? 'pi pi-bullseye' : 'pi pi-map'}
+              tooltip={`Tracking ${tracking ? 'On' : 'Off'}: recenters the map on the selected vehicle`}
+              tooltipOptions={{ position: 'bottom' }}
+              onClick={() => setTracking(!tracking)}
+              aria-label="Toggle tracking"
+            />
+            <Button
+              size="small"
+              outlined={!showDetections}
+              severity={showDetections ? undefined : 'secondary'}
+              icon={showDetections ? 'pi pi-eye' : 'pi pi-eye-slash'}
+              tooltip={`Detections ${showDetections ? 'Shown' : 'Hidden'}: toggles bounding boxes on the video stream`}
+              tooltipOptions={{ position: 'bottom' }}
+              onClick={() => onToggleDetections(!showDetections)}
+              aria-label="Toggle show detections"
+            />
+          </div>
+          <div className="flex-1 flex justify-content-end">
+            <Dropdown value={selectedVehicle} checkmark={true} onChange={(e) => setSelectedVehicle(e.value)} options={vehicleNames} useOptionAsValue optionLabel="name"
+              placeholder="Select Video Feed" className="w-full md:w-14rem" />
+          </div>
         </div>
-        <div className="p-2 flex-1" style={{ minWidth: 0 }}>
-          <div className="flex flex-column">
-            <div className="flex align-items-center gap-2 mb-2 px-2 py-1 border-round" style={{ backgroundColor: 'var(--surface-card)', border: '1px solid var(--surface-border)' }}>
-              {/* Left/center/right flex-1 sections roughly align with the map
-                  and video panels below: the left slot is reserved for a
-                  future map-tileset dropdown, not built yet. */}
-              <div className="flex-1" />
-              <div className="flex align-items-center gap-1">
-                <Button
-                  size="small"
-                  outlined={!tracking}
-                  severity={tracking ? undefined : 'secondary'}
-                  icon={tracking ? 'pi pi-bullseye' : 'pi pi-map'}
-                  tooltip={`Tracking ${tracking ? 'On' : 'Off'}: recenters the map on the selected vehicle`}
-                  tooltipOptions={{ position: 'bottom' }}
-                  onClick={() => setTracking(!tracking)}
-                  aria-label="Toggle tracking"
-                />
-                <Button
-                  size="small"
-                  outlined={!showDetections}
-                  severity={showDetections ? undefined : 'secondary'}
-                  icon={showDetections ? 'pi pi-eye' : 'pi pi-eye-slash'}
-                  tooltip={`Detections ${showDetections ? 'Shown' : 'Hidden'}: toggles bounding boxes on the video stream`}
-                  tooltipOptions={{ position: 'bottom' }}
-                  onClick={() => onToggleDetections(!showDetections)}
-                  aria-label="Toggle show detections"
-                />
-              </div>
-              <div className="flex-1 flex justify-content-end">
-                <Dropdown value={selectedVehicle} checkmark={true} onChange={(e) => setSelectedVehicle(e.value)} options={vehicleNames} useOptionAsValue optionLabel="name"
-                  placeholder="Select Video Feed" className="w-full md:w-14rem" />
-              </div>
-            </div>
-            <div className="grid m-0">
-              <div className="col-12 lg:col-6 p-2">
-                <Mapbox selectedVehicle={selectedVehicle} vehicles={vehicles} mapPanelSize={mapPanelSize} tracking={tracking}
-                  mapHeight={videoPanelHeight} squadList={squadList} onToggleVehicle={onToggleVehicle} controlGroups={controlGroups} />
-              </div>
-              <div className="col-12 lg:col-6 p-2">
-                <div style={{ height: videoPanelHeight, backgroundColor: '#000' }}>
-                  <Image imageStyle={{ width: '100%', height: '100%', objectFit: 'contain' }} pt={{ image: { id: 'image_stream' } }} src="nostream.png" />
-                </div>
-              </div>
-            </div>
-            <div className="my-2" style={{ overflowX: 'auto' }}>
-              <Toolbar className="w-full flex-nowrap" start={controlButtons} end={missonControls} />
+        <div className="grid m-0">
+          <div className="col-12 lg:col-6 p-2">
+            <Mapbox selectedVehicle={selectedVehicle} vehicles={vehicles} mapPanelSize={mapPanelSize} tracking={tracking}
+              mapHeight={videoPanelHeight} squadList={squadList} onToggleVehicle={onToggleVehicle} controlGroups={controlGroups} />
+          </div>
+          <div className="col-12 lg:col-6 p-2">
+            <div style={{ height: videoPanelHeight, backgroundColor: '#000' }}>
+              <Image imageStyle={{ width: '100%', height: '100%', objectFit: 'contain' }} pt={{ image: { id: 'image_stream' } }} src="nostream.png" />
             </div>
           </div>
         </div>
+        <div className="my-2" style={{ overflowX: 'auto' }}>
+          <Toolbar className="w-full flex-nowrap" start={controlButtons} end={missonControls} />
+        </div>
       </div>
-    </>
+    </div>
   );
 }
 

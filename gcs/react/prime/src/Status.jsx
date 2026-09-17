@@ -2,6 +2,8 @@ import React from "react";
 import { Card } from 'primereact/card';
 import { Badge } from 'primereact/badge';
 import { ProgressBar } from 'primereact/progressbar';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSatellite } from '@fortawesome/free-solid-svg-icons';
 import { vehicleSpeed, isVehicleDisconnected, vehicleStatus, vehicleStatusColor } from './mapUtils.js';
 
 const cardPassthrough = {
@@ -53,14 +55,20 @@ function Status({ vehicle, selectable, selected, onToggle }) {
                 />
             )}
             <div className="flex flex-column gap-1">
-                <div className="flex align-items-center gap-2">
+                <div className="flex align-items-center gap-2" style={{ minWidth: 0 }}>
                     <i
                         className={disconnected ? "pi pi-times" : "pi pi-link"}
-                        style={{ color: statusColor, fontSize: '0.8rem' }}
+                        style={{ color: statusColor, fontSize: '0.8rem', flexShrink: 0 }}
                         title={disconnected ? "Disconnected" : "Online"}
                     />
-                    <span className="font-semibold text-sm">{vehicle.name}</span>
-                    <span className="text-color-secondary text-xs">{vehicle.model}</span>
+                    <span
+                        className="font-semibold text-sm white-space-nowrap overflow-hidden text-overflow-ellipsis"
+                        style={{ minWidth: 0 }}
+                        title={vehicle.name}
+                    >
+                        {vehicle.name}
+                    </span>
+                    <span className="text-color-secondary text-xs white-space-nowrap" style={{ flexShrink: 0 }}>{vehicle.model}</span>
                 </div>
                 <div className="flex align-items-center gap-2">
                     <ProgressBar color={`var(--${battery_severity})`} style={{ width: '3rem', height: '4px' }} value={vehicle.battery} showValue={false} />
@@ -72,7 +80,7 @@ function Status({ vehicle, selectable, selected, onToggle }) {
                     </span>
                     <span className="text-xs text-color-secondary">{speed.toFixed(1)} m/s</span>
                     <span className="text-xs text-color-secondary flex align-items-center gap-1">
-                        <i className="pi pi-wifi" style={{ fontSize: '0.65rem' }} />
+                        <FontAwesomeIcon icon={faSatellite} style={{ fontSize: '0.65rem' }} />
                         {vehicle.sats}
                     </span>
                 </div>

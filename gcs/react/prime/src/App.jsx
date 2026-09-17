@@ -7,7 +7,6 @@ import { Divider } from 'primereact/divider';
 import { Badge } from 'primereact/badge';
 import { Message } from 'primereact/message';
 import { Toast } from 'primereact/toast';
-import { Sidebar } from 'primereact/sidebar';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { InputSwitch } from 'primereact/inputswitch';
@@ -24,6 +23,7 @@ import Cli from './Cli.jsx';
 import ControlPage from './ControlPage.jsx';
 import MonitorPage from './MonitorPage.jsx';
 import PlanPage from './PlanPage.jsx';
+import VehicleSidebar, { VEHICLE_SIDEBAR_COLLAPSED_WIDTH, VEHICLE_SIDEBAR_EXPANDED_WIDTH } from './VehicleSidebar.jsx';
 import { getWebSocketUrl, getApiUrl } from './urls.js';
 import { assignControlGroup, recallControlGroup } from './squadUtils.js';
 import { CONTROL_MAPPINGS } from './controlMappings.js';
@@ -59,6 +59,7 @@ function App() {
   const [gamepadDeadzone, setGamepadDeadzone] = useState(10);
   const [squadList, setSquadList] = useState(null);
   const [controlGroups, setControlGroups] = useState({});
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [socketUrl, setSocketUrl] = useState('');
   // Keep a ref to the last-known vehicles JSON so we can skip setVehicles when
   // the server returns identical data, preventing needless re-renders.
@@ -501,17 +502,24 @@ function App() {
 
   return (
     <>
-      <Menubar model={items} start={menuBarStart} end={menuBarEnd} />
-      <Divider />
-      {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} setSelectedVehicle={setSelectedVehicle}
-        tracking={tracking} setTracking={setTracking} showDetections={showDetections} onToggleDetections={onToggleDetections}
-        toast={toast} onCommand={onCommand}
-        setManualControl={setManualControl} squadList={squadList} setSquadList={setSquadList}
-        takeOffAltitude={takeOffAltitude}
-        controlGroups={controlGroups} />}
-      {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} detectedObjects={detectedObjects} />}
-      <div style={{ display: selectedMenu === 'Plan' ? '' : 'none' }}>
-        {planMounted && <PlanPage vehicles={vehicles} squadList={squadList} theme={theme} />}
+      <VehicleSidebar vehicles={vehicles} squadList={squadList} setSquadList={setSquadList}
+        controlGroups={controlGroups} collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} />
+      <div style={{
+        paddingLeft: sidebarCollapsed ? VEHICLE_SIDEBAR_COLLAPSED_WIDTH : VEHICLE_SIDEBAR_EXPANDED_WIDTH,
+        transition: 'padding-left 0.2s',
+      }}>
+        <Menubar model={items} start={menuBarStart} end={menuBarEnd} />
+        <Divider />
+        {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} setSelectedVehicle={setSelectedVehicle}
+          tracking={tracking} setTracking={setTracking} showDetections={showDetections} onToggleDetections={onToggleDetections}
+          toast={toast} onCommand={onCommand}
+          setManualControl={setManualControl} squadList={squadList} setSquadList={setSquadList}
+          takeOffAltitude={takeOffAltitude}
+          controlGroups={controlGroups} />}
+        {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} detectedObjects={detectedObjects} />}
+        <div style={{ display: selectedMenu === 'Plan' ? '' : 'none' }}>
+          {planMounted && <PlanPage vehicles={vehicles} squadList={squadList} theme={theme} />}
+        </div>
       </div>
       <Toast ref={toast} />
     </>
