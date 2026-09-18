@@ -21,7 +21,7 @@ import { useEventListener } from 'primereact/hooks';
 import GameControls from './GameControls.jsx'
 import Cli from './Cli.jsx';
 import ControlPage from './ControlPage.jsx';
-import MonitorPage from './MonitorPage.jsx';
+import OrchestrationPage from './OrchestrationPage.jsx';
 import PlanPage from './PlanPage.jsx';
 import VehicleSidebar, { VEHICLE_SIDEBAR_COLLAPSED_WIDTH, VEHICLE_SIDEBAR_EXPANDED_WIDTH } from './VehicleSidebar.jsx';
 import { getWebSocketUrl, getApiUrl } from './urls.js';
@@ -32,10 +32,9 @@ import { CONTROL_MAPPINGS } from './controlMappings.js';
 function App() {
   const appName = "SteelEagle";
   const [vehicles, setVehicles] = useState([]);
-  const [detectedObjects, setDetectedObjects] = useState([]);
   const toast = useRef(null);
   const op = useRef(null);
-  const [selectedMenu, setSeletectedMenu] = useState('Control');
+  const [selectedMenu, setSeletectedMenu] = useState('Orchestration');
   const [planMounted, setPlanMounted] = useState(false);
   const [, setKeyPressed] = useState(false);
   const [, setKey] = useState('');
@@ -95,27 +94,6 @@ function App() {
       }
     }
   }, [lastMessage]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch(getApiUrl('/api/remote/objects'));
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const result = await response.json();
-        setDetectedObjects(result);
-
-      } catch (error) {
-        setError(error);
-      }
-    };
-
-    fetchData();
-
-    const intervalId = setInterval(fetchData, 500);
-    return () => clearInterval(intervalId);
-  }, []);
 
   useEffect(() => {
     let lastErrorDetail = null;
@@ -385,17 +363,10 @@ function App() {
 
   const items = useMemo(() => [
     {
-      label: 'Monitor',
-      icon: 'pi pi-eye',
+      label: 'Orchestrate',
+      icon: 'pi pi-sitemap',
       command: () => {
-        setSeletectedMenu('Monitor');
-      },
-    },
-    {
-      label: 'Control',
-      icon: 'pi pi-sliders-v',
-      command: () => {
-        setSeletectedMenu('Control');
+        setSeletectedMenu('Orchestration');
       },
     },
     {
@@ -403,6 +374,13 @@ function App() {
       icon: 'pi pi-pencil',
       command: () => {
         setSeletectedMenu('Plan');
+      },
+    },
+    {
+      label: 'Control',
+      icon: 'pi pi-sliders-v',
+      command: () => {
+        setSeletectedMenu('Control');
       },
     },
 
@@ -510,16 +488,16 @@ function App() {
       }}>
         <Menubar model={items} start={menuBarStart} end={menuBarEnd} />
         <Divider />
+        {selectedMenu == "Orchestration" && <OrchestrationPage toast={toast} />}
+        <div style={{ display: selectedMenu === 'Plan' ? '' : 'none' }}>
+          {planMounted && <PlanPage vehicles={vehicles} squadList={squadList} theme={theme} />}
+        </div>
         {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} setSelectedVehicle={setSelectedVehicle}
           tracking={tracking} setTracking={setTracking} showDetections={showDetections} onToggleDetections={onToggleDetections}
           toast={toast} onCommand={onCommand}
           setManualControl={setManualControl} squadList={squadList} setSquadList={setSquadList}
           takeOffAltitude={takeOffAltitude}
           controlGroups={controlGroups} />}
-        {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} detectedObjects={detectedObjects} />}
-        <div style={{ display: selectedMenu === 'Plan' ? '' : 'none' }}>
-          {planMounted && <PlanPage vehicles={vehicles} squadList={squadList} theme={theme} />}
-        </div>
       </div>
       <Toast ref={toast} />
     </>

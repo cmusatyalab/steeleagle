@@ -54,14 +54,14 @@ export function vehicleStatusRailFill(status) {
     return status === 'offline' ? 'var(--gray-500)' : vehicleStatusColor(status);
 }
 
-// Map marker fill, drawn against the dark "dusk" basemap. "offline" stays
-// grey (not red) -- red markers scattered across the map read as visually
-// busy/alarming next to the basemap and detection markers, whereas the
-// sidebar cards (a much smaller, denser area) read fine with the bolder
-// red. "online" matches the sidebar card's --blue-500 exactly so a
-// vehicle's map marker and its status card read as the same color.
+// Map marker fill. "offline" matches the sidebar card's --red-500 (rather
+// than a muted grey, tried first) -- grey markers all but disappeared
+// against the satellite tileset's similarly muted browns/tans, whereas the
+// saturated red stays legible on both it and the streets basemap. "online"
+// likewise matches the sidebar card's --blue-500, so a vehicle's map
+// marker and its status card always read as the same color.
 const MAP_STATUS_COLORS = {
-    offline: 'var(--gray-500)',
+    offline: 'var(--red-500)',
     online: 'var(--blue-500)',
     selected: 'var(--green-500)',
 };
@@ -70,14 +70,13 @@ export function vehicleStatusMapColor(status) {
     return MAP_STATUS_COLORS[status];
 }
 
-// Map popup label text. Deliberately does NOT mirror vehicleStatusMapColor
-// -- only the chevron marker itself should carry the blue "online" accent;
-// the text underneath stays a neutral grey scale (darker for offline,
-// lighter for online) so labels stay easy to read at a glance without
-// competing with the marker's color. "selected" is white for contrast
-// against its green marker.
+// Map popup label text. "offline" mirrors vehicleStatusMapColor's red for
+// the same legibility-against-satellite-imagery reason. "online" stays a
+// neutral light grey rather than matching its marker's blue, so the label
+// doesn't compete with the marker's color; "selected" is white for
+// contrast against its green marker.
 const TEXT_STATUS_COLORS = {
-    offline: 'var(--gray-500)',
+    offline: 'var(--red-500)',
     online: 'var(--gray-200)',
     selected: '#ffffff',
 };
