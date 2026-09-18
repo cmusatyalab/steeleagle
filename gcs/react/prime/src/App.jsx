@@ -7,8 +7,6 @@ import { Divider } from 'primereact/divider';
 import { Badge } from 'primereact/badge';
 import { Message } from 'primereact/message';
 import { Toast } from 'primereact/toast';
-import { DataTable } from 'primereact/datatable';
-import { Column } from 'primereact/column';
 import { InputSwitch } from 'primereact/inputswitch';
 import { Knob } from 'primereact/knob';
 import { Button } from 'primereact/button';
@@ -24,9 +22,9 @@ import ControlPage from './ControlPage.jsx';
 import OrchestrationPage from './OrchestrationPage.jsx';
 import PlanPage from './PlanPage.jsx';
 import VehicleSidebar, { VEHICLE_SIDEBAR_COLLAPSED_WIDTH, VEHICLE_SIDEBAR_EXPANDED_WIDTH } from './VehicleSidebar.jsx';
+import ControlMappingsTable from './ControlMappingsTable.jsx';
 import { getWebSocketUrl, getApiUrl } from './urls.js';
 import { assignControlGroup, recallControlGroup } from './squadUtils.js';
-import { CONTROL_MAPPINGS } from './controlMappings.js';
 
 
 function App() {
@@ -50,8 +48,8 @@ function App() {
     localStorage.setItem('se-theme', theme);
   }, [theme]);
   const [manualControl, setManualControl] = useState(false);
-  const [basePlanarVelocity, setBasePlanarVelocity] = useState(1);
-  const [baseAngularVelocity, setBaseAngularVelocity] = useState(90);
+  const [basePlanarVelocity, setBasePlanarVelocity] = useState(3);
+  const [baseAngularVelocity, setBaseAngularVelocity] = useState(120);
   const [takeOffAltitude, setTakeOffAltitude] = useState(3);
   const [gimbalVelocity, setGimbalVelocity] = useState(15);
   const [showDetections, setShowDetections] = useState(true);
@@ -451,11 +449,7 @@ function App() {
       <Divider />
       <div className="flex flex-column m-2">
         <span className="font-bold mb-2">Control Mappings</span>
-        <DataTable value={CONTROL_MAPPINGS} size="small" scrollable scrollHeight="300px">
-          <Column field="action" header="Action" />
-          <Column field="keyboard" header="Keyboard" />
-          <Column field="gamepad" header="Gamepad" />
-        </DataTable>
+        <ControlMappingsTable />
       </div>
     </>
   ), [baseAngularVelocity, setBaseAngularVelocity, basePlanarVelocity, setBasePlanarVelocity,

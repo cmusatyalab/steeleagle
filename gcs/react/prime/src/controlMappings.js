@@ -1,5 +1,5 @@
-// Kept in sync manually with App.jsx's onKeyDown handler (~line 175) and the
-// gamepad button/axis effects (~line 244, ~line 274). Update here if those
+// Kept in sync manually with App.jsx's onKeyDown handler (~line 130) and the
+// gamepad button/axis effects (~line 214, ~line 250). Update here if those
 // bindings change.
 export const CONTROL_MAPPINGS = [
   { action: 'Enable Manual / Hold', keyboard: 'Esc', gamepad: 'Start / Options (9)' },
@@ -12,6 +12,8 @@ export const CONTROL_MAPPINGS = [
   { action: 'Move Up / Down', keyboard: 'I / K', gamepad: 'Left Stick Y (axis 1)' },
   { action: 'Yaw Left / Right', keyboard: 'J / L', gamepad: 'Left Stick X (axis 0)' },
   { action: 'Stop (zero velocity)', keyboard: '0', gamepad: '—' },
+  { action: 'Assign Squad to Group 1-3 (Control tab only)', keyboard: 'Shift + 1 / 2 / 3', gamepad: '—' },
+  { action: 'Recall Squad Group 1-3 (Control tab only)', keyboard: '1 / 2 / 3', gamepad: '—' },
   { action: 'Gimbal Pitch Up', keyboard: 'R', gamepad: 'D-Pad Up (12)' },
   { action: 'Gimbal Pitch Down', keyboard: 'F', gamepad: 'D-Pad Down (13)' },
 ];
