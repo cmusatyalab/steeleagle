@@ -25,6 +25,7 @@ import VehicleSidebar, { VEHICLE_SIDEBAR_COLLAPSED_WIDTH, VEHICLE_SIDEBAR_EXPAND
 import ControlMappingsTable from './ControlMappingsTable.jsx';
 import { getWebSocketUrl, getApiUrl } from './urls.js';
 import { assignControlGroup, recallControlGroup } from './squadUtils.js';
+import { postToApi } from './apiUtils.js';
 
 
 function App() {
@@ -290,45 +291,14 @@ function App() {
     };
   }, [bindKeyDown, bindKeyUp, unbindKeyDown, unbindKeyUp, selectedMenu]);
 
-  // postToApi posts body to path and returns the parsed JSON response, or null
-  // on any failure. Every failure path surfaces an error toast instead of
-  // failing silently.
-  const postToApi = useCallback(async (path, body, errorSummary) => {
-    let response;
-    try {
-      response = await fetch(getApiUrl(path), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-    } catch (err) {
-      toast.current.show({ severity: 'error', summary: errorSummary, detail: `request failed: ${err.message}` });
-      return null;
-    }
-
-    let result;
-    try {
-      result = await response.json();
-    } catch {
-      toast.current.show({ severity: 'error', summary: errorSummary, detail: `server returned a non-JSON response (status ${response.status})` });
-      return null;
-    }
-
-    if (!response.ok) {
-      toast.current.show({ severity: 'error', summary: errorSummary, detail: `HTTP error! status: ${result.detail ?? response.status}` });
-      return null;
-    }
-    return result;
-  }, []);
-
   const onJoystick = useCallback(async (body) => {
     body.vehicles = squadList;
     if (squadList == null || squadList.length == 0) {
       toast.current.show({ severity: 'warn', summary: 'No Vehicles in Squad', detail: `Please select at least one vehicle to control.` });
       return;
     }
-    await postToApi('/api/joystick', body, 'Joystick Error');
-  }, [squadList, basePlanarVelocity, baseAngularVelocity, postToApi]);
+    await postToApi('/api/joystick', body, toast, 'Joystick Error');
+  }, [squadList, basePlanarVelocity, baseAngularVelocity]);
 
   const onCommand = useCallback(async (body) => {
     body.vehicles = squadList;
@@ -341,14 +311,14 @@ function App() {
     }
 
     toast.current.show({ severity: 'info', summary: 'Command Sent', detail: `${JSON.stringify(body)}` });
-    const result = await postToApi('/api/command', body, 'Command Error');
+    const result = await postToApi('/api/command', body, toast, 'Command Error');
     if (result !== null) {
       toast.current.show({ severity: 'success', summary: 'Command Success', detail: `${JSON.stringify(result)}` });
       if (body.hold) {
         setManualControl(true);
       }
     }
-  }, [squadList, takeOffAltitude, postToApi]);
+  }, [squadList, takeOffAltitude]);
 
   const onGimbal = useCallback(async (body) => {
     body.vehicles = squadList;
@@ -356,8 +326,8 @@ function App() {
       toast.current.show({ severity: 'warn', summary: 'No Vehicles in Squad', detail: `Please select at least one vehicle to control.` });
       return;
     }
-    await postToApi('/api/gimbal', body, 'Command Error');
-  }, [squadList, postToApi]);
+    await postToApi('/api/gimbal', body, toast, 'Command Error');
+  }, [squadList]);
 
   const items = useMemo(() => [
     {

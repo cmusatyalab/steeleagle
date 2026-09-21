@@ -1,4 +1,4 @@
-from app.api import build_schema_response
+from app.dslcompiler_routes import build_schema_response
 from steeleagle_protocol.v1.services.dslcompiler import dslcompiler_pb2
 
 

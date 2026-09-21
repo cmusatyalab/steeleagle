@@ -1,5 +1,5 @@
 import pytest
-from app.api import parse_dsl_response_to_dict
+from app.dslcompiler_routes import parse_dsl_response_to_dict
 from fastapi import HTTPException
 from steeleagle_protocol.v1.services.dslcompiler import dslcompiler_pb2
 

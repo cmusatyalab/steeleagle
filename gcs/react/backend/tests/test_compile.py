@@ -1,4 +1,4 @@
-from app.api import (
+from app.dslcompiler_routes import (
     CompileEdge,
     CompileEvent,
     CompileNode,
