@@ -34,6 +34,24 @@ function loadDaemons() {
     }
 }
 
+// crypto.randomUUID() is spec-gated to secure contexts (HTTPS or
+// localhost), so it throws on GCS instances reached over plain HTTP on
+// the LAN. crypto.getRandomValues() has no such restriction, so build
+// a v4 UUID from it when randomUUID isn't available.
+function generateId() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+    }
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+        const bytes = crypto.getRandomValues(new Uint8Array(16));
+        bytes[6] = (bytes[6] & 0x0f) | 0x40;
+        bytes[8] = (bytes[8] & 0x3f) | 0x80;
+        const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0'));
+        return `${hex.slice(0, 4).join('')}-${hex.slice(4, 6).join('')}-${hex.slice(6, 8).join('')}-${hex.slice(8, 10).join('')}-${hex.slice(10, 16).join('')}`;
+    }
+    return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 // Mirrors eagle CLI's real subcommands 1:1 (cmd/eagle/main.go) so this
 // preview accurately reflects the eventual command surface rather than
 // inventing placeholder names. None of these are wired to a daemon yet --
@@ -177,7 +195,7 @@ function OrchestrationPage({ toast }) {
         const name = newName.trim();
         const address = newAddress.trim();
         if (!name || !address) return;
-        const id = crypto.randomUUID();
+        const id = generateId();
         setDaemons((prev) => [...prev, { id, name, address }]);
         setNewName('');
         setNewAddress('');
