@@ -5,6 +5,8 @@
 syntax = "proto3";
 package steeleagle_protocol.v1.services.eagled;
 
+import "google/protobuf/timestamp.proto";
+
 option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/eagled;eagled";
 
 /*
@@ -98,6 +100,21 @@ service DaemonService {
    * VehicleStatus.config_stale).
    */
   rpc GetStatus (GetStatusRequest) returns (GetStatusResponse) {}
+
+  /*
+   * Stream log records captured by this daemon (its own logs plus every
+   * vehicle's and plugin's output), oldest first. The daemon persists logs
+   * per source, so a stream can replay backlog (tail lines per source, or
+   * everything after a per-source resume cursor) and then, if follow is set,
+   * keep streaming live records until the client cancels. When the daemon
+   * shuts down the stream ends with UNAVAILABLE.
+   */
+  rpc StreamLogs (StreamLogsRequest) returns (stream LogRecord) {}
+
+  /*
+   * List every log source this daemon has on disk (running or not).
+   */
+  rpc ListLogSources (ListLogSourcesRequest) returns (ListLogSourcesResponse) {}
 }
 
 message ConfigureRequest {
@@ -231,4 +248,32 @@ message VehicleStatus {
   // previous config, and picks up the new one on its next restart. Always
   // false when not running.
   bool config_stale = 5;
+}
+
+message StreamLogsRequest {
+  repeated string sources = 1;        // empty = all sources
+  int32 tail = 2;                     // backlog lines per source before following; 0 = none
+  bool follow = 3;                    // false: send backlog and end; true: keep streaming
+  map<string, uint64> after_seq = 4;  // resume cursor: only records with seq > value; takes precedence over tail for that source
+}
+
+message LogRecord {
+  string source = 1;
+  uint64 seq = 2;                     // monotonic per source; 0 on gap markers
+  google.protobuf.Timestamp time = 3; // daemon receive time
+  string level = 4;                   // empty if unknown
+  string text = 5;
+  uint64 dropped = 6;                 // nonzero iff this is a synthetic gap marker (lines dropped for a slow consumer)
+}
+
+message ListLogSourcesRequest {}
+
+message ListLogSourcesResponse {
+  repeated LogSource sources = 1;
+}
+
+message LogSource {
+  string name = 1;
+  bool running = 2;                   // a live process is currently producing it
+  int64 size_bytes = 3;               // total bytes on disk across rotated files
 }

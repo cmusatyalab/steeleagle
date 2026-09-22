@@ -64,6 +64,16 @@ class DaemonServiceStub:
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetStatusRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetStatusResponse.FromString,
                 _registered_method=True)
+        self.StreamLogs = channel.unary_stream(
+                '/steeleagle_protocol.v1.services.eagled.DaemonService/StreamLogs',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StreamLogsRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.LogRecord.FromString,
+                _registered_method=True)
+        self.ListLogSources = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.eagled.DaemonService/ListLogSources',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ListLogSourcesRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ListLogSourcesResponse.FromString,
+                _registered_method=True)
 
 
 class DaemonServiceServicer:
@@ -186,6 +196,27 @@ class DaemonServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def StreamLogs(self, request, context):
+        """
+        Stream log records captured by this daemon (its own logs plus every
+        vehicle's and plugin's output), oldest first. The daemon persists logs
+        per source, so a stream can replay backlog (tail lines per source, or
+        everything after a per-source resume cursor) and then, if follow is set,
+        keep streaming live records until the client cancels. When the daemon
+        shuts down the stream ends with UNAVAILABLE.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListLogSources(self, request, context):
+        """
+        List every log source this daemon has on disk (running or not).
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_DaemonServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -233,6 +264,16 @@ def add_DaemonServiceServicer_to_server(servicer, server):
                     servicer.GetStatus,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetStatusRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetStatusResponse.SerializeToString,
+            ),
+            'StreamLogs': grpc.unary_stream_rpc_method_handler(
+                    servicer.StreamLogs,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StreamLogsRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.LogRecord.SerializeToString,
+            ),
+            'ListLogSources': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListLogSources,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ListLogSourcesRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ListLogSourcesResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -483,6 +524,60 @@ class DaemonService:
             '/steeleagle_protocol.v1.services.eagled.DaemonService/GetStatus',
             steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetStatusRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetStatusResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def StreamLogs(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            '/steeleagle_protocol.v1.services.eagled.DaemonService/StreamLogs',
+            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StreamLogsRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.LogRecord.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListLogSources(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/steeleagle_protocol.v1.services.eagled.DaemonService/ListLogSources',
+            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ListLogSourcesRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ListLogSourcesResponse.FromString,
             options,
             channel_credentials,
             insecure,

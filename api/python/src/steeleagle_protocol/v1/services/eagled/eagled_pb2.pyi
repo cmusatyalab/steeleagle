@@ -1,3 +1,6 @@
+import datetime
+
+from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
@@ -191,3 +194,58 @@ class VehicleStatus(_message.Message):
     port: int
     config_stale: bool
     def __init__(self, name: _Optional[str] = ..., driver: _Optional[str] = ..., running: _Optional[bool] = ..., port: _Optional[int] = ..., config_stale: _Optional[bool] = ...) -> None: ...
+
+class StreamLogsRequest(_message.Message):
+    __slots__ = ("sources", "tail", "follow", "after_seq")
+    class AfterSeqEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: int
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[int] = ...) -> None: ...
+    SOURCES_FIELD_NUMBER: _ClassVar[int]
+    TAIL_FIELD_NUMBER: _ClassVar[int]
+    FOLLOW_FIELD_NUMBER: _ClassVar[int]
+    AFTER_SEQ_FIELD_NUMBER: _ClassVar[int]
+    sources: _containers.RepeatedScalarFieldContainer[str]
+    tail: int
+    follow: bool
+    after_seq: _containers.ScalarMap[str, int]
+    def __init__(self, sources: _Optional[_Iterable[str]] = ..., tail: _Optional[int] = ..., follow: _Optional[bool] = ..., after_seq: _Optional[_Mapping[str, int]] = ...) -> None: ...
+
+class LogRecord(_message.Message):
+    __slots__ = ("source", "seq", "time", "level", "text", "dropped")
+    SOURCE_FIELD_NUMBER: _ClassVar[int]
+    SEQ_FIELD_NUMBER: _ClassVar[int]
+    TIME_FIELD_NUMBER: _ClassVar[int]
+    LEVEL_FIELD_NUMBER: _ClassVar[int]
+    TEXT_FIELD_NUMBER: _ClassVar[int]
+    DROPPED_FIELD_NUMBER: _ClassVar[int]
+    source: str
+    seq: int
+    time: _timestamp_pb2.Timestamp
+    level: str
+    text: str
+    dropped: int
+    def __init__(self, source: _Optional[str] = ..., seq: _Optional[int] = ..., time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., level: _Optional[str] = ..., text: _Optional[str] = ..., dropped: _Optional[int] = ...) -> None: ...
+
+class ListLogSourcesRequest(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class ListLogSourcesResponse(_message.Message):
+    __slots__ = ("sources",)
+    SOURCES_FIELD_NUMBER: _ClassVar[int]
+    sources: _containers.RepeatedCompositeFieldContainer[LogSource]
+    def __init__(self, sources: _Optional[_Iterable[_Union[LogSource, _Mapping]]] = ...) -> None: ...
+
+class LogSource(_message.Message):
+    __slots__ = ("name", "running", "size_bytes")
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    RUNNING_FIELD_NUMBER: _ClassVar[int]
+    SIZE_BYTES_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    running: bool
+    size_bytes: int
+    def __init__(self, name: _Optional[str] = ..., running: _Optional[bool] = ..., size_bytes: _Optional[int] = ...) -> None: ...

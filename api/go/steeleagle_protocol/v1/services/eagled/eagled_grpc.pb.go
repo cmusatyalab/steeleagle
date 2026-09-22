@@ -32,6 +32,8 @@ const (
 	DaemonService_ResetConfig_FullMethodName         = "/steeleagle_protocol.v1.services.eagled.DaemonService/ResetConfig"
 	DaemonService_RestartDaemon_FullMethodName       = "/steeleagle_protocol.v1.services.eagled.DaemonService/RestartDaemon"
 	DaemonService_GetStatus_FullMethodName           = "/steeleagle_protocol.v1.services.eagled.DaemonService/GetStatus"
+	DaemonService_StreamLogs_FullMethodName          = "/steeleagle_protocol.v1.services.eagled.DaemonService/StreamLogs"
+	DaemonService_ListLogSources_FullMethodName      = "/steeleagle_protocol.v1.services.eagled.DaemonService/ListLogSources"
 )
 
 // DaemonServiceClient is the client API for DaemonService service.
@@ -101,6 +103,15 @@ type DaemonServiceClient interface {
 	// been replaced by a Configure call it hasn't picked up yet (see
 	// VehicleStatus.config_stale).
 	GetStatus(ctx context.Context, in *GetStatusRequest, opts ...grpc.CallOption) (*GetStatusResponse, error)
+	// Stream log records captured by this daemon (its own logs plus every
+	// vehicle's and plugin's output), oldest first. The daemon persists logs
+	// per source, so a stream can replay backlog (tail lines per source, or
+	// everything after a per-source resume cursor) and then, if follow is set,
+	// keep streaming live records until the client cancels. When the daemon
+	// shuts down the stream ends with UNAVAILABLE.
+	StreamLogs(ctx context.Context, in *StreamLogsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogRecord], error)
+	// List every log source this daemon has on disk (running or not).
+	ListLogSources(ctx context.Context, in *ListLogSourcesRequest, opts ...grpc.CallOption) (*ListLogSourcesResponse, error)
 }
 
 type daemonServiceClient struct {
@@ -201,6 +212,35 @@ func (c *daemonServiceClient) GetStatus(ctx context.Context, in *GetStatusReques
 	return out, nil
 }
 
+func (c *daemonServiceClient) StreamLogs(ctx context.Context, in *StreamLogsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogRecord], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &DaemonService_ServiceDesc.Streams[0], DaemonService_StreamLogs_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[StreamLogsRequest, LogRecord]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type DaemonService_StreamLogsClient = grpc.ServerStreamingClient[LogRecord]
+
+func (c *daemonServiceClient) ListLogSources(ctx context.Context, in *ListLogSourcesRequest, opts ...grpc.CallOption) (*ListLogSourcesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListLogSourcesResponse)
+	err := c.cc.Invoke(ctx, DaemonService_ListLogSources_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DaemonServiceServer is the server API for DaemonService service.
 // All implementations must embed UnimplementedDaemonServiceServer
 // for forward compatibility.
@@ -268,6 +308,15 @@ type DaemonServiceServer interface {
 	// been replaced by a Configure call it hasn't picked up yet (see
 	// VehicleStatus.config_stale).
 	GetStatus(context.Context, *GetStatusRequest) (*GetStatusResponse, error)
+	// Stream log records captured by this daemon (its own logs plus every
+	// vehicle's and plugin's output), oldest first. The daemon persists logs
+	// per source, so a stream can replay backlog (tail lines per source, or
+	// everything after a per-source resume cursor) and then, if follow is set,
+	// keep streaming live records until the client cancels. When the daemon
+	// shuts down the stream ends with UNAVAILABLE.
+	StreamLogs(*StreamLogsRequest, grpc.ServerStreamingServer[LogRecord]) error
+	// List every log source this daemon has on disk (running or not).
+	ListLogSources(context.Context, *ListLogSourcesRequest) (*ListLogSourcesResponse, error)
 	mustEmbedUnimplementedDaemonServiceServer()
 }
 
@@ -304,6 +353,12 @@ func (UnimplementedDaemonServiceServer) RestartDaemon(context.Context, *RestartD
 }
 func (UnimplementedDaemonServiceServer) GetStatus(context.Context, *GetStatusRequest) (*GetStatusResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetStatus not implemented")
+}
+func (UnimplementedDaemonServiceServer) StreamLogs(*StreamLogsRequest, grpc.ServerStreamingServer[LogRecord]) error {
+	return status.Error(codes.Unimplemented, "method StreamLogs not implemented")
+}
+func (UnimplementedDaemonServiceServer) ListLogSources(context.Context, *ListLogSourcesRequest) (*ListLogSourcesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListLogSources not implemented")
 }
 func (UnimplementedDaemonServiceServer) mustEmbedUnimplementedDaemonServiceServer() {}
 func (UnimplementedDaemonServiceServer) testEmbeddedByValue()                       {}
@@ -488,6 +543,35 @@ func _DaemonService_GetStatus_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DaemonService_StreamLogs_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(StreamLogsRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(DaemonServiceServer).StreamLogs(m, &grpc.GenericServerStream[StreamLogsRequest, LogRecord]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type DaemonService_StreamLogsServer = grpc.ServerStreamingServer[LogRecord]
+
+func _DaemonService_ListLogSources_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListLogSourcesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DaemonServiceServer).ListLogSources(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DaemonService_ListLogSources_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DaemonServiceServer).ListLogSources(ctx, req.(*ListLogSourcesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // DaemonService_ServiceDesc is the grpc.ServiceDesc for DaemonService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -531,7 +615,17 @@ var DaemonService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "GetStatus",
 			Handler:    _DaemonService_GetStatus_Handler,
 		},
+		{
+			MethodName: "ListLogSources",
+			Handler:    _DaemonService_ListLogSources_Handler,
+		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "StreamLogs",
+			Handler:       _DaemonService_StreamLogs_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "steeleagle_protocol/v1/services/eagled/eagled.proto",
 }
