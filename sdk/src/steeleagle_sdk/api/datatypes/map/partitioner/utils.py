@@ -1,0 +1,153 @@
+from __future__ import annotations
+
+import math
+from xml.dom import minidom
+
+from shapely.affinity import rotate
+from shapely.geometry import LineString, Point, Polygon
+
+from ...common import Area, Location
+
+
+def round_xy(x: float, y: float, decimals: int = 3) -> tuple[float, float]:
+    k = 10**decimals
+    return (round(x * k) / k, round(y * k) / k)
+
+
+def line_polygon_intersection_points(
+    line: LineString, polygon: Polygon
+) -> list[tuple[float, float]]:
+    inter = line.intersection(polygon.boundary)
+    pts: list[tuple[float, float]] = []
+
+    def add_pt(p: Point):
+        pts.append((p.x, p.y))
+
+    if inter.is_empty:
+        return []
+
+    if isinstance(inter, Point):
+        add_pt(inter)
+    else:
+        for geom in getattr(inter, "geoms", [inter]):
+            if isinstance(geom, Point):
+                add_pt(geom)
+            elif isinstance(geom, LineString):
+                c = list(geom.coords)
+                add_pt(Point(c[0]))
+                add_pt(Point(c[-1]))
+
+    # Dedup (rounded) & sort along line parameter
+    seen = set()
+    out: list[tuple[float, float]] = []
+    for x, y in pts:
+        rx, ry = round_xy(x, y, 6)
+        if (rx, ry) not in seen:
+            seen.add((rx, ry))
+            out.append((x, y))
+
+    p0 = line.coords[0]
+    p1 = line.coords[-1]
+    dx = p1[0] - p0[0]
+    dy = p1[1] - p0[1]
+    denom = dx * dx + dy * dy or 1.0
+
+    def tparam(pt: tuple[float, float]) -> float:
+        x, y = pt
+        return ((x - p0[0]) * dx + (y - p0[1]) * dy) / denom
+
+    out.sort(key=tparam)
+    return out
+
+
+def rotated_infinite_transects(
+    polygon: Polygon, spacing: float, angle_deg: float
+) -> list[LineString]:
+    minx, miny, maxx, maxy = polygon.envelope.bounds
+    width = maxx - minx
+    height = maxy - miny
+    max_len = max(width, height) + 100.0
+    cx, cy = (minx + maxx) / 2.0, (miny + maxy) / 2.0
+
+    lines: list[LineString] = []
+    x = minx - max_len
+    end_x = maxx + max_len
+
+    verticals: list[LineString] = []
+    while x <= end_x:
+        verticals.append(LineString([(x, miny - max_len), (x, maxy + max_len)]))
+        x += spacing
+
+    return [rotate(v, angle_deg, origin=(cx, cy), use_radians=False) for v in verticals]
+
+
+# --- Plain-coordinate geometry helpers used by Area.calculate() ---
+# Operate on bare (x, y) tuples: (lon, lat) for a WGS84 boundary by convention,
+# local projected meters for the planar polygon the partitioning algorithms run on.
+
+
+def to_polygon(coords: list[tuple[float, float]]) -> Polygon:
+    if len(coords) < 3:
+        raise ValueError("A polygon must have at least 3 points")
+    coords = list(coords)
+    if coords[0] != coords[-1]:
+        coords.append(coords[0])
+    return Polygon(coords)
+
+
+def centroid(coords: list[tuple[float, float]]) -> tuple[float, float]:
+    c = to_polygon(coords).centroid
+    return (c.x, c.y)
+
+
+def project_to_meters(
+    coords: list[tuple[float, float]], origin_wgs: tuple[float, float]
+) -> list[tuple[float, float]]:
+    lon0, lat0 = origin_wgs
+    lat_rad = math.radians(lat0)
+    out = []
+    for lon, lat in coords:
+        x = (lon - lon0) * 111_320.0 * math.cos(lat_rad)
+        y = (lat - lat0) * 110_540.0
+        out.append((x, y))
+    return out
+
+
+def inverse_project(
+    xy: tuple[float, float], origin_wgs: tuple[float, float]
+) -> tuple[float, float]:
+    lon0, lat0 = origin_wgs
+    x, y = xy
+    lat_rad = math.radians(lat0)
+    lon = x / (111_320.0 * math.cos(lat_rad)) + lon0
+    lat = y / 110_540.0 + lat0
+    return (lon, lat)
+
+
+def parse_kml_file(kmlstr: str) -> dict[str, Area]:
+    """
+    Parse KML Placemarks with `<coordinates>` entries `"lon,lat[,alt]"`.
+    Returns `{placemark_name: Area(name=placemark_name, points=[Location, ...])}`
+    """
+    doc = minidom.parseString(kmlstr)
+    placemarks = doc.getElementsByTagName("Placemark")
+    result: dict[str, Area] = {}
+
+    for pm in placemarks:
+        name_nodes = pm.getElementsByTagName("name")
+        coords_nodes = pm.getElementsByTagName("coordinates")
+        if not name_nodes or not coords_nodes:
+            continue
+        name = name_nodes[0].firstChild.nodeValue.strip()
+        coords_text = coords_nodes[0].firstChild.nodeValue.strip()
+        result[name] = parse_kml_coordinates(coords_text, name=name)
+    return result
+
+
+def parse_kml_coordinates(kml_coordinates: str, name: str = "") -> Area:
+    points: list[Location] = []
+    for token in kml_coordinates.strip().split():
+        parts = token.split(",")
+        if len(parts) >= 2:
+            points.append(Location(latitude=float(parts[1]), longitude=float(parts[0])))
+    return Area(name=name, points=points)

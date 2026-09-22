@@ -6,7 +6,7 @@ from typing import Any
 
 from pydantic import BaseModel, ValidationError
 
-from ...dsl.compiler.ir import MissionIR
+from ...dsl.compiler.ir import DONE_EVENT, TERMINATE_ACTION_ID, MissionIR
 from ...dsl.compiler.registry import get_action, get_data, get_event
 
 logger = logging.getLogger(__name__)
@@ -75,6 +75,30 @@ def validate_data(
     return cls, model.model_dump()
 
 
+def validate_transitions(mir: MissionIR) -> None:
+    known_actions = set(mir.actions)
+
+    if mir.start_action_id not in known_actions:
+        raise ValueError(
+            f"Mission 'Start' refers to undeclared action '{mir.start_action_id}'"
+        )
+
+    for aid, evmap in mir.transitions.items():
+        if aid not in known_actions:
+            raise ValueError(f"'During {aid}:' refers to undeclared action '{aid}'")
+        for eid, nxt_aid in evmap.items():
+            if eid != DONE_EVENT and eid not in mir.events:
+                raise ValueError(
+                    f"During {aid}: event '{eid}' is not declared in Events "
+                    f"and is not the implicit '{DONE_EVENT}' event"
+                )
+            if nxt_aid != TERMINATE_ACTION_ID and nxt_aid not in known_actions:
+                raise ValueError(
+                    f"During {aid}: transition '{eid} -> {nxt_aid}' refers to "
+                    f"undeclared action '{nxt_aid}'"
+                )
+
+
 def validate_mission_ir(mir: MissionIR) -> MissionIR:
     """
     Validate and normalize every data, action, and event in the MissionIR.
@@ -131,6 +155,9 @@ def validate_mission_ir(mir: MissionIR) -> MissionIR:
             raise ValueError(
                 f"Event '{ename}' of type '{eir.type_name}' failed validation: {e}"
             ) from e
+
+    # Mission transitions (Start / During / -> targets)
+    validate_transitions(mir)
 
     logger.debug(
         "validator: done (data_valid=%d, actions_valid=%d, events_valid=%d)",

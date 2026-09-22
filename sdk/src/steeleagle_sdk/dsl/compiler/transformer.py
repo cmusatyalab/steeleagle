@@ -8,12 +8,15 @@ from typing import Any
 from lark import Token, Transformer, v_args
 
 from ...dsl.compiler import loader, resolver, validator
+from ...dsl.compiler.ir import (
+    DONE_EVENT as _DONE_EVENT,
+)
+from ...dsl.compiler.ir import (
+    TERMINATE_ACTION_ID as _TERMINATE_AID,
+)
 from ...dsl.compiler.ir import ActionIR, DatumIR, EventIR, MissionIR
 
 logger = logging.getLogger(__name__)
-
-_DONE_EVENT = "done"
-_TERMINATE_AID = "terminate"
 
 # ---------- Helpers ----------
 

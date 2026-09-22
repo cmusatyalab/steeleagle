@@ -5,6 +5,12 @@
   text-align: center;
 }
 
+/* Remove default PrimeReact TabView panel padding so content sits flush under tabs */
+.p-tabview-panels,
+.p-tabview-panel {
+  padding: 0 !important;
+}
+
 #map-container {
   height: 100%;
   width: 100%;
