@@ -279,6 +279,7 @@ func printStatus(ctx context.Context, daemonAddr string) error {
 		if err != nil {
 			return fmt.Errorf("getting status of %s: %w", daemonAddr, err)
 		}
+		fmt.Printf("platform: %s/%s\n", resp.GetOs(), resp.GetArch())
 		if !resp.GetConfigured() {
 			fmt.Println("not configured")
 			return nil

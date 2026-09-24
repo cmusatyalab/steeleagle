@@ -1,3 +1,5 @@
+import asyncio
+
 import grpc
 import pytest
 from steeleagle_protocol.v1.services.eagled import eagled_pb2
@@ -108,3 +110,77 @@ async def test_get_status_channel_failure_raises_aio_rpc_error(daemon_server_fac
     async with EagledClient(address) as client:
         with pytest.raises(grpc.aio.AioRpcError):
             await client.get_status()
+
+
+async def test_list_log_sources_returns_response(daemon_server_factory):  # noqa: F811
+    resp = eagled_pb2.ListLogSourcesResponse(
+        sources=[
+            eagled_pb2.LogSource(name="daemon", running=True, size_bytes=10),
+            eagled_pb2.LogSource(name="alpha", running=False, size_bytes=5),
+        ]
+    )
+    _servicer, address = await daemon_server_factory({"ListLogSources": resp})
+
+    async with EagledClient(address) as client:
+        result = await client.list_log_sources()
+
+    assert result == resp
+
+
+async def test_stream_logs_yields_records_and_sends_request(daemon_server_factory):  # noqa: F811
+    records = [
+        eagled_pb2.LogRecord(source="daemon", seq=4, text="four"),
+        eagled_pb2.LogRecord(source="daemon", seq=5, text="five"),
+    ]
+    servicer, address = await daemon_server_factory({"StreamLogs": records})
+
+    async with EagledClient(address) as client:
+        got = [
+            r
+            async for r in client.stream_logs(
+                ["daemon"], tail=5, follow=False, after_seq={"daemon": 3}
+            )
+        ]
+
+    assert got == records
+    sent = servicer.received["StreamLogs"][0]
+    assert list(sent.sources) == ["daemon"]
+    assert sent.tail == 5
+    assert sent.follow is False
+    assert dict(sent.after_seq) == {"daemon": 3}
+
+
+async def test_stream_logs_sets_no_deadline(daemon_server_factory):  # noqa: F811
+    servicer, address = await daemon_server_factory({"StreamLogs": []})
+
+    async with EagledClient(address) as client:
+        _ = [r async for r in client.stream_logs([], 0, False, {})]
+
+    assert servicer.stream_time_remaining is None
+
+
+async def test_stream_logs_cancels_upstream_when_generator_closed(
+    daemon_server_factory,  # noqa: F811
+):
+    servicer, address = await daemon_server_factory(
+        {"StreamLogs": [eagled_pb2.LogRecord(source="daemon", seq=1, text="x")]}
+    )
+
+    async with EagledClient(address) as client:
+        gen = client.stream_logs([], 0, True, {})
+        first = await gen.__anext__()
+        assert first.seq == 1
+        await gen.aclose()
+        await asyncio.wait_for(servicer.stream_finished.wait(), timeout=2)
+
+
+async def test_stream_logs_raises_when_daemon_unavailable(daemon_server_factory):  # noqa: F811
+    _servicer, address = await daemon_server_factory({"StreamLogs": Exception("down")})
+
+    async with EagledClient(address) as client:
+        with pytest.raises(grpc.aio.AioRpcError) as excinfo:
+            async for _ in client.stream_logs([], 0, False, {}):
+                pass
+
+    assert excinfo.value.code() == grpc.StatusCode.UNAVAILABLE
+    assert "down" in (excinfo.value.details() or "")

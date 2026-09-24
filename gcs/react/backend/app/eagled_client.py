@@ -92,3 +92,29 @@ class EagledClient:
         return await self._stub.ResetConfig(
             eagled_pb2.ResetConfigRequest(), timeout=self._vehicle_lifecycle_timeout
         )
+
+    async def list_log_sources(self) -> eagled_pb2.ListLogSourcesResponse:
+        return await self._stub.ListLogSources(
+            eagled_pb2.ListLogSourcesRequest(), timeout=self._timeout
+        )
+
+    async def stream_logs(
+        self,
+        sources: list[str],
+        tail: int,
+        follow: bool,
+        after_seq: dict[str, int],
+    ):
+        """Yields LogRecords. Deliberately no deadline (a follow stream is
+        long-lived and the timeouts above would kill it); closing this
+        generator cancels the upstream call."""
+        call = self._stub.StreamLogs(
+            eagled_pb2.StreamLogsRequest(
+                sources=sources, tail=tail, follow=follow, after_seq=after_seq
+            )
+        )
+        try:
+            async for record in call:
+                yield record
+        finally:
+            call.cancel()

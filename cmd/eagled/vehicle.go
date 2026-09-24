@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"os/exec"
@@ -10,9 +11,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/cmusatyalab/steeleagle/cmd/eagled/logstore"
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"github.com/cmusatyalab/steeleagle/core/vehicle"
 	"github.com/cmusatyalab/steeleagle/internal/tailscale"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -39,6 +42,7 @@ func spawnVehicle(
 	gabrielCfg GabrielConfig,
 	swarmCfg SwarmControllerConfig,
 	daemonName string,
+	logs *logstore.Store,
 ) (done <-chan struct{}, err error) {
 	var ln net.Listener
 	var dial dialFunc
@@ -69,12 +73,15 @@ func spawnVehicle(
 		return nil, fmt.Errorf("configuring video stream for vehicle %s: %w", vehicleCfg.Name, err)
 	}
 
+	vehicleLog := zerolog.New(zerolog.MultiLevelWriter(os.Stderr, logs.Writer(vehicleCfg.Name))).
+		With().Timestamp().Str("vehicle", vehicleCfg.Name).Logger()
+
 	opts := []vehicle.VehicleOption{
 		vehicle.WithName(vehicleCfg.Name),
 		vehicle.WithServerListener(ln, nil),
 		vehicle.WithVideoStreamConfig(videoCfg),
 		vehicle.WithTelemetryFps(vehicleCfg.TelemetryFps),
-		vehicle.WithLogger(log.With().Str("vehicle", vehicleCfg.Name).Logger()),
+		vehicle.WithLogger(vehicleLog),
 	}
 	if dial != nil {
 		// So a MagicDNS gabriel.server-endpoint resolves via the vehicle's own
@@ -103,7 +110,7 @@ func spawnVehicle(
 	if err := veh.Start(ctx); err != nil {
 		return nil, fmt.Errorf("starting vehicle: %w", err)
 	}
-	log.Info().Str("vehicle", vehicleCfg.Name).Int("port", port).Msg("vehicle started")
+	vehicleLog.Info().Int("port", port).Msg("vehicle started")
 
 	go registerVehicle(ctx, swarmCfg.Address, daemonName, vehicleCfg.Name, port, dial)
 
@@ -111,7 +118,7 @@ func spawnVehicle(
 	go func() {
 		defer close(doneCh)
 		if err := veh.Wait(); err != nil {
-			log.Error().Err(err).Str("vehicle", vehicleCfg.Name).Msg("vehicle exited with error")
+			vehicleLog.Error().Err(err).Msg("vehicle exited with error")
 		}
 		if vehicleTS != nil {
 			vehicleTS.Close()
@@ -262,12 +269,23 @@ func waitForDrone(ctx context.Context, vehicleName, ip string) error {
 	}
 }
 
+// withLogCapture returns the plugin options that route a plugin's process
+// output and its own logger to eagled's stdout, as before, and also to the
+// plugin's log-store source. Two writers on the same source keep the two
+// streams' partial lines from mixing; appends are serialized per source.
+func withLogCapture(logs *logstore.Store, source string) []util.PluginOption {
+	return []util.PluginOption{
+		util.WithProcessOutputStream(io.MultiWriter(os.Stdout, logs.Writer(source))),
+		util.WithLogger(zerolog.New(io.MultiWriter(os.Stdout, logs.Writer(source))).With().Timestamp().Logger()),
+	}
+}
+
 // newDriverPlugin builds the driver plugin for vehicleCfg: a shim attached
 // to the shared aviary simulator's socket for that vehicle if Simulate is
 // set, or a plugin installed under PLUGIN_CATEGORY_DRIVER otherwise. Driver
 // is ignored when Simulate is true -- including any Args on it, since the
 // shim wraps an already-running aviary process rather than spawning one.
-func newDriverPlugin(vehicleCfg VehicleConfig, pluginDir string) (util.Plugin, error) {
+func newDriverPlugin(vehicleCfg VehicleConfig, pluginDir string, logs *logstore.Store) (util.Plugin, error) {
 	if vehicleCfg.Simulate {
 		return util.CreateShimPlugin(aviarySocketPath(pluginDir, vehicleCfg.Name), "")
 	}
@@ -280,19 +298,21 @@ func newDriverPlugin(vehicleCfg VehicleConfig, pluginDir string) (util.Plugin, e
 	if err != nil {
 		return nil, err
 	}
+	source := vehicleCfg.Name + "-driver"
 	opts := []util.PluginOption{
-		util.WithName(vehicleCfg.Name + "-driver"),
+		util.WithName(source),
 		util.WithPath(path),
 	}
 	if len(args) > 0 {
 		opts = append(opts, util.WithScriptArgs(args))
 	}
+	opts = append(opts, withLogCapture(logs, source)...)
 	return util.CreateBasePlugin(opts...)
 }
 
 // newMissionPlugin builds vehicleCfg's mission plugin, if specified.
 // WithAuthCode tags it as the mission module.
-func newMissionPlugin(vehicleCfg VehicleConfig) (util.Plugin, error) {
+func newMissionPlugin(vehicleCfg VehicleConfig, logs *logstore.Store) (util.Plugin, error) {
 	if vehicleCfg.Mission == nil {
 		return nil, nil
 	}
@@ -303,32 +323,36 @@ func newMissionPlugin(vehicleCfg VehicleConfig) (util.Plugin, error) {
 	if path == "" {
 		return nil, nil
 	}
+	source := vehicleCfg.Name + "-mission"
 	opts := []util.PluginOption{
-		util.WithName(vehicleCfg.Name + "-mission"),
+		util.WithName(source),
 		util.WithPath(path),
 		util.WithAuthCode(util.MissionCode),
 	}
 	if len(vehicleCfg.Mission.Args) > 0 {
 		opts = append(opts, util.WithScriptArgs(vehicleCfg.Mission.Args))
 	}
+	opts = append(opts, withLogCapture(logs, source)...)
 	return util.CreateBasePlugin(opts...)
 }
 
 // newExtraPlugins builds every plugin listed in vehicleCfg.Plugins.
-func newExtraPlugins(vehicleCfg VehicleConfig) ([]util.Plugin, error) {
+func newExtraPlugins(vehicleCfg VehicleConfig, logs *logstore.Store) ([]util.Plugin, error) {
 	plugins := make([]util.Plugin, 0, len(vehicleCfg.Plugins))
 	for _, ref := range vehicleCfg.Plugins {
 		path, err := installedPluginPath(ref.Name, categoryExtra)
 		if err != nil {
 			return nil, err
 		}
+		source := vehicleCfg.Name + "-" + ref.Name
 		opts := []util.PluginOption{
-			util.WithName(vehicleCfg.Name + "-" + ref.Name),
+			util.WithName(source),
 			util.WithPath(path),
 		}
 		if len(ref.Args) > 0 {
 			opts = append(opts, util.WithScriptArgs(ref.Args))
 		}
+		opts = append(opts, withLogCapture(logs, source)...)
 		p, err := util.CreateBasePlugin(opts...)
 		if err != nil {
 			return nil, err
@@ -341,16 +365,16 @@ func newExtraPlugins(vehicleCfg VehicleConfig) ([]util.Plugin, error) {
 // resolvePlugins builds vehicleCfg's driver, mission, and extra plugins,
 // validating each installed name against its expected category before
 // spawnVehicle ever starts a process.
-func resolvePlugins(vehicleCfg VehicleConfig, pluginDir string) (driver, mission util.Plugin, extra []util.Plugin, err error) {
-	driver, err = newDriverPlugin(vehicleCfg, pluginDir)
+func resolvePlugins(vehicleCfg VehicleConfig, pluginDir string, logs *logstore.Store) (driver, mission util.Plugin, extra []util.Plugin, err error) {
+	driver, err = newDriverPlugin(vehicleCfg, pluginDir, logs)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("creating driver plugin: %w", err)
 	}
-	mission, err = newMissionPlugin(vehicleCfg)
+	mission, err = newMissionPlugin(vehicleCfg, logs)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("creating mission plugin: %w", err)
 	}
-	extra, err = newExtraPlugins(vehicleCfg)
+	extra, err = newExtraPlugins(vehicleCfg, logs)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("creating extra plugins: %w", err)
 	}

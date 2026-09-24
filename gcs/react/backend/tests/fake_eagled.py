@@ -5,6 +5,8 @@ pattern. Unlike swarm's streaming RPCs, every DaemonService RPC in scope
 is unary_unary, so _run just returns a single message instead of
 yielding a stream."""
 
+import asyncio
+
 import grpc
 import pytest
 from steeleagle_protocol.v1.services.eagled import eagled_pb2, eagled_pb2_grpc
@@ -19,6 +21,8 @@ class FakeDaemonServicer(eagled_pb2_grpc.DaemonServiceServicer):
     def __init__(self, script: dict):
         self._script = script
         self.received: dict[str, list] = {}
+        self.stream_finished = asyncio.Event()
+        self.stream_time_remaining: float | None = None
 
     async def _run(self, rpc_name, request, context):
         self.received.setdefault(rpc_name, []).append(request)
@@ -47,6 +51,26 @@ class FakeDaemonServicer(eagled_pb2_grpc.DaemonServiceServicer):
 
     async def ResetConfig(self, request, context):
         return await self._run("ResetConfig", request, context)
+
+    async def ListLogSources(self, request, context):
+        return await self._run("ListLogSources", request, context)
+
+    async def StreamLogs(self, request, context):
+        """`script["StreamLogs"]` is a list of LogRecords to yield, or an
+        Exception to abort with UNAVAILABLE. With request.follow it then
+        stays open until the client cancels."""
+        self.received.setdefault("StreamLogs", []).append(request)
+        self.stream_time_remaining = context.time_remaining()
+        outcome = self._script["StreamLogs"]
+        try:
+            if isinstance(outcome, Exception):
+                await context.abort(grpc.StatusCode.UNAVAILABLE, str(outcome))
+            for record in outcome:
+                yield record
+            if request.follow:
+                await asyncio.Event().wait()
+        finally:
+            self.stream_finished.set()
 
 
 @pytest.fixture

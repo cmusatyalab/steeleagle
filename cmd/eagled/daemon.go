@@ -10,6 +10,7 @@ import (
 	"time"
 
 	eagledpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/eagled"
+	"github.com/cmusatyalab/steeleagle/cmd/eagled/logstore"
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"github.com/cmusatyalab/steeleagle/internal/tailscale"
 	"github.com/rs/zerolog/log"
@@ -98,8 +99,9 @@ type daemon struct {
 	ctx      context.Context    // canceled on daemon shutdown, stops every vehicle and its registration stream
 	shutdown context.CancelFunc // cancels ctx, ResetConfig calls this itself to trigger the same shutdown a signal would
 
-	grpcServer  *grpc.Server // gRPC server to serve DaemonService on
-	controlPort int          // port gRPC server listens on
+	grpcServer  *grpc.Server    // gRPC server to serve DaemonService on
+	controlPort int             // port gRPC server listens on
+	logs        *logstore.Store // per-source log capture and history
 
 	mu                 sync.Mutex
 	configured         bool
@@ -148,10 +150,11 @@ func (d *daemon) lockInstall(key installedPluginKey) *sync.Mutex {
 }
 
 // newDaemon constructs a new eagled daemon.
-func newDaemon(ctx context.Context, shutdown context.CancelFunc) *daemon {
+func newDaemon(ctx context.Context, shutdown context.CancelFunc, logs *logstore.Store) *daemon {
 	return &daemon{
 		ctx:         ctx,
 		shutdown:    shutdown,
+		logs:        logs,
 		running:     make(map[string]*runningVehicle),
 		vehicleCfgs: make(map[string]VehicleConfig),
 		installed:   make(map[installedPluginKey]string),
@@ -414,13 +417,13 @@ func (d *daemon) startOne(
 	swarmCfg SwarmControllerConfig,
 	daemonName string,
 ) error {
-	driverPlugin, missionPlugin, extraPlugins, err := resolvePlugins(vehicleCfg, pluginDir)
+	driverPlugin, missionPlugin, extraPlugins, err := resolvePlugins(vehicleCfg, pluginDir, d.logs)
 	if err != nil {
 		d.failSpawn(vehicleCfg.Name, rv, err)
 		return err
 	}
 
-	done, err := spawnVehicle(vCtx, vehicleCfg, rv.port, rv.promPort, driverPlugin, missionPlugin, extraPlugins, authKey, memStore, gabrielCfg, swarmCfg, daemonName)
+	done, err := spawnVehicle(vCtx, vehicleCfg, rv.port, rv.promPort, driverPlugin, missionPlugin, extraPlugins, authKey, memStore, gabrielCfg, swarmCfg, daemonName, d.logs)
 	if err != nil {
 		d.failSpawn(vehicleCfg.Name, rv, err)
 		return err
@@ -772,7 +775,7 @@ func (d *daemon) ensureAviary(vehicleCfgs []VehicleConfig) error {
 	d.mu.Unlock()
 
 	log.Info().Int("vehicles", len(simulated)).Msg("starting shared aviary simulator")
-	if err := spawnAviary(d.ctx, command, dir, simulated); err != nil {
+	if err := spawnAviary(d.ctx, command, dir, simulated, d.logs); err != nil {
 		return status.Errorf(codes.Internal, "starting aviary: %v", err)
 	}
 	d.aviaryStarted = true

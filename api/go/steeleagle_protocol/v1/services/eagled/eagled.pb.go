@@ -1284,6 +1284,8 @@ type GetStatusResponse struct {
 	xxx_hidden_Configured bool                   `protobuf:"varint,1,opt,name=configured,proto3"`
 	xxx_hidden_Config     *DaemonConfig          `protobuf:"bytes,2,opt,name=config,proto3"`
 	xxx_hidden_Vehicles   *[]*VehicleStatus      `protobuf:"bytes,3,rep,name=vehicles,proto3"`
+	xxx_hidden_Os         string                 `protobuf:"bytes,4,opt,name=os,proto3"`
+	xxx_hidden_Arch       string                 `protobuf:"bytes,5,opt,name=arch,proto3"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -1336,6 +1338,20 @@ func (x *GetStatusResponse) GetVehicles() []*VehicleStatus {
 	return nil
 }
 
+func (x *GetStatusResponse) GetOs() string {
+	if x != nil {
+		return x.xxx_hidden_Os
+	}
+	return ""
+}
+
+func (x *GetStatusResponse) GetArch() string {
+	if x != nil {
+		return x.xxx_hidden_Arch
+	}
+	return ""
+}
+
 func (x *GetStatusResponse) SetConfigured(v bool) {
 	x.xxx_hidden_Configured = v
 }
@@ -1346,6 +1362,14 @@ func (x *GetStatusResponse) SetConfig(v *DaemonConfig) {
 
 func (x *GetStatusResponse) SetVehicles(v []*VehicleStatus) {
 	x.xxx_hidden_Vehicles = &v
+}
+
+func (x *GetStatusResponse) SetOs(v string) {
+	x.xxx_hidden_Os = v
+}
+
+func (x *GetStatusResponse) SetArch(v string) {
+	x.xxx_hidden_Arch = v
 }
 
 func (x *GetStatusResponse) HasConfig() bool {
@@ -1365,6 +1389,14 @@ type GetStatusResponse_builder struct {
 	Configured bool
 	Config     *DaemonConfig
 	Vehicles   []*VehicleStatus
+	// The platform this daemon binary is running on, as Go's runtime.GOOS and
+	// runtime.GOARCH report it (e.g. "linux" / "amd64" or "arm64"). Always
+	// populated, configured or not: it's a fact about the running binary, not
+	// part of the daemon-wide config, and callers need it (e.g. to pick a
+	// matching mission build) before the first Configure. The arch values match
+	// the "amd64" | "arm64" names the DSL compiler service already uses.
+	Os   string
+	Arch string
 }
 
 func (b0 GetStatusResponse_builder) Build() *GetStatusResponse {
@@ -1374,6 +1406,8 @@ func (b0 GetStatusResponse_builder) Build() *GetStatusResponse {
 	x.xxx_hidden_Configured = b.Configured
 	x.xxx_hidden_Config = b.Config
 	x.xxx_hidden_Vehicles = &b.Vehicles
+	x.xxx_hidden_Os = b.Os
+	x.xxx_hidden_Arch = b.Arch
 	return m0
 }
 
@@ -2140,13 +2174,15 @@ const file_steeleagle_protocol_v1_services_eagled_eagled_proto_rawDesc = "" +
 	"\x13ResetConfigResponse\"\x16\n" +
 	"\x14RestartDaemonRequest\"\x17\n" +
 	"\x15RestartDaemonResponse\"\x12\n" +
-	"\x10GetStatusRequest\"\xd4\x01\n" +
+	"\x10GetStatusRequest\"\xf8\x01\n" +
 	"\x11GetStatusResponse\x12\x1e\n" +
 	"\n" +
 	"configured\x18\x01 \x01(\bR\n" +
 	"configured\x12L\n" +
 	"\x06config\x18\x02 \x01(\v24.steeleagle_protocol.v1.services.eagled.DaemonConfigR\x06config\x12Q\n" +
-	"\bvehicles\x18\x03 \x03(\v25.steeleagle_protocol.v1.services.eagled.VehicleStatusR\bvehicles\"\xf3\x02\n" +
+	"\bvehicles\x18\x03 \x03(\v25.steeleagle_protocol.v1.services.eagled.VehicleStatusR\bvehicles\x12\x0e\n" +
+	"\x02os\x18\x04 \x01(\tR\x02os\x12\x12\n" +
+	"\x04arch\x18\x05 \x01(\tR\x04arch\"\xf3\x02\n" +
 	"\fDaemonConfig\x12\x10\n" +
 	"\x03vpn\x18\x01 \x01(\bR\x03vpn\x12\x1f\n" +
 	"\vvehicle_vpn\x18\x02 \x01(\bR\n" +

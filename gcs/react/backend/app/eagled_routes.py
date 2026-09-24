@@ -2,8 +2,9 @@
 needs no new input UI -- see
 docs/superpowers/specs/2026-09-18-orchestration-eagled-wiring-design.md.
 Configure and InstallPlugin are deliberately not here (need a TOML
-config editor / plugin repo+ref form that doesn't exist yet), and there
-is no logs RPC on DaemonService at all to wire up.
+config editor / plugin repo+ref form that doesn't exist yet), and the
+logs RPCs (StreamLogs/ListLogSources) are wired up separately in the
+sibling eagled_log_routes module instead of here.
 
 Every route always returns HTTP 200; `reachable` on the response is how
 the frontend tells an unreachable daemon (expected, ordinary state for
@@ -43,6 +44,8 @@ class DaemonConfigModel(BaseModel):
 class DaemonStatusResponse(BaseModel):
     reachable: bool
     configured: bool | None = None
+    os: str | None = None
+    arch: str | None = None
     config: DaemonConfigModel | None = None
     vehicles: list[VehicleStatusModel] = []
     error: str | None = None
@@ -118,6 +121,8 @@ async def _get_status(client: EagledClient) -> DaemonStatusResponse:
     return DaemonStatusResponse(
         reachable=True,
         configured=resp.configured,
+        os=resp.os,
+        arch=resp.arch,
         config=_daemon_config_model(resp.config),
         vehicles=[
             VehicleStatusModel(

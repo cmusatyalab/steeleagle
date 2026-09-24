@@ -4,12 +4,18 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
+	stdlog "log"
 	"net"
+	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
 	eagledpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/eagled"
+	"github.com/cmusatyalab/steeleagle/cmd/eagled/logstore"
+	"github.com/cmusatyalab/steeleagle/core/util"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
@@ -32,6 +38,12 @@ func main() {
 	}
 	zerolog.SetGlobalLevel(level)
 
+	logs := logstore.Open(logstore.Options{Dir: logDir()})
+	daemonLog := logs.Writer("daemon")
+	log.Logger = zerolog.New(zerolog.MultiLevelWriter(os.Stderr, daemonLog)).With().Timestamp().Logger()
+	// tsnet and other libraries write through stdlib log, not zerolog.
+	stdlog.SetOutput(io.MultiWriter(os.Stderr, daemonLog))
+
 	sigCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -43,7 +55,7 @@ func main() {
 		log.Fatal().Msgf("listening on control port %d: %v", *controlPort, err)
 	}
 
-	d := newDaemon(ctx, cancel)
+	d := newDaemon(ctx, cancel, logs)
 
 	grpcServer := grpc.NewServer()
 	eagledpb.RegisterDaemonServiceServer(grpcServer, d)
@@ -82,4 +94,16 @@ func main() {
 		grpcServer.Stop()
 		<-stopped
 	}
+}
+
+// logDir returns the directory eagled persists logs under. If the data
+// directory can't be resolved it returns "", which makes the store disable
+// persistence (with one warning) while live streaming keeps working.
+func logDir() string {
+	dataDir, err := util.GetDataDir()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "eagled: log persistence disabled, cannot resolve data dir: %v\n", err)
+		return ""
+	}
+	return filepath.Join(dataDir, "logs")
 }

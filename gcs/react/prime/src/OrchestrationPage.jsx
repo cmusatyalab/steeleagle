@@ -5,11 +5,10 @@ import { Dialog } from 'primereact/dialog';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-import { VirtualScroller } from 'primereact/virtualscroller';
-import { Tag } from 'primereact/tag';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import { getApiUrl } from './urls.js';
 import { postToApi } from './apiUtils.js';
+import LogViewer from './LogViewer.jsx';
 import React from 'react';
 
 // Persisted independently of whether a daemon is actually reachable -- the
@@ -64,37 +63,6 @@ const DAEMON_COMMANDS = [
     { label: 'Reset Config', icon: 'pi pi-exclamation-triangle', danger: true },
 ];
 
-const LOG_LEVEL_SEVERITY = {
-    trace: 'secondary',
-    debug: 'secondary',
-    info: 'info',
-    warn: 'warning',
-    error: 'danger',
-    fatal: 'danger',
-    panic: 'danger',
-};
-
-// Placeholder content for the log viewer -- there's no streaming/log RPC on
-// DaemonService yet (see eagled.proto), so this just demonstrates the
-// intended per-line shape (timestamp, zerolog level, message) that real
-// entries would eventually have. Once wired, this becomes application
-// state that appends incoming lines (capped at a few thousand per daemon
-// so a long-running session doesn't grow unbounded) rather than a
-// hardcoded single entry.
-const PLACEHOLDER_LOG_ITEMS = [
-    { timestamp: new Date(), level: 'info', message: 'Log streaming isn\'t wired up yet -- this is a placeholder for how entries will look.' },
-];
-
-function logItemTemplate(item) {
-    return (
-        <div className="flex align-items-start gap-2 px-2 py-1 text-xs" style={{ fontFamily: 'monospace' }}>
-            <span className="text-color-secondary" style={{ flexShrink: 0 }}>{item.timestamp.toLocaleTimeString()}</span>
-            <Tag severity={LOG_LEVEL_SEVERITY[item.level] ?? 'secondary'} value={item.level} style={{ flexShrink: 0, minWidth: '3.5rem', textAlign: 'center' }} />
-            <span>{item.message}</span>
-        </div>
-    );
-}
-
 // Daemon-wide config (as opposed to per-vehicle state, which lives on the
 // Vehicles tab) -- field set, order, and conditionals mirror eagle CLI's
 // own `status` output (cmd/eagle/main.go printStatus) so this is a direct
@@ -106,19 +74,23 @@ function DaemonConfigPanel({ status }) {
     if (!status.reachable) {
         return <div className="text-color-secondary p-2">Daemon is unreachable.</div>;
     }
-    if (!status.configured) {
-        return <div className="text-color-secondary p-2">Daemon is not configured yet.</div>;
-    }
+    // Platform describes the running binary, not the applied config, so it's
+    // reported (and shown) even before the daemon's first Configure. A daemon
+    // built before it was added reports neither, so the row is just omitted.
+    const rows = [];
+    if (status.os || status.arch) rows.push(['Platform', `${status.os}/${status.arch}`]);
     const cfg = status.config;
-    const rows = [
-        ['Daemon', cfg.daemon_name],
-        ['Port Base', cfg.port_base],
-        ['Plugin Dir', cfg.plugin_dir],
-        ['Swarm Controller', cfg.swarm_controller_address],
-    ];
-    if (cfg.gabriel_server_endpoint) rows.push(['Gabriel', cfg.gabriel_server_endpoint]);
-    rows.push(['VPN', `${cfg.vpn} (vehicles: ${cfg.vehicle_vpn})`]);
-    if (cfg.vpn) rows.push(['Tailscale Auth Key Env', `$${cfg.tailscale_authkey_env}`]);
+    if (status.configured && cfg) {
+        rows.push(
+            ['Daemon', cfg.daemon_name],
+            ['Port Base', cfg.port_base],
+            ['Plugin Dir', cfg.plugin_dir],
+            ['Swarm Controller', cfg.swarm_controller_address],
+        );
+        if (cfg.gabriel_server_endpoint) rows.push(['Gabriel', cfg.gabriel_server_endpoint]);
+        rows.push(['VPN', `${cfg.vpn} (vehicles: ${cfg.vehicle_vpn})`]);
+        if (cfg.vpn) rows.push(['Tailscale Auth Key Env', `$${cfg.tailscale_authkey_env}`]);
+    }
     return (
         <div className="p-2">
             {rows.map(([label, value]) => (
@@ -127,6 +99,7 @@ function DaemonConfigPanel({ status }) {
                     <span style={{ fontFamily: 'monospace' }}>{value}</span>
                 </div>
             ))}
+            {!status.configured && <div className="text-color-secondary pt-2">Daemon is not configured yet.</div>}
         </div>
     );
 }
@@ -147,16 +120,18 @@ function OrchestrationPage({ toast }) {
     const pollOneStatus = useCallback(async (address) => {
         try {
             const response = await fetch(getApiUrl(`/api/daemons/status?address=${encodeURIComponent(address)}`));
-            if (!response.ok) return { reachable: false, vehicles: [], configured: false, config: null };
+            if (!response.ok) return { reachable: false, vehicles: [], configured: false, config: null, os: '', arch: '' };
             const result = await response.json();
             return {
                 reachable: result.reachable,
                 vehicles: result.vehicles ?? [],
                 configured: result.configured ?? false,
                 config: result.config ?? null,
+                os: result.os ?? '',
+                arch: result.arch ?? '',
             };
         } catch {
-            return { reachable: false, vehicles: [], configured: false, config: null };
+            return { reachable: false, vehicles: [], configured: false, config: null, os: '', arch: '' };
         }
     }, []);
 
@@ -533,23 +508,7 @@ function OrchestrationPage({ toast }) {
                                 )}
                             </TabPanel>
                             <TabPanel header="Logs">
-                                {/* VirtualScroller only initializes once its OWN element already
-                                    has a nonzero rendered height (its isVisible() check runs before
-                                    the scrollHeight prop's imperative resize ever gets a chance to
-                                    apply) -- a sized wrapper alone doesn't help, since a bare div
-                                    doesn't auto-fill its parent's height. Giving the component
-                                    itself `style={{ height: '100%' }}` (a real, immediate CSS
-                                    height, not JS-applied) is what breaks that chicken-and-egg. */}
-                                <div style={{ height: '24rem' }}>
-                                    <VirtualScroller
-                                        items={PLACEHOLDER_LOG_ITEMS}
-                                        itemSize={28}
-                                        scrollHeight="24rem"
-                                        appendOnly
-                                        itemTemplate={logItemTemplate}
-                                        style={{ height: '100%' }}
-                                    />
-                                </div>
+                                <LogViewer key={selectedDaemon.id} daemon={selectedDaemon} />
                             </TabPanel>
                         </TabView>
                     </>

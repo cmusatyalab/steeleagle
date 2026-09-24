@@ -4,6 +4,7 @@
 package main
 
 import (
+	"fmt"
 	"net"
 	"os"
 
@@ -11,6 +12,7 @@ import (
 )
 
 func main() {
+	fmt.Println("mockdriver ready")
 	listenSocket := os.Getenv("LISTEN_SOCKET")
 	if listenSocket == "" {
 		os.Exit(1)

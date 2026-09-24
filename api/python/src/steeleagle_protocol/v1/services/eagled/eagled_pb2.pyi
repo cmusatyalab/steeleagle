@@ -150,14 +150,18 @@ class GetStatusRequest(_message.Message):
     def __init__(self) -> None: ...
 
 class GetStatusResponse(_message.Message):
-    __slots__ = ("configured", "config", "vehicles")
+    __slots__ = ("configured", "config", "vehicles", "os", "arch")
     CONFIGURED_FIELD_NUMBER: _ClassVar[int]
     CONFIG_FIELD_NUMBER: _ClassVar[int]
     VEHICLES_FIELD_NUMBER: _ClassVar[int]
+    OS_FIELD_NUMBER: _ClassVar[int]
+    ARCH_FIELD_NUMBER: _ClassVar[int]
     configured: bool
     config: DaemonConfig
     vehicles: _containers.RepeatedCompositeFieldContainer[VehicleStatus]
-    def __init__(self, configured: _Optional[bool] = ..., config: _Optional[_Union[DaemonConfig, _Mapping]] = ..., vehicles: _Optional[_Iterable[_Union[VehicleStatus, _Mapping]]] = ...) -> None: ...
+    os: str
+    arch: str
+    def __init__(self, configured: _Optional[bool] = ..., config: _Optional[_Union[DaemonConfig, _Mapping]] = ..., vehicles: _Optional[_Iterable[_Union[VehicleStatus, _Mapping]]] = ..., os: _Optional[str] = ..., arch: _Optional[str] = ...) -> None: ...
 
 class DaemonConfig(_message.Message):
     __slots__ = ("vpn", "vehicle_vpn", "port_base", "plugin_dir", "tailscale_hostname", "tailscale_authkey_env", "swarm_controller_address", "daemon_name", "gabriel_server_endpoint")

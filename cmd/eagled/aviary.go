@@ -3,12 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"syscall"
 
 	"github.com/BurntSushi/toml"
+	"github.com/cmusatyalab/steeleagle/cmd/eagled/logstore"
 	"github.com/rs/zerolog/log"
 )
 
@@ -44,7 +46,7 @@ type aviaryConfigFile struct {
 // spawnAviary launches one aviary subprocess simulating every vehicle in
 // vehicleCfgs. The subprocess is tied to ctx: canceling ctx kills it. Its
 // scratch config file is removed once it exits.
-func spawnAviary(ctx context.Context, command []string, dir string, vehicleCfgs []VehicleConfig) error {
+func spawnAviary(ctx context.Context, command []string, dir string, vehicleCfgs []VehicleConfig, logs *logstore.Store) error {
 	cfg := aviaryConfigFile{Vehicles: make([]aviaryVehicleConfig, 0, len(vehicleCfgs))}
 	for _, v := range vehicleCfgs {
 		iface := v.Interface
@@ -86,7 +88,7 @@ func spawnAviary(ctx context.Context, command []string, dir string, vehicleCfgs 
 	bin, childPath := command[0], ""
 	if filepath.Base(command[0]) == "uv" {
 		var err error
-		if bin, childPath, err = ensureUv(ctx); err != nil {
+		if bin, childPath, err = ensureUv(ctx, logs); err != nil {
 			os.Remove(f.Name())
 			return fmt.Errorf("ensuring uv is installed: %w", err)
 		}
@@ -97,8 +99,8 @@ func spawnAviary(ctx context.Context, command []string, dir string, vehicleCfgs 
 	args = append(args, "--config", f.Name())
 	cmd := exec.CommandContext(ctx, bin, args...)
 	cmd.Dir = dir
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = io.MultiWriter(os.Stdout, logs.Writer("aviary"))
+	cmd.Stderr = io.MultiWriter(os.Stderr, logs.Writer("aviary"))
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	if childPath != "" {
 		cmd.Env = append(os.Environ(), "PATH="+childPath)
@@ -128,7 +130,7 @@ func spawnAviary(ctx context.Context, command []string, dir string, vehicleCfgs 
 // directories uv is normally installed into, so this can't rely on PATH
 // lookups alone. It returns the absolute path to the uv binary to exec, and
 // the PATH aviary's subprocess should run with.
-func ensureUv(ctx context.Context) (bin, path string, err error) {
+func ensureUv(ctx context.Context, logs *logstore.Store) (bin, path string, err error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", "", fmt.Errorf("determining home directory: %w", err)
@@ -147,8 +149,8 @@ func ensureUv(ctx context.Context) (bin, path string, err error) {
 	log.Info().Str("installer", uvInstallScriptURL).Msg("uv not found; installing")
 	install := exec.CommandContext(ctx, "sh", "-c", "curl -LsSf "+uvInstallScriptURL+" | sh")
 	install.Env = append(os.Environ(), "HOME="+home)
-	install.Stdout = os.Stdout
-	install.Stderr = os.Stderr
+	install.Stdout = io.MultiWriter(os.Stdout, logs.Writer("aviary"))
+	install.Stderr = io.MultiWriter(os.Stderr, logs.Writer("aviary"))
 	if err := install.Run(); err != nil {
 		return "", "", fmt.Errorf("running uv installer: %w", err)
 	}

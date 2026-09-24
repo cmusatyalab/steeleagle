@@ -221,6 +221,14 @@ message GetStatusResponse {
   bool configured = 1;
   DaemonConfig config = 2; // populated iff configured
   repeated VehicleStatus vehicles = 3;
+  // The platform this daemon binary is running on, as Go's runtime.GOOS and
+  // runtime.GOARCH report it (e.g. "linux" / "amd64" or "arm64"). Always
+  // populated, configured or not: it's a fact about the running binary, not
+  // part of the daemon-wide config, and callers need it (e.g. to pick a
+  // matching mission build) before the first Configure. The arch values match
+  // the "amd64" | "arm64" names the DSL compiler service already uses.
+  string os = 4;
+  string arch = 5;
 }
 
 // DaemonConfig reports the daemon-wide settings established by the first

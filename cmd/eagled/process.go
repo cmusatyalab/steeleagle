@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"os"
+	"runtime"
 
 	eagledpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/eagled"
 	"github.com/rs/zerolog/log"
@@ -49,7 +50,11 @@ func (d *daemon) GetStatus(ctx context.Context, req *eagledpb.GetStatusRequest) 
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	resp := eagledpb.GetStatusResponse_builder{Configured: d.configured}
+	resp := eagledpb.GetStatusResponse_builder{
+		Configured: d.configured,
+		Os:         runtime.GOOS,
+		Arch:       runtime.GOARCH,
+	}
 	if d.configured {
 		resp.Config = eagledpb.DaemonConfig_builder{
 			Vpn:                    d.tsServer != nil,

@@ -17,6 +17,8 @@ from tests.fake_eagled import FakeEagledClient, daemon_server_factory  # noqa: F
 async def test_get_status_shapes_response():
     status = eagled_pb2.GetStatusResponse(
         configured=True,
+        os="linux",
+        arch="arm64",
         config=eagled_pb2.DaemonConfig(
             daemon_name="host-a", swarm_controller_address="sc:1234"
         ),
@@ -32,6 +34,8 @@ async def test_get_status_shapes_response():
 
     assert result.reachable is True
     assert result.configured is True
+    assert result.os == "linux"
+    assert result.arch == "arm64"
     assert result.config.daemon_name == "host-a"
     assert result.config.swarm_controller_address == "sc:1234"
     assert result.vehicles == [

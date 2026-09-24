@@ -30,6 +30,7 @@ from rich.logging import RichHandler
 from steeleagle_protocol.v1.services.swarm import swarm_pb2_grpc
 
 from app import dslcompiler_routes
+from app.eagled_log_routes import router as eagled_log_router
 from app.eagled_routes import router as eagled_router
 from app.swarm_client import SwarmClient, VehicleResult
 
@@ -258,6 +259,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.include_router(dslcompiler_routes.router)
 app.include_router(eagled_router)
+app.include_router(eagled_log_router)
 
 
 app.add_middleware(

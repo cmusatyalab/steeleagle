@@ -164,3 +164,45 @@ instead of a config file" above), and no later `Configure` call, not even
 `ResetConfig`, changes it. Changing eagled's tailscale identity is a manual,
 on-site operation: edit or delete `network-config.toml` on the host and restart
 eagled.
+
+## Logs
+
+eagled captures its own logs and the output of everything it runs, tags each
+line with its source, and keeps it on disk, so history survives restarts and
+does not depend on systemd or on how eagled was launched. stderr/stdout
+behavior is unchanged: everything is still written there as before.
+
+- Location: `<data dir>/logs/` (under systemd, `/var/lib/eagled/.local/share/steeleagle/logs`
+  — the unit sets `HOME=/var/lib/eagled` but not `XDG_DATA_HOME`, so it falls back to
+  `$HOME/.local/share`; otherwise `$XDG_DATA_HOME/steeleagle/logs`, default
+  `~/.local/share/steeleagle/logs`).
+- One file per source, named after the source (unsafe characters become `%XX`,
+  so `a b` is `a%20b.log`): `daemon`, `aviary`, `<vehicle>`, `<vehicle>-driver`,
+  `<vehicle>-mission`, and `<vehicle>-<plugin>`. A simulated (aviary) vehicle's
+  driver is a shim with no real subprocess, so it never has a `<vehicle>-driver`
+  source — only real vehicles do.
+- Format: one JSON object per line, `{"seq":..,"time":..,"source":..,"level":..,"text":..}`.
+  `time` is when eagled received the line; `level` is set only for zerolog JSON
+  lines. The `daemon` source only ever contains lines at or above the daemon's
+  current `-log-level`: that filter is applied globally before the tee into the
+  log store, so a line it suppresses never reaches `daemon.log` either.
+- Retention: each file rotates at 25 MiB and three files are kept per source
+  (`.log`, `.log.1`, `.log.2`). Logs are kept when a vehicle is forgotten and
+  when `ResetConfig` runs.
+- Viewing: the GCS Orchestrate page's Logs tab streams and filters these, or
+  read the files directly.
+
+## Testing with a throwaway eagled
+
+When you start a scratch eagled to test against, isolate it completely:
+
+- Point `HOME` and `XDG_DATA_HOME` at a temporary directory, or it will load
+  (and modify) your real persisted config and installed plugins.
+- Unset `TS_AUTHKEY` and `TS_AUTHKEY_VEHICLE`. eagled has no VPN switch: it
+  joins tsnet whenever a key is in its environment, so a scratch instance
+  started from a shell that has them exported registers a real node on your
+  tailnet, which outlives the process.
+
+    env -u TS_AUTHKEY -u TS_AUTHKEY_VEHICLE \
+        HOME=$(mktemp -d) XDG_DATA_HOME=$(mktemp -d) \
+        ./eagled -control-port 19090
