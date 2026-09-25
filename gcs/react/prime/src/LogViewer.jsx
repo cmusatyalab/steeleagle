@@ -199,7 +199,7 @@ function LogViewer({ daemon }) {
 
     return (
         <div>
-            <div className="flex flex-wrap align-items-center gap-2 pb-2">
+            <div className="flex flex-wrap align-items-center gap-2 py-2">
                 <MultiSelect
                     value={selectedSources}
                     options={sourceOptions}
