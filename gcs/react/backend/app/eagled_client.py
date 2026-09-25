@@ -27,6 +27,13 @@ DEFAULT_TIMEOUT = 5.0
 # they stay on DEFAULT_TIMEOUT.
 VEHICLE_LIFECYCLE_TIMEOUT = 35.0
 
+# InstallPlugin fetches a git repo and then runs the plugin's own install.sh,
+# which eagled itself bounds at InstallTimeout = 5 minutes
+# (cmd/eagled/install_plugin.go). The fetch (and its full-clone fallback)
+# comes on top of that, so this leaves comfortable headroom over the script's
+# own limit rather than racing it.
+INSTALL_PLUGIN_TIMEOUT = 600.0
+
 
 class EagledClient:
     def __init__(
@@ -74,6 +81,21 @@ class EagledClient:
         return await self._stub.ForgetVehicles(
             eagled_pb2.ForgetVehiclesRequest(names=names),
             timeout=self._vehicle_lifecycle_timeout,
+        )
+
+    async def install_plugin(
+        self,
+        name: str,
+        repo: str,
+        ref: str,
+        subpath: str,
+        category: eagled_pb2.PluginCategory,
+    ) -> eagled_pb2.InstallPluginResponse:
+        return await self._stub.InstallPlugin(
+            eagled_pb2.InstallPluginRequest(
+                name=name, repo=repo, ref=ref, subpath=subpath, category=category
+            ),
+            timeout=INSTALL_PLUGIN_TIMEOUT,
         )
 
     async def get_installed_plugins(

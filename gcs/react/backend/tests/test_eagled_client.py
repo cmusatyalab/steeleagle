@@ -184,3 +184,28 @@ async def test_stream_logs_raises_when_daemon_unavailable(daemon_server_factory)
 
     assert excinfo.value.code() == grpc.StatusCode.UNAVAILABLE
     assert "down" in (excinfo.value.details() or "")
+
+
+async def test_install_plugin_sends_request_with_long_deadline(daemon_server_factory):  # noqa: F811
+    resp = eagled_pb2.InstallPluginResponse(ok=True)
+    servicer, address = await daemon_server_factory({"InstallPlugin": resp})
+
+    async with EagledClient(address) as client:
+        result = await client.install_plugin(
+            name="parrot_anafi",
+            repo="https://example.com/plugins.git",
+            ref="abc123",
+            subpath="drivers/parrot_anafi",
+            category=eagled_pb2.PLUGIN_CATEGORY_DRIVER,
+        )
+
+    assert result == resp
+    sent = servicer.received["InstallPlugin"][0]
+    assert sent.name == "parrot_anafi"
+    assert sent.repo == "https://example.com/plugins.git"
+    assert sent.ref == "abc123"
+    assert sent.subpath == "drivers/parrot_anafi"
+    assert sent.category == eagled_pb2.PLUGIN_CATEGORY_DRIVER
+    # eagled bounds install.sh at 5 minutes on top of the git fetch, so the
+    # default 5s call timeout would abort a healthy install.
+    assert servicer.time_remaining["InstallPlugin"] > 300

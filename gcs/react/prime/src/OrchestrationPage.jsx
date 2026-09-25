@@ -9,6 +9,7 @@ import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import { getApiUrl } from './urls.js';
 import { postToApi } from './apiUtils.js';
 import LogViewer from './LogViewer.jsx';
+import InstallPluginDialog from './InstallPluginDialog.jsx';
 import React from 'react';
 
 // Persisted independently of whether a daemon is actually reachable -- the
@@ -52,9 +53,9 @@ function generateId() {
 }
 
 // Mirrors eagle CLI's real subcommands 1:1 (cmd/eagle/main.go) so this
-// preview accurately reflects the eventual command surface rather than
-// inventing placeholder names. None of these are wired to a daemon yet --
-// every click just surfaces a toast.
+// accurately reflects the command surface rather than inventing placeholder
+// names. Configure is the only one not wired to a daemon yet -- it just
+// surfaces a toast.
 const DAEMON_COMMANDS = [
     { label: 'Configure', icon: 'pi pi-upload' },
     { label: 'Install Plugin', icon: 'pi pi-plus-circle' },
@@ -110,6 +111,7 @@ function OrchestrationPage({ toast }) {
     const [newName, setNewName] = useState('');
     const [newAddress, setNewAddress] = useState('');
     const [addDialogVisible, setAddDialogVisible] = useState(false);
+    const [installDialogVisible, setInstallDialogVisible] = useState(false);
 
     useEffect(() => {
         localStorage.setItem(DAEMONS_STORAGE_KEY, JSON.stringify(daemons));
@@ -296,8 +298,12 @@ function OrchestrationPage({ toast }) {
     }, [toast, refreshDaemonStatus]);
 
     const onDaemonCommand = useCallback((label, daemon) => {
-        if (label === 'Configure' || label === 'Install Plugin') {
+        if (label === 'Configure') {
             notWiredUp(label);
+            return;
+        }
+        if (label === 'Install Plugin') {
+            setInstallDialogVisible(true);
             return;
         }
         if (label === 'List Plugins') {
@@ -328,6 +334,17 @@ function OrchestrationPage({ toast }) {
     return (
         <div className="p-2 flex gap-2" style={{ minHeight: '70vh' }}>
             <ConfirmDialog />
+            {installDialogVisible && selectedDaemon && (
+                <InstallPluginDialog
+                    daemon={selectedDaemon}
+                    onHide={() => setInstallDialogVisible(false)}
+                    onInstalled={(name) => {
+                        setInstallDialogVisible(false);
+                        toast.current.show({ severity: 'success', summary: 'Install Plugin', detail: `Installed ${name} on ${selectedDaemon.name}` });
+                        onListPlugins(selectedDaemon.id, selectedDaemon.address);
+                    }}
+                />
+            )}
             <div className="flex flex-column gap-2" style={{ width: 280, flexShrink: 0 }}>
                 <div className="border-round p-2" style={{ backgroundColor: 'var(--surface-card)', border: '1px solid var(--surface-border)' }}>
                     <div className="flex align-items-center justify-content-between mb-2 px-1">

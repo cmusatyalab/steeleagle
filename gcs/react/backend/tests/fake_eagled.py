@@ -21,11 +21,13 @@ class FakeDaemonServicer(eagled_pb2_grpc.DaemonServiceServicer):
     def __init__(self, script: dict):
         self._script = script
         self.received: dict[str, list] = {}
+        self.time_remaining: dict[str, float | None] = {}
         self.stream_finished = asyncio.Event()
         self.stream_time_remaining: float | None = None
 
     async def _run(self, rpc_name, request, context):
         self.received.setdefault(rpc_name, []).append(request)
+        self.time_remaining[rpc_name] = context.time_remaining()
         outcome = self._script[rpc_name]
         if isinstance(outcome, Exception):
             await context.abort(grpc.StatusCode.UNAVAILABLE, str(outcome))
@@ -42,6 +44,9 @@ class FakeDaemonServicer(eagled_pb2_grpc.DaemonServiceServicer):
 
     async def ForgetVehicles(self, request, context):
         return await self._run("ForgetVehicles", request, context)
+
+    async def InstallPlugin(self, request, context):
+        return await self._run("InstallPlugin", request, context)
 
     async def GetInstalledPlugins(self, request, context):
         return await self._run("GetInstalledPlugins", request, context)

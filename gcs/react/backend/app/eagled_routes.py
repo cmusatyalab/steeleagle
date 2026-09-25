@@ -11,9 +11,11 @@ the frontend tells an unreachable daemon (expected, ordinary state for
 this UI) from a real error, rather than the route raising
 HTTPException."""
 
+from typing import Literal
+
 import grpc
 from fastapi import APIRouter
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from steeleagle_protocol.v1.services.eagled import eagled_pb2
 
 from app.eagled_client import EagledClient
@@ -89,6 +91,34 @@ class VehicleNamesBody(BaseModel):
 
 class DaemonAddressBody(BaseModel):
     address: str
+
+
+class InstallPluginBody(BaseModel):
+    """name and subpath become filesystem paths on the daemon host, so they
+    are validated here at the edge: eagled joins them into its install and
+    clone directories as given."""
+
+    address: str
+    name: str = Field(
+        min_length=1, max_length=64, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    )
+    repo: str = Field(min_length=1)
+    ref: str = Field(min_length=1)
+    subpath: str = ""
+    category: Literal["driver", "mission", "extra"]
+
+    @field_validator("subpath")
+    @classmethod
+    def _subpath_stays_inside_the_repo(cls, v: str) -> str:
+        if v.startswith("/") or ".." in v.split("/"):
+            raise ValueError("subpath must be relative and stay inside the repo")
+        return v
+
+
+class InstallPluginResponse(BaseModel):
+    reachable: bool
+    ok: bool = False
+    error: str | None = None
 
 
 def _category_name(category: int) -> str:
@@ -234,3 +264,23 @@ async def reset_config(body: DaemonAddressBody) -> SimpleActionResponse:
             return SimpleActionResponse(reachable=True)
     except grpc.aio.AioRpcError as e:
         return SimpleActionResponse(reachable=False, error=e.details() or e.code().name)
+
+
+@router.post("/install-plugin")
+async def install_plugin(body: InstallPluginBody) -> InstallPluginResponse:
+    """A failed install is a normal answer from a reachable daemon, not a
+    transport error: reachable=True, ok=False, and `error` carries the
+    daemon's message (for a failing install.sh, that script's own output)."""
+    category = eagled_pb2.PluginCategory.Value(
+        f"PLUGIN_CATEGORY_{body.category.upper()}"
+    )
+    try:
+        async with EagledClient(body.address) as client:
+            resp = await client.install_plugin(
+                body.name, body.repo, body.ref, body.subpath, category
+            )
+    except grpc.aio.AioRpcError as e:
+        return InstallPluginResponse(
+            reachable=False, error=e.details() or e.code().name
+        )
+    return InstallPluginResponse(reachable=True, ok=resp.ok, error=resp.error or None)
