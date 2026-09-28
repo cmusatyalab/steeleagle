@@ -24,6 +24,12 @@ const DAEMONS_STORAGE_KEY = 'steeleagle-daemons';
 // every tick.
 const POLL_INTERVAL_MS = 5000;
 
+// The discoverable set (daemons tagged tag:steeleagle-daemon on the
+// tailnet, per /api/daemons/discovered) changes far less often than
+// reachability does -- a new daemon joining the tailnet, not a vehicle
+// starting/stopping -- so this polls much slower than POLL_INTERVAL_MS.
+const DISCOVERY_POLL_MS = 15000;
+
 function loadDaemons() {
     try {
         const raw = localStorage.getItem(DAEMONS_STORAGE_KEY);
@@ -158,6 +164,40 @@ function OrchestrationPage({ toast }) {
         const intervalId = setInterval(poll, POLL_INTERVAL_MS);
         return () => { cancelled = true; clearInterval(intervalId); };
     }, [daemons, pollOneStatus]);
+
+    // Daemons the GCS backend can see tagged tag:steeleagle-daemon on the
+    // tailnet (best-effort -- an empty list here just means this GCS host
+    // isn't tailnet-joined or nothing's currently tagged, not an error).
+    const [discoveredDaemons, setDiscoveredDaemons] = useState([]);
+
+    useEffect(() => {
+        let cancelled = false;
+        const poll = async () => {
+            try {
+                const response = await fetch(getApiUrl('/api/daemons/discovered'));
+                const result = await response.json();
+                if (!cancelled) setDiscoveredDaemons(result.daemons ?? []);
+            } catch {
+                // Leave the previous discovered list in place on a transient failure.
+            }
+        };
+        poll();
+        const intervalId = setInterval(poll, DISCOVERY_POLL_MS);
+        return () => { cancelled = true; clearInterval(intervalId); };
+    }, []);
+
+    // Discovered entries already in the roster (added manually, or
+    // promoted earlier) aren't offered again.
+    const newlyDiscoveredDaemons = useMemo(
+        () => discoveredDaemons.filter((disc) => !daemons.some((d) => d.address === disc.address)),
+        [discoveredDaemons, daemons]
+    );
+
+    const onAddDiscoveredDaemon = useCallback((disc) => {
+        const id = generateId();
+        setDaemons((prev) => [...prev, { id, name: disc.name, address: disc.address }]);
+        setSelectedDaemonId(id);
+    }, []);
 
     const selectedDaemon = useMemo(() => daemons.find((d) => d.id === selectedDaemonId) ?? null, [daemons, selectedDaemonId]);
 
@@ -403,6 +443,39 @@ function OrchestrationPage({ toast }) {
                     ))}
                     </div>
                 </div>
+                {newlyDiscoveredDaemons.length > 0 && (
+                    <div className="border-round p-2" style={{ backgroundColor: 'var(--surface-card)', border: '1px solid var(--surface-border)' }}>
+                        <div className="font-bold mb-2 px-1">Discovered on Tailnet</div>
+                        <div style={{ maxHeight: '30vh', overflowY: 'auto' }}>
+                        {newlyDiscoveredDaemons.map((disc) => (
+                            <div key={disc.address} className="flex align-items-center gap-2 p-2 border-round mb-1">
+                                <span
+                                    title={disc.online ? 'Online' : 'Offline'}
+                                    style={{
+                                        width: '10px', height: '10px', borderRadius: '50%', flexShrink: 0,
+                                        backgroundColor: disc.online ? 'var(--green-500)' : 'transparent',
+                                        border: `2px solid ${disc.online ? 'var(--green-500)' : 'var(--gray-500)'}`,
+                                    }}
+                                />
+                                <div className="flex-1" style={{ minWidth: 0 }}>
+                                    <div className="text-sm font-semibold white-space-nowrap overflow-hidden text-overflow-ellipsis">{disc.name}</div>
+                                    <div className="text-xs text-color-secondary white-space-nowrap overflow-hidden text-overflow-ellipsis">{disc.address}</div>
+                                </div>
+                                <Button
+                                    icon="pi pi-plus"
+                                    size="small"
+                                    text
+                                    rounded
+                                    aria-label={`Add ${disc.name}`}
+                                    tooltip="Add to roster"
+                                    tooltipOptions={{ position: 'top' }}
+                                    onClick={() => onAddDiscoveredDaemon(disc)}
+                                />
+                            </div>
+                        ))}
+                        </div>
+                    </div>
+                )}
             </div>
 
             <Dialog

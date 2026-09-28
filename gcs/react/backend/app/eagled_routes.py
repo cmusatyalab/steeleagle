@@ -11,6 +11,9 @@ the frontend tells an unreachable daemon (expected, ordinary state for
 this UI) from a real error, rather than the route raising
 HTTPException."""
 
+import asyncio
+import json
+import shutil
 from typing import Literal
 
 import grpc
@@ -21,6 +24,14 @@ from steeleagle_protocol.v1.services.eagled import eagled_pb2
 from app.eagled_client import EagledClient
 
 router = APIRouter(prefix="/api/daemons", tags=["daemons"])
+
+# Tag applied to eagled's tsnet node -- not by this codebase, but by the
+# reusable Tailscale auth key eagled authenticates with (configured in the
+# tailnet's admin console, outside this repo). Discovery has no way to see
+# an operator-overridden `-control-port`, so it assumes every instance kept
+# eagled's default (cmd/eagled/daemon.go's DefaultControlPort).
+DAEMON_TAILSCALE_TAG = "tag:steeleagle-daemon"
+DEFAULT_CONTROL_PORT = 9090
 
 
 class VehicleStatusModel(BaseModel):
@@ -119,6 +130,16 @@ class InstallPluginResponse(BaseModel):
     reachable: bool
     ok: bool = False
     error: str | None = None
+
+
+class DiscoveredDaemonModel(BaseModel):
+    name: str
+    address: str
+    online: bool
+
+
+class DiscoveredDaemonsResponse(BaseModel):
+    daemons: list[DiscoveredDaemonModel] = []
 
 
 def _category_name(category: int) -> str:
@@ -284,3 +305,55 @@ async def install_plugin(body: InstallPluginBody) -> InstallPluginResponse:
             reachable=False, error=e.details() or e.code().name
         )
     return InstallPluginResponse(reachable=True, ok=resp.ok, error=resp.error or None)
+
+
+async def _run_tailscale_status() -> dict | None:
+    """Runs `tailscale status --json` on this host and returns the parsed
+    status, or None if it can't be run (no `tailscale` binary, tailscaled
+    not running, or malformed output). Discovery is best-effort: a GCS host
+    that isn't tailnet-joined just sees no discovered daemons, not an
+    error."""
+    tailscale = shutil.which("tailscale")
+    if tailscale is None:
+        return None
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            tailscale,
+            "status",
+            "--json",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL,
+        )
+        stdout, _ = await proc.communicate()
+        if proc.returncode != 0:
+            return None
+        return json.loads(stdout)
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def _discovered_daemons_from_status(status: dict) -> list[DiscoveredDaemonModel]:
+    daemons = []
+    for peer in status.get("Peer", {}).values():
+        if DAEMON_TAILSCALE_TAG not in (peer.get("Tags") or []):
+            continue
+        dns_name = (peer.get("DNSName") or "").rstrip(".")
+        if not dns_name:
+            continue
+        daemons.append(
+            DiscoveredDaemonModel(
+                name=peer.get("HostName") or dns_name,
+                address=f"{dns_name}:{DEFAULT_CONTROL_PORT}",
+                online=bool(peer.get("Online")),
+            )
+        )
+    daemons.sort(key=lambda d: d.name)
+    return daemons
+
+
+@router.get("/discovered")
+async def get_discovered_daemons() -> DiscoveredDaemonsResponse:
+    status = await _run_tailscale_status()
+    if status is None:
+        return DiscoveredDaemonsResponse(daemons=[])
+    return DiscoveredDaemonsResponse(daemons=_discovered_daemons_from_status(status))

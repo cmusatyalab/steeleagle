@@ -2,14 +2,17 @@ import pytest
 from pydantic import ValidationError
 from steeleagle_protocol.v1.services.eagled import eagled_pb2
 
+from app import eagled_routes
 from app.eagled_routes import (
     DaemonAddressBody,
     InstallPluginBody,
     VehicleActionResult,
     VehicleNamesBody,
     VehicleStatusModel,
+    _discovered_daemons_from_status,
     _get_status,
     _vehicle_action_response,
+    get_discovered_daemons,
     get_status,
     install_plugin,
     restart_daemon,
@@ -215,3 +218,89 @@ def test_install_plugin_body_accepts_typical_input():
         ).subpath
         == ""
     )
+
+
+# A trimmed real `tailscale status --json` shape (field names/nesting as
+# observed on a live tailnet): only Peer entries carrying
+# tag:steeleagle-daemon should surface as discovered daemons.
+FAKE_TAILSCALE_STATUS = {
+    "Peer": {
+        "nodekey:aaa": {
+            "HostName": "heisenberg-eagled",
+            "DNSName": "heisenberg-eagled.tailnet-1234.ts.net.",
+            "Tags": ["tag:steeleagle-daemon"],
+            "Online": True,
+        },
+        "nodekey:bbb": {
+            "HostName": "fermi-eagled",
+            "DNSName": "fermi-eagled.tailnet-1234.ts.net.",
+            "Tags": ["tag:steeleagle-daemon"],
+            "Online": False,
+        },
+        "nodekey:ccc": {
+            "HostName": "cloudlet033",
+            "DNSName": "cloudlet033.tailnet-1234.ts.net.",
+            "Tags": ["tag:steeleagle-backend"],
+            "Online": True,
+        },
+        "nodekey:ddd": {
+            "HostName": "untagged-laptop",
+            "DNSName": "untagged-laptop.tailnet-1234.ts.net.",
+            "Tags": None,
+            "Online": True,
+        },
+    }
+}
+
+
+def test_discovered_daemons_from_status_filters_by_tag_and_sorts():
+    daemons = _discovered_daemons_from_status(FAKE_TAILSCALE_STATUS)
+
+    assert [d.name for d in daemons] == ["fermi-eagled", "heisenberg-eagled"]
+    assert daemons[0].address == "fermi-eagled.tailnet-1234.ts.net:9090"
+    assert daemons[0].online is False
+    assert daemons[1].address == "heisenberg-eagled.tailnet-1234.ts.net:9090"
+    assert daemons[1].online is True
+
+
+def test_discovered_daemons_from_status_skips_peer_with_no_dns_name():
+    status = {
+        "Peer": {
+            "nodekey:eee": {
+                "HostName": "no-dns",
+                "DNSName": "",
+                "Tags": ["tag:steeleagle-daemon"],
+                "Online": True,
+            }
+        }
+    }
+
+    assert _discovered_daemons_from_status(status) == []
+
+
+async def test_discovered_daemons_route_returns_tagged_peers(monkeypatch):
+    async def fake_run_tailscale_status():
+        return FAKE_TAILSCALE_STATUS
+
+    monkeypatch.setattr(
+        eagled_routes, "_run_tailscale_status", fake_run_tailscale_status
+    )
+
+    result = await get_discovered_daemons()
+
+    assert [d.name for d in result.daemons] == ["fermi-eagled", "heisenberg-eagled"]
+
+
+async def test_discovered_daemons_route_empty_when_tailscale_unavailable(
+    monkeypatch,
+):
+    async def fake_run_tailscale_status():
+        return None
+
+    monkeypatch.setattr(
+        eagled_routes, "_run_tailscale_status", fake_run_tailscale_status
+    )
+
+    result = await get_discovered_daemons()
+
+    assert result.daemons == []
