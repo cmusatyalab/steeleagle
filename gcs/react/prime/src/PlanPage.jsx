@@ -4,6 +4,10 @@ import { Button } from 'primereact/button';
 import { SplitButton } from 'primereact/splitbutton';
 import { Toast } from 'primereact/toast';
 import { InputTextarea } from 'primereact/inputtextarea';
+import { Dialog } from 'primereact/dialog';
+import { MultiSelect } from 'primereact/multiselect';
+import MissionUploadProgress from './MissionUploadProgress.jsx';
+import { streamUpload, initialUploadState, applyUploadEvent, isUploadFinished, finishUpload } from './missionUpload.js';
 import {
     ReactFlow, Background, Controls, MiniMap,
     applyNodeChanges, applyEdgeChanges, addEdge,
@@ -388,7 +392,7 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
     );
 }
 
-function PlanPage({ theme }) {
+function PlanPage({ theme, vehicles = [], squadList }) {
     const [nodes, setNodes] = useState([]);
     const [edges, setEdges] = useState([]);
     const [eventInstances, setEventInstances] = useState([]);
@@ -412,6 +416,10 @@ function PlanPage({ theme }) {
     const fileInputRef = useRef(null);
     const toast = useRef(null);
     const [validationIssues, setValidationIssues] = useState({});
+    const [deployDialogVisible, setDeployDialogVisible] = useState(false);
+    const [deployTargets, setDeployTargets] = useState([]);
+    const [deployState, setDeployState] = useState(null);
+    const deploying = deployState !== null && !isUploadFinished(deployState);
 
     // Undo / redo history
     const pastRef = useRef([]);
@@ -524,6 +532,14 @@ function PlanPage({ theme }) {
         };
     }
 
+    function highlightErrorNodes(errors) {
+        const errorIds = new Set(errors.map(e => e.node_id));
+        setNodes(ns => ns.map(n => ({
+            ...n,
+            data: { ...n.data, _hasError: errorIds.has(n.data.instance_id) },
+        })));
+    }
+
     async function handleCompile() {
         if (!startNodeId) {
             toast.current.show({ severity: 'warn', summary: 'No start state', detail: 'Right-click a node and set it as the start state.' });
@@ -540,12 +556,7 @@ function PlanPage({ theme }) {
             const result = await resp.json();
             if (result.errors) {
                 toast.current.show({ severity: 'error', summary: 'Compile error', detail: result.errors[0]?.message });
-                // Highlight error nodes
-                const errorIds = new Set(result.errors.map(e => e.node_id));
-                setNodes(ns => ns.map(n => ({
-                    ...n,
-                    data: { ...n.data, _hasError: errorIds.has(n.data.instance_id) },
-                })));
+                highlightErrorNodes(result.errors);
             } else {
                 setMissionCompiled(true);
                 setNodes(ns => ns.map(n => ({ ...n, data: { ...n.data, _hasError: false } })));
@@ -585,6 +596,31 @@ function PlanPage({ theme }) {
             toast.current.show({ severity: 'error', summary: 'Build failed', detail: e.message });
         } finally {
             setBuilding(null);
+        }
+    }
+
+    function openDeployDialog() {
+        setDeployTargets(squadList ?? []);
+        setDeployDialogVisible(true);
+    }
+
+    async function handleDeploy() {
+        const targets = [...deployTargets];
+        setDeployDialogVisible(false);
+        setDeployState(initialUploadState(targets));
+        const body = { ...buildMissionRequestBody(), geojson: features, vehicles: targets };
+        try {
+            await streamUpload(getApiUrl('/api/deploy'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            }, (ev) => {
+                setDeployState(s => applyUploadEvent(s, ev));
+                if (ev.type === 'error' && ev.errors?.length) highlightErrorNodes(ev.errors);
+            });
+            setDeployState(s => finishUpload(s));
+        } catch (e) {
+            setDeployState(s => applyUploadEvent(s, { type: 'error', detail: e.message }));
         }
     }
 
@@ -762,6 +798,18 @@ function PlanPage({ theme }) {
     return (
         <>
             <Toast ref={toast} />
+            <Dialog header="Deploy mission" visible={deployDialogVisible} style={{ width: '28rem' }}
+                onHide={() => setDeployDialogVisible(false)}
+                footer={
+                    <Button label="Deploy" icon="pi pi-send" disabled={deployTargets.length === 0} onClick={handleDeploy} />
+                }>
+                <label htmlFor="deploy-targets" className="block mb-2">Target vehicles</label>
+                <MultiSelect id="deploy-targets" className="w-full" display="chip"
+                    value={deployTargets}
+                    options={vehicles.map(v => v.name)}
+                    onChange={e => setDeployTargets(e.value)}
+                    placeholder="Select vehicles" />
+            </Dialog>
             <TabView renderActiveOnly={false}>
                 <TabPanel header="FSM Builder" leftIcon="pi pi-share-alt mr-2" headerClassName="mr-2">
                     <div className="flex flex-column" style={{ height: 'calc(100vh - 180px)' }}>
@@ -837,6 +885,20 @@ function PlanPage({ theme }) {
                                 onClick={() => handleDownloadBinary('amd64')}
                                 model={buildArchOptions}
                             />
+                            <Button
+                                label="Deploy"
+                                icon="pi pi-send"
+                                size="small"
+                                disabled={!missionCompiled || deploying}
+                                loading={deploying}
+                                onClick={openDeployDialog}
+                                tooltip="Build and upload to vehicles"
+                                tooltipOptions={{ position: 'top' }}
+                            />
+                        </div>
+
+                        <div className="px-2" style={{ flexShrink: 0 }}>
+                            <MissionUploadProgress state={deployState} onDismiss={() => setDeployState(null)} />
                         </div>
 
                         {/* Canvas — middle */}

@@ -33,3 +33,26 @@ func WithDialer(dialer func(ctx context.Context, network, addr string) (net.Conn
 		s.pool.dialer = dialer
 	}
 }
+
+// WithUploadIdleTimeout overrides how long a vehicle's mission upload may go
+// without accepting a chunk before it is failed.
+func WithUploadIdleTimeout(timeout time.Duration) Option {
+	return func(s *SwarmServer) {
+		s.uploadIdleTimeout = timeout
+	}
+}
+
+// WithUploadMaxDuration overrides the hard cap on one vehicle's mission upload.
+func WithUploadMaxDuration(d time.Duration) Option {
+	return func(s *SwarmServer) {
+		s.uploadMaxDuration = d
+	}
+}
+
+// WithUploadProgressInterval overrides the minimum gap between a vehicle's
+// upload progress messages.
+func WithUploadProgressInterval(d time.Duration) Option {
+	return func(s *SwarmServer) {
+		s.progressInterval = d
+	}
+}

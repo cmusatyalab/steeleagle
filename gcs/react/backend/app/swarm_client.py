@@ -1,4 +1,5 @@
-from collections.abc import AsyncIterator
+import hashlib
+from collections.abc import AsyncIterator, Iterator
 
 from google.protobuf.message import Message
 from pydantic import BaseModel
@@ -25,6 +26,33 @@ async def _collect_stream(stream: AsyncIterator[Message]) -> list[VehicleResult]
             )
         )
     return results
+
+
+UPLOAD_CHUNK_SIZE = 256 * 1024
+
+
+def _upload_requests(
+    vehicles: list[str], variants: dict[str, bytes]
+) -> Iterator[swarm_pb2.SwarmUploadMissionRequest]:
+    """Header (one MissionHeader per arch), then each variant's chunks."""
+    yield swarm_pb2.SwarmUploadMissionRequest(
+        header=swarm_pb2.SwarmUploadMissionHeader(
+            vehicles=vehicles,
+            variants=[
+                mission_pb2.MissionHeader(
+                    arch=arch, size=len(data), sha256=hashlib.sha256(data).digest()
+                )
+                for arch, data in variants.items()
+            ],
+        )
+    )
+    for arch, data in variants.items():
+        for offset in range(0, len(data), UPLOAD_CHUNK_SIZE):
+            yield swarm_pb2.SwarmUploadMissionRequest(
+                chunk=swarm_pb2.SwarmUploadMissionChunk(
+                    arch=arch, data=data[offset : offset + UPLOAD_CHUNK_SIZE]
+                )
+            )
 
 
 class SwarmClient:
@@ -104,12 +132,31 @@ class SwarmClient:
         return await _collect_stream(self._stub.SwarmSetGimbalAngleTarget(request))
 
     async def upload_mission(
-        self, vehicles: list[str], mission_binary: bytes, map_data: bytes
-    ) -> list[VehicleResult]:
-        request = swarm_pb2.SwarmUploadMissionRequest(
-            vehicles=vehicles,
-            request=mission_pb2.UploadMissionRequest(
-                mission=mission_pb2.MissionData(binary=mission_binary, map=map_data)
-            ),
-        )
-        return await _collect_stream(self._stub.SwarmUploadMission(request))
+        self, vehicles: list[str], variants: dict[str, bytes]
+    ) -> AsyncIterator[dict]:
+        """Streams one binary per arch to the swarm controller and yields a
+        progress/result event dict per response, as they arrive. Raises
+        grpc.aio.AioRpcError if the call itself fails."""
+        call = self._stub.SwarmUploadMission(_upload_requests(vehicles, variants))
+        try:
+            async for response in call:
+                if response.HasField("progress"):
+                    yield {
+                        "type": "progress",
+                        "vehicle": response.vehicle,
+                        "sent": response.progress.sent,
+                        "total": response.progress.total,
+                    }
+                else:
+                    yield {
+                        "type": "result",
+                        "vehicle": response.vehicle,
+                        "success": response.code == 0,
+                        "details": response.details,
+                    }
+        finally:
+            # If the consumer closes this generator early (e.g. the HTTP
+            # client disconnects mid-stream), cancel the RPC promptly
+            # instead of leaving it running server-side until it finishes
+            # on its own. A no-op if the call already completed.
+            call.cancel()

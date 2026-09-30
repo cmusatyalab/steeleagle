@@ -149,25 +149,51 @@ class SwarmSetGimbalAngleTargetResponse(_message.Message):
     details: str
     def __init__(self, vehicle: _Optional[str] = ..., response: _Optional[_Union[_control_pb2.SetGimbalAngleTargetResponse, _Mapping]] = ..., code: _Optional[int] = ..., details: _Optional[str] = ...) -> None: ...
 
-class SwarmUploadMissionRequest(_message.Message):
-    __slots__ = ("vehicles", "request")
+class SwarmUploadMissionHeader(_message.Message):
+    __slots__ = ("vehicles", "variants")
     VEHICLES_FIELD_NUMBER: _ClassVar[int]
-    REQUEST_FIELD_NUMBER: _ClassVar[int]
+    VARIANTS_FIELD_NUMBER: _ClassVar[int]
     vehicles: _containers.RepeatedScalarFieldContainer[str]
-    request: _mission_pb2.UploadMissionRequest
-    def __init__(self, vehicles: _Optional[_Iterable[str]] = ..., request: _Optional[_Union[_mission_pb2.UploadMissionRequest, _Mapping]] = ...) -> None: ...
+    variants: _containers.RepeatedCompositeFieldContainer[_mission_pb2.MissionHeader]
+    def __init__(self, vehicles: _Optional[_Iterable[str]] = ..., variants: _Optional[_Iterable[_Union[_mission_pb2.MissionHeader, _Mapping]]] = ...) -> None: ...
+
+class SwarmUploadMissionChunk(_message.Message):
+    __slots__ = ("arch", "data")
+    ARCH_FIELD_NUMBER: _ClassVar[int]
+    DATA_FIELD_NUMBER: _ClassVar[int]
+    arch: str
+    data: bytes
+    def __init__(self, arch: _Optional[str] = ..., data: _Optional[bytes] = ...) -> None: ...
+
+class SwarmUploadMissionRequest(_message.Message):
+    __slots__ = ("header", "chunk")
+    HEADER_FIELD_NUMBER: _ClassVar[int]
+    CHUNK_FIELD_NUMBER: _ClassVar[int]
+    header: SwarmUploadMissionHeader
+    chunk: SwarmUploadMissionChunk
+    def __init__(self, header: _Optional[_Union[SwarmUploadMissionHeader, _Mapping]] = ..., chunk: _Optional[_Union[SwarmUploadMissionChunk, _Mapping]] = ...) -> None: ...
+
+class UploadProgress(_message.Message):
+    __slots__ = ("sent", "total")
+    SENT_FIELD_NUMBER: _ClassVar[int]
+    TOTAL_FIELD_NUMBER: _ClassVar[int]
+    sent: int
+    total: int
+    def __init__(self, sent: _Optional[int] = ..., total: _Optional[int] = ...) -> None: ...
 
 class SwarmUploadMissionResponse(_message.Message):
-    __slots__ = ("vehicle", "response", "code", "details")
+    __slots__ = ("vehicle", "response", "code", "details", "progress")
     VEHICLE_FIELD_NUMBER: _ClassVar[int]
     RESPONSE_FIELD_NUMBER: _ClassVar[int]
     CODE_FIELD_NUMBER: _ClassVar[int]
     DETAILS_FIELD_NUMBER: _ClassVar[int]
+    PROGRESS_FIELD_NUMBER: _ClassVar[int]
     vehicle: str
     response: _mission_pb2.UploadMissionResponse
     code: int
     details: str
-    def __init__(self, vehicle: _Optional[str] = ..., response: _Optional[_Union[_mission_pb2.UploadMissionResponse, _Mapping]] = ..., code: _Optional[int] = ..., details: _Optional[str] = ...) -> None: ...
+    progress: UploadProgress
+    def __init__(self, vehicle: _Optional[str] = ..., response: _Optional[_Union[_mission_pb2.UploadMissionResponse, _Mapping]] = ..., code: _Optional[int] = ..., details: _Optional[str] = ..., progress: _Optional[_Union[UploadProgress, _Mapping]] = ...) -> None: ...
 
 class SwarmStartMissionRequest(_message.Message):
     __slots__ = ("vehicles", "request")

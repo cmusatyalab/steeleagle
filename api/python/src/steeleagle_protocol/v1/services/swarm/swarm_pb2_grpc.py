@@ -65,7 +65,7 @@ class SwarmServiceStub:
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmStartMissionRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmStartMissionResponse.FromString,
                 _registered_method=True)
-        self.SwarmUploadMission = channel.unary_stream(
+        self.SwarmUploadMission = channel.stream_stream(
                 '/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmUploadMission',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmUploadMissionRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmUploadMissionResponse.FromString,
@@ -196,12 +196,15 @@ class SwarmServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def SwarmUploadMission(self, request, context):
+    def SwarmUploadMission(self, request_iterator, context):
         """
         Upload a mission to multiple vehicles.
 
-        Uploads a mission to targeted vehicles. Can be started by sending a subsequent
-        `SwarmStartMission` command.
+        The client streams a `header` (target vehicles plus one variant per
+        architecture) followed by `chunk`s. The server validates the complete
+        upload, then streams each vehicle the variant matching its architecture,
+        sending throttled `progress` messages and exactly one final result per
+        vehicle. Can be started by sending a subsequent `SwarmStartMission`.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -261,7 +264,7 @@ def add_SwarmServiceServicer_to_server(servicer, server):
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmStartMissionRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmStartMissionResponse.SerializeToString,
             ),
-            'SwarmUploadMission': grpc.unary_stream_rpc_method_handler(
+            'SwarmUploadMission': grpc.stream_stream_rpc_method_handler(
                     servicer.SwarmUploadMission,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmUploadMissionRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmUploadMissionResponse.SerializeToString,
@@ -510,7 +513,7 @@ class SwarmService:
             _registered_method=True)
 
     @staticmethod
-    def SwarmUploadMission(request,
+    def SwarmUploadMission(request_iterator,
             target,
             options=(),
             channel_credentials=None,
@@ -520,8 +523,8 @@ class SwarmService:
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_stream(
-            request,
+        return grpc.experimental.stream_stream(
+            request_iterator,
             target,
             '/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmUploadMission',
             steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_swarm__pb2.SwarmUploadMissionRequest.SerializeToString,

@@ -59,6 +59,11 @@ function App() {
   const [controlGroups, setControlGroups] = useState({});
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [socketUrl, setSocketUrl] = useState('');
+  // Lifted out of ControlPage (rather than kept as its own useState) so an
+  // in-flight mission upload survives switching away from the Control tab:
+  // App.jsx keeps ControlPage mounted only while that tab is selected, and
+  // an unmounted component's state would otherwise be lost mid-upload.
+  const [controlUploadState, setControlUploadState] = useState(null);
   // Keep a ref to the last-known vehicles JSON so we can skip setVehicles when
   // the server returns identical data, preventing needless re-renders.
   const vehiclesJsonRef = useRef('');
@@ -461,7 +466,8 @@ function App() {
           toast={toast} onCommand={onCommand}
           setManualControl={setManualControl} squadList={squadList} setSquadList={setSquadList}
           takeOffAltitude={takeOffAltitude}
-          controlGroups={controlGroups} />}
+          controlGroups={controlGroups}
+          uploadState={controlUploadState} setUploadState={setControlUploadState} />}
       </div>
       <Toast ref={toast} />
     </>

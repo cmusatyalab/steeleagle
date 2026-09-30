@@ -25,6 +25,10 @@ type SwarmServer struct {
 	pool     *connPool       // pooled client connections, keyed by vehicle name
 	timeout  time.Duration   // bound on each per-vehicle proxied call
 	log      zerolog.Logger  // logger object
+
+	uploadIdleTimeout time.Duration // SwarmUploadMission: fail a vehicle after this long without progress
+	uploadMaxDuration time.Duration // SwarmUploadMission: hard cap on one vehicle's upload
+	progressInterval  time.Duration // SwarmUploadMission: minimum gap between a vehicle's progress messages
 }
 
 // NewSwarmServer creates a new swarm server that reaches vehicles through the
@@ -34,6 +38,10 @@ func NewSwarmServer(resolver VehicleResolver, options ...Option) *SwarmServer {
 		resolver: resolver,
 		timeout:  defaultCallTimeout,
 		log:      zerolog.New(os.Stderr).With().Timestamp().Logger(),
+
+		uploadIdleTimeout: defaultUploadIdleTimeout,
+		uploadMaxDuration: defaultUploadMaxDuration,
+		progressInterval:  defaultProgressInterval,
 	}
 	// Built before options run: WithDialer writes into s.pool directly, so
 	// it must already exist.
@@ -262,31 +270,6 @@ func (s *SwarmServer) SwarmStartMission(
 		func(vehicle string, resp *missionpb.StartMissionResponse, err error) *swarmpb.SwarmStartMissionResponse {
 			code, details := statusOf(err)
 			return swarmpb.SwarmStartMissionResponse_builder{
-				Vehicle:  vehicle,
-				Response: resp,
-				Code:     code,
-				Details:  details,
-			}.Build()
-		},
-	)
-}
-
-func (s *SwarmServer) SwarmUploadMission(
-	req *swarmpb.SwarmUploadMissionRequest,
-	stream grpc.ServerStreamingServer[swarmpb.SwarmUploadMissionResponse],
-) error {
-	return dispatch(
-		s,
-		"SwarmUploadMission",
-		req.GetVehicles(),
-		stream,
-		req.GetRequest(),
-		func(ctx context.Context, conn *grpc.ClientConn, r *missionpb.UploadMissionRequest) (*missionpb.UploadMissionResponse, error) {
-			return missionpb.NewMissionServiceClient(conn).UploadMission(ctx, r)
-		},
-		func(vehicle string, resp *missionpb.UploadMissionResponse, err error) *swarmpb.SwarmUploadMissionResponse {
-			code, details := statusOf(err)
-			return swarmpb.SwarmUploadMissionResponse_builder{
 				Vehicle:  vehicle,
 				Response: resp,
 				Code:     code,

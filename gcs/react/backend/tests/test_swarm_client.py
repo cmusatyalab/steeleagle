@@ -1,3 +1,5 @@
+import hashlib
+
 import grpc
 import pytest
 from steeleagle_protocol.v1.services.driver import control_pb2
@@ -82,11 +84,25 @@ class FakeSwarmServicer(swarm_pb2_grpc.SwarmServiceServicer):
         ):
             yield r
 
-    async def SwarmUploadMission(self, request, context):
-        async for r in self._run(
-            "SwarmUploadMission", swarm_pb2.SwarmUploadMissionResponse, request, context
-        ):
-            yield r
+    async def SwarmUploadMission(self, request_iterator, context):
+        requests = [r async for r in request_iterator]
+        self.received.setdefault("SwarmUploadMission", []).append(requests)
+        outcome = self._script["SwarmUploadMission"]
+        if isinstance(outcome, Exception):
+            await context.abort(grpc.StatusCode.UNAVAILABLE, str(outcome))
+            return
+        for item in outcome:
+            if item[0] == "progress":
+                _, vehicle, sent, total = item
+                yield swarm_pb2.SwarmUploadMissionResponse(
+                    vehicle=vehicle,
+                    progress=swarm_pb2.UploadProgress(sent=sent, total=total),
+                )
+            else:
+                vehicle, code, details = item
+                yield swarm_pb2.SwarmUploadMissionResponse(
+                    vehicle=vehicle, code=code, details=details
+                )
 
 
 @pytest.fixture
@@ -227,16 +243,68 @@ async def test_set_gimbal_pose_sends_offset_pose(swarm_client_factory):
     assert (p.pitch, p.yaw, p.roll) == pytest.approx((5.0, -10.0, 0.0))
 
 
-async def test_upload_mission_sends_binary_content_and_map(swarm_client_factory):
+async def test_upload_mission_sends_header_then_chunks(swarm_client_factory):
     client, servicer = await swarm_client_factory(
         {"SwarmUploadMission": [("drone1", 0, "")]}
     )
+    amd = bytes(range(256)) * 2000  # 512000 bytes -> 2 chunks
+    arm = b"\x01" * 10
 
-    await client.upload_mission(
-        ["drone1"], mission_binary=b"\x7fELF...", map_data=b"<kml></kml>"
+    events = [
+        e async for e in client.upload_mission(["drone1"], {"amd64": amd, "arm64": arm})
+    ]
+
+    assert events == [
+        {"type": "result", "vehicle": "drone1", "success": True, "details": ""}
+    ]
+    requests = servicer.received["SwarmUploadMission"][0]
+    header = requests[0].header
+    assert list(header.vehicles) == ["drone1"]
+    by_arch = {v.arch: v for v in header.variants}
+    assert by_arch["amd64"].size == len(amd)
+    assert by_arch["amd64"].sha256 == hashlib.sha256(amd).digest()
+    assert by_arch["arm64"].size == len(arm)
+    chunks = [r.chunk for r in requests[1:]]
+    assert all(r.WhichOneof("part") == "chunk" for r in requests[1:])
+    assert all(len(c.data) <= 256 * 1024 for c in chunks)
+    assert b"".join(c.data for c in chunks if c.arch == "amd64") == amd
+    assert b"".join(c.data for c in chunks if c.arch == "arm64") == arm
+
+
+async def test_upload_mission_relays_progress_and_failures(swarm_client_factory):
+    client, _ = await swarm_client_factory(
+        {
+            "SwarmUploadMission": [
+                ("progress", "drone1", 0, 100),
+                ("progress", "drone1", 100, 100),
+                ("drone1", 0, ""),
+                ("drone2", 9, "no arm64 variant provided"),
+            ]
+        }
     )
 
-    sent = servicer.received["SwarmUploadMission"][0]
-    assert list(sent.vehicles) == ["drone1"]
-    assert sent.request.mission.binary == b"\x7fELF..."
-    assert sent.request.mission.map == b"<kml></kml>"
+    events = [
+        e async for e in client.upload_mission(["drone1", "drone2"], {"amd64": b"x"})
+    ]
+
+    assert events == [
+        {"type": "progress", "vehicle": "drone1", "sent": 0, "total": 100},
+        {"type": "progress", "vehicle": "drone1", "sent": 100, "total": 100},
+        {"type": "result", "vehicle": "drone1", "success": True, "details": ""},
+        {
+            "type": "result",
+            "vehicle": "drone2",
+            "success": False,
+            "details": "no arm64 variant provided",
+        },
+    ]
+
+
+async def test_upload_mission_channel_failure(swarm_client_factory):
+    client, _ = await swarm_client_factory(
+        {"SwarmUploadMission": RuntimeError("swarm controller down")}
+    )
+
+    with pytest.raises(grpc.aio.AioRpcError):
+        async for _ in client.upload_mission(["drone1"], {"amd64": b"x"}):
+            pass

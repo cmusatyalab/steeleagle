@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n5steeleagle_protocol/v1/services/mission/mission.proto\x12\'steeleagle_protocol.v1.services.mission\"g\n\x0bMissionData\x12\x14\n\x04json\x18\x01 \x01(\tH\x00R\x04json\x12\x18\n\x06\x62inary\x18\x02 \x01(\x0cH\x00R\x06\x62inary\x12\x15\n\x03map\x18\x03 \x01(\x0cH\x01R\x03map\x88\x01\x01\x42\t\n\x07\x63ontentB\x06\n\x04_map\"f\n\x14UploadMissionRequest\x12N\n\x07mission\x18\x01 \x01(\x0b\x32\x34.steeleagle_protocol.v1.services.mission.MissionDataR\x07mission\"\x17\n\x15UploadMissionResponse\"\x15\n\x13StartMissionRequest\"\x16\n\x14StartMissionResponse\"\x14\n\x12StopMissionRequest\"\x15\n\x13StopMissionResponse2\xc0\x03\n\x0eMissionService\x12\x8d\x01\n\x0cStartMission\x12<.steeleagle_protocol.v1.services.mission.StartMissionRequest\x1a=.steeleagle_protocol.v1.services.mission.StartMissionResponse\"\x00\x12\x90\x01\n\rUploadMission\x12=.steeleagle_protocol.v1.services.mission.UploadMissionRequest\x1a>.steeleagle_protocol.v1.services.mission.UploadMissionResponse\"\x00\x12\x8a\x01\n\x0bStopMission\x12;.steeleagle_protocol.v1.services.mission.StopMissionRequest\x1a<.steeleagle_protocol.v1.services.mission.StopMissionResponse\"\x00\x42\xc9\x02\n+com.steeleagle_protocol.v1.services.missionB\x0cMissionProtoP\x01ZPgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/mission\xa2\x02\x04SVSM\xaa\x02&SteeleagleProtocol.V1.Services.Mission\xca\x02&SteeleagleProtocol\\V1\\Services\\Mission\xe2\x02\x32SteeleagleProtocol\\V1\\Services\\Mission\\GPBMetadata\xea\x02)SteeleagleProtocol::V1::Services::Missionb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n5steeleagle_protocol/v1/services/mission/mission.proto\x12\'steeleagle_protocol.v1.services.mission\"O\n\rMissionHeader\x12\x12\n\x04\x61rch\x18\x01 \x01(\tR\x04\x61rch\x12\x12\n\x04size\x18\x02 \x01(\x04R\x04size\x12\x16\n\x06sha256\x18\x03 \x01(\x0cR\x06sha256\"\x88\x01\n\x14UploadMissionRequest\x12P\n\x06header\x18\x01 \x01(\x0b\x32\x36.steeleagle_protocol.v1.services.mission.MissionHeaderH\x00R\x06header\x12\x16\n\x05\x63hunk\x18\x02 \x01(\x0cH\x00R\x05\x63hunkB\x06\n\x04part\"\x17\n\x15UploadMissionResponse\"\x17\n\x15GetMissionInfoRequest\",\n\x16GetMissionInfoResponse\x12\x12\n\x04\x61rch\x18\x01 \x01(\tR\x04\x61rch\"\x15\n\x13StartMissionRequest\"\x16\n\x14StartMissionResponse\"\x14\n\x12StopMissionRequest\"\x15\n\x13StopMissionResponse2\xd8\x04\n\x0eMissionService\x12\x8d\x01\n\x0cStartMission\x12<.steeleagle_protocol.v1.services.mission.StartMissionRequest\x1a=.steeleagle_protocol.v1.services.mission.StartMissionResponse\"\x00\x12\x92\x01\n\rUploadMission\x12=.steeleagle_protocol.v1.services.mission.UploadMissionRequest\x1a>.steeleagle_protocol.v1.services.mission.UploadMissionResponse\"\x00(\x01\x12\x8a\x01\n\x0bStopMission\x12;.steeleagle_protocol.v1.services.mission.StopMissionRequest\x1a<.steeleagle_protocol.v1.services.mission.StopMissionResponse\"\x00\x12\x93\x01\n\x0eGetMissionInfo\x12>.steeleagle_protocol.v1.services.mission.GetMissionInfoRequest\x1a?.steeleagle_protocol.v1.services.mission.GetMissionInfoResponse\"\x00\x42\xc9\x02\n+com.steeleagle_protocol.v1.services.missionB\x0cMissionProtoP\x01ZPgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/mission\xa2\x02\x04SVSM\xaa\x02&SteeleagleProtocol.V1.Services.Mission\xca\x02&SteeleagleProtocol\\V1\\Services\\Mission\xe2\x02\x32SteeleagleProtocol\\V1\\Services\\Mission\\GPBMetadata\xea\x02)SteeleagleProtocol::V1::Services::Missionb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,20 +32,24 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'steeleagle_protocol.v1.serv
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'\n+com.steeleagle_protocol.v1.services.missionB\014MissionProtoP\001ZPgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/mission\242\002\004SVSM\252\002&SteeleagleProtocol.V1.Services.Mission\312\002&SteeleagleProtocol\\V1\\Services\\Mission\342\0022SteeleagleProtocol\\V1\\Services\\Mission\\GPBMetadata\352\002)SteeleagleProtocol::V1::Services::Mission'
-  _globals['_MISSIONDATA']._serialized_start=98
-  _globals['_MISSIONDATA']._serialized_end=201
-  _globals['_UPLOADMISSIONREQUEST']._serialized_start=203
-  _globals['_UPLOADMISSIONREQUEST']._serialized_end=305
-  _globals['_UPLOADMISSIONRESPONSE']._serialized_start=307
-  _globals['_UPLOADMISSIONRESPONSE']._serialized_end=330
-  _globals['_STARTMISSIONREQUEST']._serialized_start=332
-  _globals['_STARTMISSIONREQUEST']._serialized_end=353
-  _globals['_STARTMISSIONRESPONSE']._serialized_start=355
-  _globals['_STARTMISSIONRESPONSE']._serialized_end=377
-  _globals['_STOPMISSIONREQUEST']._serialized_start=379
-  _globals['_STOPMISSIONREQUEST']._serialized_end=399
-  _globals['_STOPMISSIONRESPONSE']._serialized_start=401
-  _globals['_STOPMISSIONRESPONSE']._serialized_end=422
-  _globals['_MISSIONSERVICE']._serialized_start=425
-  _globals['_MISSIONSERVICE']._serialized_end=873
+  _globals['_MISSIONHEADER']._serialized_start=98
+  _globals['_MISSIONHEADER']._serialized_end=177
+  _globals['_UPLOADMISSIONREQUEST']._serialized_start=180
+  _globals['_UPLOADMISSIONREQUEST']._serialized_end=316
+  _globals['_UPLOADMISSIONRESPONSE']._serialized_start=318
+  _globals['_UPLOADMISSIONRESPONSE']._serialized_end=341
+  _globals['_GETMISSIONINFOREQUEST']._serialized_start=343
+  _globals['_GETMISSIONINFOREQUEST']._serialized_end=366
+  _globals['_GETMISSIONINFORESPONSE']._serialized_start=368
+  _globals['_GETMISSIONINFORESPONSE']._serialized_end=412
+  _globals['_STARTMISSIONREQUEST']._serialized_start=414
+  _globals['_STARTMISSIONREQUEST']._serialized_end=435
+  _globals['_STARTMISSIONRESPONSE']._serialized_start=437
+  _globals['_STARTMISSIONRESPONSE']._serialized_end=459
+  _globals['_STOPMISSIONREQUEST']._serialized_start=461
+  _globals['_STOPMISSIONREQUEST']._serialized_end=481
+  _globals['_STOPMISSIONRESPONSE']._serialized_start=483
+  _globals['_STOPMISSIONRESPONSE']._serialized_end=504
+  _globals['_MISSIONSERVICE']._serialized_start=507
+  _globals['_MISSIONSERVICE']._serialized_end=1107
 # @@protoc_insertion_point(module_scope)

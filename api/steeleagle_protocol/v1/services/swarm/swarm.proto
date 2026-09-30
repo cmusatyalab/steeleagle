@@ -108,10 +108,13 @@ service SwarmService {
   /*
    * Upload a mission to multiple vehicles.
    *
-   * Uploads a mission to targeted vehicles. Can be started by sending a subsequent
-   * `SwarmStartMission` command.
+   * The client streams a `header` (target vehicles plus one variant per
+   * architecture) followed by `chunk`s. The server validates the complete
+   * upload, then streams each vehicle the variant matching its architecture,
+   * sending throttled `progress` messages and exactly one final result per
+   * vehicle. Can be started by sending a subsequent `SwarmStartMission`.
    */
-  rpc SwarmUploadMission (SwarmUploadMissionRequest)
+  rpc SwarmUploadMission (stream SwarmUploadMissionRequest)
     returns (stream SwarmUploadMissionResponse) {}
   /*
    * Order multiple vehicles to stop a mission.
@@ -207,16 +210,34 @@ message SwarmSetGimbalAngleTargetResponse {
   string details = 4; // error details, if applicable
 }
 
-message SwarmUploadMissionRequest {
+message SwarmUploadMissionHeader {
   repeated string vehicles = 1; // target vehicles
-  steeleagle_protocol.v1.services.mission.UploadMissionRequest request = 2; // proxied request object
+  repeated steeleagle_protocol.v1.services.mission.MissionHeader variants = 2; // one per architecture, architectures unique
+}
+
+message SwarmUploadMissionChunk {
+  string arch = 1; // which variant this chunk belongs to
+  bytes data = 2;
+}
+
+message SwarmUploadMissionRequest {
+  oneof part {
+    SwarmUploadMissionHeader header = 1; // first message only
+    SwarmUploadMissionChunk chunk = 2; // every later message
+  }
+}
+
+message UploadProgress {
+  uint64 sent = 1; // bytes accepted by the vehicle stream so far
+  uint64 total = 2; // size of the variant being sent to this vehicle
 }
 
 message SwarmUploadMissionResponse {
   string vehicle = 1; // ID of vehicle
-  steeleagle_protocol.v1.services.mission.UploadMissionResponse response = 2; // proxied response object
-  uint32 code = 3; // gRPC status code
+  steeleagle_protocol.v1.services.mission.UploadMissionResponse response = 2; // proxied response object, set on success
+  uint32 code = 3; // gRPC status code (final result only)
   string details = 4; // error details, if applicable
+  UploadProgress progress = 5; // set on progress messages; unset on the final result
 }
 
 message SwarmStartMissionRequest {

@@ -28,10 +28,12 @@ service MissionService {
   /*
    * Upload a mission to a vehicle
    *
-   * Uploads a mission to a vehicle. Can be started by sending a subsequent
-   * `StartMission` command.
+   * Streams a mission binary to a vehicle. The first message must carry a
+   * `header`; every later message carries a `chunk`. The upload is committed
+   * only if the byte count and SHA-256 match the header. Can be started by
+   * sending a subsequent `StartMission` command.
    */
-  rpc UploadMission (UploadMissionRequest)
+  rpc UploadMission (stream UploadMissionRequest)
 	returns (UploadMissionResponse) {}
   /*
    * Order a vehicle to stop its mission.
@@ -41,22 +43,36 @@ service MissionService {
    */
   rpc StopMission (StopMissionRequest)
 	returns (StopMissionResponse) {}
+  /*
+   * Report what this mission service can run
+   *
+   * Lets an uploader pick the right binary variant before sending any bytes.
+   */
+  rpc GetMissionInfo (GetMissionInfoRequest)
+	returns (GetMissionInfoResponse) {}
 }
 
-// Data describing a mission.
-message MissionData {
-  oneof content {
-    string json = 1; // JSON object, used for Python missions
-    bytes binary = 2; // binary object, used for Go missions
-  }
-  optional bytes map = 3; // kml object
+// Describes the mission binary that follows in an upload stream.
+message MissionHeader {
+  string arch = 1; // GOARCH-style architecture: "amd64" | "arm64"
+  uint64 size = 2; // exact byte length of the binary
+  bytes sha256 = 3; // 32-byte SHA-256 digest of the binary
 }
 
 message UploadMissionRequest {
-  MissionData mission = 1; // data of the target mission
+  oneof part {
+    MissionHeader header = 1; // first message only
+    bytes chunk = 2; // every later message
+  }
 }
 
 message UploadMissionResponse {}
+
+message GetMissionInfoRequest {}
+
+message GetMissionInfoResponse {
+  string arch = 1; // GOARCH of the host the mission service runs on
+}
 
 message StartMissionRequest {}
 

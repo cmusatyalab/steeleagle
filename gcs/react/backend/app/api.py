@@ -1,6 +1,5 @@
 import asyncio
 import base64
-import binascii
 import json
 import logging
 import os
@@ -29,7 +28,7 @@ from pydantic_extra_types.coordinate import Latitude, Longitude
 from rich.logging import RichHandler
 from steeleagle_protocol.v1.services.swarm import swarm_pb2_grpc
 
-from app import dslcompiler_routes
+from app import dslcompiler_routes, mission_upload_routes
 from app.eagled_log_routes import router as eagled_log_router
 from app.eagled_routes import router as eagled_router
 from app.swarm_client import SwarmClient, VehicleResult
@@ -48,12 +47,6 @@ backend_key = os.getenv("BACKEND")
 
 
 class Start(BaseModel):
-    vehicles: list[str]
-
-
-class Upload(BaseModel):
-    binary: str  # base64-encoded compiled Go mission binary
-    map: str  # base64-encoded map data (KML or GeoJSON, format-agnostic)
     vehicles: list[str]
 
 
@@ -247,6 +240,7 @@ async def lifespan(app: FastAPI):
         logger.info(f"Using default backend '{list(backend_connections.keys())[0]}'")
 
     dslcompiler_routes.setup(cfg.get("dslcompiler"))
+    mission_upload_routes.setup(lambda: _current_connection().swarm_client)
 
     yield
     # Cleanup
@@ -260,6 +254,7 @@ app = FastAPI(lifespan=lifespan)
 app.include_router(dslcompiler_routes.router)
 app.include_router(eagled_router)
 app.include_router(eagled_log_router)
+app.include_router(mission_upload_routes.router)
 
 
 app.add_middleware(
@@ -572,28 +567,6 @@ async def start(req: Start) -> JSONResponse:
     conn.grpc_channel.get_state(try_to_connect=True)
     try:
         results = await conn.swarm_client.start_mission(req.vehicles)
-    except grpc.aio.AioRpcError as e:
-        raise HTTPException(
-            status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
-        ) from e
-    return JSONResponse(
-        status_code=200, content={"results": [r.model_dump() for r in results]}
-    )
-
-
-@app.post("/api/upload")
-async def upload(req: Upload) -> JSONResponse:
-    conn = _current_connection()
-    conn.grpc_channel.get_state(try_to_connect=True)
-    try:
-        mission_binary = base64.b64decode(req.binary)
-        map_data = base64.b64decode(req.map)
-    except binascii.Error as e:
-        raise HTTPException(status_code=400, detail="Invalid base64 payload") from e
-    try:
-        results = await conn.swarm_client.upload_mission(
-            req.vehicles, mission_binary=mission_binary, map_data=map_data
-        )
     except grpc.aio.AioRpcError as e:
         raise HTTPException(
             status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"

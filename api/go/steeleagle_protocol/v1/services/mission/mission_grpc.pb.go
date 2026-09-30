@@ -23,9 +23,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	MissionService_StartMission_FullMethodName  = "/steeleagle_protocol.v1.services.mission.MissionService/StartMission"
-	MissionService_UploadMission_FullMethodName = "/steeleagle_protocol.v1.services.mission.MissionService/UploadMission"
-	MissionService_StopMission_FullMethodName   = "/steeleagle_protocol.v1.services.mission.MissionService/StopMission"
+	MissionService_StartMission_FullMethodName   = "/steeleagle_protocol.v1.services.mission.MissionService/StartMission"
+	MissionService_UploadMission_FullMethodName  = "/steeleagle_protocol.v1.services.mission.MissionService/UploadMission"
+	MissionService_StopMission_FullMethodName    = "/steeleagle_protocol.v1.services.mission.MissionService/StopMission"
+	MissionService_GetMissionInfo_FullMethodName = "/steeleagle_protocol.v1.services.mission.MissionService/GetMissionInfo"
 )
 
 // MissionServiceClient is the client API for MissionService service.
@@ -47,14 +48,20 @@ type MissionServiceClient interface {
 	StartMission(ctx context.Context, in *StartMissionRequest, opts ...grpc.CallOption) (*StartMissionResponse, error)
 	// Upload a mission to a vehicle
 	//
-	// Uploads a mission to a vehicle. Can be started by sending a subsequent
-	// `StartMission` command.
-	UploadMission(ctx context.Context, in *UploadMissionRequest, opts ...grpc.CallOption) (*UploadMissionResponse, error)
+	// Streams a mission binary to a vehicle. The first message must carry a
+	// `header`; every later message carries a `chunk`. The upload is committed
+	// only if the byte count and SHA-256 match the header. Can be started by
+	// sending a subsequent `StartMission` command.
+	UploadMission(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadMissionRequest, UploadMissionResponse], error)
 	// Order a vehicle to stop its mission.
 	//
 	// Causes the vehicle to stop its running mission. This will enable manual
 	// control mode.
 	StopMission(ctx context.Context, in *StopMissionRequest, opts ...grpc.CallOption) (*StopMissionResponse, error)
+	// Report what this mission service can run
+	//
+	// Lets an uploader pick the right binary variant before sending any bytes.
+	GetMissionInfo(ctx context.Context, in *GetMissionInfoRequest, opts ...grpc.CallOption) (*GetMissionInfoResponse, error)
 }
 
 type missionServiceClient struct {
@@ -75,20 +82,33 @@ func (c *missionServiceClient) StartMission(ctx context.Context, in *StartMissio
 	return out, nil
 }
 
-func (c *missionServiceClient) UploadMission(ctx context.Context, in *UploadMissionRequest, opts ...grpc.CallOption) (*UploadMissionResponse, error) {
+func (c *missionServiceClient) UploadMission(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadMissionRequest, UploadMissionResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(UploadMissionResponse)
-	err := c.cc.Invoke(ctx, MissionService_UploadMission_FullMethodName, in, out, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &MissionService_ServiceDesc.Streams[0], MissionService_UploadMission_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[UploadMissionRequest, UploadMissionResponse]{ClientStream: stream}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type MissionService_UploadMissionClient = grpc.ClientStreamingClient[UploadMissionRequest, UploadMissionResponse]
+
+func (c *missionServiceClient) StopMission(ctx context.Context, in *StopMissionRequest, opts ...grpc.CallOption) (*StopMissionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StopMissionResponse)
+	err := c.cc.Invoke(ctx, MissionService_StopMission_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *missionServiceClient) StopMission(ctx context.Context, in *StopMissionRequest, opts ...grpc.CallOption) (*StopMissionResponse, error) {
+func (c *missionServiceClient) GetMissionInfo(ctx context.Context, in *GetMissionInfoRequest, opts ...grpc.CallOption) (*GetMissionInfoResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(StopMissionResponse)
-	err := c.cc.Invoke(ctx, MissionService_StopMission_FullMethodName, in, out, cOpts...)
+	out := new(GetMissionInfoResponse)
+	err := c.cc.Invoke(ctx, MissionService_GetMissionInfo_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -114,14 +134,20 @@ type MissionServiceServer interface {
 	StartMission(context.Context, *StartMissionRequest) (*StartMissionResponse, error)
 	// Upload a mission to a vehicle
 	//
-	// Uploads a mission to a vehicle. Can be started by sending a subsequent
-	// `StartMission` command.
-	UploadMission(context.Context, *UploadMissionRequest) (*UploadMissionResponse, error)
+	// Streams a mission binary to a vehicle. The first message must carry a
+	// `header`; every later message carries a `chunk`. The upload is committed
+	// only if the byte count and SHA-256 match the header. Can be started by
+	// sending a subsequent `StartMission` command.
+	UploadMission(grpc.ClientStreamingServer[UploadMissionRequest, UploadMissionResponse]) error
 	// Order a vehicle to stop its mission.
 	//
 	// Causes the vehicle to stop its running mission. This will enable manual
 	// control mode.
 	StopMission(context.Context, *StopMissionRequest) (*StopMissionResponse, error)
+	// Report what this mission service can run
+	//
+	// Lets an uploader pick the right binary variant before sending any bytes.
+	GetMissionInfo(context.Context, *GetMissionInfoRequest) (*GetMissionInfoResponse, error)
 	mustEmbedUnimplementedMissionServiceServer()
 }
 
@@ -135,11 +161,14 @@ type UnimplementedMissionServiceServer struct{}
 func (UnimplementedMissionServiceServer) StartMission(context.Context, *StartMissionRequest) (*StartMissionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method StartMission not implemented")
 }
-func (UnimplementedMissionServiceServer) UploadMission(context.Context, *UploadMissionRequest) (*UploadMissionResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method UploadMission not implemented")
+func (UnimplementedMissionServiceServer) UploadMission(grpc.ClientStreamingServer[UploadMissionRequest, UploadMissionResponse]) error {
+	return status.Error(codes.Unimplemented, "method UploadMission not implemented")
 }
 func (UnimplementedMissionServiceServer) StopMission(context.Context, *StopMissionRequest) (*StopMissionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method StopMission not implemented")
+}
+func (UnimplementedMissionServiceServer) GetMissionInfo(context.Context, *GetMissionInfoRequest) (*GetMissionInfoResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetMissionInfo not implemented")
 }
 func (UnimplementedMissionServiceServer) mustEmbedUnimplementedMissionServiceServer() {}
 func (UnimplementedMissionServiceServer) testEmbeddedByValue()                        {}
@@ -180,23 +209,12 @@ func _MissionService_StartMission_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _MissionService_UploadMission_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UploadMissionRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MissionServiceServer).UploadMission(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: MissionService_UploadMission_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MissionServiceServer).UploadMission(ctx, req.(*UploadMissionRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+func _MissionService_UploadMission_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(MissionServiceServer).UploadMission(&grpc.GenericServerStream[UploadMissionRequest, UploadMissionResponse]{ServerStream: stream})
 }
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type MissionService_UploadMissionServer = grpc.ClientStreamingServer[UploadMissionRequest, UploadMissionResponse]
 
 func _MissionService_StopMission_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(StopMissionRequest)
@@ -216,6 +234,24 @@ func _MissionService_StopMission_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MissionService_GetMissionInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetMissionInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MissionServiceServer).GetMissionInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MissionService_GetMissionInfo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MissionServiceServer).GetMissionInfo(ctx, req.(*GetMissionInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MissionService_ServiceDesc is the grpc.ServiceDesc for MissionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -228,14 +264,20 @@ var MissionService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _MissionService_StartMission_Handler,
 		},
 		{
-			MethodName: "UploadMission",
-			Handler:    _MissionService_UploadMission_Handler,
-		},
-		{
 			MethodName: "StopMission",
 			Handler:    _MissionService_StopMission_Handler,
 		},
+		{
+			MethodName: "GetMissionInfo",
+			Handler:    _MissionService_GetMissionInfo_Handler,
+		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "UploadMission",
+			Handler:       _MissionService_UploadMission_Handler,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "steeleagle_protocol/v1/services/mission/mission.proto",
 }
