@@ -6,12 +6,16 @@ import logging
 import os
 import time
 from contextlib import asynccontextmanager
+from dataclasses import asdict
+from pathlib import Path
+from typing import Any
 
 import cv2
 import grpc
 import numpy as np
 import redis
 import requests
+import steeleagle_sdk
 import toml
 import zmq
 import zmq.asyncio
@@ -21,9 +25,24 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
-from pydantic import BaseModel, ConfigDict, Field, NonNegativeFloat, NonNegativeInt
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    NonNegativeFloat,
+    NonNegativeInt,
+    ValidationError,
+)
 from pydantic_extra_types.coordinate import Latitude, Longitude
 from rich.logging import RichHandler
+from steeleagle_sdk.dsl.compiler.ir import ActionIR, EventIR, MissionIR
+from steeleagle_sdk.dsl.compiler.loader import load_all as _dsl_load_all
+from steeleagle_sdk.dsl.compiler.registry import (
+    _ACTIONS,
+    _EVENTS,
+    get_action,
+    get_event,
+)
 from steeleagle_sdk.protocol.messages.telemetry_pb2 import DriverTelemetry, Frame
 from steeleagle_sdk.protocol.services.control_service_pb2 import (
     HoldRequest,
@@ -45,6 +64,14 @@ from steeleagle_sdk.protocol.services.remote_service_pb2 import (
     CommandRequest,
 )
 from steeleagle_sdk.protocol.services.remote_service_pb2_grpc import RemoteStub
+
+from app.dsl_graph import (
+    UnexpectedInput,
+    get_dsl_parser,
+    grammar_path,
+    init_dsl_parser,
+    parse_dsl_to_graph,
+)
 
 IDENTITY_MD = (("identity", "server"),)
 FORMAT = "%(message)s"
@@ -314,6 +341,14 @@ async def lifespan(app: FastAPI):
         logger.info(f"Using backend '{backend_key}' based on BACKEND env var")
     else:
         logger.info(f"Using default backend '{list(backend_connections.keys())[0]}'")
+
+    _dsl_load_all()
+
+    try:
+        init_dsl_parser()
+        logger.info(f"DSL parser initialized from {grammar_path()}")
+    except Exception as exc:
+        logger.warning(f"DSL parser init failed: {exc}")
 
     yield
     # Cleanup
@@ -634,7 +669,7 @@ async def get_vehicles() -> list[Vehicle]:
                 name=fields["name"],
                 model=fields["model"],
                 battery=t["battery"],
-                sats=fields["sats"],
+                sats=t["sats"],
                 mag=fields["mag"],
                 last_updated=round(time.time() - float(fields["last_seen"]), 2),
                 home=home_loc,
@@ -754,7 +789,7 @@ async def set_gimbal_pose(req: GimbalPose, sandbox_mode: bool = True) -> JSONRes
             raise HTTPException(status_code=400, detail="Invalid JSON payload") from e
         except Exception as e:
             logger.error(e)
-            raise HTTPException(status_code=500, detail=f"Error: {e.message}") from e
+            raise HTTPException(status_code=500, detail=f"Error: {str(e)}") from e
     return JSONResponse(status_code=200, content="Mission start sent!")
 
 
@@ -798,24 +833,24 @@ async def start(req: Start, sandbox_mode: bool = True) -> JSONResponse:
             raise HTTPException(status_code=400, detail="Invalid JSON payload") from e
         except Exception as e:
             logger.error(e)
-            raise HTTPException(status_code=500, detail=f"Error: {e.message}") from e
+            raise HTTPException(status_code=500, detail=f"Error: {str(e)}") from e
     return JSONResponse(status_code=200, content="Mission start sent!")
 
 
 @app.post("/api/upload")
 async def upload(req: Upload, sandbox_mode: bool = True) -> JSONResponse:
     for v in req.vehicles:
-        if sandbox_mode:
-            conn = vehicle_connections[v]
-        else:
-            if backend_key is None:
-                conn = backend_connections[list(backend_connections)[0]]
-            else:
-                conn = backend_connections[backend_key]
-        _ = conn.grpc_channel.get_state(
-            try_to_connect=True
-        )  # attempt to reconnect to grpc endpoint
         try:
+            if sandbox_mode:
+                conn = vehicle_connections[v]
+            else:
+                if backend_key is None:
+                    conn = backend_connections[list(backend_connections)[0]]
+                else:
+                    conn = backend_connections[backend_key]
+            _ = conn.grpc_channel.get_state(
+                try_to_connect=True
+            )  # attempt to reconnect to grpc endpoint
             up = UploadRequest()
             up.mission.map = base64.b64decode(req.kml)
             up.mission.content = base64.b64decode(req.dsl)
@@ -844,7 +879,7 @@ async def upload(req: Upload, sandbox_mode: bool = True) -> JSONResponse:
             raise HTTPException(status_code=400, detail="Invalid JSON payload") from e
         except Exception as e:
             logger.error(e)
-            raise HTTPException(status_code=500, detail=f"Error: {e.message}") from e
+            raise HTTPException(status_code=500, detail=f"Error: {str(e)}") from e
     return JSONResponse(status_code=200, content="Mission upload complete!")
 
 
@@ -892,7 +927,7 @@ async def joystick(req: Joystick, sandbox_mode: bool = True) -> JSONResponse:
             raise HTTPException(status_code=400, detail="Invalid JSON payload") from e
         except Exception as e:
             logger.error(e)
-            raise HTTPException(status_code=500, detail=f"Error: {e.message}") from e
+            raise HTTPException(status_code=500, detail=f"Error: {str(e)}") from e
     return JSONResponse(status_code=200, content="Joystick movement complete!")
 
 
@@ -994,9 +1029,295 @@ async def command(req: Command, sandbox_mode: bool = True) -> JSONResponse:
             raise HTTPException(status_code=400, detail="Invalid JSON payload") from e
         except Exception as e:
             logger.error(e)
-            raise HTTPException(status_code=500, detail=f"Error: {e.message}") from e
+            raise HTTPException(status_code=500, detail=f"Error: {str(e)}") from e
     return response
 
+
+def _resolve_ref(prop: dict, defs: dict) -> dict:
+    """Follow a single $ref pointer in a JSON Schema fragment."""
+    if "$ref" in prop:
+        ref_name = prop["$ref"].split("/")[-1]
+        return defs.get(ref_name, prop)
+    return prop
+
+
+def _unwrap_anyof(prop: dict) -> dict:
+    """Unwrap anyOf by selecting the best non-null branch.
+
+    - If exactly one non-null branch exists (Optional pattern), return it.
+    - If multiple non-null branches exist, prefer a scalar type branch
+      (string, number, integer, boolean) over array/object.
+    """
+    if "anyOf" in prop:
+        non_null = [t for t in prop["anyOf"] if t.get("type") != "null"]
+        if len(non_null) == 1:
+            return non_null[0]
+        if len(non_null) > 1:
+            _SCALAR_TYPES = ("string", "number", "integer", "boolean")
+            scalar = next((t for t in non_null if t.get("type") in _SCALAR_TYPES), None)
+            if scalar is not None:
+                return scalar
+    return prop
+
+
+def _extract_fields_from_schema(schema: dict, defs: dict, depth: int = 0) -> list[dict]:
+    """Extract fields from a raw JSON Schema dict. Recurses into $defs for nested object types."""
+    properties = schema.get("properties", {})
+    required_set = set(schema.get("required", []))
+    fields = []
+    for name, raw_prop in properties.items():
+        prop = _resolve_ref(raw_prop, defs)
+        prop = _unwrap_anyof(prop)
+        prop = _resolve_ref(prop, defs)
+
+        field_type = prop.get("type", "object")
+        if field_type not in ("string", "number", "integer", "boolean", "array"):
+            field_type = "object"
+
+        entry: dict = {
+            "name": name,
+            "type": field_type,
+            "required": name in required_set,
+            "description": raw_prop.get("description", prop.get("description", "")),
+        }
+        if "default" in raw_prop:
+            entry["default"] = raw_prop["default"]
+
+        if field_type == "object":
+            ref_raw = (
+                raw_prop
+                if "$ref" in raw_prop
+                else (next((t for t in raw_prop.get("anyOf", []) if "$ref" in t), {}))
+            )
+            ref_name = ref_raw.get("$ref", "").split("/")[-1]
+            if ref_name:
+                entry["object_type"] = ref_name
+                if depth < 2:
+                    nested_schema = defs.get(ref_name, {})
+                    if nested_schema:
+                        entry["nested_fields"] = _extract_fields_from_schema(
+                            nested_schema, defs, depth + 1
+                        )
+
+        fields.append(entry)
+    return fields
+
+
+def _extract_fields(cls) -> list[dict]:
+    """Return a flat field list from a Pydantic model class."""
+    schema = cls.model_json_schema()
+    defs = schema.get("$defs", {})
+    return _extract_fields_from_schema(schema, defs, depth=0)
+
+
+class ParseDslRequest(BaseModel):
+    dsl: str
+
+
+@app.post("/api/parse_dsl")
+async def parse_dsl(request: ParseDslRequest):
+    if get_dsl_parser() is None:
+        raise HTTPException(status_code=503, detail="DSL parser not initialized")
+    try:
+        return parse_dsl_to_graph(request.dsl)
+    except UnexpectedInput as exc:
+        raise HTTPException(status_code=422, detail=f"Parse error: {exc}") from exc
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+def build_schema_response() -> dict:
+    """Pure function — safe to call from tests without the full app running."""
+    result: dict = {"actions": {}, "events": {}}
+    for _type_name, cls in _ACTIONS.items():
+        display = cls.__name__  # original CamelCase name
+        result["actions"][display] = {
+            "description": (cls.__doc__ or "").strip().splitlines()[0]
+            if cls.__doc__
+            else "",
+            "fields": _extract_fields(cls),
+        }
+    for _type_name, cls in _EVENTS.items():
+        display = cls.__name__
+        result["events"][display] = {
+            "description": (cls.__doc__ or "").strip().splitlines()[0]
+            if cls.__doc__
+            else "",
+            "fields": _extract_fields(cls),
+        }
+    if not result["actions"] and not result["events"]:
+        raise HTTPException(
+            status_code=500, detail="Schema registry is empty — DSL load failed"
+        )
+    return result
+
+
+@app.get("/api/schema")
+async def get_schema():
+    return build_schema_response()
+
+
+class CompileNode(BaseModel):
+    instance_id: str
+    type_name: str
+    params: dict = {}
+
+
+class CompileEvent(BaseModel):
+    instance_id: str
+    type_name: str
+    params: dict = {}
+
+
+class CompileEdge(BaseModel):
+    source: str
+    event_id: str
+    target: str
+
+
+class CompileRequest(BaseModel):
+    nodes: list[CompileNode]
+    events: list[CompileEvent]
+    edges: list[CompileEdge]
+    start_id: str
+
+
+def compile_mission(request: CompileRequest) -> dict:
+    """Pure function — safe to call from tests without the full app running."""
+    _dsl_load_all()
+    errors: list[dict] = []
+
+    # Check for duplicate instance_ids
+    seen_ids: set[str] = set()
+    for node in request.nodes:
+        if node.instance_id in seen_ids:
+            errors.append(
+                {
+                    "node_id": node.instance_id,
+                    "message": f"Duplicate node instance_id: '{node.instance_id}'",
+                }
+            )
+        seen_ids.add(node.instance_id)
+    seen_event_ids: set[str] = set()
+    for ev in request.events:
+        if ev.instance_id in seen_event_ids:
+            errors.append(
+                {
+                    "node_id": ev.instance_id,
+                    "message": f"Duplicate event instance_id: '{ev.instance_id}'",
+                }
+            )
+        seen_event_ids.add(ev.instance_id)
+
+    # Validate all type_names exist and params are valid
+    for node in request.nodes:
+        cls = get_action(node.type_name)
+        if cls is None:
+            errors.append(
+                {
+                    "node_id": node.instance_id,
+                    "message": f"Unknown action type: {node.type_name}",
+                }
+            )
+            continue
+        try:
+            cls(**node.params)
+        except (ValidationError, TypeError) as exc:
+            errors.append({"node_id": node.instance_id, "message": str(exc)})
+
+    for ev in request.events:
+        cls = get_event(ev.type_name)
+        if cls is None:
+            errors.append(
+                {
+                    "event_id": ev.instance_id,
+                    "message": f"Unknown event type: {ev.type_name}",
+                }
+            )
+            continue
+        try:
+            cls(**ev.params)
+        except (ValidationError, TypeError) as exc:
+            errors.append({"event_id": ev.instance_id, "message": str(exc)})
+
+    # Validate start_id refers to a known node
+    node_ids = {n.instance_id for n in request.nodes}
+    if request.start_id not in node_ids:
+        errors.append(
+            {
+                "node_id": request.start_id,
+                "message": f"start_id '{request.start_id}' does not refer to any node",
+            }
+        )
+
+    # Validate edge referential integrity
+    event_ids = {ev.instance_id for ev in request.events} | {"done"}
+    for edge in request.edges:
+        if edge.source not in node_ids:
+            errors.append(
+                {
+                    "node_id": edge.source,
+                    "message": f"Edge source '{edge.source}' does not refer to any node",
+                }
+            )
+        if edge.target not in node_ids:
+            errors.append(
+                {
+                    "node_id": edge.target,
+                    "message": f"Edge target '{edge.target}' does not refer to any node",
+                }
+            )
+        if edge.event_id not in event_ids:
+            errors.append(
+                {
+                    "node_id": edge.event_id,
+                    "message": f"Edge event_id '{edge.event_id}' does not refer to any declared event",
+                }
+            )
+
+    if errors:
+        return {"errors": errors}
+
+    # Build MissionIR
+    actions = {
+        n.instance_id: ActionIR(
+            type_name=n.type_name,
+            action_id=n.instance_id,
+            attributes=n.params,
+        )
+        for n in request.nodes
+    }
+    events = {
+        e.instance_id: EventIR(
+            type_name=e.type_name,
+            event_id=e.instance_id,
+            attributes=e.params,
+        )
+        for e in request.events
+    }
+
+    transitions: dict[str, dict[str, str]] = {}
+    for edge in request.edges:
+        transitions.setdefault(edge.source, {})[edge.event_id] = edge.target
+
+    mission_ir = MissionIR(
+        actions=actions,
+        events=events,
+        data={},
+        start_action_id=request.start_id,
+        transitions=transitions,
+    )
+    return {"mission": asdict(mission_ir)}
+
+
+@app.post("/api/compile")
+async def compile_mission_route(request: CompileRequest) -> dict:
+    return compile_mission(request)
+
+
+from app.chat import router as chat_router
+
+app.include_router(chat_router)
 
 # Serve Vite static files
 app.mount("/", StaticFiles(directory="../prime/dist", html=True), name="react_app")

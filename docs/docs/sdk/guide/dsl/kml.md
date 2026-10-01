@@ -8,7 +8,7 @@ For many missions, users will want to correlate real world geolocations with veh
 SteelEagle DSL supports this through KML file referencing. [KML](https://developers.google.com/kml/documentation/kml_tut) (Keyhole Markup Language) files
 are files used to describe geographic data. They are generally used to draw visual features on top of a
 map. Users can create KML files marked up with Polylines or Polygons and inject these shapes into DSL 
-datatypes, like the [`Waypoints`](/sdk/python/steeleagle_sdk/api/datatypes/waypoint#class-waypoint)
+datatypes, like the [`RoutePlan`](/sdk/python/steeleagle_sdk/dsl/types/datatypes/advanced/route_plan#class-routeplan)
 object.
 
 ## Creating a KML File
@@ -58,17 +58,17 @@ area, then select "Export Data" &rarr; "KML/KMZ".
 ## DSL Integration
 
 Now that the KML file is ready, integrating it with a DSL file is easy. For both Polyline and Polygon objects, the
-SteelEagle DSL datatype analog is the [`Waypoints`](/sdk/python/steeleagle_sdk/api/datatypes/waypoint#class-waypoint).
+SteelEagle DSL datatype analog is the [`RoutePlan`](/sdk/python/steeleagle_sdk/dsl/types/datatypes/advanced/route_plan#class-routeplan).
 Initialize a waypoint in the data section like so:
 
 ```dsl
 Data:
-    Waypoints waypoint(alt = ALTITUDE, area = SHAPE_NAME, algo = SLICE_ALGORITHM)
+    RoutePlan waypoint(alt = ALTITUDE, area = SHAPE_NAME, algo = SLICE_ALGORITHM)
     # Example using the earlier shape, Polygon 1:
-    Waypoints waypoint(alt = 5.0, area = 'Polygon 1', algo = 'corridor')
+    RoutePlan waypoint(alt = 5.0, area = 'Polygon 1', algo = 'corridor')
 ```
 
-Waypointss provide two settings in addition to the KML reference parameter `area`. These are:
+RoutePlans provide two settings in addition to the KML reference parameter `area`. These are:
 - `alt`: the altitude above mean sea level (MSL) at which the vehicle should visit the waypoints (_UAV only_).
 - `algo`: the algorithm for how to slice the waypoints (see [waypoint slicing](#waypoint-slicing)).
 
@@ -76,19 +76,19 @@ If multiple shapes are defined in the KML file, add them as separate waypoint ob
 
 ```dsl
 Data:
-    Waypoints waypoint_1(alt = 5.0, area = 'Polygon 1', algo = 'corridor')
-    Waypoints waypoint_2(alt = 7.0, area = 'Polygon 2', algo = 'corridor')
-    Waypoints waypoint_3(alt = 3.0, area = 'Polyline 1', algo = 'edge')
+    RoutePlan waypoint_1(alt = 5.0, area = 'Polygon 1', algo = 'corridor')
+    RoutePlan waypoint_2(alt = 7.0, area = 'Polygon 2', algo = 'corridor')
+    RoutePlan waypoint_3(alt = 3.0, area = 'Polyline 1', algo = 'edge')
 ```
 
 These can then be used as parameters to actions:
 
 ```dsl
 Actions:
-    Patrol patrol(patrol_path = waypoint_1)
+    Patrol patrol(plan = waypoint_1)
 ```
 
-### Waypoints Slicing
+### RoutePlan Slicing
 
 Users may want vehicles to traverse Polylines/Polygons in several different ways. To support this,
 SteelEagle DSL has three native waypoint slicing algorithms built in: edge, survey, and corridor. These

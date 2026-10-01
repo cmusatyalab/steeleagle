@@ -11,7 +11,13 @@ import asyncio
 import inspect
 import json
 import logging
+import sys
+from pathlib import Path
 from typing import Any
+
+_SDK_SRC = Path(__file__).resolve().parents[3] / "sdk" / "src"
+if _SDK_SRC.is_dir() and str(_SDK_SRC) not in sys.path:
+    sys.path.insert(0, str(_SDK_SRC))
 
 import grpc
 import uvicorn
@@ -28,6 +34,11 @@ from steeleagle_sdk.dsl.compiler.loader import load_all
 from steeleagle_sdk.dsl.compiler.registry import _ACTIONS, _EVENTS
 
 from steeleagle_mcp.config import load_config, make_server_parser, setup_logging
+from steeleagle_mcp.mission_tools import (
+    compile_mission_dsl_payload,
+    save_mission_files_payload,
+    translate_with_dsl_reference_payload,
+)
 
 logger = logging.getLogger("server")
 
@@ -88,6 +99,11 @@ def _serialize(obj: Any) -> str:
     if hasattr(obj, "DESCRIPTOR"):
         return json.dumps(MessageToDict(obj, preserving_proto_field_name=True))
     return json.dumps({"result": str(obj)})
+
+
+def _serialize_payload(payload: dict[str, Any]) -> str:
+    """Serialize explicit MCP tool payloads without ASCII escaping."""
+    return json.dumps(payload, ensure_ascii=False, default=str)
 
 
 # ---------------------------------------------------------------------------
@@ -356,6 +372,103 @@ logger.info("Registered 1 control flow tool: racer")
 
 
 # ---------------------------------------------------------------------------
+# Mission file tools: reference-assisted DSL -> mission.json -> files
+# ---------------------------------------------------------------------------
+
+
+@mcp.tool(
+    name="translate_with_dsl_reference",
+    description=(
+        "Prepare the reference needed for the caller LLM to translate a summarized natural-language "
+        "mission into SteelEagle DSL without any server-side LLM or OpenAI API. Returns DSL grammar, "
+        "action/event/data schema, generation rules, few-shot examples, and common mistakes. "
+        "Optionally validates a candidate_dsl through the deterministic validator/compiler. "
+        "Does not execute, upload, or start the mission."
+    ),
+)
+async def translate_with_dsl_reference(
+    instruction: str,
+    language: str = "auto",
+    focus: str = "all",
+    include_schema: bool = True,
+    include_examples: bool = True,
+    include_grammar: bool = True,
+    include_common_mistakes: bool = True,
+    candidate_dsl: str | None = None,
+    max_examples: int = 4,
+) -> str:
+    payload = translate_with_dsl_reference_payload(
+        instruction=instruction,
+        language=language,
+        focus=focus,
+        include_schema=include_schema,
+        include_examples=include_examples,
+        include_grammar=include_grammar,
+        include_common_mistakes=include_common_mistakes,
+        candidate_dsl=candidate_dsl,
+        max_examples=max_examples,
+    )
+    return _serialize_payload(payload)
+
+
+@mcp.tool(
+    name="compile_mission_dsl",
+    description=(
+        "Normalize, validate, and compile SteelEagle DSL into mission JSON. "
+        "Use for DSL written by the caller LLM after translate_with_dsl_reference, "
+        "or DSL the user edited manually. "
+        "Returns normalized DSL, mission_json for chat preview, compile_id for saving, "
+        "auto-fixes, and actionable validation/compiler errors."
+    ),
+)
+async def compile_mission_dsl(
+    dsl: str,
+    return_ir: bool = True,
+    include_normalized_dsl: bool = True,
+) -> str:
+    payload = compile_mission_dsl_payload(
+        dsl=dsl,
+        return_ir=return_ir,
+        include_normalized_dsl=include_normalized_dsl,
+    )
+    return _serialize_payload(payload)
+
+
+@mcp.tool(
+    name="save_mission_files",
+    description=(
+        "Save mission DSL and mission JSON to local mission files. "
+        "Pass the compile_id returned by compile_mission_dsl. "
+        "Do not pass DSL, mission_json, or mission_json_text in normal use; the tool "
+        "saves the exact normalized DSL and mission JSON cached from the compile step. "
+        "Defaults to steeleagle/mcp/mission_files and refuses to overwrite "
+        "unless overwrite=true. This does not execute, upload, or start the mission."
+    ),
+)
+async def save_mission_files(
+    compile_id: str,
+    basename: str = "mission",
+    output_dir: str = "",
+    overwrite: bool = False,
+    add_timestamp: bool = True,
+) -> str:
+    payload = save_mission_files_payload(
+        compile_id=compile_id,
+        basename=basename,
+        output_dir=output_dir,
+        overwrite=overwrite,
+        add_timestamp=add_timestamp,
+    )
+    return _serialize_payload(payload)
+
+
+logger.info(
+    "Registered 3 mission file tools: translate_with_dsl_reference, "
+    "compile_mission_dsl, save_mission_files"
+)
+
+
+# ---------------------------------------------------------------------------
 # ASGI Application
 # ---------------------------------------------------------------------------
 
@@ -391,11 +504,12 @@ async def amain(
     await _init_sdk(config["drone"], config["compute"])
 
     # Log available tools summary
-    total_tools = len(_ACTIONS) + 1  # +1 for racer (events are only in racer, not standalone)
+    total_tools = len(_ACTIONS) + 4  # racer + 3 mission file tools
     logger.info("=" * 60)
     logger.info("MCP Server ready with %d tools available:", total_tools)
     logger.info("  - %d Action tools (execute drone commands)", len(_ACTIONS))
     logger.info("  - 1 Control flow tool (racer - provides access to %d events)", len(_EVENTS))
+    logger.info("  - 3 Mission file tools (translate, compile, save)")
     logger.info("=" * 60)
 
     try:

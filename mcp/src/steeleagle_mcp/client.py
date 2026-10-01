@@ -11,6 +11,11 @@ import asyncio
 import logging
 import os
 import sys
+from pathlib import Path
+
+_SDK_SRC = Path(__file__).resolve().parents[3] / "sdk" / "src"
+if _SDK_SRC.is_dir() and str(_SDK_SRC) not in sys.path:
+    sys.path.insert(0, str(_SDK_SRC))
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client

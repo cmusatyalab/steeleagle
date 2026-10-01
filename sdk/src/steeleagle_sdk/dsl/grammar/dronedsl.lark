@@ -59,7 +59,7 @@ NONE: "_"
 %import common.SIGNED_NUMBER  -> NUMBER
 %import common.WS_INLINE
 
-NAME: /[A-Za-z_][A-Za-z0-9_]*/
+NAME: /[A-Za-z_][A-Za-z0-9_]*(?:-(?!>)[A-Za-z0-9_]+)*/
 
 // ===== Comments & whitespace =====
 COMMENT: /#[^\n]*/

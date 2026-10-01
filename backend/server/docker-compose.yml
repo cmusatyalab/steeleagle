@@ -152,6 +152,60 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # SwiftMap Engine
+  # Forwards each drone image + paired GPS to the swiftmap-server service
+  swiftmap-engine:
+    image: cmusatyalab/steeleagle-swiftmap-engine:${SWIFTMAP_IMAGE_TAG}
+    container_name: swiftmap-engine
+    restart: on-failure:3
+    privileged: true
+    entrypoint: ["uv", "run", "/steeleagle/main.py", "-s", "${SWIFTMAP_HOST}", "--server_port", "${SWIFTMAP_PORT}", "--send-distance", "${SWIFTMAP_SEND_DISTANCE}"]
+    depends_on:
+      - gabriel-server
+      - swiftmap-server
+    networks:
+      - steeleagle-net
+      - redis
+    volumes:
+      - ./steeleagle-vol:/steeleagle/images/
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # SwiftMap Server
+  # Headless mapping server. Collects the frame+GPS pairs the engine forwards and,
+  # each time the keyframe cap fills, maps that batch into an "area"
+  swiftmap-server:
+    image: cmusatyalab/steeleagle-swiftmap-server:${SWIFTMAP_SERVER_TAG}
+    container_name: swiftmap-server
+    restart: unless-stopped
+    runtime: nvidia
+    ports:
+      - "${SWIFTMAP_VIEWER_PORT:-7866}:7866"
+    depends_on:
+      - gabriel-server
+    networks:
+      - steeleagle-net
+    environment:
+      - SWIFTMAP_PORT=${SWIFTMAP_PORT}
+      - SWIFTMAP_BACKBONE=${SWIFTMAP_BACKBONE}
+      - SWIFTMAP_SEGMENTER=${SWIFTMAP_SEGMENTER}
+      - SWIFTMAP_SITE=${SWIFTMAP_SITE}
+      - SWIFTMAP_MAX_KEYFRAMES=${SWIFTMAP_MAX_KEYFRAMES}
+      - SWIFTMAP_CONF_THRESHOLD=${SWIFTMAP_CONF_THRESHOLD}
+      - SWIFTMAP_MERGE_VOXEL=${SWIFTMAP_MERGE_VOXEL}
+      - SWIFTMAP_MASK_SKY=${SWIFTMAP_MASK_SKY}
+      - SWIFTMAP_KEEP_ALL=${SWIFTMAP_KEEP_ALL}
+      - SWIFTMAP_OUTPUT_DIR=/app/output
+      - VGGT_OMEGA_CHECKPOINT=${VGGT_OMEGA_CHECKPOINT}
+      - SAM3_CHECKPOINT=${SAM3_CHECKPOINT}
+    volumes:
+      - ./steeleagle-vol/swiftmap:/app/output
+      - ./models:/app/checkpoints          
+      - ./models/swiftmap-cache:/root/.cache
+
   # Swarm Controller
   # Centralized processing of control plane for all vehicles
   swarm-controller:

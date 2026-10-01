@@ -137,7 +137,7 @@ def _resolve_value_for_field(
         return value
 
     # Lists (also handles Optional[List[T]], Annotated[List[T], ...])
-    if origin in (list, list):
+    if origin is list:
         inner = args[0] if args else Any
         if isinstance(value, list):
             return [_resolve_value_for_field(v, inner, data) for v in value]

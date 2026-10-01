@@ -119,3 +119,6 @@ gcs/cli/mission.json
 gcs/cli/drones.toml
 
 mcp/test/config.toml
+
+# Superpowers scratch space (ledgers, brainstorm artifacts)
+.superpowers/

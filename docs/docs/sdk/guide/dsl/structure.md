@@ -21,10 +21,10 @@ Here is a representation of the accompanying FSM and an example SteelEagle DSL i
   <TabItem value="dsl" label="SteelEagle DSL">
     ```dsl
     Data: # Definitions of datatypes
-        Waypoints patrol_path(alt = 15.0, area = 'Rectangle', algo = 'edge')
+        RoutePlan patrol_path(alt = 15.0, area = 'Rectangle', algo = 'edge')
     Actions: # Definitions of states
         TakeOff take_off(take_off_altitude = 10.0)
-        Patrol patrol(waypoints = patrol_path)
+        Patrol patrol(plan = patrol_path)
         Track track(class_name = 'person')
         ReturnToHome return_to_home()
     Events: # Definitions of trigger events
@@ -152,12 +152,12 @@ Data: # Definitions of datatypes
     Bar bar(foo = Foo())
 ```
 
-The Data Stanza can contain special [`Waypoints`](/sdk/python/steeleagle_sdk/api/datatypes/waypoint#class-waypoint) objects. These types refer to a set of global coordinates (latitude, longitude) which represent a shape or line. This set of coordinates is contained in a KML file which is referenced by the waypoint object. More details on waypoint configuration can be found [in the next section](kml). 
+The Data Stanza can contain special [`RoutePlan`](/sdk/python/steeleagle_sdk/dsl/types/datatypes/advanced/route_plan#class-routeplan) objects. These types refer to a set of global coordinates (latitude, longitude) which represent a shape or line. This set of coordinates is contained in a KML file which is referenced by the waypoint object. More details on waypoint configuration can be found [in the next section](kml). 
 
 ```dsl
 Data: # Definitions of datatypes
     # Refers to the shape called "'Rectangle'" in the associated KML file
-    Waypoints patrol_path(alt = 15.0, area = 'Rectangle', algo = 'edge')
+    RoutePlan patrol_path(alt = 15.0, area = 'Rectangle', algo = 'edge')
 ```
 
 ### Actions Stanza
@@ -172,7 +172,7 @@ Actions: # Definitions of states
     TakeOff take_off(take_off_altitude = 10.0)
     Track track(class_name = 'person')
     # Composite action (moves to each point in a set of waypoints)
-    Patrol patrol(waypoints = patrol_path) # Uses earlier defined patrol_path
+    Patrol patrol(plan = patrol_path) # Uses earlier defined patrol_path
     ReturnToHome return_to_home()
 ```
 
@@ -258,11 +258,11 @@ action, and the vehicle starts to fly.
   <TabItem value="dsl" label="SteelEagle DSL">
     ```dsl
     Data: # Definitions of datatypes
-        Waypoints patrol_path(alt = 15.0, area = 'Rectangle', algo = 'edge')
+        RoutePlan patrol_path(alt = 15.0, area = 'Rectangle', algo = 'edge')
     Actions: # Definitions of states
         // highlight-next-line
         TakeOff take_off(take_off_altitude = 10.0)
-        Patrol patrol(waypoints = patrol_path)
+        Patrol patrol(plan = patrol_path)
         Track track(class_name = 'person')
         ReturnToHome return_to_home()
     Events:
@@ -314,11 +314,11 @@ and the vehicle starts moving to each of the waypoints in sequence.
   <TabItem value="dsl" label="SteelEagle DSL">
     ```dsl
     Data: # Definitions of datatypes
-        Waypoints patrol_path(alt = 15.0, area = 'Rectangle', algo = 'edge')
+        RoutePlan patrol_path(alt = 15.0, area = 'Rectangle', algo = 'edge')
     Actions: # Definitions of states
         TakeOff take_off(take_off_altitude = 10.0)
         // highlight-next-line
-        Patrol patrol(waypoints = patrol_path)
+        Patrol patrol(plan = patrol_path)
         Track track(class_name = 'person')
         ReturnToHome return_to_home()
     Events:
@@ -370,11 +370,11 @@ These are checked at a fixed interval as the vehicle moves.
   <TabItem value="dsl" label="SteelEagle DSL">
     ```dsl
     Data: # Definitions of datatypes
-        Waypoints patrol_path(alt = 15.0, area = 'Rectangle', algo = 'edge')
+        RoutePlan patrol_path(alt = 15.0, area = 'Rectangle', algo = 'edge')
     Actions: # Definitions of states
         TakeOff take_off(take_off_altitude = 10.0)
         // highlight-next-line
-        Patrol patrol(waypoints = patrol_path)
+        Patrol patrol(plan = patrol_path)
         Track track(class_name = 'person')
         ReturnToHome return_to_home()
     Events:
@@ -429,10 +429,10 @@ and thus persists.
   <TabItem value="dsl" label="SteelEagle DSL">
     ```dsl
     Data: # Definitions of datatypes
-        Waypoints patrol_path(alt = 15.0, area = 'Rectangle', algo = 'edge')
+        RoutePlan patrol_path(alt = 15.0, area = 'Rectangle', algo = 'edge')
     Actions: # Definitions of states
         TakeOff take_off(take_off_altitude = 10.0)
-        Patrol patrol(waypoints = patrol_path)
+        Patrol patrol(plan = patrol_path)
         // highlight-next-line
         Track track(class_name = 'person')
         ReturnToHome return_to_home()
@@ -485,11 +485,11 @@ This triggers a `done` transition back into `patrol`. The event listener for `pe
   <TabItem value="dsl" label="SteelEagle DSL">
     ```dsl
     Data: # Definitions of datatypes
-        Waypoints patrol_path(alt = 15.0, area = 'Rectangle', algo = 'edge')
+        RoutePlan patrol_path(alt = 15.0, area = 'Rectangle', algo = 'edge')
     Actions: # Definitions of states
         TakeOff take_off(take_off_altitude = 10.0)
         // highlight-next-line
-        Patrol patrol(waypoints = patrol_path)
+        Patrol patrol(plan = patrol_path)
         Track track(class_name = 'person')
         ReturnToHome return_to_home()
     Events:
@@ -541,10 +541,10 @@ from the `return_to_home` action, the mission ends.
   <TabItem value="dsl" label="SteelEagle DSL">
     ```dsl
     Data: # Definitions of datatypes
-        Waypoints patrol_path(alt = 15.0, area = 'Rectangle', algo = 'edge')
+        RoutePlan patrol_path(alt = 15.0, area = 'Rectangle', algo = 'edge')
     Actions: # Definitions of states
         TakeOff take_off(take_off_altitude = 10.0)
-        Patrol patrol(waypoints = patrol_path)
+        Patrol patrol(plan = patrol_path)
         Track track(class_name = 'person')
         // highlight-next-line
         ReturnToHome return_to_home()

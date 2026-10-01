@@ -131,16 +131,13 @@ class MissionStore:
                 msg.ParseFromString(payload)
                 frame_result = result_proto.FrameResult()
                 msg.any_result.Unpack(frame_result)
-                frame_result.timestamp.GetCurrentTime()
-                if not frame_result.HasField('timestamp'):
-                    logger.error(f'Timestamp field absent; {MessageToString(frame_result)}')
                 data = MessageToDict(
                     frame_result,
                     always_print_fields_with_no_presence=True,
                     preserving_proto_field_name=True,
                     use_integers_for_enums=True,
                 )
-                if len(data) == 0:
+                if len(data) == 0 or not data.get("result"):
                     return None, None
                 return FrameResult.model_validate(data), msg.target_engine_id
         except Exception:
@@ -170,7 +167,7 @@ class MissionStore:
                     continue
                 ts = time.time()
                 pj = self._to_json(model)
-                if source == "results" and engine_id != "telemetry":
+                if source == "results" and engine_id != "telemetry": #ignore the telemetry result from compute engines.
                     logger.debug('Result found!')
                     logger.debug('Mission got result from ' + engine_id)
                     await self._store_one(source, engine_id, ts, pj)

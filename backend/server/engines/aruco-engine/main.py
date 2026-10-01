@@ -44,7 +44,7 @@ def main():
     )
 
     parser.add_argument(
-        "-src", "--engine_id", default="aruco_detector_engine", help="Engine identifier."
+        "-src", "--engine_id", default="aruco-detector-engine", help="Engine identifier."
     )
 
     parser.add_argument(

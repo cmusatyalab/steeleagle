@@ -4,6 +4,7 @@ import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { MAPBOX_TOKEN } from './config.js';
 import ColorHash from 'color-hash'
+import { syncVehicleMarkers } from './vehicleMarkers.js';
 
 function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObjects, mapHeight }) {
   const mapRef = useRef()
@@ -73,27 +74,15 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObj
 
   useEffect(() => {
 
-    markerRefs.current.forEach(marker => marker.remove());
-    markerRefs.current = [];
+    syncVehicleMarkers(mapRef.current, vehicles, markerRefs);
     vehicles.forEach(v => {
-      let marker = new mapboxgl.Marker({ "color": colorHash.hex(v.name), rotation: v.bearing, rotationAlignment: 'map' })
-        .setLngLat([v.current.long, v.current.lat])
-        .setPopup(new mapboxgl.Popup({ focusAfterOpen: false }).setHTML(`<strong style="color:black">${v.name} (${v.current.alt.toFixed(2)} m)</strong>`))
-        .addTo(mapRef.current);
-      marker.togglePopup();
-      const markerDiv = marker.getElement();
-
-      markerDiv.addEventListener('mouseenter', () => marker.togglePopup());
-      markerDiv.addEventListener('mouseleave', () => marker.togglePopup());
-
-      if (tracking && v.name === selectedVehicle) {
+      if (tracking && v.name === selectedVehicle && Number.isFinite(v.current?.long) && Number.isFinite(v.current?.lat)) {
         mapRef.current.flyTo({
           center: [v.current.long, v.current.lat],
           //zoom: 18.03,
           essential: true, // this animation is considered essential with respect to prefers-reduced-motion
         });
       }
-      markerRefs.current.push(marker);
     });
 
     if (detectedObjects != null) {

@@ -83,7 +83,7 @@ request.vehicle_id = vehicle
 
 assert(send_request(request))
 ```
-</TabItem>    
+</TabItem>
 <TabItem value="direct" label="Direct Upload">
 Direct upload requires a running [vehicle](/reference/vehicle) instance that is accessible over the network, and is [configured for direct service access](/reference/vehicle/dsa#setup).
 This method avoids setting up the SteelEagle backend and is thus a lightweight way to work with SteelEagle vehicles. This comes with a [few caveats](/reference/vehicle/dsa#caveats) which users should be aware of before flying.
@@ -124,6 +124,6 @@ SteelEagle SDK comes with auto-complete tools for writing DSL files inside IDEs.
 
 :::note
 
-In future, a visual editor will be included that can build DSL scripts without any code!
+The [SteelEagle GCS](/tutorial/gcs#plan-page) also includes a visual Plan Page that can build, load, and export DSL missions without writing any code.
 
 :::

@@ -12,7 +12,8 @@ import { Sidebar } from 'primereact/sidebar';
 import { Dropdown } from 'primereact/dropdown';
 import { DataTable } from 'primereact/datatable';
 import { OverlayPanel } from 'primereact/overlaypanel';
-import { ToggleButton } from 'primereact/togglebutton';
+import { SelectButton } from 'primereact/selectbutton';
+import { InputSwitch } from 'primereact/inputswitch';
 import { Knob } from 'primereact/knob';
 import { Chip } from 'primereact/chip';
 import 'primereact/resources/primereact.min.css';        // Core PrimeReact CSS
@@ -50,6 +51,7 @@ function App() {
   const [detectedObjects, setDetectedObjects] = useState([]);
   const toast = useRef(null);
   const [selectedMenu, setSeletectedMenu] = useState('Control');
+  const [planMounted, setPlanMounted] = useState(false);
   const [keyPressed, setKeyPressed] = useState(false);
   const [key, setKey] = useState('');
   const [gamePadButton, setGamePadButton] = useState(-99);
@@ -58,6 +60,12 @@ function App() {
   const [error, setError] = useState(null);
   const [tracking, setTracking] = useState(true);
   const [useLocalVehicle, setUseLocalVehicle] = useState(false);
+  const [theme, setTheme] = useState(() => localStorage.getItem('se-theme') || 'dark');
+
+  useEffect(() => {
+    document.getElementById('theme-link').href = `/themes/lara-${theme}-amber/theme.css`;
+    localStorage.setItem('se-theme', theme);
+  }, [theme]);
   const [manualControl, setManualControl] = useState(false);
   const [basePlanarVelocity, setBasePlanarVelocity] = useState(1);
   const [baseAngularVelocity, setBaseAngularVelocity] = useState(90);
@@ -71,6 +79,10 @@ function App() {
   // Keep a ref to the last-known vehicles JSON so we can skip setVehicles when
   // the server returns identical data, preventing needless re-renders.
   const vehiclesJsonRef = useRef('');
+
+  useEffect(() => {
+    if (selectedMenu === 'Plan') setPlanMounted(true);
+  }, [selectedMenu]);
 
   useEffect(() => {
     if (useLocalVehicle) {
@@ -430,21 +442,28 @@ function App() {
 
   ], []);
 
+  const modeOptions = [
+    { icon: 'pi pi-server', label: 'Via Swarm Controller', value: false },
+    { icon: 'pi pi-car', label: 'Direct to Local Vehicles', value: true },
+  ];
+
+  const modeTemplate = (option) => {
+    return <><i className={option.icon}></i><div className="m-2"> {option.label}</div></>;
+  }
   const overlayContent = useMemo(() => (
     <>
       <div className="flex flex-row gap-2">
         <div className="flex flex-column flex-wrap align-content-center m-2">
-          <ToggleButton onLabel="Use Local Vehicles (dev)" offLabel="Use Swarm Controller (prod)" onIcon="pi pi-desktop" offIcon="pi pi-cloud"
-            checked={useLocalVehicle} onChange={(e) => setUseLocalVehicle(e.value)} className="flex align-items-center justify-content-center" />
+          <Chip className="flex align-items-center justify-content-center" label="Connection Mode" icon="pi pi-link" />
         </div>
-        <div className="flex flex-column flex-wrap align-content-center m-2">
+        <div className="flex flex-column flex-wrap justify-content-center align-content-center m-2">
         </div>
       </div>
       <div className="flex flex-row gap-2">
         <div className="flex flex-column flex-wrap align-content-center m-2">
-
+          <SelectButton value={useLocalVehicle} onChange={(e) => setUseLocalVehicle(e.value)} itemTemplate={modeTemplate} options={modeOptions} optionLabel="label" className="flex align-items-center justify-content-center" />
         </div>
-        <div className="flex flex-column flex-wrap justify-content-center align-content-center m-2">
+        <div className="flex flex-column flex-wrap align-content-center m-2">
         </div>
       </div>
     </>
@@ -461,11 +480,14 @@ function App() {
   const menuBarEnd = useMemo(() => (
     <div className="flex align-items-center gap-2 mr-2">
       <GameControls setAxis={setGamePadAxis} setButton={setGamePadButton} deadzone={gamepadDeadzone} />
+      <i className="pi pi-moon" />
+      <InputSwitch checked={theme === 'light'} onChange={(e) => setTheme(e.value ? 'light' : 'dark')} />
+      <i className="pi pi-sun" />
       <Button size="small" rounded text label="" icon="pi pi-cog" onClick={(e) => op.current.toggle(e)} />
       <OverlayPanel ref={op}>{overlayContent}</OverlayPanel>
 
     </div>
-  ), [useLocalVehicle, gamepadDeadzone, overlayContent]);
+  ), [theme, useLocalVehicle, gamepadDeadzone, overlayContent]);
 
 
   const onToggleDetections = useCallback(async (value) => {
@@ -506,7 +528,9 @@ function App() {
         baseAngularVelocity={baseAngularVelocity} setBaseAngularVelocity={setBaseAngularVelocity} gamepadDeadzone={gamepadDeadzone} setGamepadDeadzone={setGamepadDeadzone}
         takeOffAltitude={takeOffAltitude} setTakeOffAltitude={setTakeOffAltitude} showDetections={showDetections} onToggleDetections={onToggleDetections} gimbalVelocity={gimbalVelocity} setGimbalVelocity={setGimbalVelocity} />}
       {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} detectedObjects={detectedObjects} />}
-      {selectedMenu == "Plan" && <PlanPage />}
+      <div style={{ display: selectedMenu === 'Plan' ? '' : 'none' }}>
+        {planMounted && <PlanPage vehicles={vehicles} squadList={squadList} theme={theme} />}
+      </div>
       <Toast ref={toast} />
     </>
   );

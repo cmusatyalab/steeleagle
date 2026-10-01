@@ -48,6 +48,40 @@ They CANNOT be called directly - only used as conditions in racer's `events` par
     - If action wins: `{{winner: "action", action: name, action_result: ..., events_triggered: []}}`
     - If event wins: `{{winner: "event", event: name, event_result: ..., action_completed: false}}`
 
+### Mission File Tools — Convert conversation into reviewable mission files (3 available)
+
+- **translate_with_dsl_reference**: Fetch the DSL reference needed for you, the caller LLM, to translate a final summarized mission instruction into readable SteelEagle DSL.
+  - Use this when the user says things like "turn what I said into a mission", "summarize this conversation as a mission", or "Translate all what I've said into a mission".
+  - The `instruction` should be your concise mission summary, not the raw full chat transcript.
+  - This tool does NOT call another LLM and does NOT require OpenAI API access.
+  - It returns DSL grammar, actions/events/data schema, few-shot examples, generation rules, and common mistakes.
+  - If you already drafted DSL, pass it as `candidate_dsl`; the tool will run deterministic validation/compile feedback.
+- **compile_mission_dsl**: Normalize, validate, and compile DSL into `mission_json`.
+  - Use this after you write DSL from the reference, or when the user edits DSL manually.
+  - It returns `mission_json` for chat preview and `compile_id` for saving the exact compiled JSON.
+- **save_mission_files**: Save `mission.dsl` and `mission.json` files locally.
+  - Required usage: pass only `compile_id=compile_mission_dsl.compile_id` plus an optional `basename`.
+  - Do not pass DSL, `mission_json`, or `mission_json_text` in normal use; the tool saves the normalized DSL and JSON cached from the compile step.
+  - Default output location is `steeleagle/mcp/mission_files`.
+  - It never uploads, starts, or executes the mission.
+
+Mission file workflow:
+1. Summarize the conversation into one clear mission instruction with safety constraints, areas, altitudes, trigger conditions, and terminal behavior.
+2. Call `translate_with_dsl_reference(instruction=summary)`.
+3. You generate a complete `mission.dsl` using the returned grammar, schema, examples, and rules.
+4. Call `compile_mission_dsl(dsl=...)`.
+5. If compile returns errors, revise the DSL using the errors and call `compile_mission_dsl` again.
+6. Call `save_mission_files(compile_id=compile_id, basename=...)` to produce files. Do not pass DSL, `mission_json`, or `mission_json_text` to this tool.
+7. In chat, show the mission summary, the full normalized DSL preview, a mission JSON preview, mission file paths, and any warnings.
+
+Mission file chat preview requirements:
+- Always include the full normalized DSL from `compile_mission_dsl.normalized_dsl` in a fenced `dsl` code block.
+- Include `mission_json` in a fenced `json` code block when compact enough to read comfortably.
+- If `mission_json` is long, show a concise JSON preview containing at least `start_action_id`, action ids/types, event ids/types, and `transitions`; still provide the saved JSON file path.
+- Never respond with only mission file paths after a successful save; the user must be able to review the mission in chat.
+
+Do NOT automatically upload or start generated missions. The user must explicitly ask to upload/start after reviewing the files.
+
 ## Data Formats
 
 - **Location**: `{{latitude, longitude, altitude, heading}}` — degrees, meters
@@ -103,6 +137,8 @@ When the user describes a mission:
 5. Report progress between steps
 
 **Default approach**: Call actions directly. Use racer when conditions are needed.
+
+If the user asks to convert the conversation into a mission file instead of executing now, use the Mission File Tools workflow above rather than calling flight Action tools.
 
 **Example flows:**
 

@@ -6,6 +6,7 @@ import time
 import tomllib
 from pathlib import Path
 
+import grpc
 import requests
 
 # Utility imports
@@ -18,48 +19,102 @@ ROOST_PYPI = "https://git.cmusatyalab.org/api/v4/projects/85/packages/pypi/simpl
 PYTHON_DEFAULT = "3.12"  # Default Python used by the vehicle driver
 
 
-def start_services(log, info):
-    running = []
-    logger = ["python", "logger/main.py"]
-    if log:
-        task = subprocess.Popen(logger)
-        running.append(task)
-    # Start the driver
-    startup = []
-    if info and info["path"] == '':
-        # Get and read the cap file
-        cap_request = requests.get(f"{ROOST_REPO}/{info['package']}/cap.toml")
-        if cap_request.status_code == 200:
-            try:
-                # Attempt to load startup commands
-                startup = tomllib.loads(cap_request.text)["startup"]
-            except Exception:
-                print(
-                    "WARNING: Cap could not be read for startup commands, ignoring..."
-                )
-        else:
-            print("WARNING: No cap found!")
-        # Get and read the pyproject file
-        python = PYTHON_DEFAULT
-        py_request = requests.get(f"{ROOST_REPO}/{info['package']}/pyproject.toml")
-        if py_request.status_code == 200:
-            try:
-                # Attempt to get the requires-python string
-                python = tomllib.loads(py_request.text)["project"]["requires-python"]
-            except Exception:
-                print("WARNING: Could not read Python version for driver, ignoring...")
-        else:
-            print(
-                "ERROR: Could not find associated pyproject.toml, are you sure the package exists?"
-            )
+def wait_on_service(address, timeout=10, interval=0.5):
+    channel = grpc.insecure_channel(address)
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            grpc.channel_ready_future(channel).result(timeout=interval)
+            channel.close()
             return
-        if info["kwargs"]:
+        except grpc.FutureTimeoutError:
+            continue
+    channel.close()
+    print("Timeout waiting for service to start!")
+    raise Exception("Service failed to start by deadline!")
+
+
+def start_services(log, info, headless: bool = False):
+    running = []
+    try:
+        logger = ["python", "logger/main.py"]
+        if log:
+            task = subprocess.Popen(logger)
+            running.append(task)
+        # Start the driver
+        startup = []
+        if not headless and info and info["path"] == "":
+            # Get and read the cap file
+            cap_request = requests.get(f"{ROOST_REPO}/{info['package']}/cap.toml")
+            if cap_request.status_code == 200:
+                try:
+                    # Attempt to load startup commands
+                    startup = tomllib.loads(cap_request.text)["startup"]
+                except Exception:
+                    print(
+                        "WARNING: Cap could not be read for startup commands, ignoring..."
+                    )
+            else:
+                print("WARNING: No cap found!")
+            # Get and read the pyproject file
+            python = PYTHON_DEFAULT
+            py_request = requests.get(f"{ROOST_REPO}/{info['package']}/pyproject.toml")
+            if py_request.status_code == 200:
+                try:
+                    # Attempt to get the requires-python string
+                    python = tomllib.loads(py_request.text)["project"][
+                        "requires-python"
+                    ]
+                except Exception:
+                    print(
+                        "WARNING: Could not read Python version for driver, ignoring..."
+                    )
+            else:
+                print(
+                    "ERROR: Could not find associated pyproject.toml, are you sure the package exists?"
+                )
+                return
+            if info["kwargs"]:
+                driver = [
+                    "uvx",
+                    "--extra-index-url",
+                    ROOST_PYPI,
+                    "--python",
+                    python,
+                    info["package"],
+                    "--kwargs",
+                    json.dumps(info["kwargs"]),
+                    info["name"],
+                    info["address"],
+                    info["telemetry"],
+                    info["imagery"],
+                ]
+            else:
+                driver = [
+                    "uvx",
+                    "--extra-index-url",
+                    ROOST_PYPI,
+                    "--python",
+                    python,
+                    info["package"],
+                    info["name"],
+                    info["address"],
+                    info["telemetry"],
+                    info["imagery"],
+                ]
+            task = subprocess.Popen(driver)
+            running.append(task)
+
+            # Wait on the driver to start
+            wait_on_service(info["address"])
+            print("Finished waiting for driver, service is ready")
+        elif not headless and info and info["path"] != "":  # Local run
+            path = Path(info["path"])
+            with open(str(path / "cap.toml")) as cap:
+                startup = tomllib.loads(cap.read())["startup"]
             driver = [
-                "uvx",
-                "--extra-index-url",
-                ROOST_PYPI,
-                "--python",
-                python,
+                "uv",
+                "run",
                 info["package"],
                 "--kwargs",
                 json.dumps(info["kwargs"]),
@@ -68,75 +123,51 @@ def start_services(log, info):
                 info["telemetry"],
                 info["imagery"],
             ]
-        else:
-            driver = [
-                "uvx",
-                "--extra-index-url",
-                ROOST_PYPI,
-                "--python",
-                python,
-                info["package"],
-                info["name"],
-                info["address"],
-                info["telemetry"],
-                info["imagery"],
+            task = subprocess.Popen(driver, cwd=str(path))
+            running.append(task)
+
+            # Wait on the driver to start
+            wait_on_service(info["address"])
+            print("Finished waiting for driver, service is ready")
+
+        # Start the mission
+        if info and info["mission_package"] != "":
+            path = Path(info["mission_path"])
+            mission = [
+                "uv",
+                "run",
+                info["mission_package"],
+                "--json",
+                json.dumps(
+                    {
+                        "name": info["name"],
+                        "kernel": info["kernel"],
+                        "telemetry": info["telemetry"],
+                        "results": info["results"],
+                        "mission_sock": info["mission_address"],
+                    }
+                ),
             ]
-        task = subprocess.Popen(driver)
-        running.append(task)
-        time.sleep(5)
-    elif info and info["path"] != '': # Local run
-        path = Path(info["path"])
-        with open(str(path / "cap.toml")) as cap:
-            startup = tomllib.loads(cap.read())["startup"]
-        driver = [
-            "uv",
-            "run",
-            info["package"],
-            "--kwargs",
-            json.dumps(info["kwargs"]),
-            info["name"],
-            info["address"],
-            info["telemetry"],
-            info["imagery"],
-        ]
-        task = subprocess.Popen(driver, cwd=str(path))
-        running.append(task)
-        time.sleep(5)
+            task = subprocess.Popen(mission, cwd=str(path))
+            running.append(task)
 
-    # Start the mission
-    if info and info['mission_package'] != '':
-        path = Path(info["mission_path"])
-        mission = [
-            "uv",
-            "run",
-            info["mission_package"],
-            "--json",
-            json.dumps({
-                "name": info["name"],
-                "kernel": info["kernel"],
-                "telemetry": info["telemetry"],
-                "results": info["results"],
-                "mission_sock": info["mission_address"],
-            }),
-        ]
-        task = subprocess.Popen(mission, cwd=str(path))
+            # Wait on the mission to start
+            wait_on_service(info["mission_address"])
+            print("Finished waiting for mission, service is ready")
+
+        # Start the kernel
+        kernel = ["python", "kernel/main.py"]
+        if len(startup) > 0:
+            kernel.append("--startup")
+            for s in startup:
+                kernel.append(f"{s}")
+        task = subprocess.Popen(kernel)
         running.append(task)
-        time.sleep(1)
 
-    # Start the kernel
-    kernel = ["python", "kernel/main.py"]
-    if len(startup) > 0:
-        kernel.append("--startup")
-        for s in startup:
-            kernel.append(f"{s}")
-    task = subprocess.Popen(kernel)
-    running.append(task)
-
-    running.reverse()  # Reverse the processes so the logger dies last
-    try:
+        running.reverse()  # Reverse the processes so the logger dies last
         for subp in running:
             subp.wait()
-    except SystemExit:
+    except (SystemExit, Exception):
         for subp in running:
             subp.terminate()
             subp.wait()
@@ -204,7 +235,7 @@ if __name__ == "__main__":
     log = query_config("logging.generate_flight_log")
 
     driver_info = None
-    if not args.headless and not args.test:
+    if not args.test:
         kwargs = query_config("vehicle.kwargs")
         driver_info = {
             "name": query_config("vehicle.name"),
@@ -213,9 +244,11 @@ if __name__ == "__main__":
             "mission_path": query_config("mission.path"),
             "mission_package": query_config("mission.package"),
             "address": query_config("internal.services.driver"),
-            "telemetry": query_config("internal.streams.driver_telemetry").replace('unix', 'ipc'),
-            "imagery": query_config("internal.streams.imagery").replace('unix', 'ipc'),
-            "results": query_config("internal.streams.results").replace('unix', 'ipc'),
+            "telemetry": query_config("internal.streams.driver_telemetry").replace(
+                "unix", "ipc"
+            ),
+            "imagery": query_config("internal.streams.imagery").replace("unix", "ipc"),
+            "results": query_config("internal.streams.results").replace("unix", "ipc"),
             "kernel": query_config("internal.services.kernel"),
             "mission_address": query_config("internal.services.mission"),
             "kwargs": kwargs if kwargs != {} else None,
@@ -224,4 +257,4 @@ if __name__ == "__main__":
     if args.test:
         test_services(args.test, log)
     else:
-        start_services(log, driver_info)
+        start_services(log, driver_info, args.headless)

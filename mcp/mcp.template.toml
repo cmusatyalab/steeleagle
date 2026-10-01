@@ -10,5 +10,22 @@ results = "ipc:///tmp/results.sock"
 db_path = "mcp_mission.db"
 
 [client]
-# API key should be set via ANTHROPIC_API_KEY env var
+# provider: "openai" or "anthropic".
+provider = "anthropic"
+
+# Model for the selected provider.
+# OpenAI example:    "gpt-4o"
+# Anthropic example: "claude-sonnet-4-20250514"
 model = "claude-sonnet-4-20250514"
+
+# API key should be set via OPENAI_API_KEY or ANTHROPIC_API_KEY env var
+#
+# Environment variable (shell). Names are UPPERCASE:
+#   export OPENAI_API_KEY=sk-...
+#   export ANTHROPIC_API_KEY=sk-ant-...
+#
+# This file ([client] keys). Names are lowercase:
+#   openai_api_key = "sk-..."
+#   anthropic_api_key = "sk-ant-..."
+#
+# Chat/client resolution: value in this file > environment variable
