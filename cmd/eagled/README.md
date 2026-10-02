@@ -198,11 +198,11 @@ When you start a scratch eagled to test against, isolate it completely:
 
 - Point `HOME` and `XDG_DATA_HOME` at a temporary directory, or it will load
   (and modify) your real persisted config and installed plugins.
-- Unset `TS_AUTHKEY` and `TS_AUTHKEY_VEHICLE`. eagled has no VPN switch: it
+- Unset `TS_AUTHKEY` and `TS_VEHICLE_AUTHKEY`. eagled has no VPN switch: it
   joins tsnet whenever a key is in its environment, so a scratch instance
   started from a shell that has them exported registers a real node on your
   tailnet, which outlives the process.
 
-    env -u TS_AUTHKEY -u TS_AUTHKEY_VEHICLE \
+    env -u TS_AUTHKEY -u TS_VEHICLE_AUTHKEY \
         HOME=$(mktemp -d) XDG_DATA_HOME=$(mktemp -d) \
         ./eagled -control-port 19090

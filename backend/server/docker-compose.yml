@@ -138,7 +138,7 @@ services:
       - "5004:5004"
       - "5003:5003"
     environment:
-      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_SWARM_AUTHKEY=${TS_SWARM_AUTHKEY}
     volumes:
       - ./swarm-config.toml:/steeleagle/config.toml:ro
       - ./swarm-controller-state:/steeleagle/.local/share/steeleagle

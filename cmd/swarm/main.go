@@ -107,6 +107,10 @@ func main() {
 		if cfg.Tailscale.AuthKeyEnv != "" {
 			authKey = os.Getenv(cfg.Tailscale.AuthKeyEnv)
 		}
+		// tsnet itself falls back to $TS_AUTHKEY when handed an empty key.
+		if authKey == "" && os.Getenv("TS_AUTHKEY") != "" {
+			log.Warn().Msgf("no auth key in $%s: tsnet will join the tailnet with $TS_AUTHKEY, and so with that key's tags", cfg.Tailscale.AuthKeyEnv)
+		}
 		startCtx, cancel := context.WithTimeout(context.Background(), tailscaleStartTimeout)
 		defer cancel()
 		ts, err = tailscale.NewServer(startCtx, cfg.Tailscale.Hostname, authKey, "swarm-controller", cfg.Tailscale.MemStore)

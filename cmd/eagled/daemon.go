@@ -717,6 +717,9 @@ func (d *daemon) ensureConfigured(cfg Config) (applied, diverged bool, err error
 	vehicleAuthKey := os.Getenv(TSVehicleAuthKeyEnv)
 	if vehicleAuthKey == "" {
 		vehicleAuthKey = os.Getenv(TSAuthKeyEnv)
+		if vehicleAuthKey != "" {
+			log.Warn().Msgf("$%s is unset: vehicles will join the tailnet with $%s, and so with eagled's own tags", TSVehicleAuthKeyEnv, TSAuthKeyEnv)
+		}
 	}
 
 	// Vehicles are tracked separately in vehicleCfgs
