@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { MAX_RECORDS, initialLogState, toRow, advanceCursors, appendRows, filterRows } from './logState.js';
+import { MAX_RECORDS, initialLogState, toRow, parseStructured, advanceCursors, appendRows, filterRows } from './logState.js';
 
 const row = (source, seq, extra = {}) => ({ source, seq, time: new Date(0), level: '', text: `${source}-${seq}`, dropped: 0, ...extra });
 const gap = (source, dropped) => ({ source, seq: 0, time: new Date(0), level: '', text: 'gap', dropped });
@@ -81,5 +81,34 @@ describe('filterRows', () => {
     it('filters by level but always keeps level-less rows and gap markers', () => {
         const out = filterRows(rows, ['error']);
         expect(out.map((r) => r.seq)).toEqual([2, 3, 0]);
+    });
+});
+
+describe('parseStructured', () => {
+    it('splits a zerolog line into message and fields, dropping level/time', () => {
+        const p = parseStructured('{"level":"info","vehicle":"v1","time":"2026-01-01T00:00:00Z","message":"registered"}');
+        expect(p.message).toBe('registered');
+        expect(p.fields).toEqual([['vehicle', 'v1']]);
+        expect(p.obj.level).toBe('info');
+    });
+
+    it('quotes strings that would be ambiguous as key=value and JSON-encodes non-strings', () => {
+        const p = parseStructured('{"error":"dial tcp: refused","n":3,"ok":true,"empty":"","keys":["a","b"],"nested":{"x":1}}');
+        expect(p.message).toBe('');
+        expect(p.fields).toEqual([
+            ['error', '"dial tcp: refused"'],
+            ['n', '3'],
+            ['ok', 'true'],
+            ['empty', '""'],
+            ['keys', '["a","b"]'],
+            ['nested', '{"x":1}'],
+        ]);
+    });
+
+    it('returns null for non-object or unparseable text', () => {
+        expect(parseStructured('plain stdout line')).toBeNull();
+        expect(parseStructured('{not json')).toBeNull();
+        expect(parseStructured('')).toBeNull();
+        expect(parseStructured(undefined)).toBeNull();
     });
 });

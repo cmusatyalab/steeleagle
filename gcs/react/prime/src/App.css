@@ -100,3 +100,74 @@
   vertical-align: middle;
   text-shadow: none;
 }
+
+/* LogViewer rows (Orchestrate tab). The gutter is an IDE-style tray whose
+   buttons stay hidden until the row is hovered, except an open expander. */
+.log-row:hover {
+  background: var(--surface-hover);
+}
+.log-mono,
+.log-text,
+.log-json {
+  font-family: monospace;
+}
+.log-gutter {
+  flex-shrink: 0;
+  display: flex;
+  align-self: stretch;
+  align-items: flex-start;
+  width: 2.75rem;
+  padding-top: 4px;
+  border-right: 1px solid var(--surface-border);
+}
+.log-gutter-btn {
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  cursor: pointer;
+  color: var(--text-color-secondary);
+  visibility: hidden;
+  line-height: 1;
+}
+.log-gutter-btn .pi {
+  font-size: 0.7rem;
+}
+.log-gutter-btn:hover {
+  color: var(--text-color);
+}
+.log-row:hover .log-gutter-btn,
+.log-gutter-expand:has(.pi-chevron-down) {
+  visibility: visible;
+}
+.log-text {
+  flex: 1;
+  min-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 4px 8px 4px 0;
+}
+.log-text-structured {
+  cursor: pointer;
+}
+.log-message {
+  margin-right: 1.5ch;
+}
+.log-field {
+  margin-right: 1.5ch;
+  color: var(--text-color-secondary);
+}
+.log-field-key {
+  opacity: 0.7;
+}
+.log-field-error {
+  color: var(--red-400);
+}
+.log-json {
+  margin: 0 0 4px 2.75rem;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--surface-ground);
+  border-left: 2px solid var(--surface-border);
+}

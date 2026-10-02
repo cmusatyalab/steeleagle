@@ -18,7 +18,34 @@ export function toRow(msg) {
         level: msg.level || '',
         text: msg.text,
         dropped: msg.dropped || 0,
+        structured: parseStructured(msg.text),
     };
+}
+
+// level and time already have their own columns, and message is shown on its own.
+const CONSOLE_OMIT = new Set(['level', 'time', 'message']);
+
+function formatValue(v) {
+    if (typeof v !== 'string') return JSON.stringify(v);
+    return v === '' || /[\s="]/.test(v) ? JSON.stringify(v) : v;
+}
+
+// A zerolog JSON line -> { message, fields, obj } rendered like zerolog's
+// ConsoleWriter (message, then key=value). Anything else -- plugin stdout,
+// Python tracebacks -- returns null and renders verbatim.
+export function parseStructured(text) {
+    if (!text || text[0] !== '{') return null;
+    let obj;
+    try {
+        obj = JSON.parse(text);
+    } catch {
+        return null;
+    }
+    if (obj === null || typeof obj !== 'object' || Array.isArray(obj)) return null;
+    const fields = Object.entries(obj)
+        .filter(([k]) => !CONSOLE_OMIT.has(k))
+        .map(([k, v]) => [k, formatValue(v)]);
+    return { message: typeof obj.message === 'string' ? obj.message : '', fields, obj };
 }
 
 // Per-source resume cursor: the highest seq seen. Gap markers (dropped > 0,

@@ -34,25 +34,88 @@ function sleep(ms, signal) {
     });
 }
 
-function logRowTemplate(row) {
+// navigator.clipboard only exists in secure contexts, and the GCS is often
+// served over plain http on the tailnet, so fall back to execCommand.
+async function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return;
+    }
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+}
+
+function StructuredText({ structured }) {
+    return (
+        <>
+            {structured.message && <span className="log-message">{structured.message}</span>}
+            {structured.fields.map(([k, v]) => (
+                <span key={k} className={k === 'error' ? 'log-field log-field-error' : 'log-field'}>
+                    <span className="log-field-key">{k}=</span>{v}
+                </span>
+            ))}
+        </>
+    );
+}
+
+const LogRow = React.memo(function LogRow({ row, expanded, onToggle }) {
+    const [copied, setCopied] = useState(false);
+
     if (row.dropped > 0) {
         return (
-            <div className="flex align-items-center px-2 text-xs text-color-secondary" style={{ height: ROW_HEIGHT, fontStyle: 'italic', opacity: 0.7 }}>
+            <div className="flex align-items-center px-2 text-xs text-color-secondary" style={{ minHeight: ROW_HEIGHT, fontStyle: 'italic', opacity: 0.7 }}>
                 {`${row.source}: ${row.text}`}
             </div>
         );
     }
+
+    const onCopy = async () => {
+        try {
+            await copyText(row.text);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1000);
+        } catch {
+            // Nothing useful to surface for a failed copy.
+        }
+    };
+
+    // Clicking the message expands it, unless the click ended a text selection.
+    const onMessageClick = () => {
+        if (row.structured && !window.getSelection()?.toString()) onToggle(row.key);
+    };
+
     return (
-        <div className="flex align-items-center gap-2 px-2 text-xs" style={{ height: ROW_HEIGHT, fontFamily: 'monospace', whiteSpace: 'pre' }}>
-            <span className="text-color-secondary" style={{ flexShrink: 0 }}>{row.time.toLocaleTimeString()}</span>
-            <span className="text-color-secondary" style={{ flexShrink: 0, minWidth: '9rem' }}>{row.source}</span>
-            {row.level
-                ? <Tag severity={LOG_LEVEL_SEVERITY[row.level] ?? 'secondary'} value={row.level} style={{ flexShrink: 0, minWidth: '3.5rem', textAlign: 'center' }} />
-                : <span style={{ flexShrink: 0, minWidth: '3.5rem' }} />}
-            <span>{row.text}</span>
+        <div className="log-row">
+            <div className="flex align-items-baseline gap-2 text-xs" style={{ minHeight: ROW_HEIGHT }}>
+                <div className="log-gutter">
+                    <button type="button" className="log-gutter-btn" title="Copy line" onClick={onCopy}>
+                        <i className={copied ? 'pi pi-check' : 'pi pi-copy'} />
+                    </button>
+                    {row.structured && (
+                        <button type="button" className="log-gutter-btn log-gutter-expand" title={expanded ? 'Collapse' : 'Show JSON'} onClick={() => onToggle(row.key)}>
+                            <i className={expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'} />
+                        </button>
+                    )}
+                </div>
+                <span className="text-color-secondary log-mono" style={{ flexShrink: 0 }}>{row.time.toLocaleTimeString()}</span>
+                <span className="text-color-secondary log-mono" style={{ flexShrink: 0, minWidth: '9rem' }}>{row.source}</span>
+                {row.level
+                    ? <Tag severity={LOG_LEVEL_SEVERITY[row.level] ?? 'secondary'} value={row.level} style={{ flexShrink: 0, minWidth: '3.5rem', textAlign: 'center' }} />
+                    : <span style={{ flexShrink: 0, minWidth: '3.5rem' }} />}
+                <div className={row.structured ? 'log-text log-text-structured' : 'log-text'} onClick={onMessageClick}>
+                    {row.structured ? <StructuredText structured={row.structured} /> : row.text}
+                </div>
+            </div>
+            {expanded && <pre className="log-json">{JSON.stringify(row.structured.obj, null, 2)}</pre>}
         </div>
     );
-}
+});
 
 // Owns one stream: connect, buffer, reconnect with per-source cursors, render.
 function LogStream({ address, sources, levels }) {
@@ -60,7 +123,16 @@ function LogStream({ address, sources, levels }) {
     const [status, setStatus] = useState('connecting');
     const [lastError, setLastError] = useState(null);
     const [follow, setFollow] = useState(true);
+    const [expanded, setExpanded] = useState(() => new Set());
     const containerRef = useRef(null);
+
+    const toggleExpanded = useCallback((key) => {
+        setExpanded((prev) => {
+            const next = new Set(prev);
+            if (!next.delete(key)) next.add(key);
+            return next;
+        });
+    }, []);
 
     useEffect(() => {
         const ctrl = new AbortController();
@@ -153,9 +225,11 @@ function LogStream({ address, sources, levels }) {
                 does on every batch. rows is capped at 5,000 (logState.js), so
                 rendering all of them directly is cheap enough to not need
                 virtualization. */}
-            <div style={{ position: 'relative', height: '24rem' }}>
+            <div style={{ position: 'relative', height: 'max(32rem, 60vh)' }}>
                 <div ref={containerRef} onScroll={onScroll} style={{ height: '100%', overflowY: 'auto' }}>
-                    {rows.map((row) => <div key={row.key}>{logRowTemplate(row)}</div>)}
+                    {rows.map((row) => (
+                        <LogRow key={row.key} row={row} expanded={expanded.has(row.key)} onToggle={toggleExpanded} />
+                    ))}
                 </div>
                 {!follow && (
                     <Button
