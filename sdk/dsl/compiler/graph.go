@@ -196,16 +196,27 @@ func valueFromFieldValue(fv *dslcompilerpb.FieldValue) (*parser.Value, error) {
 // text (which only the real lexer/parser can read) into the same
 // canvas-shaped wire format Validate/Build accept. ast.Mission must be
 // set (a DSL file with no Mission stanza has no start_id to report).
+//
+// MissionGraph has no Data stanza, so an attr that references a Data decl
+// by name is expanded in place to an inline_value carrying that decl's
+// type and attrs -- the same shape an InlineCtor value produces.
 func AstToGraph(ast *parser.Ast) (*dslcompilerpb.MissionGraph, error) {
 	if ast.Mission == nil {
 		return nil, fmt.Errorf("DSL has no Mission stanza")
+	}
+
+	data := dataRefs{decls: map[string]*parser.Decl{}, resolving: map[string]bool{}}
+	if ast.Data != nil {
+		for _, d := range ast.Data.Decls {
+			data.decls[d.Name] = d
+		}
 	}
 
 	var actionDecls []*parser.Decl
 	if ast.Actions != nil {
 		actionDecls = ast.Actions.Decls
 	}
-	nodes, err := nodesFromDecls(actionDecls)
+	nodes, err := nodesFromDecls(actionDecls, data)
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +225,7 @@ func AstToGraph(ast *parser.Ast) (*dslcompilerpb.MissionGraph, error) {
 	if ast.Events != nil {
 		eventDecls = ast.Events.Decls
 	}
-	events, err := eventsFromDecls(eventDecls)
+	events, err := eventsFromDecls(eventDecls, data)
 	if err != nil {
 		return nil, err
 	}
@@ -234,6 +245,33 @@ func AstToGraph(ast *parser.Ast) (*dslcompilerpb.MissionGraph, error) {
 	return mg.Build(), nil
 }
 
+// dataRefs is the Data stanza's decls keyed by name, plus the set of
+// names currently being expanded so a decl that (transitively) references
+// itself errors out instead of recursing forever.
+type dataRefs struct {
+	decls     map[string]*parser.Decl
+	resolving map[string]bool
+}
+
+func (data dataRefs) inline(d *parser.Decl) (*dslcompilerpb.FieldValue, error) {
+	if data.resolving[d.Name] {
+		return nil, fmt.Errorf("data %q references itself", d.Name)
+	}
+	data.resolving[d.Name] = true
+	defer delete(data.resolving, d.Name)
+
+	args, err := paramsFromAttrs(d.Attrs, data)
+	if err != nil {
+		return nil, fmt.Errorf("data %q: %w", d.Name, err)
+	}
+	return dslcompilerpb.FieldValue_builder{
+		InlineValue: dslcompilerpb.InlineCtorValue_builder{
+			TypeName: string(d.Type),
+			Args:     args,
+		}.Build(),
+	}.Build(), nil
+}
+
 func importSpecsFromAst(specs []*parser.ImportSpec) []*dslcompilerpb.ImportSpec {
 	out := make([]*dslcompilerpb.ImportSpec, len(specs))
 	for i, s := range specs {
@@ -242,13 +280,13 @@ func importSpecsFromAst(specs []*parser.ImportSpec) []*dslcompilerpb.ImportSpec 
 	return out
 }
 
-func nodesFromDecls(decls []*parser.Decl) ([]*dslcompilerpb.Node, error) {
+func nodesFromDecls(decls []*parser.Decl, data dataRefs) ([]*dslcompilerpb.Node, error) {
 	if len(decls) == 0 {
 		return nil, nil
 	}
 	nodes := make([]*dslcompilerpb.Node, len(decls))
 	for i, d := range decls {
-		params, err := paramsFromAttrs(d.Attrs)
+		params, err := paramsFromAttrs(d.Attrs, data)
 		if err != nil {
 			return nil, fmt.Errorf("decl %q: %w", d.Name, err)
 		}
@@ -257,13 +295,13 @@ func nodesFromDecls(decls []*parser.Decl) ([]*dslcompilerpb.Node, error) {
 	return nodes, nil
 }
 
-func eventsFromDecls(decls []*parser.Decl) ([]*dslcompilerpb.EventInstance, error) {
+func eventsFromDecls(decls []*parser.Decl, data dataRefs) ([]*dslcompilerpb.EventInstance, error) {
 	if len(decls) == 0 {
 		return nil, nil
 	}
 	events := make([]*dslcompilerpb.EventInstance, len(decls))
 	for i, d := range decls {
-		params, err := paramsFromAttrs(d.Attrs)
+		params, err := paramsFromAttrs(d.Attrs, data)
 		if err != nil {
 			return nil, fmt.Errorf("decl %q: %w", d.Name, err)
 		}
@@ -282,13 +320,13 @@ func edgesFromBlocks(blocks []*parser.DuringBlock) []*dslcompilerpb.Edge {
 	return edges
 }
 
-func paramsFromAttrs(attrs []*parser.Attr) (map[string]*dslcompilerpb.FieldValue, error) {
+func paramsFromAttrs(attrs []*parser.Attr, data dataRefs) (map[string]*dslcompilerpb.FieldValue, error) {
 	if len(attrs) == 0 {
 		return nil, nil
 	}
 	out := make(map[string]*dslcompilerpb.FieldValue, len(attrs))
 	for _, a := range attrs {
-		fv, err := fieldValueFromValue(a.Value)
+		fv, err := fieldValueFromValue(a.Value, data)
 		if err != nil {
 			return nil, fmt.Errorf("field %q: %w", a.Key, err)
 		}
@@ -302,7 +340,7 @@ func paramsFromAttrs(attrs []*parser.Attr) (map[string]*dslcompilerpb.FieldValue
 // RAW lexed token including its surrounding quotes; v.StringValue()
 // strips them, matching how the rest of the compiler (resolveValue)
 // already reads a String value.
-func fieldValueFromValue(v *parser.Value) (*dslcompilerpb.FieldValue, error) {
+func fieldValueFromValue(v *parser.Value, data dataRefs) (*dslcompilerpb.FieldValue, error) {
 	switch {
 	case v.Float != nil:
 		return dslcompilerpb.FieldValue_builder{FloatValue: v.Float}.Build(), nil
@@ -317,7 +355,7 @@ func fieldValueFromValue(v *parser.Value) (*dslcompilerpb.FieldValue, error) {
 	case v.Array != nil:
 		elems := make([]*dslcompilerpb.FieldValue, len(v.Array.Elems))
 		for i, e := range v.Array.Elems {
-			fv, err := fieldValueFromValue(e)
+			fv, err := fieldValueFromValue(e, data)
 			if err != nil {
 				return nil, err
 			}
@@ -327,7 +365,7 @@ func fieldValueFromValue(v *parser.Value) (*dslcompilerpb.FieldValue, error) {
 			ArrayValue: dslcompilerpb.FieldValueArray_builder{Elems: elems}.Build(),
 		}.Build(), nil
 	case v.Inline != nil:
-		args, err := paramsFromAttrs(v.Inline.Args)
+		args, err := paramsFromAttrs(v.Inline.Args, data)
 		if err != nil {
 			return nil, err
 		}
@@ -338,6 +376,9 @@ func fieldValueFromValue(v *parser.Value) (*dslcompilerpb.FieldValue, error) {
 			}.Build(),
 		}.Build(), nil
 	case v.Ident != nil:
+		if d, ok := data.decls[*v.Ident]; ok {
+			return data.inline(d)
+		}
 		return dslcompilerpb.FieldValue_builder{IdentRef: v.Ident}.Build(), nil
 	default:
 		return nil, fmt.Errorf("empty parser.Value")

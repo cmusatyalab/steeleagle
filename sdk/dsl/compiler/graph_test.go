@@ -4,6 +4,7 @@ package compiler
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	dslcompilerpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/dslcompiler"
@@ -291,5 +292,65 @@ func TestAstToGraphRejectsMissingMissionStanza(t *testing.T) {
 	}
 	if _, err := AstToGraph(ast); err == nil {
 		t.Fatal("AstToGraph() = nil error, want an error for a missing Mission stanza")
+	}
+}
+
+// TestAstToGraphInlinesDataStanzaRefs checks an attr that references a
+// Data stanza decl by name (the shape the GCS's own DSL export writes for
+// a nested datatype param) comes back as an inline_value carrying that
+// decl's type and attrs -- MissionGraph has no Data stanza of its own, so
+// a bare ident_ref would lose the decl's contents entirely.
+func TestAstToGraphInlinesDataStanzaRefs(t *testing.T) {
+	const src = `Data:
+    Pose gimbal_Pose(Pitch = -45, Roll = 0, Yaw = 0)
+
+Actions:
+    SetGimbalPose gimbal(Pose = gimbal_Pose, AngleMode = AngleModeAbsolute)
+
+Mission:
+    Start gimbal
+`
+	ast, err := parser.Parse("data_ref.dsl", strings.NewReader(src))
+	if err != nil {
+		t.Fatalf("parser.Parse() = %v, want nil", err)
+	}
+	mission, err := AstToGraph(ast)
+	if err != nil {
+		t.Fatalf("AstToGraph() = %v, want nil", err)
+	}
+	params := mission.GetNodes()[0].GetParams()
+	pose, ok := params["Pose"]
+	if !ok || !pose.HasInlineValue() {
+		t.Fatalf("Pose param = %+v, want an inline_value", pose)
+	}
+	if pose.GetInlineValue().GetTypeName() != "Pose" {
+		t.Errorf("Pose inline type_name = %q, want %q", pose.GetInlineValue().GetTypeName(), "Pose")
+	}
+	pitch, ok := pose.GetInlineValue().GetArgs()["Pitch"]
+	if !ok || !pitch.HasIntValue() || pitch.GetIntValue() != -45 {
+		t.Errorf("Pose.Pitch = %+v, want int_value -45", pitch)
+	}
+	// An ident that names no Data decl (an enum const) stays an ident_ref.
+	angleMode, ok := params["AngleMode"]
+	if !ok || !angleMode.HasIdentRef() || angleMode.GetIdentRef() != "AngleModeAbsolute" {
+		t.Errorf("AngleMode = %+v, want ident_ref AngleModeAbsolute", angleMode)
+	}
+}
+
+// TestAstToGraphRejectsCyclicDataRefs checks a Data decl that references
+// itself fails clearly instead of recursing forever.
+func TestAstToGraphRejectsCyclicDataRefs(t *testing.T) {
+	self := "a"
+	ast := &parser.Ast{
+		Data: &parser.DataStanza{Decls: []*parser.Decl{
+			{Type: "Pose", Name: "a", Attrs: []*parser.Attr{{Key: "Inner", Value: &parser.Value{Ident: &self}}}},
+		}},
+		Actions: &parser.ActionsStanza{Decls: []*parser.Decl{
+			{Type: "SetGimbalPose", Name: "gimbal", Attrs: []*parser.Attr{{Key: "Pose", Value: &parser.Value{Ident: &self}}}},
+		}},
+		Mission: &parser.MissionStanza{Start: "gimbal"},
+	}
+	if _, err := AstToGraph(ast); err == nil {
+		t.Fatal("AstToGraph() = nil error, want an error for a cyclic Data reference")
 	}
 }
