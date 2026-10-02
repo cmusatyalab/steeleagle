@@ -1,6 +1,6 @@
 import { BaseEdge, EdgeLabelRenderer, useReactFlow } from '@xyflow/react';
 
-function SelfLoopEdge({ id, source, sourceX, sourceY, targetX, targetY, label, style }) {
+function SelfLoopEdge({ id, source, sourceX, sourceY, targetX, targetY, label, style, markerEnd }) {
     const { getNode } = useReactFlow();
     const node = getNode(source);
     const nodeWidth = node?.measured?.width ?? 120;
@@ -26,7 +26,7 @@ function SelfLoopEdge({ id, source, sourceX, sourceY, targetX, targetY, label, s
 
     return (
         <>
-            <BaseEdge id={id} path={path} style={style} />
+            <BaseEdge id={id} path={path} style={style} markerEnd={markerEnd} />
             {label && (
                 <EdgeLabelRenderer>
                     <div

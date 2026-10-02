@@ -10,7 +10,7 @@ import { streamUpload, initialUploadState, applyUploadEvent, isUploadFinished, f
 import {
     ReactFlow, Background, Controls, MiniMap,
     applyNodeChanges, applyEdgeChanges, addEdge,
-    useReactFlow, ReactFlowProvider,
+    useReactFlow, ReactFlowProvider, MarkerType,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import MapDraw from './MapDraw.jsx';
@@ -25,6 +25,18 @@ import { runValidation } from './validation.js';
 
 const nodeTypes = { taskNode: TaskNode };
 const edgeTypes = { selfLoop: SelfLoopEdge };
+
+// Event transitions are animated; "done" is static, so it gets an arrowhead to show direction.
+function edgeAppearance(eventId) {
+    const isDone = eventId === 'done';
+    const color = isDone ? '#a3e8a0' : '#c47aff';
+    return {
+        animated: !isDone,
+        style: { stroke: color },
+        labelStyle: { fill: color, fontSize: 10 },
+        ...(isDone && { markerEnd: { type: MarkerType.ArrowClosed, color, width: 18, height: 18 } }),
+    };
+}
 
 let _nodeIdCounter = 1;
 function nextNodeId() { return `node-${_nodeIdCounter++}`; }
@@ -213,9 +225,7 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
             type: isSelfLoop ? 'selfLoop' : 'smoothstep',
             data: { eventId },
             label: eventId,
-            animated: eventId !== 'done',
-            style: { stroke: eventId === 'done' ? '#a3e8a0' : '#c47aff' },
-            labelStyle: { fill: eventId === 'done' ? '#a3e8a0' : '#c47aff', fontSize: 10 },
+            ...edgeAppearance(eventId),
         }, es));
     }
 
@@ -688,7 +698,6 @@ function PlanPage({ theme, vehicles = [], squadList, uploadState, setUploadState
         const rfEdges = parsed.edges.map(e => {
             const isSelfLoop = e.source === e.target;
             const evId = e.event_id;
-            const isDone = evId === 'done';
             return {
                 id: `e-${e.source}-${evId}-${e.target}`,
                 source: e.source,
@@ -696,9 +705,7 @@ function PlanPage({ theme, vehicles = [], squadList, uploadState, setUploadState
                 type: isSelfLoop ? 'selfLoop' : 'smoothstep',
                 data: { eventId: evId },
                 label: evId,
-                animated: !isDone,
-                style: { stroke: isDone ? '#a3e8a0' : '#c47aff' },
-                labelStyle: { fill: isDone ? '#a3e8a0' : '#c47aff', fontSize: 10 },
+                ...edgeAppearance(evId),
             };
         });
 
