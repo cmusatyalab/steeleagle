@@ -21,6 +21,7 @@ import Cli from './Cli.jsx';
 import ControlPage from './ControlPage.jsx';
 import OrchestrationPage from './OrchestrationPage.jsx';
 import PlanPage from './PlanPage.jsx';
+import MissionUploadProgress from './MissionUploadProgress.jsx';
 import VehicleSidebar, { VEHICLE_SIDEBAR_COLLAPSED_WIDTH, VEHICLE_SIDEBAR_EXPANDED_WIDTH } from './VehicleSidebar.jsx';
 import ControlMappingsTable from './ControlMappingsTable.jsx';
 import { getWebSocketUrl, getApiUrl } from './urls.js';
@@ -59,11 +60,10 @@ function App() {
   const [controlGroups, setControlGroups] = useState({});
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [socketUrl, setSocketUrl] = useState('');
-  // Lifted out of ControlPage (rather than kept as its own useState) so an
-  // in-flight mission upload survives switching away from the Control tab:
-  // App.jsx keeps ControlPage mounted only while that tab is selected, and
-  // an unmounted component's state would otherwise be lost mid-upload.
-  const [controlUploadState, setControlUploadState] = useState(null);
+  // One upload at a time, shared by the Control page (file upload) and the
+  // Plan page (deploy). Kept here so the progress dialog rendered below stays
+  // up across tab switches, e.g. deploy from Plan, then move to Control.
+  const [missionUploadState, setMissionUploadState] = useState(null);
   // Keep a ref to the last-known vehicles JSON so we can skip setVehicles when
   // the server returns identical data, preventing needless re-renders.
   const vehiclesJsonRef = useRef('');
@@ -459,7 +459,8 @@ function App() {
         <Divider />
         {selectedMenu == "Orchestration" && <OrchestrationPage toast={toast} />}
         <div style={{ display: selectedMenu === 'Plan' ? '' : 'none' }}>
-          {planMounted && <PlanPage vehicles={vehicles} squadList={squadList} theme={theme} />}
+          {planMounted && <PlanPage vehicles={vehicles} squadList={squadList} theme={theme}
+            uploadState={missionUploadState} setUploadState={setMissionUploadState} />}
         </div>
         {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} setSelectedVehicle={setSelectedVehicle}
           tracking={tracking} setTracking={setTracking} showDetections={showDetections} onToggleDetections={onToggleDetections}
@@ -467,8 +468,9 @@ function App() {
           setManualControl={setManualControl} squadList={squadList} setSquadList={setSquadList}
           takeOffAltitude={takeOffAltitude}
           controlGroups={controlGroups}
-          uploadState={controlUploadState} setUploadState={setControlUploadState} />}
+          uploadState={missionUploadState} setUploadState={setMissionUploadState} />}
       </div>
+      <MissionUploadProgress state={missionUploadState} onDismiss={() => setMissionUploadState(null)} />
       <Toast ref={toast} />
     </>
   );

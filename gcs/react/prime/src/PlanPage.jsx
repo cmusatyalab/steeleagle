@@ -6,7 +6,6 @@ import { Toast } from 'primereact/toast';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { Dialog } from 'primereact/dialog';
 import { MultiSelect } from 'primereact/multiselect';
-import MissionUploadProgress from './MissionUploadProgress.jsx';
 import { streamUpload, initialUploadState, applyUploadEvent, isUploadFinished, finishUpload } from './missionUpload.js';
 import {
     ReactFlow, Background, Controls, MiniMap,
@@ -392,7 +391,7 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
     );
 }
 
-function PlanPage({ theme, vehicles = [], squadList }) {
+function PlanPage({ theme, vehicles = [], squadList, uploadState, setUploadState }) {
     const [nodes, setNodes] = useState([]);
     const [edges, setEdges] = useState([]);
     const [eventInstances, setEventInstances] = useState([]);
@@ -418,8 +417,7 @@ function PlanPage({ theme, vehicles = [], squadList }) {
     const [validationIssues, setValidationIssues] = useState({});
     const [deployDialogVisible, setDeployDialogVisible] = useState(false);
     const [deployTargets, setDeployTargets] = useState([]);
-    const [deployState, setDeployState] = useState(null);
-    const deploying = deployState !== null && !isUploadFinished(deployState);
+    const deploying = uploadState != null && !isUploadFinished(uploadState);
 
     // Undo / redo history
     const pastRef = useRef([]);
@@ -607,7 +605,11 @@ function PlanPage({ theme, vehicles = [], squadList }) {
     async function handleDeploy() {
         const targets = [...deployTargets];
         setDeployDialogVisible(false);
-        setDeployState(initialUploadState(targets));
+        if (deploying) {
+            toast.current.show({ severity: 'warn', summary: 'Upload already in progress', detail: 'Wait for the current mission upload to finish before starting another.' });
+            return;
+        }
+        setUploadState(initialUploadState(targets));
         const body = { ...buildMissionRequestBody(), geojson: features, vehicles: targets };
         try {
             await streamUpload(getApiUrl('/api/deploy'), {
@@ -615,12 +617,12 @@ function PlanPage({ theme, vehicles = [], squadList }) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
             }, (ev) => {
-                setDeployState(s => applyUploadEvent(s, ev));
+                setUploadState(s => applyUploadEvent(s, ev));
                 if (ev.type === 'error' && ev.errors?.length) highlightErrorNodes(ev.errors);
             });
-            setDeployState(s => finishUpload(s));
+            setUploadState(s => finishUpload(s));
         } catch (e) {
-            setDeployState(s => applyUploadEvent(s, { type: 'error', detail: e.message }));
+            setUploadState(s => applyUploadEvent(s, { type: 'error', detail: e.message }));
         }
     }
 
@@ -895,10 +897,6 @@ function PlanPage({ theme, vehicles = [], squadList }) {
                                 tooltip="Build and upload to vehicles"
                                 tooltipOptions={{ position: 'top' }}
                             />
-                        </div>
-
-                        <div className="px-2" style={{ flexShrink: 0 }}>
-                            <MissionUploadProgress state={deployState} onDismiss={() => setDeployState(null)} />
                         </div>
 
                         {/* Canvas — middle */}

@@ -11,7 +11,6 @@ import { getApiUrl } from './urls.js';
 import Mapbox from './Mapbox.jsx';
 import { toggleVehicleInSquad } from './squadUtils.js';
 import { STYLE_OPTIONS } from './mapStyles.js';
-import MissionUploadProgress from './MissionUploadProgress.jsx';
 import { streamUpload, initialUploadState, applyUploadEvent, isUploadFinished, finishUpload } from './missionUpload.js';
 
 const cancelOptions = { icon: 'pi pi-fw pi-times', iconOnly: true, className: 'custom-cancel-btn p-button-danger' };
@@ -169,7 +168,6 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
         <div className="my-2" style={{ overflowX: 'auto' }}>
           <Toolbar className="w-full flex-nowrap" start={controlButtons} end={missonControls} />
         </div>
-        <MissionUploadProgress state={uploadState} onDismiss={() => setUploadState(null)} />
       </div>
     </div>
   );
