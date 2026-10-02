@@ -11,6 +11,8 @@ on:
       - 'internal/tailscale/**'
       - 'api/steeleagle_protocol/v1/services/swarm/**'
       - 'api/go/steeleagle_protocol/v1/services/swarm/**'
+      - 'api/steeleagle_protocol/v1/services/mission/**'
+      - 'api/go/steeleagle_protocol/v1/services/mission/**'
       - 'go.mod'
       - 'go.sum'
 
