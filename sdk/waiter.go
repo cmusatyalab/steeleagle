@@ -4,8 +4,6 @@ import (
 	"context"
 	"sync"
 	"time"
-
-	"github.com/cmusatyalab/steeleagle/sdk/opt"
 )
 
 // waiter represents an in-flight long-running operation.
@@ -16,6 +14,24 @@ type waiter[Resp any] struct {
 	err  error
 	once sync.Once
 	done chan struct{}
+}
+
+// WaitOptions are the options for a waiter, the poll interval and the
+// timeout. Timeout set to zero means that the Wait will never time out.
+type WaitOptions struct {
+	Interval   time.Duration // time between polls
+	Timeout    time.Duration // deadline for RPC
+	Stall      time.Duration // timeout for making forward progress
+	Tolerances Tolerances    // error tolerance for final destination check
+}
+
+// Tolerances are the tolerances waiters use to decide when a command has
+// satisfied its expectation.
+type Tolerances struct {
+	PosTol      float32 // position tolerance
+	AngleTol    float32 // angle tolerance
+	SpeedTol    float32 // speed tolerance
+	AngSpeedTol float32 // angular speed tolerance
 }
 
 // newWaiter creates a waiter object that checks the status of an in-flight
@@ -35,14 +51,14 @@ func newWaiter[Resp any](ctx context.Context, resp Resp, err error, poll pollFun
 }
 
 // Wait blocks until the operation completes, ctx is done, or polling fails.
-func (w *waiter[Resp]) Wait(options ...opt.WaitOption) (Resp, error) {
+func (w *waiter[Resp]) Wait(options ...WaitOption) (Resp, error) {
 	defer w.cleanup()
 
 	// Apply options
-	opts := opt.WaitOptions{
+	opts := WaitOptions{
 		Interval: 100 * time.Millisecond,
 		Stall:    5 * time.Second,
-		Tolerances: opt.Tolerances{
+		Tolerances: Tolerances{
 			PosTol:      3.0, // meters
 			AngleTol:    5.0, // degrees
 			SpeedTol:    0.5, // meters/second

@@ -212,7 +212,7 @@ func (v *vehicleContext) GetTelemetry() *waiter[Telemetry] {
 		v.ctx,
 		wrapper,
 		grpcToSentinel(err),
-		func(opt.WaitOptions) error { return nil },
+		func(WaitOptions) error { return nil },
 	)
 }
 

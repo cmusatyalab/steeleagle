@@ -5,14 +5,13 @@ import (
 
 	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
 	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
-	"github.com/cmusatyalab/steeleagle/sdk/opt"
 	"google.golang.org/protobuf/proto"
 	anypb "google.golang.org/protobuf/types/known/anypb"
 )
 
 // pollFunc checks the status of a command until it is finished
 // or it exits with error.
-type pollFunc func(opt.WaitOptions) error
+type pollFunc func(WaitOptions) error
 
 // pollTicker returns a ticker paced at d, or 100ms if d is
 // non-positive.
@@ -42,7 +41,7 @@ type isAction interface {
 // actionPoller is a poller function that checks the expectation of an action
 // style RPC.
 func actionPoller[Resp isAction](v *vehicleContext, resp Resp) pollFunc {
-	return func(w opt.WaitOptions) error {
+	return func(w WaitOptions) error {
 		ticker := pollTicker(w.Interval)
 		defer ticker.Stop()
 		timeoutC := timeoutChan(w.Timeout)
@@ -88,7 +87,7 @@ type isGuidance[S proto.Message] interface {
 // guidancePoller is a poller function that checks the expectation of a
 // guidance style RPC.
 func guidancePoller[S proto.Message, Resp isGuidance[S]](v *vehicleContext, resp Resp) pollFunc {
-	return func(w opt.WaitOptions) error {
+	return func(w WaitOptions) error {
 		ticker := pollTicker(w.Interval)
 		defer ticker.Stop()
 		timeoutC := timeoutChan(w.Timeout)
@@ -167,7 +166,7 @@ type isGimbal[S proto.Message] interface {
 // gimbalPoller is a poller function that checks the expectation of a
 // gimbal style RPC.
 func gimbalPoller[S proto.Message, Resp isGimbal[S]](v *vehicleContext, resp Resp) pollFunc {
-	return func(w opt.WaitOptions) error {
+	return func(w WaitOptions) error {
 		ticker := pollTicker(w.Interval)
 		defer ticker.Stop()
 		timeoutC := timeoutChan(w.Timeout)

@@ -1,26 +1,22 @@
-package opt
+package sdk
 
-import "time"
+import (
+	"time"
 
-// WaitOptions are the options for a waiter, the poll interval and the
-// timeout. Timeout set to zero means that the Wait will never time out.
-type WaitOptions struct {
-	Interval   time.Duration
-	Timeout    time.Duration
-	Stall      time.Duration
-	Tolerances Tolerances
+	"github.com/rs/zerolog"
+)
+
+// ContextOption sets the optional parameters of a vehicle context.
+type ContextOption func(*vehicleContext)
+
+// WithLogger sets the logger object for all vehicleContext calls.
+func WithLogger(l zerolog.Logger) ContextOption {
+	return func(v *vehicleContext) {
+		v.log = l
+	}
 }
 
-// Tolerances are the tolerances waiters use to decide when a command has
-// satisfied its expectation.
-type Tolerances struct {
-	PosTol      float32 // position tolerance
-	AngleTol    float32 // angle tolerance
-	SpeedTol    float32 // speed tolerance
-	AngSpeedTol float32 // angular speed tolerance
-}
-
-// WaitOption is a functional option for waitOptions.
+// WaitOption is a functional option for WaitOptions.
 type WaitOption func(*WaitOptions)
 
 // WithPollInterval sets the poll interval of the Wait call.

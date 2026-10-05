@@ -7,7 +7,6 @@ import (
 
 	commonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/common"
 	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
-	"github.com/cmusatyalab/steeleagle/sdk/opt"
 )
 
 // getDistance finds the distance between the setpoint and the vehicle
@@ -15,7 +14,7 @@ import (
 // sub-field's raw difference divided by its own tolerance, summed across
 // every sub-field that was compared, along with the pass/fail result (true
 // iff every compared sub-field's normalized distance is <= 1).
-func getDistance(a proto.Message, t *telemetrypb.Telemetry, tol opt.Tolerances) (float32, bool, error) {
+func getDistance(a proto.Message, t *telemetrypb.Telemetry, tol Tolerances) (float32, bool, error) {
 	switch sp := a.(type) {
 	case *commonpb.GlobalPosition:
 		return globalPositionDistance(sp, t, tol)
@@ -35,8 +34,8 @@ func getDistance(a proto.Message, t *telemetrypb.Telemetry, tol opt.Tolerances) 
 // distAcc accumulates the sum of normalized (|raw|/tolerance) distances
 // across every sub-field that was actually compared, plus the overall
 // pass/fail. Summing (rather than taking the max) ensures that progress on
-// any single axis is reflected in the total, so one axis stalling can't
-// hide genuine convergence on another.
+// any single axis is reflected in the total, so one axis stalling doesn't
+// hide convergence on another.
 type distAcc struct {
 	sum float32
 	ok  bool
@@ -47,9 +46,8 @@ func newDistAcc() *distAcc {
 }
 
 // add folds in one sub-field's raw difference and its tolerance. A
-// zero-or-negative tolerance is treated as "must match exactly". Any
-// nonzero difference fails with an infinite normalized distance, rather
-// than silently producing a NaN/Inf that comparisons might mishandle.
+// zero-or-negative tolerance is treated as an exact match. Any
+// nonzero difference fails with an infinite normalized distance.
 func (d *distAcc) add(raw, tolerance float32) {
 	raw = absf32(raw)
 	if tolerance <= 0 {
@@ -100,7 +98,7 @@ func haversineMeters(lat1, lon1, lat2, lon2 float64) float32 {
 }
 
 // globalPositionDistance gets the distance for a GlobalPosition setpoint.
-func globalPositionDistance(sp *commonpb.GlobalPosition, t *telemetrypb.Telemetry, tol opt.Tolerances) (float32, bool, error) {
+func globalPositionDistance(sp *commonpb.GlobalPosition, t *telemetrypb.Telemetry, tol Tolerances) (float32, bool, error) {
 	pi := t.GetPositionInfo()
 	if pi == nil {
 		return 0, false, ErrInternal
@@ -138,7 +136,7 @@ func globalPositionDistance(sp *commonpb.GlobalPosition, t *telemetrypb.Telemetr
 }
 
 // relativePositionDistance gets the distance for a RelativePosition setpoint.
-func relativePositionDistance(sp *commonpb.RelativePosition, t *telemetrypb.Telemetry, tol opt.Tolerances) (float32, bool, error) {
+func relativePositionDistance(sp *commonpb.RelativePosition, t *telemetrypb.Telemetry, tol Tolerances) (float32, bool, error) {
 	pi := t.GetPositionInfo()
 	if pi == nil {
 		return 0, false, ErrInternal
@@ -179,7 +177,7 @@ func relativePositionDistance(sp *commonpb.RelativePosition, t *telemetrypb.Tele
 }
 
 // velocityDistance gets the distance for a Velocity setpoint.
-func velocityDistance(sp *commonpb.Velocity, t *telemetrypb.Telemetry, tol opt.Tolerances) (float32, bool, error) {
+func velocityDistance(sp *commonpb.Velocity, t *telemetrypb.Telemetry, tol Tolerances) (float32, bool, error) {
 	pi := t.GetPositionInfo()
 	if pi == nil {
 		return 0, false, ErrInternal
@@ -220,7 +218,7 @@ func velocityDistance(sp *commonpb.Velocity, t *telemetrypb.Telemetry, tol opt.T
 }
 
 // poseDistance gets the distance for a Pose setpoint.
-func poseDistance(sp *commonpb.Pose, t *telemetrypb.Telemetry, tol opt.Tolerances) (float32, bool, error) {
+func poseDistance(sp *commonpb.Pose, t *telemetrypb.Telemetry, tol Tolerances) (float32, bool, error) {
 	gi := t.GetGimbalInfo()
 	if gi == nil {
 		return 0, false, ErrInternal
@@ -255,7 +253,7 @@ func poseDistance(sp *commonpb.Pose, t *telemetrypb.Telemetry, tol opt.Tolerance
 }
 
 // poseVelocityDistance gets the distance for a PoseVelocity setpoint.
-func poseVelocityDistance(sp *commonpb.PoseVelocity, t *telemetrypb.Telemetry, tol opt.Tolerances) (float32, bool, error) {
+func poseVelocityDistance(sp *commonpb.PoseVelocity, t *telemetrypb.Telemetry, tol Tolerances) (float32, bool, error) {
 	gi := t.GetGimbalInfo()
 	if gi == nil {
 		return 0, false, ErrInternal
