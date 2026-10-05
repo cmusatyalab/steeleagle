@@ -14,6 +14,15 @@ import (
 // or it exits with error.
 type pollFunc func(opt.WaitOptions) error
 
+// pollTicker returns a ticker paced at d, or 100ms if d is
+// non-positive.
+func pollTicker(d time.Duration) *time.Ticker {
+	if d <= 0 {
+		d = 100 * time.Millisecond
+	}
+	return time.NewTicker(d)
+}
+
 // timeoutChan returns a channel that fires once after d, or, per
 // WaitOptions.Timeout's documented zero-means-never-time-out contract, a nil
 // channel that never fires when d <= 0.
@@ -34,6 +43,8 @@ type isAction interface {
 // style RPC.
 func actionPoller[Resp isAction](v *vehicleContext, resp Resp) pollFunc {
 	return func(w opt.WaitOptions) error {
+		ticker := pollTicker(w.Interval)
+		defer ticker.Stop()
 		timeoutC := timeoutChan(w.Timeout)
 		mismatch := time.NewTimer(w.Stall)
 		activeMismatch := false
@@ -62,7 +73,7 @@ func actionPoller[Resp isAction](v *vehicleContext, resp Resp) pollFunc {
 				return ErrCancelled
 			case <-v.ctx.Done():
 				return ErrContextExpired
-			case <-time.After(w.Interval): // pace polling to w.Interval
+			case <-ticker.C: // pace polling to w.Interval
 			}
 		}
 	}
@@ -78,6 +89,8 @@ type isGuidance[S proto.Message] interface {
 // guidance style RPC.
 func guidancePoller[S proto.Message, Resp isGuidance[S]](v *vehicleContext, resp Resp) pollFunc {
 	return func(w opt.WaitOptions) error {
+		ticker := pollTicker(w.Interval)
+		defer ticker.Stop()
 		timeoutC := timeoutChan(w.Timeout)
 		stall := time.NewTimer(w.Stall)
 		activeStall := false
@@ -140,7 +153,7 @@ func guidancePoller[S proto.Message, Resp isGuidance[S]](v *vehicleContext, resp
 				return ErrCancelled
 			case <-v.ctx.Done():
 				return ErrContextExpired
-			case <-time.After(w.Interval): // pace polling to w.Interval
+			case <-ticker.C: // pace polling to w.Interval
 			}
 		}
 	}
@@ -155,6 +168,8 @@ type isGimbal[S proto.Message] interface {
 // gimbal style RPC.
 func gimbalPoller[S proto.Message, Resp isGimbal[S]](v *vehicleContext, resp Resp) pollFunc {
 	return func(w opt.WaitOptions) error {
+		ticker := pollTicker(w.Interval)
+		defer ticker.Stop()
 		timeoutC := timeoutChan(w.Timeout)
 		stall := time.NewTimer(w.Stall)
 		activeStall := false
@@ -217,7 +232,7 @@ func gimbalPoller[S proto.Message, Resp isGimbal[S]](v *vehicleContext, resp Res
 				return ErrCancelled
 			case <-v.ctx.Done():
 				return ErrContextExpired
-			case <-time.After(w.Interval): // pace polling to w.Interval
+			case <-ticker.C: // pace polling to w.Interval
 			}
 		}
 	}
