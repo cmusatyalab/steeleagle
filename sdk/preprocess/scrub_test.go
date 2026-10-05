@@ -351,3 +351,284 @@ func TestScrubTagLinesAlwaysRemoved(t *testing.T) {
 		}
 	}
 }
+
+// TestScrubReplaceSupportedKeepsOriginal checks to make sure that a replace
+// block keeps its original section and drops its replacement section when
+// every tagged type is supported.
+func TestScrubReplaceSupportedKeepsOriginal(t *testing.T) {
+	cap := newCapFile(t) // everything supported, directive shouldn't fire
+	src := strings.Join([]string{
+		"// #begin-replace-ifndef services/driver/TakeOffRequest/altitude",
+		"return req.GetAltitude()",
+		"// #replace-with",
+		"return 0",
+		"// #end-replace",
+		"GetStatus() string",
+		"",
+	}, "\n")
+	out, dirty, err := preprocess.Scrub(cap.Supports, []byte(src))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !dirty {
+		t.Error("dirty = false, want true")
+	}
+	lines := strings.Split(string(out), "\n")
+	want := []string{"", "return req.GetAltitude()", "", "", "", "GetStatus() string", ""}
+	for i, w := range want {
+		if lines[i] != w {
+			t.Errorf("lines[%d] = %q, want %q", i, lines[i], w)
+		}
+	}
+}
+
+// TestScrubReplaceUnsupportedKeepsReplacement checks to make sure that a
+// replace block drops its original section and keeps its replacement
+// section when a tagged type is unsupported.
+func TestScrubReplaceUnsupportedKeepsReplacement(t *testing.T) {
+	cap := newCapFile(t, "services/driver/TakeOffRequest/altitude")
+	src := strings.Join([]string{
+		"// #begin-replace-ifndef services/driver/TakeOffRequest/altitude",
+		"return req.GetAltitude()",
+		"// #replace-with",
+		"return 0",
+		"// #end-replace",
+		"GetStatus() string",
+		"",
+	}, "\n")
+	out, dirty, err := preprocess.Scrub(cap.Supports, []byte(src))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !dirty {
+		t.Fatal("dirty = false, want true")
+	}
+	lines := strings.Split(string(out), "\n")
+	want := []string{"", "", "", "return 0", "", "GetStatus() string", ""}
+	for i, w := range want {
+		if lines[i] != w {
+			t.Errorf("lines[%d] = %q, want %q", i, lines[i], w)
+		}
+	}
+}
+
+// TestScrubReplaceMultipleTypes checks to make sure that a replace block
+// keeps its original section only if all tagged types are supported, and
+// falls back to the replacement if any one of them is unsupported.
+func TestScrubReplaceMultipleTypes(t *testing.T) {
+	src := strings.Join([]string{
+		"// #begin-replace-ifndef services/driver/TakeOffRequest/latitude,services/driver/TakeOffRequest/altitude",
+		"original",
+		"// #replace-with",
+		"replacement",
+		"// #end-replace",
+		"",
+	}, "\n")
+	tests := []struct {
+		name        string
+		unsupported []string
+		want        string
+	}{
+		{"all supported", nil, "original"},
+		{"first unsupported", []string{"services/driver/TakeOffRequest/latitude"}, "replacement"},
+		{"second unsupported", []string{"services/driver/TakeOffRequest/altitude"}, "replacement"},
+		{"both unsupported", []string{"services/driver/TakeOffRequest/latitude", "services/driver/TakeOffRequest/altitude"}, "replacement"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cap := newCapFile(t, tt.unsupported...)
+			out, _, err := preprocess.Scrub(cap.Supports, []byte(src))
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			got := strings.TrimSpace(string(out))
+			if got != tt.want {
+				t.Errorf("kept %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestScrubReplaceMultiLineSections checks to make sure that every line in
+// each section of a replace block is kept or dropped together.
+func TestScrubReplaceMultiLineSections(t *testing.T) {
+	cap := newCapFile(t, "services/driver/ControlService/Kill")
+	src := strings.Join([]string{
+		"// #begin-replace-ifndef services/driver/ControlService/Kill",
+		"reason := resp.GetKillReason()",
+		"log.Print(reason)",
+		"return reason",
+		"// #replace-with",
+		"// Kill is unsupported on this vehicle.",
+		"return \"\"",
+		"// #end-replace",
+		"",
+	}, "\n")
+	out, _, err := preprocess.Scrub(cap.Supports, []byte(src))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	lines := strings.Split(string(out), "\n")
+	want := []string{"", "", "", "", "", "// Kill is unsupported on this vehicle.", "return \"\"", "", ""}
+	for i, w := range want {
+		if lines[i] != w {
+			t.Errorf("lines[%d] = %q, want %q", i, lines[i], w)
+		}
+	}
+}
+
+// TestScrubReplaceEmptySections checks to make sure that a replace block
+// with an empty section is valid, so it can be used to only add or only
+// remove code.
+func TestScrubReplaceEmptySections(t *testing.T) {
+	cap := newCapFile(t, "services/driver/ControlService/Kill")
+	src := strings.Join([]string{
+		"// #begin-replace-ifndef services/driver/ControlService/Kill",
+		"// #replace-with",
+		"stub()",
+		"// #end-replace",
+		"// #begin-replace-ifndef services/driver/ControlService/Kill",
+		"real()",
+		"// #replace-with",
+		"// #end-replace",
+		"",
+	}, "\n")
+	out, _, err := preprocess.Scrub(cap.Supports, []byte(src))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got := strings.TrimSpace(string(out)); got != "stub()" {
+		t.Errorf("output = %q, want only %q", got, "stub()")
+	}
+}
+
+// TestScrubReplaceNested checks to make sure that a replace block nested
+// in a kept section is evaluated on its own, while one nested in a dropped
+// section is dropped entirely regardless of its own types.
+func TestScrubReplaceNested(t *testing.T) {
+	cap := newCapFile(t, "services/driver/ControlService/Kill")
+	src := strings.Join([]string{
+		"// #begin-replace-ifndef services/driver/TakeOffRequest/altitude", // supported: keep original
+		"// #begin-replace-ifndef services/driver/ControlService/Kill",     // unsupported: keep replacement
+		"inner-original-a",
+		"// #replace-with",
+		"inner-replacement-a",
+		"// #end-replace",
+		"// #replace-with",
+		"// #begin-replace-ifndef services/driver/TakeOffRequest/altitude", // inside dropped section
+		"inner-original-b",
+		"// #replace-with",
+		"inner-replacement-b",
+		"// #end-replace",
+		"// #end-replace",
+		"after",
+		"",
+	}, "\n")
+	out, _, err := preprocess.Scrub(cap.Supports, []byte(src))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	var kept []string
+	for _, l := range strings.Split(string(out), "\n") {
+		if l != "" {
+			kept = append(kept, l)
+		}
+	}
+	want := []string{"inner-replacement-a", "after"}
+	if strings.Join(kept, ",") != strings.Join(want, ",") {
+		t.Errorf("kept lines = %q, want %q", kept, want)
+	}
+}
+
+// TestScrubReplaceInsideExclude checks to make sure that an exclude block
+// dominates a replace block nested inside of it, so neither section is kept.
+func TestScrubReplaceInsideExclude(t *testing.T) {
+	cap := newCapFile(t, "services/driver/ControlService/Kill")
+	src := strings.Join([]string{
+		"// #begin-exclude-ifndef services/driver/ControlService/Kill",
+		"// #begin-replace-ifndef services/driver/TakeOffRequest/altitude",
+		"original",
+		"// #replace-with",
+		"replacement",
+		"// #end-replace",
+		"// #end-exclude",
+		"",
+	}, "\n")
+	out, _, err := preprocess.Scrub(cap.Supports, []byte(src))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got := strings.TrimSpace(string(out)); got != "" {
+		t.Errorf("output = %q, want blank", got)
+	}
+}
+
+// TestScrubReplaceWithPrivate checks to make sure that the kept section of
+// a replace block is still subject to an enclosing private block.
+func TestScrubReplaceWithPrivate(t *testing.T) {
+	cap := newCapFile(t, "services/driver/ControlService/Kill")
+	src := strings.Join([]string{
+		"// #begin-private-ifndef services/driver/ControlService/Kill",
+		"// #begin-replace-ifndef services/driver/ControlService/Kill",
+		"Kill() error",
+		"// #replace-with",
+		"KillStub() error",
+		"// #end-replace",
+		"// #end-private",
+		"",
+	}, "\n")
+	out, _, err := preprocess.Scrub(cap.Supports, []byte(src))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got := strings.TrimSpace(string(out)); got != "killStub() error" {
+		t.Errorf("output = %q, want %q", got, "killStub() error")
+	}
+}
+
+// TestScrubReplaceErrors checks to make sure that misordered, unmatched or
+// unclosed replace directives return an error.
+func TestScrubReplaceErrors(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+	}{
+		{"replace-with without begin", "a\n// #replace-with\nb\n"},
+		{"end without begin", "a\n// #end-replace\n"},
+		{"end without replace-with", "// #begin-replace-ifndef services/driver/ControlService/Kill\na\n// #end-replace\n"},
+		{"duplicate replace-with", "// #begin-replace-ifndef services/driver/ControlService/Kill\na\n// #replace-with\nb\n// #replace-with\nc\n// #end-replace\n"},
+		{"unclosed after begin", "// #begin-replace-ifndef services/driver/ControlService/Kill\na\n"},
+		{"unclosed after replace-with", "// #begin-replace-ifndef services/driver/ControlService/Kill\na\n// #replace-with\nb\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cap := newCapFile(t, "services/driver/ControlService/Kill")
+			if _, _, err := preprocess.Scrub(cap.Supports, []byte(tt.src)); err == nil {
+				t.Fatal("expected error, got nil")
+			}
+		})
+	}
+}
+
+// TestScrubReplaceTagLinesAlwaysRemoved checks to make sure that all three
+// replace directive lines are stripped whether or not the block fires.
+func TestScrubReplaceTagLinesAlwaysRemoved(t *testing.T) {
+	src := strings.Join([]string{
+		"// #begin-replace-ifndef services/driver/ControlService/Kill",
+		"original",
+		"// #replace-with",
+		"replacement",
+		"// #end-replace",
+		"",
+	}, "\n")
+	for _, unsupported := range [][]string{nil, {"services/driver/ControlService/Kill"}} {
+		cap := newCapFile(t, unsupported...)
+		out, _, err := preprocess.Scrub(cap.Supports, []byte(src))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if strings.Contains(string(out), "#") {
+			t.Errorf("directive line still present in output (unsupported=%v):\n%s", unsupported, out)
+		}
+	}
+}

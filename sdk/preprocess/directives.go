@@ -11,5 +11,8 @@ const (
 	DirectiveEndExclude   Directive = "// #end-exclude"          // ends exclude block
 	DirectiveBeginPrivate Directive = "// #begin-private-ifndef" // starts private block
 	DirectiveEndPrivate   Directive = "// #end-private"          // ends private block
+	DirectiveBeginReplace Directive = "// #begin-replace-ifndef" // starts replace block
+	DirectiveReplaceWith  Directive = "// #replace-with"         // starts with block for replace
+	DirectiveEndReplace   Directive = "// #end-replace"          // ends replace block
 	directiveNull         Directive = ""                         // null directive
 )

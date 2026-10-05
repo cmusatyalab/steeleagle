@@ -13,6 +13,7 @@ func Scrub(filter func(string) bool, src []byte) ([]byte, bool, error) {
 	dirty := false // dirty tracks whether the file was modified or not
 	// Track active private or remove blocks
 	privateStack, excludeStack := blockStack{}, blockStack{}
+	replaceStack := replaceStack{}           // track active replace blocks
 	nextPrivate, nextExclude := false, false // designates a next-line exclude or private
 	for i, line := range lines {
 		tag, types := getTag(line)
@@ -40,6 +41,16 @@ func Scrub(filter func(string) bool, src []byte) ([]byte, bool, error) {
 				if err := privateStack.pop(); err != nil {
 					return nil, false, &PreprocessError{error: fmt.Errorf("#end-private does not end block"), LineNo: uint32(i + 1)}
 				}
+			case DirectiveBeginReplace:
+				replaceStack.push(satisfied)
+			case DirectiveReplaceWith:
+				if err := replaceStack.with(); err != nil {
+					return nil, false, &PreprocessError{error: fmt.Errorf("#replace-with does not follow #begin-replace-ifndef: %w", err), LineNo: uint32(i + 1)}
+				}
+			case DirectiveEndReplace:
+				if err := replaceStack.pop(); err != nil {
+					return nil, false, &PreprocessError{error: fmt.Errorf("#end-replace does not end block: %w", err), LineNo: uint32(i + 1)}
+				}
 			}
 		} else {
 			// A next-line directive should govern the next non-comment line,
@@ -47,6 +58,14 @@ func Scrub(filter func(string) bool, src []byte) ([]byte, bool, error) {
 			// along with whatever the directive does, and the directive
 			// stays pending until a non-comment line is reached.
 			comment := isCommentLine(line)
+			// Drop lines in the unused section of a replace block. These lines
+			// never reach the output, so pending next-line directives carry
+			// over to the first line that does.
+			if replaceStack.drop() {
+				out[i] = ""
+				dirty = true
+				continue
+			}
 			// Exclude or private lines if inside a block or after a directive
 			if nextExclude || excludeStack.top() {
 				out[i] = ""
@@ -67,6 +86,8 @@ func Scrub(filter func(string) bool, src []byte) ([]byte, bool, error) {
 		return nil, false, &PreprocessError{error: fmt.Errorf("unenclosed exclude block found")}
 	} else if privateStack.size() > 0 {
 		return nil, false, &PreprocessError{error: fmt.Errorf("unenclosed private block found")}
+	} else if replaceStack.size() > 0 {
+		return nil, false, &PreprocessError{error: fmt.Errorf("unenclosed replace block found")}
 	}
 	return []byte(strings.Join(out, "\n")), dirty, nil
 }
@@ -89,6 +110,12 @@ func getTag(line string) (Directive, []string) {
 		tag = DirectiveBeginPrivate
 	} else if strings.HasPrefix(trimmed, string(DirectiveEndPrivate)) {
 		tag = DirectiveEndPrivate
+	} else if strings.HasPrefix(trimmed, string(DirectiveBeginReplace)) {
+		tag = DirectiveBeginReplace
+	} else if strings.HasPrefix(trimmed, string(DirectiveReplaceWith)) {
+		tag = DirectiveReplaceWith
+	} else if strings.HasPrefix(trimmed, string(DirectiveEndReplace)) {
+		tag = DirectiveEndReplace
 	}
 	return tag, strings.Split(trimmed[len(tag):], ",")
 }
