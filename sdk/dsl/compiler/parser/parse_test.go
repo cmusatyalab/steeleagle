@@ -1,8 +1,12 @@
 package parser
 
 import (
+	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/alecthomas/participle/v2/lexer"
 )
 
 // TestParseAllStanzasEndToEnd checks that a mission file exercising every
@@ -87,13 +91,18 @@ During land:
 }
 
 // TestParseEmptyInputReturnsEmptyAst checks that a source with no stanzas
-// at all parses successfully into an *Ast with every field nil, since
-// every top-level stanza is optional.
+// at all parses successfully, since every top-level stanza is optional.
+// Data, Actions and Events are present with empty Decl lists; every other
+// field is nil.
 func TestParseEmptyInputReturnsEmptyAst(t *testing.T) {
 	ast := mustParse(t, "")
-	if ast.Role != nil || ast.Override != nil || ast.Import != nil || ast.Data != nil ||
-		ast.Actions != nil || ast.Events != nil || ast.Mission != nil {
-		t.Errorf("ast = %+v, want every field nil", ast)
+	if ast.Role != nil || ast.Override != nil || ast.Import != nil || ast.Mission != nil {
+		t.Errorf("ast = %+v, want Role, Override, Import and Mission nil", ast)
+	}
+	if ast.Data == nil || len(ast.Data.Decls) != 0 ||
+		ast.Actions == nil || len(ast.Actions.Decls) != 0 ||
+		ast.Events == nil || len(ast.Events.Decls) != 0 {
+		t.Errorf("ast = %+v, want Data, Actions and Events present with empty Decls", ast)
 	}
 }
 
@@ -103,8 +112,11 @@ func TestParseEmptyInputReturnsEmptyAst(t *testing.T) {
 func TestParseSkipsAbsentLeadingStanzas(t *testing.T) {
 	src := "Actions:\n\tactions.TakeOff takeoff()\nMission:\nStart takeoff\n"
 	ast := mustParse(t, src)
-	if ast.Role != nil || ast.Override != nil || ast.Import != nil || ast.Data != nil || ast.Events != nil {
-		t.Errorf("ast = %+v, want only Actions and Mission populated", ast)
+	if ast.Role != nil || ast.Override != nil || ast.Import != nil {
+		t.Errorf("ast = %+v, want Role, Override and Import nil", ast)
+	}
+	if ast.Data == nil || len(ast.Data.Decls) != 0 || ast.Events == nil || len(ast.Events.Decls) != 0 {
+		t.Errorf("ast = %+v, want Data and Events present with empty Decls", ast)
 	}
 	if ast.Actions == nil || ast.Mission == nil {
 		t.Fatalf("ast = %+v, want Actions and Mission populated", ast)
@@ -388,5 +400,266 @@ func TestParseSyntaxErrors(t *testing.T) {
 				t.Errorf("ast = %+v, want nil on error", ast)
 			}
 		})
+	}
+}
+
+// TestParseFromJsonAllStanzas checks that a JSON mission covering every
+// stanza decodes into the same shape Parse would produce, including String
+// values that StringValue unquotes and nested inline constructors.
+func TestParseFromJsonAllStanzas(t *testing.T) {
+	src := `{
+		"Role": {"Name": "Leader"},
+		"Override": {"Paths": [{"Path": "../local/sdk"}]},
+		"Import": {"Imports": [{"Alias": "basesdk", "Path": "github.com/cmusatyalab/steeleagle/sdk", "Version": "v1.2.3"}]},
+		"Data": {"Decls": [{"Type": "types.Waypoint", "Name": "w1", "Attrs": [
+			{"Key": "label", "Value": {"String": "home"}},
+			{"Key": "pose", "Value": {"Inline": {"Type": "types.Pose", "Args": [
+				{"Key": "tag", "Value": {"String": "p"}}]}}},
+			{"Key": "xs", "Value": {"Array": {"Elems": [{"Int": 1}, {"String": "two"}]}}}
+		]}]},
+		"Actions": {"Decls": [{"Type": "actions.TakeOff", "Name": "takeoff", "Attrs": [
+			{"Key": "altitude", "Value": {"Float": 2.5}}]}]},
+		"Mission": {"Start": "takeoff", "Blocks": [{"Action": "takeoff", "Rules": [{"Event": "done", "Next": "takeoff"}]}]}
+	}`
+	ast, err := ParseFromJson(strings.NewReader(src))
+	if err != nil {
+		t.Fatalf("ParseFromJson() error = %v", err)
+	}
+	if ast.Role.Name != "Leader" || ast.Override.Paths[0].Path != "../local/sdk" || ast.Import.Imports[0].Alias != "basesdk" {
+		t.Errorf("header stanzas = %+v %+v %+v", ast.Role, ast.Override, ast.Import)
+	}
+	attrs := ast.Data.Decls[0].Attrs
+	if s, ok := attrs[0].Value.StringValue(); !ok || s != "home" {
+		t.Errorf("label StringValue() = (%q, %v), want (%q, true)", s, ok, "home")
+	}
+	inline := attrs[1].Value.Inline
+	if inline == nil || inline.Type != "types.Pose" {
+		t.Fatalf("pose Inline = %+v, want types.Pose", inline)
+	}
+	if s, ok := inline.Args[0].Value.StringValue(); !ok || s != "p" {
+		t.Errorf("inline tag StringValue() = (%q, %v), want (%q, true)", s, ok, "p")
+	}
+	elems := attrs[2].Value.Array.Elems
+	if *elems[0].Int != 1 {
+		t.Errorf("Elems[0].Int = %d, want 1", *elems[0].Int)
+	}
+	if s, ok := elems[1].StringValue(); !ok || s != "two" {
+		t.Errorf("Elems[1].StringValue() = (%q, %v), want (%q, true)", s, ok, "two")
+	}
+	if a := ast.Actions.Decls[0]; a.Type != "actions.TakeOff" || *a.Attrs[0].Value.Float != 2.5 {
+		t.Errorf("Actions.Decls[0] = %+v", a)
+	}
+	if ast.Events == nil || len(ast.Events.Decls) != 0 {
+		t.Errorf("Events = %+v, want present with empty Decls", ast.Events)
+	}
+	if ast.Mission.Start != "takeoff" || ast.Mission.Blocks[0].Rules[0].Next != "takeoff" {
+		t.Errorf("Mission = %+v", ast.Mission)
+	}
+}
+
+// TestParseFromJsonEmptyObject checks that "{}" decodes like an empty DSL
+// file: Data, Actions and Events present but empty, everything else nil.
+func TestParseFromJsonEmptyObject(t *testing.T) {
+	ast, err := ParseFromJson(strings.NewReader("{}"))
+	if err != nil {
+		t.Fatalf("ParseFromJson() error = %v", err)
+	}
+	if ast.Role != nil || ast.Override != nil || ast.Import != nil || ast.Mission != nil {
+		t.Errorf("ast = %+v, want Role, Override, Import and Mission nil", ast)
+	}
+	if len(ast.Data.Decls) != 0 || len(ast.Actions.Decls) != 0 || len(ast.Events.Decls) != 0 {
+		t.Errorf("ast = %+v, want empty Decls", ast)
+	}
+}
+
+// TestParseFromJsonErrors checks that malformed input is rejected.
+func TestParseFromJsonErrors(t *testing.T) {
+	for name, src := range map[string]string{
+		"empty input":          ``,
+		"syntax":               `{"Role":`,
+		"top-level array":      `[]`,
+		"unknown field":        `{"Bogus": 1}`,
+		"nested unknown":       `{"Role": {"Name": "L", "Bogus": 1}}`,
+		"trailing data":        `{} {}`,
+		"wrong type":           `{"Role": {"Name": 5}}`,
+		"float into int":       `{"Data": {"Decls": [{"Type": "T", "Name": "n", "Attrs": [{"Key": "k", "Value": {"Int": 1.5}}]}]}}`,
+		"null decl":            `{"Actions": {"Decls": [null]}}`,
+		"null attr":            `{"Actions": {"Decls": [{"Type": "T", "Name": "n", "Attrs": [null]}]}}`,
+		"missing value":        `{"Actions": {"Decls": [{"Type": "T", "Name": "n", "Attrs": [{"Key": "k"}]}]}}`,
+		"null array element":   `{"Data": {"Decls": [{"Type": "T", "Name": "n", "Attrs": [{"Key": "k", "Value": {"Array": {"Elems": [null]}}}]}]}}`,
+		"inline missing value": `{"Data": {"Decls": [{"Type": "T", "Name": "n", "Attrs": [{"Key": "k", "Value": {"Inline": {"Type": "U", "Args": [{"Key": "a"}]}}}]}]}}`,
+	} {
+		if _, err := ParseFromJson(strings.NewReader(src)); err == nil {
+			t.Errorf("%s: ParseFromJson() error = nil, want an error", name)
+		}
+	}
+}
+
+// clearPositions zeroes every lexer.Position reachable from v so that ASTs
+// built by Parse (which records source positions) and ParseFromJson (which
+// does not) can be compared structurally.
+func clearPositions(v reflect.Value) {
+	switch v.Kind() {
+	case reflect.Pointer:
+		if !v.IsNil() {
+			clearPositions(v.Elem())
+		}
+	case reflect.Slice:
+		for i := 0; i < v.Len(); i++ {
+			clearPositions(v.Index(i))
+		}
+	case reflect.Struct:
+		if v.Type() == reflect.TypeOf(lexer.Position{}) {
+			v.Set(reflect.Zero(v.Type()))
+			return
+		}
+		for i := 0; i < v.NumField(); i++ {
+			clearPositions(v.Field(i))
+		}
+	}
+}
+
+// TestParseFromJsonMatchesParse checks that a mission written in JSON
+// decodes to exactly the same AST (ignoring source positions) as the same
+// mission written in the DSL, covering every stanza and every Value kind.
+func TestParseFromJsonMatchesParse(t *testing.T) {
+	dsl := `
+Role Leader:
+
+Override:
+	"../local/sdk"
+
+Import:
+	basesdk "github.com/cmusatyalab/steeleagle/sdk" v1.2.3
+	"github.com/cmusatyalab/steeleagle/sdk/dsl/types"
+
+Data:
+	types.Waypoint w1(lat=1.5, count=3, label="home", mode=Fast, frame=enums.Body, xs=[1, 2.5, "three"], empty=[])
+
+Actions:
+	actions.SetVelocity climb(Velocity=types.Velocity(XVel=1.5, YVel=0.0, ZVel=-0.5, AngularVel=0.0))
+	actions.Land land()
+
+Events:
+	events.Seen seen(target="person")
+
+Mission:
+Start climb
+During climb:
+	seen -> land
+	done -> land
+During land:
+`
+	js := `{
+		"Role": {"Name": "Leader"},
+		"Override": {"Paths": [{"Path": "../local/sdk"}]},
+		"Import": {"Imports": [
+			{"Alias": "basesdk", "Path": "github.com/cmusatyalab/steeleagle/sdk", "Version": "v1.2.3"},
+			{"Path": "github.com/cmusatyalab/steeleagle/sdk/dsl/types"}
+		]},
+		"Data": {"Decls": [{"Type": "types.Waypoint", "Name": "w1", "Attrs": [
+			{"Key": "lat", "Value": {"Float": 1.5}},
+			{"Key": "count", "Value": {"Int": 3}},
+			{"Key": "label", "Value": {"String": "home"}},
+			{"Key": "mode", "Value": {"Ident": "Fast"}},
+			{"Key": "frame", "Value": {"Ident": "enums.Body"}},
+			{"Key": "xs", "Value": {"Array": {"Elems": [{"Int": 1}, {"Float": 2.5}, {"String": "three"}]}}},
+			{"Key": "empty", "Value": {"Array": {}}}
+		]}]},
+		"Actions": {"Decls": [
+			{"Type": "actions.SetVelocity", "Name": "climb", "Attrs": [
+				{"Key": "Velocity", "Value": {"Inline": {"Type": "types.Velocity", "Args": [
+					{"Key": "XVel", "Value": {"Float": 1.5}},
+					{"Key": "YVel", "Value": {"Float": 0.0}},
+					{"Key": "ZVel", "Value": {"Float": -0.5}},
+					{"Key": "AngularVel", "Value": {"Float": 0.0}}
+				]}}}
+			]},
+			{"Type": "actions.Land", "Name": "land"}
+		]},
+		"Events": {"Decls": [{"Type": "events.Seen", "Name": "seen", "Attrs": [
+			{"Key": "target", "Value": {"String": "person"}}
+		]}]},
+		"Mission": {"Start": "climb", "Blocks": [
+			{"Action": "climb", "Rules": [{"Event": "seen", "Next": "land"}, {"Event": "done", "Next": "land"}]},
+			{"Action": "land"}
+		]}
+	}`
+	fromDSL := mustParse(t, dsl)
+	fromJSON, err := ParseFromJson(strings.NewReader(js))
+	if err != nil {
+		t.Fatalf("ParseFromJson() error = %v", err)
+	}
+	clearPositions(reflect.ValueOf(fromDSL))
+	clearPositions(reflect.ValueOf(fromJSON))
+	if !reflect.DeepEqual(fromDSL, fromJSON) {
+		want, _ := json.MarshalIndent(fromDSL, "", "  ")
+		got, _ := json.MarshalIndent(fromJSON, "", "  ")
+		t.Errorf("ParseFromJson() AST differs from Parse()\nParse:\n%s\nParseFromJson:\n%s", want, got)
+	}
+}
+
+// TestParseFromJsonKeysCaseInsensitive checks that JSON structure keys
+// match the Ast field names regardless of case, while attribute Keys (which
+// name Go struct fields) are kept verbatim.
+func TestParseFromJsonKeysCaseInsensitive(t *testing.T) {
+	src := `{"actions": {"decls": [{"type": "actions.TakeOff", "name": "takeoff",
+		"attrs": [{"key": "Altitude", "value": {"float": 2.5}}]}]}}`
+	ast, err := ParseFromJson(strings.NewReader(src))
+	if err != nil {
+		t.Fatalf("ParseFromJson() error = %v", err)
+	}
+	d := ast.Actions.Decls[0]
+	if d.Name != "takeoff" || d.Attrs[0].Key != "Altitude" || *d.Attrs[0].Value.Float != 2.5 {
+		t.Errorf("Decls[0] = %+v, want takeoff(Altitude=2.5)", d)
+	}
+}
+
+// TestParseFromJsonNullStanzasFilled checks that explicitly null Data,
+// Actions and Events stanzas are treated the same as absent ones.
+func TestParseFromJsonNullStanzasFilled(t *testing.T) {
+	ast, err := ParseFromJson(strings.NewReader(`{"Data": null, "Actions": null, "Events": null}`))
+	if err != nil {
+		t.Fatalf("ParseFromJson() error = %v", err)
+	}
+	if ast.Data == nil || ast.Actions == nil || ast.Events == nil {
+		t.Fatalf("ast = %+v, want Data, Actions and Events present", ast)
+	}
+	if len(ast.Data.Decls) != 0 || len(ast.Actions.Decls) != 0 || len(ast.Events.Decls) != 0 {
+		t.Errorf("ast = %+v, want empty Decls", ast)
+	}
+}
+
+// TestParseFromJsonStringValues checks that String values round-trip
+// through StringValue unchanged, including empty strings and strings
+// containing quote characters.
+func TestParseFromJsonStringValues(t *testing.T) {
+	for _, want := range []string{"", "home", `say "hi"`, "it's", "a\nb"} {
+		attr, _ := json.Marshal(map[string]any{"Key": "k", "Value": map[string]string{"String": want}})
+		src := `{"Data": {"Decls": [{"Type": "T", "Name": "n", "Attrs": [` + string(attr) + `]}]}}`
+		ast, err := ParseFromJson(strings.NewReader(src))
+		if err != nil {
+			t.Fatalf("ParseFromJson(%q) error = %v", want, err)
+		}
+		if got, ok := ast.Data.Decls[0].Attrs[0].Value.StringValue(); !ok || got != want {
+			t.Errorf("StringValue() = (%q, %v), want (%q, true)", got, ok, want)
+		}
+	}
+}
+
+// TestParseFromJsonPathsNotUnquoted checks that Override and Import paths
+// are taken verbatim from JSON rather than having their first and last
+// characters stripped as Parse does for raw String tokens.
+func TestParseFromJsonPathsNotUnquoted(t *testing.T) {
+	src := `{"Override": {"Paths": [{"Path": "/abs/sdk"}]}, "Import": {"Imports": [{"Path": "example.com/pkg"}]}}`
+	ast, err := ParseFromJson(strings.NewReader(src))
+	if err != nil {
+		t.Fatalf("ParseFromJson() error = %v", err)
+	}
+	if got := ast.Override.Paths[0].Path; got != "/abs/sdk" {
+		t.Errorf("Override path = %q, want %q", got, "/abs/sdk")
+	}
+	if got := ast.Import.Imports[0].Path; got != "example.com/pkg" {
+		t.Errorf("Import path = %q, want %q", got, "example.com/pkg")
 	}
 }

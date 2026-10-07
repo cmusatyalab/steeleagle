@@ -48,7 +48,7 @@ func packageError(e packages.Error, pkgPath string) *sdk.CompileError {
 // unifyComment combines a field's doc comment with its trailing line
 // comment into one human-readable comment. When both are present, they're
 // joined as two sentences, capitalizing line's first letter if it isn't
-// already; when only one is present, it's returned as-is.
+// already. When only one is present, it's returned as-is.
 func unifyComment(doc, line string) string {
 	doc, line = strings.TrimSpace(doc), strings.TrimSpace(line)
 	switch {
@@ -61,7 +61,7 @@ func unifyComment(doc, line string) string {
 	}
 }
 
-// capitalizeFirst upper-cases s's first rune, leaving the rest untouched.
+// capitalizeFirst upper-cases the first rune of a string.
 func capitalizeFirst(s string) string {
 	if s == "" {
 		return s

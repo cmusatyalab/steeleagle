@@ -1,0 +1,21 @@
+[info]
+name = "Patrol and Track"
+version = "0.1.0"
+role = "Patroller"
+roles = ["Patroller", "Tracker"]
+squawks = ["target_found", "done_with_mission"]
+
+[[engines]]
+name = "yolo"
+location = "remote"
+output = "roi"
+
+[[engines]]
+name = "yolo_q"
+location = "local"
+output = "roi"
+
+[[engines]]
+name = "swiftmap"
+location = "remote"
+output = "json"

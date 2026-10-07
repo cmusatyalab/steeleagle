@@ -16,13 +16,13 @@ import (
 // fixturesPkgPath is the import path of the on-disk fixture package
 // (testdata/fixtures/fixtures.go) that loader_test.go loads through the
 // real LoadTypes/packages.Load path.
-const fixturesPkgPath = "github.com/cmusatyalab/steeleagle/sdk/dsl/loader/testdata/fixtures"
+const fixturesPkgPath = "github.com/cmusatyalab/steeleagle/sdk/dsl/compiler/loader/testdata/fixtures"
 
 // ambiguousPkgPath is the import path of the on-disk fixture package
 // (testdata/ambiguous/ambiguous.go) holding a type that implements more
 // than one dsl interface, kept separate from fixturesPkgPath so the
 // happy-path loader tests don't also trip the ambiguous-interface error.
-const ambiguousPkgPath = "github.com/cmusatyalab/steeleagle/sdk/dsl/loader/testdata/ambiguous"
+const ambiguousPkgPath = "github.com/cmusatyalab/steeleagle/sdk/dsl/compiler/loader/testdata/ambiguous"
 
 // sharedRegistryOnce guards the single LoadTypes call behind
 // sharedFixtureRegistry, since LoadTypes type-checks the entire transitive

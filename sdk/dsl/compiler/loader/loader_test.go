@@ -113,7 +113,7 @@ func TestLoaderMissingDslImportErrors(t *testing.T) {
 func TestLoaderUnknownImportPathErrors(t *testing.T) {
 	imports := []*PackageRequest{
 		{Path: dslPkgPath},
-		{Path: "github.com/cmusatyalab/steeleagle/sdk/dsl/loader/testdata/does-not-exist"},
+		{Path: "github.com/cmusatyalab/steeleagle/sdk/dsl/compiler/loader/testdata/does-not-exist"},
 	}
 	reg, errs := LoadTypes(imports, "", nil, nil)
 	if reg != nil {

@@ -44,6 +44,7 @@ func grpcToSentinel(err error) error {
 type CompileError struct {
 	Err    error  // the underlying error
 	File   string // the file the error originates from
+	Decl   string // decl that created the error (used in the mission planner)
 	LineNo uint32 // the line number the error originates from (optional)
 }
 

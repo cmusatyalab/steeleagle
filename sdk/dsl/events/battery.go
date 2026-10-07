@@ -1,6 +1,6 @@
 // Package events holds every dsl.Event implementation a mission can
 // trigger a transition on -- one file per event, discovered automatically
-// by the compiler's registry loader (see sdk/dsl/loader) from any exported
+// by the compiler's registry loader (see sdk/dsl/compiler/loader) from any exported
 // struct that implements dsl.Event.
 package events
 

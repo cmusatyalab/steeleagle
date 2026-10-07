@@ -13,27 +13,28 @@ import (
 
 	"github.com/cmusatyalab/steeleagle/sdk"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl"
-	"github.com/cmusatyalab/steeleagle/sdk/dsl/fsm"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/swarm"
 	"github.com/cmusatyalab/steeleagle/sdk/geo"
-{{range .Imports}}	{{.Alias}} {{printf "%q" .Path}}
+	"github.com/cmusatyalab/steeleagle/sdk/dsl/fsm"
+{{range .Imports}}	{{.Render}}
 {{end -}}
 )
 
-// capToml is the vehicle capability manifest this mission was compiled
+// capToml is the vehicle capability file this mission was compiled
 // against, embedded so the generated binary can rebuild it without the
 // original file.
 var capToml = []byte({{printf "%q" .CapTOML}})
+
+// manifestToml is the manifest file for the current mission, embedded
+// so the generated binary can rebuild it without the original file.
+var manifestToml = []byte({{printf "%q" .ManifestTOML}})
 
 // missionGeoJson is the GeoJSON feature collection this mission was
 // compiled against, embedded the same way. Empty when none was given.
 var missionGeoJson = []byte({{printf "%q" .GeoJSON}})
 
-{{range .Vars}}
-var {{.Name}} = {{.Type}}{
-{{range .Fields}}	{{.Name}}: {{.Value}},
-{{end -}}
-}
+{{range .AllOrdered}}
+{{.Render}}
 {{end}}
 func main() {
     log := zerolog.New(os.Stderr).With().Timestamp().Logger()
@@ -52,6 +53,11 @@ func main() {
 	if err != nil {
         log.Fatal().Err(err).Msg("failed to parse cap file")
 	}
+	
+    manifestFile, err := dsl.ParseManifestFromBytes(manifestToml)
+	if err != nil {
+        log.Fatal().Err(err).Msg("failed to parse manifest file")
+	}
 
 	missionMap := geo.NewMap()
 	if len(missionGeoJson) > 0 {
@@ -61,25 +67,26 @@ func main() {
 	}
 
 	data := dsl.MissionData{
-		Cap:  *capFile,
-		Map:  *missionMap,
-		Role: swarm.Role({{printf "%q" .Role}}),
-		Log:  log,
+		Cap:      *capFile,
+        Manifest: *manifestFile,
+		Map:      *missionMap,
+		Role:     swarm.Role({{printf "%q" .Role}}),
+		Log:      log,
 	}
 
 	actions := map[string]dsl.Action{
-{{range .Actions}}		{{printf "%q" .Name}}: {{.Value}},
-{{end -}}
+{{range .AllOrdered}}{{if .IsAction}}		{{printf "%q" .Name}}: &{{.Var}},
+{{end}}{{end -}}
 	}
 
 	events := map[string]dsl.Event{
-{{range .Events}}		{{printf "%q" .Name}}: {{.Value}},
-{{end -}}
+{{range .AllOrdered}}{{if .IsEvent}}		{{printf "%q" .Name}}: &{{.Var}},
+{{end}}{{end -}}
 	}
 
 	transitions := map[string]map[string]string{
 {{range .Transitions}}		{{printf "%q" .State}}: {
-{{range .Rules}}			{{printf "%q" .Name}}: {{printf "%q" .Value}},
+{{range .Rules}}			{{.Render}},
 {{end -}}
 		},
 {{end -}}

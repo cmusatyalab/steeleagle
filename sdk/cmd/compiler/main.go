@@ -13,8 +13,8 @@ import (
 
 	"github.com/cmusatyalab/steeleagle/sdk"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/compiler"
-	"github.com/cmusatyalab/steeleagle/sdk/dsl/loader"
-	"github.com/cmusatyalab/steeleagle/sdk/dsl/parser"
+	"github.com/cmusatyalab/steeleagle/sdk/dsl/compiler/loader"
+	"github.com/cmusatyalab/steeleagle/sdk/dsl/compiler/parser"
 	"github.com/cmusatyalab/steeleagle/sdk/geo"
 )
 

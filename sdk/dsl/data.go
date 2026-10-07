@@ -9,8 +9,9 @@ import (
 
 // MissionData holds extra data that is useful for DSL tasks.
 type MissionData struct {
-	Cap  sdk.CapFile    // cap corresponding to this device
-	Map  geo.Map        // mission map initialized from GeoJSON (optional)
-	Role swarm.Role     // role in the current mission
-	Log  zerolog.Logger // logger for this mission
+	Cap      sdk.CapFile    // cap corresponding to this device
+	Manifest ManifestFile   // manifest file corresponding to this mission
+	Map      geo.Map        // mission map initialized from GeoJSON (optional)
+	Role     swarm.Role     // role in the current mission
+	Log      zerolog.Logger // logger for this mission
 }

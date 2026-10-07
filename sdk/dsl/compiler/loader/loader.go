@@ -15,6 +15,15 @@ import (
 // definitions.
 const dslPkgPath = "github.com/cmusatyalab/steeleagle/sdk/dsl"
 
+// Stanza marks types as belonging to a particular stanza in the AST.
+type Stanza int
+
+const (
+	DatatypeStanza Stanza = iota
+	ActionStanza
+	EventStanza
+)
+
 // PackageRequest represents an import request for a Go package.
 // A list of these is passed into the loader to load types.
 type PackageRequest struct {
@@ -38,6 +47,7 @@ type Base struct {
 	Fields    []Field    // list of fields
 	OptFields []Field    // list of optional fields
 	Qualifier string     // qualifier for this type
+	Stanza    Stanza     // back pointer to owning stanza (useful for linking)
 }
 
 // TypeRegistry holds all the imported packages and registers types
@@ -46,6 +56,7 @@ type TypeRegistry struct {
 	Packages    map[string]*packages.Package
 	AliasToPack map[string]*packages.Package
 	PackToAlias map[string]string
+	All         map[string]*Base
 	Actions     map[string]*Base
 	Events      map[string]*Base
 	Datatypes   map[string]*Base
@@ -53,16 +64,13 @@ type TypeRegistry struct {
 }
 
 // LoadTypes loads all DSL types present in imports (Actions, Events, and Datatypes).
-// Also loads comments and detects optional types by #optional tags. env is
-// appended to the packages.Config environment on top of the process's own
-// (e.g. "CGO_ENABLED=0"), so the caller can keep this type-checking pass's
-// build-cache key aligned with whatever flags it ultimately builds the
-// mission binary with.
+// Also loads comments and detects optional types by #optional tags.
 func LoadTypes(imports []*PackageRequest, workspace string, overlay map[string][]byte, env []string) (*TypeRegistry, []*sdk.CompileError) {
 	registry := &TypeRegistry{
 		Packages:    make(map[string]*packages.Package),
 		AliasToPack: make(map[string]*packages.Package),
 		PackToAlias: make(map[string]string),
+		All:         make(map[string]*Base),
 		Actions:     make(map[string]*Base),
 		Events:      make(map[string]*Base),
 		Datatypes:   make(map[string]*Base),
@@ -112,7 +120,7 @@ func LoadTypes(imports []*PackageRequest, workspace string, overlay map[string][
 	// Lookup the concrete interface definitions in dslPkgPath for
 	// Action, Event, and Datatype. Return a compile error and nil if
 	// dslPkgPath is not included in the imports or the interfaces cannot
-	// be found.
+	// be found
 	dslPkg, ok := registry.Packages[dslPkgPath]
 	if !ok {
 		return nil, append(errors, &sdk.CompileError{
@@ -183,12 +191,16 @@ func LoadTypes(imports []*PackageRequest, workspace string, overlay map[string][
 				}
 				switch idx {
 				case 0:
+					b.Stanza = ActionStanza
 					registry.Actions[qualifiedName] = b
 				case 1:
+					b.Stanza = EventStanza
 					registry.Events[qualifiedName] = b
 				case 2:
+					b.Stanza = DatatypeStanza
 					registry.Datatypes[qualifiedName] = b
 				}
+				registry.All[qualifiedName] = b
 			case *types.Basic:
 				if st.Kind() != types.Uint32 && st.Kind() != types.String {
 					continue

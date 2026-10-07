@@ -1,6 +1,3 @@
-// Package compiler implements the DSL mission compiler: it links a
-// parsed mission against a loaded SDK type registry, generates the
-// resulting main.go, and builds it into a standalone mission binary.
 package compiler
 
 import (
@@ -11,34 +8,49 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"github.com/cmusatyalab/steeleagle/sdk"
+	"github.com/cmusatyalab/steeleagle/sdk/dsl/compiler/linker"
 )
 
 //go:embed main.go.tmpl
 var mainTemplateSource string
-
 var mainTemplate = template.Must(template.New("main.go.tmpl").Parse(mainTemplateSource))
 
 // templateData is the top-level value main.go.tmpl is executed with.
 type templateData struct {
-	*IRResult
-	CapTOML string
-	GeoJSON string
+	*linker.IR
+	CapTOML      string
+	ManifestTOML string
+	GeoJSON      string
 }
 
-// Generate renders ir as a complete main.go (embedding capTOML and geoJSON
-// verbatim so the built binary can reconstruct its CapFile/Map without the
-// original files) and writes it to filepath.Join(dir, "main.go").
-func Generate(ir *IRResult, capTOML, geoJSON []byte, dir string) error {
-	data := &templateData{IRResult: ir, CapTOML: string(capTOML), GeoJSON: string(geoJSON)}
+// Generate renders a linked IR as a runnable main.go inside a given
+// workspace directory, embedding the cap, manifest, and GeoJSON files
+// verbatim so the built binary can reconstruct them without the
+// original files.
+func Generate(ir *linker.IR, capTOML, manifestTOML, geoJSON []byte, workspace string) *sdk.CompileError {
+	data := &templateData{
+		IR:           ir,
+		CapTOML:      string(capTOML),
+		ManifestTOML: string(manifestTOML),
+		GeoJSON:      string(geoJSON),
+	}
 
 	var buf strings.Builder
 	if err := mainTemplate.Execute(&buf, data); err != nil {
-		return fmt.Errorf("executing main.go template: %w", err)
+		return &sdk.CompileError{Err: fmt.Errorf("executing main.go template: %w", err), File: "main.go"}
 	}
 
 	formatted, err := format.Source([]byte(buf.String()))
 	if err != nil {
-		return fmt.Errorf("generated main.go is not valid Go: %w\n%s", err, buf.String())
+		return &sdk.CompileError{
+			Err:  fmt.Errorf("generated main.go is not valid Go: %w\n%s", err, buf.String()),
+			File: "main.go",
+		}
 	}
-	return os.WriteFile(filepath.Join(dir, "main.go"), formatted, 0o644)
+	if err := os.WriteFile(filepath.Join(workspace, "main.go"), formatted, 0o644); err != nil {
+		return &sdk.CompileError{Err: err, File: "main.go"}
+	}
+	return nil
 }

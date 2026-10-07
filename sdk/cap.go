@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"bytes"
 	"os"
 
 	"github.com/BurntSushi/toml"
@@ -91,6 +92,16 @@ func ParseCapFromFile(filepath string) (*CapFile, error) {
 		return nil, err
 	}
 	return ParseCapFromBytes(content)
+}
+
+// WriteCapToBytes writes a cap file struct to a TOML byte slice.
+func WriteCapToBytes(capFile *CapFile) ([]byte, error) {
+	var buf bytes.Buffer
+	err := toml.NewEncoder(&buf).Encode(capFile)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 // Supports checks if a cap file supports a type name.
