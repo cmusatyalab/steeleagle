@@ -54,12 +54,7 @@ DEFAULTS = [
     ("swiftmap_send_distance", 5.0, "SwiftMap Send Distance (m)"),
     ("swiftmap_backbone", "vggt", "SwiftMap Reconstruction Backbone"),
     ("swiftmap_segmenter", "sam3", "SwiftMap Segmenter"),
-    ("swiftmap_site", "area", "SwiftMap Site Tag"),
-    ("swiftmap_max_keyframes", 70, "SwiftMap Max Keyframes"),
-    ("swiftmap_conf_threshold", 60, "SwiftMap Confidence Threshold"),
-    ("swiftmap_merge_voxel", 0.1, "SwiftMap Grow-Merge Voxel Size (m)"),
-    ("swiftmap_mask_sky", True, "SwiftMap Mask Sky"),
-    ("swiftmap_keep_all", False, "SwiftMap Keep All Keyframes"),
+    ("swiftmap_batch_size", 25, "SwiftMap Batch Size"),
     ("swiftmap_viewer_port", 7866, "SwiftMap Viewer Port"),
     (
         "vggt_omega_checkpoint",
@@ -504,9 +499,7 @@ def main():
                 (
                     "#333333 italic",
                     "Host: swiftmap-server\nPort: 43322\nSend Distance: 5.0m\n"
-                    "Backbone: vggt\nSegmenter: sam3\nSite Tag: area\n"
-                    "Max Keyframes: 70\nConfidence Threshold: 60\n"
-                    "Mask Sky: True\nKeep All Keyframes: False\nViewer Port: 7866\n",
+                    "Backbone: vggt\nSegmenter: sam3\nBatch Size: 25\nViewer Port: 7866\n",
                 ),
                 (
                     "#111111 bold",
@@ -566,42 +559,14 @@ def main():
                 style=GLOBAL_STYLE,
             ).run()
 
-            CONTEXT["swiftmap_site"] = input_dialog(
-                title="SwiftMap - Site Tag",
-                text="Enter the map-tag prefix (drone/site name):",
-                default="area",
-                style=GLOBAL_STYLE,
-            ).run()
-
-            CONTEXT["swiftmap_max_keyframes"] = int(
+            CONTEXT["swiftmap_batch_size"] = int(
                 input_dialog(
-                    title="SwiftMap - Max Keyframes",
-                    text="Enter the number of retained keyframes that triggers the mapping pipeline:",
-                    default="70",
+                    title="SwiftMap - Batch Size",
+                    text="Enter the number of keyframes per map (the pipeline runs each time a batch fills):",
+                    default="25",
                     style=GLOBAL_STYLE,
                 ).run()
             )
-
-            CONTEXT["swiftmap_conf_threshold"] = int(
-                input_dialog(
-                    title="SwiftMap - Confidence Threshold",
-                    text="Enter the confidence threshold for reconstruction:",
-                    default="60",
-                    style=GLOBAL_STYLE,
-                ).run()
-            )
-
-            CONTEXT["swiftmap_mask_sky"] = yes_no_dialog(
-                title="SwiftMap - Mask Sky",
-                text="Mask sky regions during reconstruction?",
-                style=GLOBAL_STYLE,
-            ).run()
-
-            CONTEXT["swiftmap_keep_all"] = yes_no_dialog(
-                title="SwiftMap - Keep All Keyframes",
-                text="Keep every received frame+GPS pair as a keyframe (skip server-side selection)?",
-                style=GLOBAL_STYLE,
-            ).run()
 
             CONTEXT["swiftmap_viewer_port"] = int(
                 input_dialog(
