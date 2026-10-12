@@ -116,3 +116,7 @@ are copyright their respective authors with the licenses listed.
   Satyanarayanan, "The OODA Loop of Cloudlet-based Autonomous Drones," *2024
   IEEE/ACM Symposium on Edge Computing (SEC)*, Rome, Italy, 2024, pp. 178--190,
   doi: [10.1109/SEC62691.2024.00022](https://doi.org/10.1109/SEC62691.2024.00022).
+- J. Xu, M. Bala, T. Eiszler, X. Chen, Q. Dong, A. Chanana, P. Pillai, and M.
+  Satyanarayanan, "TerraSLAM: Towards GPS-Denied Localization," *In Proceedings of the 23rd Annual International Conference on Mobile Systems, Applications and Services (MobiSys '25). Association for Computing Machinery*, Anaheim, California, USA, 2025, pp. 42-–55, doi: [10.1145/3711875.3729144](https://doi.org/10.1145/3711875.3729144).
+
+
