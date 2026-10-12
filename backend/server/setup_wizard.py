@@ -52,16 +52,21 @@ DEFAULTS = [
     ("swiftmap_host", "swiftmap-server", "SwiftMap Engine Host"),
     ("swiftmap_port", 43322, "SwiftMap Port"),
     ("swiftmap_send_distance", 5.0, "SwiftMap Send Distance (m)"),
-    ("swiftmap_backbone", "vggt", "SwiftMap Reconstruction Backbone"),
+    ("swiftmap_backbone", "vggt_omega", "SwiftMap Reconstruction Backbone"),
     ("swiftmap_segmenter", "sam3", "SwiftMap Segmenter"),
     ("swiftmap_batch_size", 25, "SwiftMap Batch Size"),
+    ("swiftmap_min_disparity", 40.0, "SwiftMap Keyframe Min Disparity (px)"),
     ("swiftmap_viewer_port", 7866, "SwiftMap Viewer Port"),
     (
         "vggt_omega_checkpoint",
         "/app/checkpoints/vggt_omega_1b_512-002.pt",
         "VGGT-Omega Checkpoint Path",
     ),
+    ("vggt_omega_image_resolution", 512, "VGGT-Omega Image Resolution"),
     ("sam3_checkpoint", "/app/checkpoints/sam3.pt", "SAM3 Checkpoint Path"),
+    ("sam3_bpe_path", "", "SAM3 Tokenizer Vocab Path (blank = bundled)"),
+    ("sam3_conf_threshold", 0.5, "SAM3 Confidence Threshold"),
+    ("nfn_max_viewpoints", 10, "SwiftMap NFN Max Viewpoints"),
     ("webserver_url", "localhost", "HTTP Webserver Host"),
     ("webserver_port", 8080, "HTTP Webserver Port"),
     ("cot_url", "tcp://takserver:8088/", "TAK CoT URL"),
@@ -499,7 +504,10 @@ def main():
                 (
                     "#333333 italic",
                     "Host: swiftmap-server\nPort: 43322\nSend Distance: 5.0m\n"
-                    "Backbone: vggt\nSegmenter: sam3\nBatch Size: 25\nViewer Port: 7866\n",
+                    "Backbone: vggt_omega\nSegmenter: sam3\nBatch Size: 25\n"
+                    "Keyframe Min Disparity: 40px\nViewer Port: 7866\n"
+                    "VGGT-Omega Resolution: 512\nSAM3 Confidence Threshold: 0.5\n"
+                    "NFN Max Viewpoints: 10\n",
                 ),
                 (
                     "#111111 bold",
@@ -548,7 +556,7 @@ def main():
                     ("vggt", "VGGT"),
                     ("vggt_omega", "VGGT-Omega"),
                 ],
-                default="vggt",
+                default="vggt_omega",
                 style=GLOBAL_STYLE,
             ).run()
 
@@ -564,6 +572,15 @@ def main():
                     title="SwiftMap - Batch Size",
                     text="Enter the number of keyframes per map (the pipeline runs each time a batch fills):",
                     default="25",
+                    style=GLOBAL_STYLE,
+                ).run()
+            )
+
+            CONTEXT["swiftmap_min_disparity"] = float(
+                input_dialog(
+                    title="SwiftMap - Keyframe Min Disparity",
+                    text="Enter the minimum mean optical-flow disparity (px) for a frame to be kept as a keyframe:",
+                    default="40",
                     style=GLOBAL_STYLE,
                 ).run()
             )
@@ -589,12 +606,46 @@ def main():
                     style=GLOBAL_STYLE,
                 ).run()
 
+                CONTEXT["vggt_omega_image_resolution"] = int(
+                    input_dialog(
+                        title="SwiftMap - VGGT-Omega Resolution",
+                        text="Enter the VGGT-Omega input resolution (must match the checkpoint):",
+                        default="512",
+                        style=GLOBAL_STYLE,
+                    ).run()
+                )
+
             CONTEXT["sam3_checkpoint"] = input_dialog(
                 title="SwiftMap - SAM3 Checkpoint",
                 text="Enter the path to the SAM3 checkpoint:",
                 default="/app/checkpoints/sam3.pt",
                 style=GLOBAL_STYLE,
             ).run()
+
+            CONTEXT["sam3_bpe_path"] = input_dialog(
+                title="SwiftMap - SAM3 Tokenizer Vocab",
+                text="Enter the path to the SAM3 tokenizer vocab (blank = the copy bundled with sam3):",
+                default="",
+                style=GLOBAL_STYLE,
+            ).run()
+
+            CONTEXT["sam3_conf_threshold"] = float(
+                input_dialog(
+                    title="SwiftMap - SAM3 Confidence Threshold",
+                    text="Enter the minimum SAM3 instance confidence for a mask to count:",
+                    default="0.5",
+                    style=GLOBAL_STYLE,
+                ).run()
+            )
+
+            CONTEXT["nfn_max_viewpoints"] = int(
+                input_dialog(
+                    title="SwiftMap - NFN Max Viewpoints",
+                    text="Enter the maximum number of suggested viewpoints per next-flight plan:",
+                    default="10",
+                    style=GLOBAL_STYLE,
+                ).run()
+            )
 
         # Team Awareness Kit (CoT)
         CONTEXT["cot_url"] = input_dialog(
