@@ -1,8 +1,8 @@
-// Command compiler builds SteelEagle programs with the SDK preprocessed
+// Command eaglec builds SteelEagle programs with the SDK preprocessed
 // for a vehicle. It has two modes:
 //
-//	compiler sdk [-cap file] [-manifest file] [-geojson file] [-o file] [packages]
-//	compiler dsl [-cap file] [-manifest file] [-geojson file] [-o file] mission.dsl
+//	eaglec sdk [-cap file] [-manifest file] [-geojson file] [-o file] [packages]
+//	eaglec dsl [-cap file] [-manifest file] [-geojson file] [-o file] mission.dsl
 //
 // An SDK compile runs go build on packages (the package in the working
 // directory by default) in the local Go module, with the module's and the
@@ -27,10 +27,10 @@ import (
 )
 
 const usage = `usage:
-  compiler sdk [flags] [packages]   build Go packages in the local module
-  compiler dsl [flags] mission.dsl  compile a DSL mission
+  eaglec sdk [flags] [packages]   build Go packages in the local module
+  eaglec dsl [flags] mission.dsl  compile a DSL mission
 
-Run "compiler <mode> -h" for the flags of a mode.
+Run "eaglec <mode> -h" for the flags of a mode.
 `
 
 func main() {
@@ -98,7 +98,7 @@ type inputFiles struct {
 func newFlagSet(mode, args string) (*flag.FlagSet, *inputFiles) {
 	fs := flag.NewFlagSet(mode, flag.ExitOnError)
 	fs.Usage = func() {
-		fmt.Fprintf(fs.Output(), "usage: compiler %s [flags] %s\n", mode, args)
+		fmt.Fprintf(fs.Output(), "usage: eaglec %s [flags] %s\n", mode, args)
 		fs.PrintDefaults()
 	}
 	files := &inputFiles{}

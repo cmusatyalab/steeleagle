@@ -41,7 +41,7 @@ backend/streamlit/.streamlit/secrets.toml
 backend/server/engines/slam/images/*
 
 # Mission
-*.dsl
+*.dslb
 *.ms
 *.kml
 *~

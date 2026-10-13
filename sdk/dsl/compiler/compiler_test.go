@@ -13,11 +13,12 @@ import (
 
 	"github.com/cmusatyalab/steeleagle/sdk/buildtools"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/compiler/parser"
+	"golang.org/x/mod/module"
+	modzip "golang.org/x/mod/zip"
 )
 
 // Module and package paths the end-to-end tests compile against.
 const (
-	sdkModPath    = "github.com/cmusatyalab/steeleagle/sdk"
 	apiModPath    = "github.com/cmusatyalab/steeleagle/api/go"
 	dslPkgPath    = "github.com/cmusatyalab/steeleagle/sdk/dsl"
 	paramsPkgPath = "github.com/cmusatyalab/steeleagle/sdk/params"
@@ -710,4 +711,178 @@ func TestCompileRoleNotInManifest(t *testing.T) {
 	if len(errs) > 0 || m.ast.Role.Name != "Patroller" {
 		t.Errorf("newMission() with a declared role = %v, %v", m, errs)
 	}
+}
+
+// proxyModule adds the module at path at version, with the files of dir,
+// to the file-based module proxy at proxy.
+func proxyModule(t *testing.T, proxy, path, version, dir string) {
+	t.Helper()
+	esc, err := module.EscapePath(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	vdir := filepath.Join(proxy, esc, "@v")
+	if err := os.MkdirAll(vdir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	mod, err := os.ReadFile(filepath.Join(dir, "go.mod"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	info := `{"Version":"` + version + `","Time":"2026-01-01T00:00:00Z"}`
+	for name, data := range map[string][]byte{version + ".mod": mod, version + ".info": []byte(info)} {
+		if err := os.WriteFile(filepath.Join(vdir, name), data, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	f, err := os.Create(filepath.Join(vdir, version+".zip"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	if err := modzip.CreateFromDir(f, module.Version{Path: path, Version: version}, dir); err != nil {
+		t.Fatalf("zipping %s@%s: %v", path, version, err)
+	}
+	list, err := os.OpenFile(filepath.Join(vdir, "list"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer list.Close()
+	if _, err := list.WriteString(version + "\n"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// writeModule writes a module at path declaring go version goVersion, with
+// one package file, into a new directory, and returns the directory.
+func writeModule(t *testing.T, path, goVersion string) string {
+	t.Helper()
+	dir := t.TempDir()
+	files := map[string]string{
+		"go.mod": "module " + path + "\n\ngo " + goVersion + "\n",
+		"pkg.go": "package " + filepath.Base(path) + "\n",
+	}
+	for name, src := range files {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(src), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return dir
+}
+
+// proxyEnv returns a workspace environment that downloads modules from the
+// file-based proxies, in order, into a fresh module cache, without
+// checksum database lookups.
+func proxyEnv(t *testing.T, proxies ...string) []string {
+	t.Helper()
+	urls := make([]string, len(proxies))
+	for i, p := range proxies {
+		urls[i] = "file://" + filepath.ToSlash(p)
+	}
+	return []string{
+		"GOPROXY=" + strings.Join(urls, ","),
+		"GOMODCACHE=" + t.TempDir(),
+		"GOFLAGS=-modcacherw", // so the test can remove the module cache
+		"GOSUMDB=off",
+	}
+}
+
+// TestInstallModulesDownloadsOnlyListedModules checks that a module without
+// an override is downloaded on its own, without the module at a prefix of
+// its path, and copied out of the module cache into the workspace, which
+// requires and replaces it with the copy and raises its go version.
+func TestInstallModulesDownloadsOnlyListedModules(t *testing.T) {
+	proxy := t.TempDir()
+	proxyModule(t, proxy, "example.com/root", "v1.0.0", writeModule(t, "example.com/root", "1.21"))
+	proxyModule(t, proxy, "example.com/root/lib", "v1.2.0", writeModule(t, "example.com/root/lib", "1.22"))
+	env := proxyEnv(t, proxy)
+	w := newTestWorkspace(t, env...)
+	if err := w.goCmd("mod", "edit", "-go=1.21"); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := w.installModules([]*parser.ModuleSpec{{Path: "example.com/root/lib"}}); err != nil {
+		t.Fatalf("installModules() error = %v", err)
+	}
+
+	modCache := strings.TrimPrefix(env[1], "GOMODCACHE=")
+	if zips, _ := filepath.Glob(filepath.Join(modCache, "cache", "download", "example.com", "root", "@v", "*.zip")); len(zips) > 0 {
+		t.Errorf("downloaded %v, want only the listed module", zips)
+	}
+	mod, err := os.ReadFile(filepath.Join(w.Dir, "go.mod"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	copyDir := "./" + modulesDir + "/example.com/root/lib@v1.2.0"
+	for _, want := range []string{"example.com/root/lib v1.2.0", "example.com/root/lib => " + copyDir, "\ngo 1.22"} {
+		if !strings.Contains(string(mod), want) {
+			t.Errorf("go.mod missing %q:\n%s", want, mod)
+		}
+	}
+	info, err := os.Stat(filepath.Join(w.Dir, copyDir, "pkg.go"))
+	if err != nil {
+		t.Fatalf("module not copied into the workspace: %v", err)
+	}
+	if info.Mode().Perm()&0o200 == 0 {
+		t.Errorf("copied file mode = %v, want it writable", info.Mode())
+	}
+}
+
+// TestInstallModulesDownloadError checks that a module the proxy doesn't
+// have is reported with go's reason.
+func TestInstallModulesDownloadError(t *testing.T) {
+	w := newTestWorkspace(t, proxyEnv(t, t.TempDir())...)
+	err := w.installModules([]*parser.ModuleSpec{{Path: "example.com/missing", Version: "v1.0.0"}})
+	if err == nil || !strings.Contains(err.Error(), "downloading module example.com/missing@v1.0.0") {
+		t.Errorf("installModules() error = %v, want one about downloading example.com/missing", err)
+	}
+}
+
+// TestWithSdk checks that the SDK's module is added, unversioned, only when
+// the mission doesn't list it.
+func TestWithSdk(t *testing.T) {
+	listed := []*parser.ModuleSpec{{Path: sdkModPath, Version: "v1.0.0"}}
+	if got := withSdk(listed); len(got) != 1 || got[0].Version != "v1.0.0" {
+		t.Errorf("withSdk() with the SDK listed = %v, want it unchanged", got)
+	}
+	other := []*parser.ModuleSpec{{Path: "example.com/foo"}}
+	got := withSdk(other)
+	if len(got) != 2 || got[1].Path != sdkModPath || got[1].Version != "" || len(other) != 1 {
+		t.Errorf("withSdk() = %v, want example.com/foo then the SDK at no version, without changing the input", got)
+	}
+}
+
+// TestCompileDownloadedSdk compiles a mission against this checkout's SDK
+// published to a module proxy, rather than overridden by a local path. The
+// mission uses a const generated from the GeoJSON, so it only builds if
+// the overlay could rewrite the downloaded SDK's files.
+func TestCompileDownloadedSdk(t *testing.T) {
+	skipIfShort(t)
+	root, err := filepath.Abs(repoRoot(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	proxy := t.TempDir()
+	const version = "v0.0.0-eaglectest"
+	proxyModule(t, proxy, sdkModPath, version, filepath.Join(root, "sdk"))
+	realCache, err := exec.Command("go", "env", "GOMODCACHE").Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Every other module comes from the local module cache's downloads
+	w := newTestWorkspace(t, proxyEnv(t, proxy, filepath.Join(strings.TrimSpace(string(realCache)), "cache", "download"))...)
+
+	src := "Modules:\n" +
+		"    \"" + sdkModPath + "\" " + version + "\n" +
+		"    \"" + apiModPath + "\" => \"" + filepath.Join(root, "api", "go") + "\"\n" +
+		importsStanza(actionsPkg, paramsPkgPath) + `Actions:
+    actions.Patrol patrol(Area=params.Polygon_area, Altitude=10.0)
+Mission:
+Start patrol
+`
+	out := filepath.Join(t.TempDir(), "mission")
+	if errs := w.Compile(FromSource([]byte(src)), buildtools.WithGeoJson([]byte(testGeoJson)), buildtools.WithOutputFile(out)); len(errs) > 0 {
+		t.Fatalf("Compile() errors = %v", errs)
+	}
+	requireStatic(t, out)
 }

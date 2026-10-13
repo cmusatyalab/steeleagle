@@ -1,8 +1,12 @@
 package compiler
 
 import (
+	"bytes"
 	"cmp"
+	"encoding/json"
 	"fmt"
+	"go/version"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +18,7 @@ import (
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/compiler/loader"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/compiler/parser"
 	"github.com/cmusatyalab/steeleagle/sdk/preprocess"
+	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/module"
 )
 
@@ -204,45 +209,24 @@ func (w *Workspace) compile(m *mission) []*buildtools.CompileError {
 	return nil
 }
 
-// installModules installs a set of Go modules using "go get"
-// in the compiler's workspace.
-func (w *Workspace) installModules(modules []*parser.ModuleSpec) error {
-	// Require overridden modules and replace them with their local
-	// directory, then go get every module. For an overridden module, go get
-	// resolves the replacement, which raises the workspace's go version
-	// (switching toolchains if need be) to what the replacement requires
-	for _, mod := range modules {
-		version := cmp.Or(mod.Version, "latest")
-		if mod.Override != "" {
-			version = cmp.Or(mod.Version, placeholderVersion(mod.Path))
-			err := w.goCmd(
-				"mod", "edit",
-				"-require="+mod.Path+"@"+version,
-				"-replace="+mod.Path+"="+mod.Override,
-			)
-			if err != nil {
-				return err
-			}
-		}
-		if err := w.goCmd("get", mod.Path+"@"+version); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // load installs the modules m needs into a fresh go.mod, creates the
-// overlay for its cap,
-// manifest, and GeoJson, then loads all available types, returning the
-// corresponding registry and the overlay they were loaded with.
+// overlay for its cap, manifest, and GeoJson, then loads all available
+// types, returning the corresponding registry and the overlay they were
+// loaded with.
 func (w *Workspace) load(m *mission) (*loader.TypeRegistry, map[string][]byte, []*buildtools.CompileError) {
 	ast := m.ast
+
+	// Check the cap, manifest, and GeoJson before downloading anything
+	cfg, errs := m.cfg.OverlayConfig()
+	if len(errs) > 0 {
+		return nil, nil, errs
+	}
 
 	// Install all modules, starting from the go.mod NewWorkspace created
 	if err := w.resetModule(); err != nil {
 		return nil, nil, []*buildtools.CompileError{{Err: err}}
 	}
-	if err := w.installModules(ast.Modules.Modules); err != nil {
+	if err := w.installModules(withSdk(ast.Modules.Modules)); err != nil {
 		return nil, nil, []*buildtools.CompileError{{Err: err}}
 	}
 
@@ -258,10 +242,6 @@ func (w *Workspace) load(m *mission) (*loader.TypeRegistry, map[string][]byte, [
 			Alias: imp.Alias,
 			Pos:   imp.Pos,
 		})
-	}
-	cfg, errs := m.cfg.OverlayConfig()
-	if len(errs) > 0 {
-		return nil, nil, errs
 	}
 	cfg.Dir, cfg.Env = w.Dir, w.Env
 	// -mod=mod lets the load add missing requirements to go.mod, and is
@@ -296,6 +276,156 @@ func (w *Workspace) loadJson(m *mission) ([]byte, []*buildtools.CompileError) {
 	return out, nil
 }
 
+// installModules requires every module in modules in the workspace's
+// go.mod, replacing each with a local directory: its override, or
+// otherwise a copy of the module downloaded at its version ("latest" if it
+// has none). Only the modules themselves are looked up, never modules at
+// prefixes of their paths. Each module's files must live outside the
+// module cache, since go build refuses to overlay files inside it. The
+// workspace's go version is raised to the highest any module requires.
+func (w *Workspace) installModules(modules []*parser.ModuleSpec) error {
+	for _, mod := range modules {
+		dir, version := mod.Override, cmp.Or(mod.Version, placeholderVersion(mod.Path))
+		if dir == "" {
+			var err error
+			if dir, version, err = w.downloadModule(mod.Path, cmp.Or(mod.Version, "latest")); err != nil {
+				if mod.Path == sdkModPath && mod.Version == "" {
+					return fmt.Errorf("the SDK module %s is not listed in Modules:, so its latest version is used: %w", sdkModPath, err)
+				}
+				return err
+			}
+		}
+		err := w.goCmd(
+			"mod", "edit",
+			"-require="+mod.Path+"@"+version,
+			"-replace="+mod.Path+"="+dir,
+		)
+		if err != nil {
+			return err
+		}
+		if !filepath.IsAbs(dir) {
+			dir = filepath.Join(w.Dir, dir)
+		}
+		if err := w.raiseGoVersion(filepath.Join(dir, "go.mod")); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// withSdk returns modules, with the SDK's module added at its latest
+// version if modules don't list it, since every mission builds against it.
+func withSdk(modules []*parser.ModuleSpec) []*parser.ModuleSpec {
+	if slices.ContainsFunc(modules, func(m *parser.ModuleSpec) bool { return m.Path == sdkModPath }) {
+		return modules
+	}
+	return append(slices.Clone(modules), &parser.ModuleSpec{Path: sdkModPath})
+}
+
+// downloadModule downloads the module at path at version, which may be any
+// version query go mod download accepts (e.g. "latest" or a branch), and
+// copies it out of the module cache into the workspace's modulesDir, unless
+// an earlier compile already did. It returns the directory of the copy, as
+// a path relative to the workspace, and the version the query resolved to.
+func (w *Workspace) downloadModule(path, version string) (string, string, error) {
+	out, err := w.goOutput("mod", "download", "-json", path+"@"+version)
+	var dl struct{ Version, Dir, Error string }
+	if jsonErr := json.Unmarshal(out, &dl); jsonErr != nil || dl.Error != "" || err != nil {
+		if dl.Error != "" {
+			return "", "", fmt.Errorf("downloading module %s@%s: %s", path, version, dl.Error)
+		}
+		return "", "", fmt.Errorf("downloading module %s@%s: %w", path, version, cmp.Or(err, jsonErr))
+	}
+	escPath, err := module.EscapePath(path)
+	if err != nil {
+		return "", "", err
+	}
+	escVersion, err := module.EscapeVersion(dl.Version)
+	if err != nil {
+		return "", "", err
+	}
+	rel := filepath.Join(modulesDir, escPath+"@"+escVersion)
+	dst := filepath.Join(w.Dir, rel)
+	if _, err := os.Stat(dst); err != nil {
+		// Module versions never change, so a copy only needs making once.
+		// It's made beside its destination and renamed into place, so an
+		// interrupted copy is never mistaken for a complete one
+		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+			return "", "", err
+		}
+		tmp, err := os.MkdirTemp(filepath.Dir(dst), ".tmp-*")
+		if err != nil {
+			return "", "", err
+		}
+		defer os.RemoveAll(tmp)
+		if err := copyDir(dl.Dir, tmp); err != nil {
+			return "", "", fmt.Errorf("copying module %s@%s: %w", path, dl.Version, err)
+		}
+		if err := os.Rename(tmp, dst); err != nil {
+			return "", "", err
+		}
+	}
+	return "./" + filepath.ToSlash(rel), dl.Version, nil
+}
+
+// copyDir copies the directory tree src to dst, which must exist, making
+// every copy writable (the module cache's files are read-only).
+func copyDir(src, dst string) error {
+	return filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		target := filepath.Join(dst, rel)
+		if d.IsDir() {
+			return os.MkdirAll(target, 0o755)
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(target, data, 0o644)
+	})
+}
+
+// raiseGoVersion raises the go version in the workspace's go.mod to the
+// one the go.mod at modFile requires, if that is higher, so later go
+// commands switch to a toolchain new enough to build the module.
+func (w *Workspace) raiseGoVersion(modFile string) error {
+	want, err := goVersion(modFile)
+	if err != nil {
+		return err
+	}
+	have, err := goVersion(filepath.Join(w.Dir, "go.mod"))
+	if err != nil {
+		return err
+	}
+	if want == "" || version.Compare("go"+want, "go"+have) <= 0 {
+		return nil
+	}
+	return w.goCmd("mod", "edit", "-go="+want)
+}
+
+// goVersion returns the go version the go.mod at path declares, or "" if
+// it declares none.
+func goVersion(path string) (string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	f, err := modfile.ParseLax(path, data, nil)
+	if err != nil {
+		return "", err
+	}
+	if f.Go == nil {
+		return "", nil
+	}
+	return f.Go.Version, nil
+}
+
 // placeholderVersion returns the lowest version go.mod accepts for a module
 // at path (v0.0.0, or vN.0.0 for a /vN major version suffix). It is used to
 // require a module that is replaced by a local directory, where the
@@ -310,11 +440,31 @@ func placeholderVersion(path string) string {
 // goCmd runs the go tool inside the workspace, folding its output into
 // the returned error.
 func (w *Workspace) goCmd(args ...string) error {
-	cmd := exec.Command("go", args...)
-	cmd.Dir = w.Dir
-	cmd.Env = append(os.Environ(), w.Env...)
-	if output, err := cmd.CombinedOutput(); err != nil {
+	if output, err := w.command(args...).CombinedOutput(); err != nil {
 		return fmt.Errorf("go %v: %w\n%s", args, err, output)
 	}
 	return nil
+}
+
+// goOutput runs the go tool inside the workspace and returns its standard
+// output, even if the command fails, folding its standard error into the
+// returned error.
+func (w *Workspace) goOutput(args ...string) ([]byte, error) {
+	cmd := w.command(args...)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
+	if err != nil {
+		return out, fmt.Errorf("go %v: %w\n%s", args, err, stderr.Bytes())
+	}
+	return out, nil
+}
+
+// command returns a go command that runs in the workspace with its
+// environment.
+func (w *Workspace) command(args ...string) *exec.Cmd {
+	cmd := exec.Command("go", args...)
+	cmd.Dir = w.Dir
+	cmd.Env = append(os.Environ(), w.Env...)
+	return cmd
 }
