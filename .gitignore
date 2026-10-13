@@ -130,3 +130,8 @@ gcs/cli/drones.toml
 # Claude Code superpowers scratch state (progress ledgers, etc.)
 .superpowers/
 .worktrees/
+
+# Binaries
+cmd/eagle/eagle
+cmd/eagled/eagled
+sdk/cmd/eaglec/eaglec
