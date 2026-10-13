@@ -24,7 +24,8 @@ import PlanPage from './PlanPage.jsx';
 import MissionUploadProgress from './MissionUploadProgress.jsx';
 import VehicleSidebar, { VEHICLE_SIDEBAR_COLLAPSED_WIDTH, VEHICLE_SIDEBAR_EXPANDED_WIDTH } from './VehicleSidebar.jsx';
 import ControlMappingsTable from './ControlMappingsTable.jsx';
-import { getWebSocketUrl, getApiUrl } from './urls.js';
+import PresenceBar, { PRESENCE_BAR_HEIGHT } from './PresenceBar.jsx';
+import { getImagerySocketUrl, getApiUrl } from './urls.js';
 import { assignControlGroup, recallControlGroup } from './squadUtils.js';
 import { postToApi } from './apiUtils.js';
 
@@ -59,7 +60,7 @@ function App() {
   const [squadList, setSquadList] = useState(null);
   const [controlGroups, setControlGroups] = useState({});
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [socketUrl, setSocketUrl] = useState('');
+  const [socketUrl, setSocketUrl] = useState(null);
   // One upload at a time, shared by the Control page (file upload) and the
   // Plan page (deploy). Kept here so the progress dialog rendered below stays
   // up across tab switches, e.g. deploy from Plan, then move to Control.
@@ -73,7 +74,7 @@ function App() {
   }, [selectedMenu]);
 
   useEffect(() => {
-    setSocketUrl(getWebSocketUrl(`/ws/imagery/remote/${selectedVehicle}`));
+    setSocketUrl(getImagerySocketUrl(selectedVehicle));
   }, [selectedVehicle]);
 
   const { lastMessage, readyState } = useWebSocket(
@@ -447,12 +448,15 @@ function App() {
     </div>
   ), [theme, gamepadDeadzone, selectedMenu, overlayContent, manualControl]);
 
+  const sidebarWidth = sidebarCollapsed ? VEHICLE_SIDEBAR_COLLAPSED_WIDTH : VEHICLE_SIDEBAR_EXPANDED_WIDTH;
+
   return (
     <>
       <VehicleSidebar vehicles={vehicles} squadList={squadList} setSquadList={setSquadList}
         controlGroups={controlGroups} collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} />
       <div style={{
-        paddingLeft: sidebarCollapsed ? VEHICLE_SIDEBAR_COLLAPSED_WIDTH : VEHICLE_SIDEBAR_EXPANDED_WIDTH,
+        paddingLeft: sidebarWidth,
+        paddingBottom: PRESENCE_BAR_HEIGHT,
         transition: 'padding-left 0.2s',
       }}>
         <Menubar model={items} start={menuBarStart} end={menuBarEnd} />
@@ -470,6 +474,7 @@ function App() {
           controlGroups={controlGroups}
           uploadState={missionUploadState} setUploadState={setMissionUploadState} />}
       </div>
+      <PresenceBar left={sidebarWidth} />
       <MissionUploadProgress state={missionUploadState} onDismiss={() => setMissionUploadState(null)} />
       <Toast ref={toast} />
     </>
