@@ -3,7 +3,7 @@ package actions
 import (
 	"github.com/cmusatyalab/steeleagle/sdk"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl"
-	"github.com/cmusatyalab/steeleagle/sdk/dsl/types"
+	"github.com/cmusatyalab/steeleagle/sdk/dsl/datatypes"
 	"github.com/cmusatyalab/steeleagle/sdk/enums"
 	"github.com/cmusatyalab/steeleagle/sdk/opt"
 )
@@ -71,7 +71,7 @@ var _ dsl.Action = &ReturnToHome{}
 // GoToGlobalPosition orders the vehicle to transit to a global
 // position.
 type GoToGlobalPosition struct {
-	Position types.GlobalPosition
+	Position datatypes.GlobalPosition
 	// #optional
 	HeadingMode enums.HeadingMode
 	// #optional
@@ -105,7 +105,7 @@ var _ dsl.Action = &GoToGlobalPosition{}
 // GoToRelativePosition orders the vehicle to transit to a relative
 // position.
 type GoToRelativePosition struct {
-	Position types.RelativePosition
+	Position datatypes.RelativePosition
 	// #optional
 	Speed float32
 	// #optional
@@ -136,7 +136,7 @@ var _ dsl.Action = &GoToRelativePosition{}
 // SetGimbalPose orders the vehicle to set the pose of its primary
 // gimbal.
 type SetGimbalPose struct {
-	Pose types.Pose
+	Pose datatypes.Pose
 	// #optional
 	AngleMode enums.AngleMode
 	// #optional
@@ -160,7 +160,7 @@ var _ dsl.Action = &SetGimbalPose{}
 
 // SetVelocity orders the vehicle to accelerate towards a target velocity.
 type SetVelocity struct {
-	Velocity types.Velocity
+	Velocity datatypes.Velocity
 	// #optional
 	Frame enums.ReferenceFrame
 }
@@ -183,7 +183,7 @@ var _ dsl.Action = &SetVelocity{}
 // SetGimbalVelocity orders the vehicle to actuate its primary gimbal at
 // a target angular velocity.
 type SetGimbalVelocity struct {
-	PoseVelocity types.PoseVelocity
+	PoseVelocity datatypes.PoseVelocity
 }
 
 func (i *SetGimbalVelocity) Execute(v sdk.Vehicle, m dsl.MissionData) error {

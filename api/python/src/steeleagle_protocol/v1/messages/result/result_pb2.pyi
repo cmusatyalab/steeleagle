@@ -38,13 +38,19 @@ class DetectionResult(_message.Message):
     detections: _containers.RepeatedCompositeFieldContainer[Detection]
     def __init__(self, detections: _Optional[_Iterable[_Union[Detection, _Mapping]]] = ...) -> None: ...
 
+class ClassificationResult(_message.Message):
+    __slots__ = ("score",)
+    SCORE_FIELD_NUMBER: _ClassVar[int]
+    score: float
+    def __init__(self, score: _Optional[float] = ...) -> None: ...
+
 class GuidanceResult(_message.Message):
     __slots__ = ("trajectory",)
     TRAJECTORY_FIELD_NUMBER: _ClassVar[int]
     trajectory: _common_pb2.Velocity
     def __init__(self, trajectory: _Optional[_Union[_common_pb2.Velocity, _Mapping]] = ...) -> None: ...
 
-class SlamResult(_message.Message):
+class PositionResult(_message.Message):
     __slots__ = ("relative_position", "global_position")
     RELATIVE_POSITION_FIELD_NUMBER: _ClassVar[int]
     GLOBAL_POSITION_FIELD_NUMBER: _ClassVar[int]
@@ -52,16 +58,24 @@ class SlamResult(_message.Message):
     global_position: _common_pb2.GlobalPosition
     def __init__(self, relative_position: _Optional[_Union[_common_pb2.RelativePosition, _Mapping]] = ..., global_position: _Optional[_Union[_common_pb2.GlobalPosition, _Mapping]] = ...) -> None: ...
 
+class GenericResult(_message.Message):
+    __slots__ = ("payload",)
+    PAYLOAD_FIELD_NUMBER: _ClassVar[int]
+    payload: bytes
+    def __init__(self, payload: _Optional[bytes] = ...) -> None: ...
+
 class ComputeResult(_message.Message):
-    __slots__ = ("timestamp", "detection_result", "guidance_result", "slam_result", "generic_result")
+    __slots__ = ("timestamp", "detection_result", "classification_result", "guidance_result", "position_result", "generic_result")
     TIMESTAMP_FIELD_NUMBER: _ClassVar[int]
     DETECTION_RESULT_FIELD_NUMBER: _ClassVar[int]
+    CLASSIFICATION_RESULT_FIELD_NUMBER: _ClassVar[int]
     GUIDANCE_RESULT_FIELD_NUMBER: _ClassVar[int]
-    SLAM_RESULT_FIELD_NUMBER: _ClassVar[int]
+    POSITION_RESULT_FIELD_NUMBER: _ClassVar[int]
     GENERIC_RESULT_FIELD_NUMBER: _ClassVar[int]
     timestamp: _timestamp_pb2.Timestamp
     detection_result: DetectionResult
+    classification_result: ClassificationResult
     guidance_result: GuidanceResult
-    slam_result: SlamResult
-    generic_result: bytes
-    def __init__(self, timestamp: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., detection_result: _Optional[_Union[DetectionResult, _Mapping]] = ..., guidance_result: _Optional[_Union[GuidanceResult, _Mapping]] = ..., slam_result: _Optional[_Union[SlamResult, _Mapping]] = ..., generic_result: _Optional[bytes] = ...) -> None: ...
+    position_result: PositionResult
+    generic_result: GenericResult
+    def __init__(self, timestamp: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., detection_result: _Optional[_Union[DetectionResult, _Mapping]] = ..., classification_result: _Optional[_Union[ClassificationResult, _Mapping]] = ..., guidance_result: _Optional[_Union[GuidanceResult, _Mapping]] = ..., position_result: _Optional[_Union[PositionResult, _Mapping]] = ..., generic_result: _Optional[_Union[GenericResult, _Mapping]] = ...) -> None: ...

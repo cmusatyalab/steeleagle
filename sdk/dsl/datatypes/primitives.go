@@ -1,4 +1,4 @@
-package types
+package datatypes
 
 import "github.com/cmusatyalab/steeleagle/sdk/dsl"
 

@@ -11,16 +11,16 @@ import (
 
 // TestParseAllStanzasEndToEnd checks that a mission file exercising every
 // stanza type is parsed into an *Ast whose structure matches the source,
-// including Override/Import path unquoting.
+// including Import path unquoting.
 func TestParseAllStanzasEndToEnd(t *testing.T) {
 	src := `
 Role Leader:
 
-Override:
-	'../local/sdk'
+Modules:
+	"github.com/cmusatyalab/steeleagle/sdk" v1.2.3 => "../sdk"
 
-Import:
-	basesdk "github.com/cmusatyalab/steeleagle/sdk" v1.2.3
+Imports:
+	basesdk "github.com/cmusatyalab/steeleagle/sdk"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/actions"
 
 Data:
@@ -46,20 +46,24 @@ During land:
 		t.Fatalf("Role = %+v, want Name %q", ast.Role, "Leader")
 	}
 
-	if len(ast.Override.Paths) != 1 || ast.Override.Paths[0].Path != "../local/sdk" {
-		t.Fatalf("Override.Paths = %+v, want [../local/sdk]", ast.Override.Paths)
+	if len(ast.Modules.Modules) != 1 {
+		t.Fatalf("Modules.Modules = %+v, want 1 entry", ast.Modules.Modules)
+	}
+	mod := ast.Modules.Modules[0]
+	if mod.Path != "github.com/cmusatyalab/steeleagle/sdk" || mod.Version != "v1.2.3" || mod.Override != "../sdk" {
+		t.Errorf("Modules[0] = %+v, want unquoted path, version v1.2.3, unquoted override ../sdk", mod)
 	}
 
-	if len(ast.Import.Imports) != 2 {
-		t.Fatalf("Import.Imports = %+v, want 2 entries", ast.Import.Imports)
+	if len(ast.Imports.Imports) != 2 {
+		t.Fatalf("Imports.Imports = %+v, want 2 entries", ast.Imports.Imports)
 	}
-	base := ast.Import.Imports[0]
-	if base.Alias != "basesdk" || base.Path != "github.com/cmusatyalab/steeleagle/sdk" || base.Version != "v1.2.3" {
-		t.Errorf("Imports[0] = %+v, want alias basesdk, unquoted path, version v1.2.3", base)
+	base := ast.Imports.Imports[0]
+	if base.Alias != "basesdk" || base.Path != "github.com/cmusatyalab/steeleagle/sdk" {
+		t.Errorf("Imports[0] = %+v, want alias basesdk, unquoted path", base)
 	}
-	actionsImp := ast.Import.Imports[1]
-	if actionsImp.Alias != "" || actionsImp.Version != "" {
-		t.Errorf("Imports[1] = %+v, want empty Alias and Version", actionsImp)
+	actionsImp := ast.Imports.Imports[1]
+	if actionsImp.Alias != "" {
+		t.Errorf("Imports[1] = %+v, want empty Alias", actionsImp)
 	}
 
 	if len(ast.Data.Decls) != 1 {
@@ -92,17 +96,51 @@ During land:
 
 // TestParseEmptyInputReturnsEmptyAst checks that a source with no stanzas
 // at all parses successfully, since every top-level stanza is optional.
-// Data, Actions and Events are present with empty Decl lists; every other
-// field is nil.
+// Every stanza is present but empty.
 func TestParseEmptyInputReturnsEmptyAst(t *testing.T) {
-	ast := mustParse(t, "")
-	if ast.Role != nil || ast.Override != nil || ast.Import != nil || ast.Mission != nil {
-		t.Errorf("ast = %+v, want Role, Override, Import and Mission nil", ast)
+	assertEmptyStanzas(t, mustParse(t, ""))
+}
+
+// TestParseEmptyStanzaHeadersReturnEmptyLists checks that list stanzas
+// written as a bare header with no entries get empty, non-nil lists, the
+// same as when the stanza is left out.
+func TestParseEmptyStanzaHeadersReturnEmptyLists(t *testing.T) {
+	assertEmptyStanzas(t, mustParse(t, "Modules:\nImports:\nData:\nActions:\nEvents:\n"))
+}
+
+// TestParseModuleOmittedBeforeImport checks that the Modules stanza can be
+// left out of a mission that has an Imports stanza, leaving Modules empty
+// but non-nil.
+func TestParseModuleOmittedBeforeImport(t *testing.T) {
+	ast := mustParse(t, "Role Leader:\nImports:\n\t\"example.com/sdk\"\n")
+	if ast.Modules == nil || ast.Modules.Modules == nil || len(ast.Modules.Modules) != 0 {
+		t.Errorf("Modules = %+v, want present with an empty, non-nil Modules", ast.Modules)
 	}
-	if ast.Data == nil || len(ast.Data.Decls) != 0 ||
-		ast.Actions == nil || len(ast.Actions.Decls) != 0 ||
-		ast.Events == nil || len(ast.Events.Decls) != 0 {
-		t.Errorf("ast = %+v, want Data, Actions and Events present with empty Decls", ast)
+	if len(ast.Imports.Imports) != 1 || ast.Imports.Imports[0].Path != "example.com/sdk" {
+		t.Errorf("Imports = %+v, want example.com/sdk", ast.Imports.Imports)
+	}
+}
+
+// assertEmptyStanzas checks that every stanza of ast is present but empty,
+// with list stanzas holding empty, non-nil lists.
+func assertEmptyStanzas(t *testing.T, ast *Ast) {
+	t.Helper()
+	if ast.Role == nil || ast.Role.Name != "" {
+		t.Errorf("Role = %+v, want present with an empty Name", ast.Role)
+	}
+	if ast.Modules == nil || ast.Modules.Modules == nil || len(ast.Modules.Modules) != 0 {
+		t.Errorf("Modules = %+v, want present with empty, non-nil Modules", ast.Modules)
+	}
+	if ast.Imports == nil || ast.Imports.Imports == nil || len(ast.Imports.Imports) != 0 {
+		t.Errorf("Imports = %+v, want present with empty, non-nil Imports", ast.Imports)
+	}
+	if ast.Mission == nil || ast.Mission.Start != "" || len(ast.Mission.Blocks) != 0 {
+		t.Errorf("Mission = %+v, want present with no Start or Blocks", ast.Mission)
+	}
+	for name, decls := range map[string][]*Decl{"Data": ast.Data.Decls, "Actions": ast.Actions.Decls, "Events": ast.Events.Decls} {
+		if decls == nil || len(decls) != 0 {
+			t.Errorf("%s.Decls = %#v, want empty and non-nil", name, decls)
+		}
 	}
 }
 
@@ -112,8 +150,8 @@ func TestParseEmptyInputReturnsEmptyAst(t *testing.T) {
 func TestParseSkipsAbsentLeadingStanzas(t *testing.T) {
 	src := "Actions:\n\tactions.TakeOff takeoff()\nMission:\nStart takeoff\n"
 	ast := mustParse(t, src)
-	if ast.Role != nil || ast.Override != nil || ast.Import != nil {
-		t.Errorf("ast = %+v, want Role, Override and Import nil", ast)
+	if ast.Role == nil || ast.Role.Name != "" || ast.Imports == nil || len(ast.Imports.Imports) != 0 {
+		t.Errorf("ast = %+v, want Role and Import present but empty", ast)
 	}
 	if ast.Data == nil || len(ast.Data.Decls) != 0 || ast.Events == nil || len(ast.Events.Decls) != 0 {
 		t.Errorf("ast = %+v, want Data and Events present with empty Decls", ast)
@@ -124,63 +162,88 @@ func TestParseSkipsAbsentLeadingStanzas(t *testing.T) {
 }
 
 // TestParseStanzaOutOfOrderErrors checks that the stanzas must appear in
-// their declared order (Role, Override, Import, Data, Actions, Events,
-// Mission): a Mission stanza written before Actions leaves "Actions:"
-// unconsumed and is reported as a parse error rather than silently
-// reordered.
+// their declared order (Role, Module, Import, Data, Actions, Events,
+// Mission): a stanza written before one that should precede it leaves the
+// later stanza unconsumed and is reported as a parse error rather than
+// silently reordered.
 func TestParseStanzaOutOfOrderErrors(t *testing.T) {
-	src := "Mission:\nStart takeoff\nActions:\n\tactions.TakeOff takeoff()\n"
-	if _, err := Parse("test.dsl", strings.NewReader(src)); err == nil {
-		t.Fatal("Parse() error = nil, want an error for out-of-order stanzas")
+	cases := map[string]string{
+		"mission before actions": "Mission:\nStart takeoff\nActions:\n\tactions.TakeOff takeoff()\n",
+		"import before module":   "Imports:\n\t\"example.com/sdk\"\nModules:\n\t\"example.com/sdk\"\n",
+	}
+	for name, src := range cases {
+		t.Run(name, func(t *testing.T) {
+			if _, err := parse("test.dsl", strings.NewReader(src)); err == nil {
+				t.Fatal("Parse() error = nil, want an error for out-of-order stanzas")
+			}
+		})
 	}
 }
 
-// TestParseOverridePathsUnquoteSingleAndDoubleQuotes checks that Override
-// paths written with either quote style come back with their quotes
-// stripped.
-func TestParseOverridePathsUnquoteSingleAndDoubleQuotes(t *testing.T) {
-	src := "Override:\n\t'../single'\n\t\"../double\"\n"
-	ast := mustParse(t, src)
-	if len(ast.Override.Paths) != 2 {
-		t.Fatalf("Override.Paths = %+v, want 2 entries", ast.Override.Paths)
-	}
-	if got := ast.Override.Paths[0].Path; got != "../single" {
-		t.Errorf("Paths[0].Path = %q, want %q", got, "../single")
-	}
-	if got := ast.Override.Paths[1].Path; got != "../double" {
-		t.Errorf("Paths[1].Path = %q, want %q", got, "../double")
-	}
-}
-
-// TestParseImportOptionalAliasAndVersion checks every combination of
-// ImportSpec's optional leading Alias and trailing Version.
-func TestParseImportOptionalAliasAndVersion(t *testing.T) {
+// TestParseImportOptionalAlias checks ImportSpec with and without its
+// optional leading Alias, and that a trailing version is rejected.
+func TestParseImportOptionalAlias(t *testing.T) {
 	cases := []struct {
-		name        string
-		line        string
-		wantAlias   string
-		wantVersion string
+		name      string
+		line      string
+		wantAlias string
 	}{
-		{"alias and version", `sdk "example.com/sdk" v1.2.3`, "sdk", "v1.2.3"},
-		{"alias only", `sdk "example.com/sdk"`, "sdk", ""},
-		{"version only", `"example.com/sdk" v2.0.0`, "", "v2.0.0"},
-		{"neither", `"example.com/sdk"`, "", ""},
+		{"alias", `sdk "example.com/sdk"`, "sdk"},
+		{"no alias", `"example.com/sdk"`, ""},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			ast := mustParse(t, "Import:\n\t"+c.line+"\n")
-			if len(ast.Import.Imports) != 1 {
-				t.Fatalf("Imports = %+v, want exactly 1", ast.Import.Imports)
+			ast := mustParse(t, "Imports:\n\t"+c.line+"\n")
+			if len(ast.Imports.Imports) != 1 {
+				t.Fatalf("Imports = %+v, want exactly 1", ast.Imports.Imports)
 			}
-			imp := ast.Import.Imports[0]
+			imp := ast.Imports.Imports[0]
 			if imp.Alias != c.wantAlias {
 				t.Errorf("Alias = %q, want %q", imp.Alias, c.wantAlias)
 			}
 			if imp.Path != "example.com/sdk" {
 				t.Errorf("Path = %q, want %q", imp.Path, "example.com/sdk")
 			}
-			if imp.Version != c.wantVersion {
-				t.Errorf("Version = %q, want %q", imp.Version, c.wantVersion)
+		})
+	}
+	if _, err := parse("test.dsl", strings.NewReader("Imports:\n\t\"example.com/sdk\" v1.2.3\n")); err == nil {
+		t.Error("Parse() error = nil, want an error for a versioned Import")
+	}
+}
+
+// TestParseModuleOptionalVersionAndOverride checks every combination of
+// ModuleSpec's optional Version and Override, including several modules
+// in one stanza (so an override is not confused with the next path).
+func TestParseModuleOptionalVersionAndOverride(t *testing.T) {
+	cases := []struct {
+		name         string
+		line         string
+		wantVersion  string
+		wantOverride string
+	}{
+		{"version and override", `"example.com/sdk" v1.2.3 => "../sdk"`, "v1.2.3", "../sdk"},
+		{"version only", `"example.com/sdk" v2.0.0`, "v2.0.0", ""},
+		{"override only", `"example.com/sdk" => '/abs/sdk'`, "", "/abs/sdk"},
+		{"neither", `"example.com/sdk"`, "", ""},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			ast := mustParse(t, "Modules:\n\t"+c.line+"\n\t\"example.com/other\"\n")
+			if len(ast.Modules.Modules) != 2 {
+				t.Fatalf("Modules = %+v, want exactly 2", ast.Modules.Modules)
+			}
+			mod := ast.Modules.Modules[0]
+			if mod.Path != "example.com/sdk" {
+				t.Errorf("Path = %q, want %q", mod.Path, "example.com/sdk")
+			}
+			if mod.Version != c.wantVersion {
+				t.Errorf("Version = %q, want %q", mod.Version, c.wantVersion)
+			}
+			if mod.Override != c.wantOverride {
+				t.Errorf("Override = %q, want %q", mod.Override, c.wantOverride)
+			}
+			if other := ast.Modules.Modules[1]; other.Path != "example.com/other" || other.Version != "" || other.Override != "" {
+				t.Errorf("Modules[1] = %+v, want bare example.com/other", other)
 			}
 		})
 	}
@@ -384,15 +447,20 @@ Role Leader: # trailing comment
 // panicking or silently producing a partial result.
 func TestParseSyntaxErrors(t *testing.T) {
 	cases := map[string]string{
-		"unclosed paren":         "Actions:\n\tactions.TakeOff a(\n",
-		"decl missing parens":    "Actions:\n\tactions.TakeOff a\n",
-		"stanza missing colon":   "Role Leader\n",
-		"attr missing value":     "Actions:\n\tactions.TakeOff a(altitude=)\n",
-		"rule missing arrow dst": "Mission:\nStart a\nDuring a:\n\tdone ->\n",
+		"unclosed paren":          "Actions:\n\tactions.TakeOff a(\n",
+		"decl missing parens":     "Actions:\n\tactions.TakeOff a\n",
+		"stanza missing colon":    "Role Leader\n",
+		"attr missing value":      "Actions:\n\tactions.TakeOff a(altitude=)\n",
+		"rule missing arrow dst":  "Mission:\nStart a\nDuring a:\n\tdone ->\n",
+		"module override no path": "Modules:\n\t\"example.com/sdk\" v1.2.3 =>\n",
+		"module override ident":   "Modules:\n\t\"example.com/sdk\" => sdk\n",
+		"module version first":    "Modules:\n\tv1.2.3 \"example.com/sdk\"\n",
+		"module unquoted path":    "Modules:\n\texample.com/sdk\n",
+		"module alias":            "Modules:\n\tsdk \"example.com/sdk\"\n",
 	}
 	for name, src := range cases {
 		t.Run(name, func(t *testing.T) {
-			ast, err := Parse("test.dsl", strings.NewReader(src))
+			ast, err := parse("test.dsl", strings.NewReader(src))
 			if err == nil {
 				t.Fatalf("Parse() error = nil, want an error; ast = %+v", ast)
 			}
@@ -409,8 +477,8 @@ func TestParseSyntaxErrors(t *testing.T) {
 func TestParseFromJsonAllStanzas(t *testing.T) {
 	src := `{
 		"Role": {"Name": "Leader"},
-		"Override": {"Paths": [{"Path": "../local/sdk"}]},
-		"Import": {"Imports": [{"Alias": "basesdk", "Path": "github.com/cmusatyalab/steeleagle/sdk", "Version": "v1.2.3"}]},
+		"Modules": {"Modules": [{"Path": "github.com/cmusatyalab/steeleagle/sdk", "Version": "v1.2.3", "Override": "../sdk"}]},
+		"Imports": {"Imports": [{"Alias": "basesdk", "Path": "github.com/cmusatyalab/steeleagle/sdk"}]},
 		"Data": {"Decls": [{"Type": "types.Waypoint", "Name": "w1", "Attrs": [
 			{"Key": "label", "Value": {"String": "home"}},
 			{"Key": "pose", "Value": {"Inline": {"Type": "types.Pose", "Args": [
@@ -421,12 +489,12 @@ func TestParseFromJsonAllStanzas(t *testing.T) {
 			{"Key": "altitude", "Value": {"Float": 2.5}}]}]},
 		"Mission": {"Start": "takeoff", "Blocks": [{"Action": "takeoff", "Rules": [{"Event": "done", "Next": "takeoff"}]}]}
 	}`
-	ast, err := ParseFromJson(strings.NewReader(src))
+	ast, err := ParseFromJson([]byte(src))
 	if err != nil {
 		t.Fatalf("ParseFromJson() error = %v", err)
 	}
-	if ast.Role.Name != "Leader" || ast.Override.Paths[0].Path != "../local/sdk" || ast.Import.Imports[0].Alias != "basesdk" {
-		t.Errorf("header stanzas = %+v %+v %+v", ast.Role, ast.Override, ast.Import)
+	if ast.Role.Name != "Leader" || ast.Imports.Imports[0].Alias != "basesdk" {
+		t.Errorf("header stanzas = %+v %+v", ast.Role, ast.Imports)
 	}
 	attrs := ast.Data.Decls[0].Attrs
 	if s, ok := attrs[0].Value.StringValue(); !ok || s != "home" {
@@ -458,17 +526,30 @@ func TestParseFromJsonAllStanzas(t *testing.T) {
 }
 
 // TestParseFromJsonEmptyObject checks that "{}" decodes like an empty DSL
-// file: Data, Actions and Events present but empty, everything else nil.
+// file: every stanza present but empty.
 func TestParseFromJsonEmptyObject(t *testing.T) {
-	ast, err := ParseFromJson(strings.NewReader("{}"))
+	ast, err := ParseFromJson([]byte("{}"))
 	if err != nil {
 		t.Fatalf("ParseFromJson() error = %v", err)
 	}
-	if ast.Role != nil || ast.Override != nil || ast.Import != nil || ast.Mission != nil {
-		t.Errorf("ast = %+v, want Role, Override, Import and Mission nil", ast)
-	}
-	if len(ast.Data.Decls) != 0 || len(ast.Actions.Decls) != 0 || len(ast.Events.Decls) != 0 {
-		t.Errorf("ast = %+v, want empty Decls", ast)
+	assertEmptyStanzas(t, ast)
+}
+
+// TestParseFromJsonEmptyStanzaObjects checks that list stanzas given as
+// empty objects or with null lists get empty, non-nil lists.
+func TestParseFromJsonEmptyStanzaObjects(t *testing.T) {
+	for name, src := range map[string]string{
+		"empty objects": `{"Modules": {}, "Imports": {}, "Data": {}, "Actions": {}, "Events": {}}`,
+		"null lists":    `{"Modules": {"Modules": null}, "Imports": {"Imports": null}, "Data": {"Decls": null}, "Actions": {"Decls": null}, "Events": {"Decls": null}}`,
+		"null stanzas":  `{"Modules": null, "Imports": null, "Data": null, "Actions": null, "Events": null}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			ast, err := ParseFromJson([]byte(src))
+			if err != nil {
+				t.Fatalf("ParseFromJson() error = %v", err)
+			}
+			assertEmptyStanzas(t, ast)
+		})
 	}
 }
 
@@ -489,7 +570,7 @@ func TestParseFromJsonErrors(t *testing.T) {
 		"null array element":   `{"Data": {"Decls": [{"Type": "T", "Name": "n", "Attrs": [{"Key": "k", "Value": {"Array": {"Elems": [null]}}}]}]}}`,
 		"inline missing value": `{"Data": {"Decls": [{"Type": "T", "Name": "n", "Attrs": [{"Key": "k", "Value": {"Inline": {"Type": "U", "Args": [{"Key": "a"}]}}}]}]}}`,
 	} {
-		if _, err := ParseFromJson(strings.NewReader(src)); err == nil {
+		if _, err := ParseFromJson([]byte(src)); err == nil {
 			t.Errorf("%s: ParseFromJson() error = nil, want an error", name)
 		}
 	}
@@ -526,12 +607,13 @@ func TestParseFromJsonMatchesParse(t *testing.T) {
 	dsl := `
 Role Leader:
 
-Override:
-	"../local/sdk"
+Modules:
+	"github.com/cmusatyalab/steeleagle/sdk" v1.2.3 => "../sdk"
+	"example.com/other"
 
-Import:
-	basesdk "github.com/cmusatyalab/steeleagle/sdk" v1.2.3
-	"github.com/cmusatyalab/steeleagle/sdk/dsl/types"
+Imports:
+	basesdk "github.com/cmusatyalab/steeleagle/sdk"
+	"github.com/cmusatyalab/steeleagle/sdk/dsl/datatypes"
 
 Data:
 	types.Waypoint w1(lat=1.5, count=3, label="home", mode=Fast, frame=enums.Body, xs=[1, 2.5, "three"], empty=[])
@@ -552,10 +634,13 @@ During land:
 `
 	js := `{
 		"Role": {"Name": "Leader"},
-		"Override": {"Paths": [{"Path": "../local/sdk"}]},
-		"Import": {"Imports": [
-			{"Alias": "basesdk", "Path": "github.com/cmusatyalab/steeleagle/sdk", "Version": "v1.2.3"},
-			{"Path": "github.com/cmusatyalab/steeleagle/sdk/dsl/types"}
+		"Modules": {"Modules": [
+			{"Path": "github.com/cmusatyalab/steeleagle/sdk", "Version": "v1.2.3", "Override": "../sdk"},
+			{"Path": "example.com/other"}
+		]},
+		"Imports": {"Imports": [
+			{"Alias": "basesdk", "Path": "github.com/cmusatyalab/steeleagle/sdk"},
+			{"Path": "github.com/cmusatyalab/steeleagle/sdk/dsl/datatypes"}
 		]},
 		"Data": {"Decls": [{"Type": "types.Waypoint", "Name": "w1", "Attrs": [
 			{"Key": "lat", "Value": {"Float": 1.5}},
@@ -586,15 +671,15 @@ During land:
 		]}
 	}`
 	fromDSL := mustParse(t, dsl)
-	fromJSON, err := ParseFromJson(strings.NewReader(js))
+	fromJson, err := ParseFromJson([]byte(js))
 	if err != nil {
 		t.Fatalf("ParseFromJson() error = %v", err)
 	}
 	clearPositions(reflect.ValueOf(fromDSL))
-	clearPositions(reflect.ValueOf(fromJSON))
-	if !reflect.DeepEqual(fromDSL, fromJSON) {
+	clearPositions(reflect.ValueOf(fromJson))
+	if !reflect.DeepEqual(fromDSL, fromJson) {
 		want, _ := json.MarshalIndent(fromDSL, "", "  ")
-		got, _ := json.MarshalIndent(fromJSON, "", "  ")
+		got, _ := json.MarshalIndent(fromJson, "", "  ")
 		t.Errorf("ParseFromJson() AST differs from Parse()\nParse:\n%s\nParseFromJson:\n%s", want, got)
 	}
 }
@@ -605,7 +690,7 @@ During land:
 func TestParseFromJsonKeysCaseInsensitive(t *testing.T) {
 	src := `{"actions": {"decls": [{"type": "actions.TakeOff", "name": "takeoff",
 		"attrs": [{"key": "Altitude", "value": {"float": 2.5}}]}]}}`
-	ast, err := ParseFromJson(strings.NewReader(src))
+	ast, err := ParseFromJson([]byte(src))
 	if err != nil {
 		t.Fatalf("ParseFromJson() error = %v", err)
 	}
@@ -618,7 +703,7 @@ func TestParseFromJsonKeysCaseInsensitive(t *testing.T) {
 // TestParseFromJsonNullStanzasFilled checks that explicitly null Data,
 // Actions and Events stanzas are treated the same as absent ones.
 func TestParseFromJsonNullStanzasFilled(t *testing.T) {
-	ast, err := ParseFromJson(strings.NewReader(`{"Data": null, "Actions": null, "Events": null}`))
+	ast, err := ParseFromJson([]byte(`{"Data": null, "Actions": null, "Events": null}`))
 	if err != nil {
 		t.Fatalf("ParseFromJson() error = %v", err)
 	}
@@ -637,7 +722,7 @@ func TestParseFromJsonStringValues(t *testing.T) {
 	for _, want := range []string{"", "home", `say "hi"`, "it's", "a\nb"} {
 		attr, _ := json.Marshal(map[string]any{"Key": "k", "Value": map[string]string{"String": want}})
 		src := `{"Data": {"Decls": [{"Type": "T", "Name": "n", "Attrs": [` + string(attr) + `]}]}}`
-		ast, err := ParseFromJson(strings.NewReader(src))
+		ast, err := ParseFromJson([]byte(src))
 		if err != nil {
 			t.Fatalf("ParseFromJson(%q) error = %v", want, err)
 		}
@@ -647,19 +732,36 @@ func TestParseFromJsonStringValues(t *testing.T) {
 	}
 }
 
-// TestParseFromJsonPathsNotUnquoted checks that Override and Import paths
-// are taken verbatim from JSON rather than having their first and last
-// characters stripped as Parse does for raw String tokens.
+// TestParseFromJsonPathsNotUnquoted checks that Import paths are taken
+// verbatim from JSON rather than having their first and last characters
+// stripped as Parse does for raw String tokens.
 func TestParseFromJsonPathsNotUnquoted(t *testing.T) {
-	src := `{"Override": {"Paths": [{"Path": "/abs/sdk"}]}, "Import": {"Imports": [{"Path": "example.com/pkg"}]}}`
-	ast, err := ParseFromJson(strings.NewReader(src))
+	src := `{"Imports": {"Imports": [{"Path": "example.com/pkg"}]}}`
+	ast, err := ParseFromJson([]byte(src))
 	if err != nil {
 		t.Fatalf("ParseFromJson() error = %v", err)
 	}
-	if got := ast.Override.Paths[0].Path; got != "/abs/sdk" {
-		t.Errorf("Override path = %q, want %q", got, "/abs/sdk")
-	}
-	if got := ast.Import.Imports[0].Path; got != "example.com/pkg" {
+	if got := ast.Imports.Imports[0].Path; got != "example.com/pkg" {
 		t.Errorf("Import path = %q, want %q", got, "example.com/pkg")
+	}
+}
+
+// TestParseFromSource checks that a mission is parsed from source text,
+// and that syntax errors carry a line but no file name.
+func TestParseFromSource(t *testing.T) {
+	ast, err := ParseFromSource([]byte("Imports:\n\t\"example.com/sdk\"\nMission:\nStart takeoff\n"))
+	if err != nil {
+		t.Fatalf("ParseFromSource() error = %v", err)
+	}
+	if ast.Mission.Start != "takeoff" || len(ast.Imports.Imports) != 1 || ast.Imports.Imports[0].Path != "example.com/sdk" {
+		t.Errorf("ast = %+v %+v, want example.com/sdk imported and Start takeoff", ast.Imports, ast.Mission)
+	}
+
+	_, err = ParseFromSource([]byte("Mission:\nStart\n"))
+	if err == nil {
+		t.Fatal("ParseFromSource(syntax error) error = nil, want one")
+	}
+	if msg := err.Error(); !strings.HasPrefix(msg, "3:") {
+		t.Errorf("error = %q, want it positioned at line 3 with no file name", msg)
 	}
 }

@@ -25,6 +25,15 @@ const (
 	LabelAway Label = "away"
 )
 
+// Zone is a string-backed fixture enum whose constants are named the way
+// the compiler generates them from a manifest or GeoJSON: <Type>_<name>.
+type Zone string
+
+const (
+	Zone_north Zone = "north"
+	Zone_South Zone = "South"
+)
+
 // Waypoint is a fixture Datatype with two required fields and an optional
 // one without a default.
 type Waypoint struct {
@@ -81,6 +90,8 @@ type Fly struct {
 	Fallback Mode
 	// #optional[home]
 	Tag Label
+	// #optional
+	Zone Zone
 }
 
 func (*Fly) Execute(v sdk.Vehicle, m dsl.MissionData) error { return nil }

@@ -7,7 +7,6 @@ import (
 
 	commonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/common"
 	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
-	"github.com/cmusatyalab/steeleagle/sdk/opt"
 )
 
 // TestDistanceGlobalPositionApproaching tests a getDistance call for
@@ -16,7 +15,7 @@ func TestDistanceGlobalPositionApproaching(t *testing.T) {
 	setpoint := commonpb.GlobalPosition_builder{
 		Latitude: f64(37.0000), Longitude: f64(-122.0000), Altitude: f32(100), Heading: f32(90),
 	}.Build()
-	tol := opt.Tolerances{PosTol: 5, AngleTol: 5}
+	tol := Tolerances{PosTol: 5, AngleTol: 5}
 
 	steps := []*commonpb.GlobalPosition{
 		commonpb.GlobalPosition_builder{Latitude: f64(37.0050), Longitude: f64(-122.0050), Altitude: f32(250), Heading: f32(270)}.Build(),
@@ -39,7 +38,7 @@ func TestDistanceRelativePositionApproaching(t *testing.T) {
 	setpoint := commonpb.RelativePosition_builder{
 		X: f32(10), Y: f32(-10), Z: f32(5), Angle: f32(45),
 	}.Build()
-	tol := opt.Tolerances{PosTol: 2, AngleTol: 5}
+	tol := Tolerances{PosTol: 2, AngleTol: 5}
 
 	steps := []*commonpb.RelativePosition{
 		commonpb.RelativePosition_builder{X: f32(100), Y: f32(-100), Z: f32(50), Angle: f32(225)}.Build(),
@@ -62,7 +61,7 @@ func TestDistanceVelocityApproaching(t *testing.T) {
 	setpoint := commonpb.Velocity_builder{
 		XVel: f32(5), YVel: f32(-3), ZVel: f32(1), AngularVel: f32(20),
 	}.Build()
-	tol := opt.Tolerances{SpeedTol: 1, AngSpeedTol: 5}
+	tol := Tolerances{SpeedTol: 1, AngSpeedTol: 5}
 
 	steps := []*commonpb.Velocity{
 		commonpb.Velocity_builder{XVel: f32(50), YVel: f32(-30), ZVel: f32(10), AngularVel: f32(200)}.Build(),
@@ -85,7 +84,7 @@ func TestDistancePoseApproaching(t *testing.T) {
 	setpoint := commonpb.Pose_builder{
 		Pitch: f32(10), Roll: f32(-5), Yaw: f32(350),
 	}.Build()
-	tol := opt.Tolerances{AngleTol: 4}
+	tol := Tolerances{AngleTol: 4}
 
 	steps := []*commonpb.Pose{
 		commonpb.Pose_builder{Pitch: f32(100), Roll: f32(-95), Yaw: f32(170)}.Build(),
@@ -108,7 +107,7 @@ func TestDistancePoseVelocityApproaching(t *testing.T) {
 	setpoint := commonpb.PoseVelocity_builder{
 		PitchVel: f32(2), RollVel: f32(-1), YawVel: f32(8),
 	}.Build()
-	tol := opt.Tolerances{AngSpeedTol: 2}
+	tol := Tolerances{AngSpeedTol: 2}
 
 	steps := []*commonpb.PoseVelocity{
 		commonpb.PoseVelocity_builder{PitchVel: f32(20), RollVel: f32(-10), YawVel: f32(80)}.Build(),
@@ -130,7 +129,7 @@ func TestDistancePoseVelocityApproaching(t *testing.T) {
 // through 0/360, not 358 degrees apart.
 func TestDistancePoseYawWraparound(t *testing.T) {
 	setpoint := commonpb.Pose_builder{Yaw: f32(1)}.Build()
-	tol := opt.Tolerances{AngleTol: 5}
+	tol := Tolerances{AngleTol: 5}
 	telemetry := telemetryPose(commonpb.Pose_builder{Yaw: f32(359)}.Build())
 
 	dist, ok, err := getDistance(setpoint, telemetry, tol)
@@ -153,7 +152,7 @@ func TestDistancePoseYawWraparound(t *testing.T) {
 func TestDistanceGlobalPositionHaversine(t *testing.T) {
 	setpoint := commonpb.GlobalPosition_builder{Latitude: f64(0), Longitude: f64(0)}.Build()
 	telemetry := telemetryGlobal(commonpb.GlobalPosition_builder{Latitude: f64(0.01), Longitude: f64(0)}.Build())
-	tol := opt.Tolerances{PosTol: 1} // PosTol=1 means the returned distance equals raw meters.
+	tol := Tolerances{PosTol: 1} // PosTol=1 means the returned distance equals raw meters.
 
 	const earthRadiusM = 6371000.0
 	expectedMeters := earthRadiusM * (0.01 * math.Pi / 180)
@@ -178,7 +177,7 @@ func TestDistanceUnsupportedSetpointType(t *testing.T) {
 	unsupported := telemetrypb.Telemetry_builder{}.Build()
 	telemetry := telemetryGlobal(commonpb.GlobalPosition_builder{Latitude: f64(0), Longitude: f64(0)}.Build())
 
-	dist, ok, err := getDistance(unsupported, telemetry, opt.Tolerances{PosTol: 1})
+	dist, ok, err := getDistance(unsupported, telemetry, Tolerances{PosTol: 1})
 	if !errors.Is(err, ErrInternal) {
 		t.Fatalf("expected ErrInternal, got %v", err)
 	}
@@ -196,7 +195,7 @@ func TestDistanceMissingPositionInfo(t *testing.T) {
 	setpoint := commonpb.GlobalPosition_builder{Latitude: f64(0), Longitude: f64(0)}.Build()
 	emptyTelemetry := telemetrypb.Telemetry_builder{}.Build()
 
-	_, _, err := getDistance(setpoint, emptyTelemetry, opt.Tolerances{PosTol: 1})
+	_, _, err := getDistance(setpoint, emptyTelemetry, Tolerances{PosTol: 1})
 	if !errors.Is(err, ErrInternal) {
 		t.Fatalf("expected ErrInternal, got %v", err)
 	}
@@ -208,7 +207,7 @@ func TestDistanceMissingGimbalInfo(t *testing.T) {
 	setpoint := commonpb.Pose_builder{Pitch: f32(0)}.Build()
 	emptyTelemetry := telemetrypb.Telemetry_builder{}.Build()
 
-	_, _, err := getDistance(setpoint, emptyTelemetry, opt.Tolerances{AngleTol: 1})
+	_, _, err := getDistance(setpoint, emptyTelemetry, Tolerances{AngleTol: 1})
 	if !errors.Is(err, ErrInternal) {
 		t.Fatalf("expected ErrInternal, got %v", err)
 	}
@@ -221,7 +220,7 @@ func TestDistanceSetFieldMissingFromTelemetry(t *testing.T) {
 	setpoint := commonpb.GlobalPosition_builder{Altitude: f32(10)}.Build()
 	telemetry := telemetryGlobal(commonpb.GlobalPosition_builder{Latitude: f64(0)}.Build()) // no altitude
 
-	_, _, err := getDistance(setpoint, telemetry, opt.Tolerances{PosTol: 1})
+	_, _, err := getDistance(setpoint, telemetry, Tolerances{PosTol: 1})
 	if !errors.Is(err, ErrInternal) {
 		t.Fatalf("expected ErrInternal, got %v", err)
 	}
@@ -234,7 +233,7 @@ func TestDistanceOnlyComparesSetSubfields(t *testing.T) {
 	setpoint := commonpb.RelativePosition_builder{X: f32(5)}.Build() // only X set
 	telemetry := telemetryRelative(commonpb.RelativePosition_builder{X: f32(5)}.Build())
 
-	dist, ok, err := getDistance(setpoint, telemetry, opt.Tolerances{PosTol: 1})
+	dist, ok, err := getDistance(setpoint, telemetry, Tolerances{PosTol: 1})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -247,7 +246,7 @@ func TestDistanceOnlyComparesSetSubfields(t *testing.T) {
 // normalized per-axis distances rather than taking their max.
 func TestDistanceSumsAcrossAxesNotMax(t *testing.T) {
 	setpoint := commonpb.RelativePosition_builder{X: f32(0), Y: f32(0)}.Build()
-	tol := opt.Tolerances{PosTol: 1}
+	tol := Tolerances{PosTol: 1}
 	telemetry := telemetryRelative(commonpb.RelativePosition_builder{X: f32(3), Y: f32(4)}.Build())
 
 	dist, ok, err := getDistance(setpoint, telemetry, tol)
@@ -266,7 +265,7 @@ func TestDistanceSumsAcrossAxesNotMax(t *testing.T) {
 // does not cause a stall when other axes are progressing.
 func TestDistanceStuckAxisDoesNotMaskProgress(t *testing.T) {
 	setpoint := commonpb.RelativePosition_builder{X: f32(0), Y: f32(0)}.Build()
-	tol := opt.Tolerances{PosTol: 1}
+	tol := Tolerances{PosTol: 1}
 
 	steps := []*commonpb.RelativePosition{
 		commonpb.RelativePosition_builder{X: f32(10), Y: f32(5)}.Build(),
@@ -294,7 +293,7 @@ func TestDistanceStuckAxisDoesNotMaskProgress(t *testing.T) {
 // difference fails with an infinite normalized distance.
 func TestDistanceZeroToleranceRequiresExactMatch(t *testing.T) {
 	setpoint := commonpb.RelativePosition_builder{X: f32(5)}.Build()
-	tol := opt.Tolerances{PosTol: 0}
+	tol := Tolerances{PosTol: 0}
 
 	exact := telemetryRelative(commonpb.RelativePosition_builder{X: f32(5)}.Build())
 	dist, ok, err := getDistance(setpoint, exact, tol)

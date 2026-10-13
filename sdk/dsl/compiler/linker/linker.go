@@ -6,17 +6,16 @@ import (
 	"strconv"
 
 	"github.com/alecthomas/participle/v2/lexer"
-	"github.com/cmusatyalab/steeleagle/sdk"
+	"github.com/cmusatyalab/steeleagle/sdk/buildtools"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/compiler/loader"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/compiler/parser"
 )
 
 // ImportIR is the import clause intermediate representation.
 type ImportIR struct {
-	Path    string
-	Alias   string
-	Version string
-	Render  string
+	Path   string
+	Alias  string
+	Render string
 }
 
 // ValueIR is a value intermediate representation. Values can be
@@ -71,12 +70,12 @@ type linker struct {
 	registry *loader.TypeRegistry
 	decls    map[string]*TypeIR   // declarations linked so far, by DSL name
 	imports  map[string]*ImportIR // packages referenced by rendered code, by path
-	errors   []*sdk.CompileError
+	errors   []*buildtools.CompileError
 }
 
 // errorf records a compile error at pos, attributed to decl.
 func (l *linker) errorf(pos lexer.Position, decl string, format string, args ...any) {
-	l.errors = append(l.errors, &sdk.CompileError{
+	l.errors = append(l.errors, &buildtools.CompileError{
 		Err:    fmt.Errorf(format, args...),
 		File:   pos.Filename,
 		Decl:   decl,
@@ -262,7 +261,15 @@ func (l *linker) linkTransition(block *parser.DuringBlock) *TransitionIR {
 		l.errorf(block.Pos, block.Action, "declaration %s is not an action", block.Action)
 	}
 	ir.State = block.Action
+	seen := make(map[string]bool, len(block.Rules))
 	for _, rule := range block.Rules {
+		// Each event has at most one rule per action, since the rules
+		// render as a map literal keyed by event
+		if seen[rule.Event] {
+			l.errorf(rule.Pos, rule.Event, "duplicate rule for %s in the During block for %s", rule.Event, block.Action)
+			continue
+		}
+		seen[rule.Event] = true
 		if val, ok := l.decls[rule.Event]; rule.Event != "done" && (!ok || val.Stanza != loader.EventStanza) {
 			l.errorf(rule.Pos, rule.Event, "declaration %s is not an event", rule.Event)
 		} else if val, ok = l.decls[rule.Next]; !ok || val.Stanza != loader.ActionStanza {
@@ -280,7 +287,7 @@ func (l *linker) linkTransition(block *parser.DuringBlock) *TransitionIR {
 // Link links a parsed AST against a DSL type registry to create an
 // intermediate representation structure which can then be rendered
 // onto a main.go mission template.
-func Link(ast *parser.Ast, registry *loader.TypeRegistry) (*IR, []*sdk.CompileError) {
+func Link(ast *parser.Ast, registry *loader.TypeRegistry) (*IR, []*buildtools.CompileError) {
 	l := &linker{
 		registry: registry,
 		decls:    make(map[string]*TypeIR),
@@ -290,12 +297,10 @@ func Link(ast *parser.Ast, registry *loader.TypeRegistry) (*IR, []*sdk.CompileEr
 		Imports:     l.imports, // filled in as declarations are rendered
 		All:         l.decls,
 		Transitions: make(map[string]*TransitionIR),
+		Role:        ast.Role.Name,
 	}
 
-	// Check that every import was loaded. Imports are not copied into
-	// the IR, since Go rejects unused imports: only packages that the
-	// rendered declarations reference are imported.
-	for _, imp := range ast.Import.Imports {
+	for _, imp := range ast.Imports.Imports {
 		if _, ok := registry.Packages[imp.Path]; !ok {
 			l.errorf(imp.Pos, imp.Path, "unimported package %s", imp.Path)
 		}
@@ -322,15 +327,27 @@ func Link(ast *parser.Ast, registry *loader.TypeRegistry) (*IR, []*sdk.CompileEr
 	}
 
 	// Populate all transitions
-	if val, ok := l.decls[ast.Mission.Start]; !ok || val.Stanza != loader.ActionStanza {
-		// Check to make sure the start state is defined
-		l.errorf(ast.Mission.Pos, ast.Mission.Start, "declaration %s is not an action", ast.Mission.Start)
+	if ast.Mission.Start == "" {
+		// The grammar requires a Start state, so an empty one means no
+		// Mission was defined
+		l.errorf(lexer.Position{}, "", "missing Mission Start")
 	} else {
-		ir.Start = ast.Mission.Start
-	}
-	for _, block := range ast.Mission.Blocks {
-		transitionIR := l.linkTransition(block)
-		ir.Transitions[transitionIR.State] = transitionIR
+		if val, ok := l.decls[ast.Mission.Start]; !ok || val.Stanza != loader.ActionStanza {
+			// Check to make sure the start state is defined
+			l.errorf(ast.Mission.Pos, ast.Mission.Start, "declaration %s is not an action", ast.Mission.Start)
+		} else {
+			ir.Start = ast.Mission.Start
+		}
+		for _, block := range ast.Mission.Blocks {
+			// Each action has at most one During block, since a second
+			// would silently replace the first's transitions
+			if _, ok := ir.Transitions[block.Action]; ok {
+				l.errorf(block.Pos, block.Action, "duplicate During block for %s", block.Action)
+				continue
+			}
+			transitionIR := l.linkTransition(block)
+			ir.Transitions[transitionIR.State] = transitionIR
+		}
 	}
 
 	// Only return the IR if there are no errors

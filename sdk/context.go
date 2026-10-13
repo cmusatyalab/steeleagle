@@ -10,8 +10,8 @@ import (
 	"google.golang.org/grpc"
 )
 
-// VehicleContext is the underlying structure that is passed to user code underneath
-// a Vehicle interface.
+// vehicleContext is the underlying structure that is passed to user code
+// underneath a Vehicle interface.
 type vehicleContext struct {
 	ctx     context.Context
 	control driverpb.ControlServiceClient
@@ -32,17 +32,4 @@ func NewVehicleFromContext(ctx context.Context, conn *grpc.ClientConn, options .
 		option(vctx)
 	}
 	return vctx
-}
-
-// call is the underlying structure of all RPC calls.
-type call[T any] struct {
-	ctx  context.Context
-	exec func(context.Context) (T, error)
-}
-
-// run runs a call and returns a waiter object which can be used to wait for
-// a result.
-func (c *call[T]) run() *waiter[T] {
-	resp, err := c.exec(c.ctx)
-	return &waiter[T]{resp: resp, err: err}
 }

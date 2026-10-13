@@ -35,6 +35,11 @@ type DetectionResult interface {
 	GetDetections() []Detection
 }
 
+type ClassificationResult interface {
+	// #exclude-ifndef messages/result/ClassificationResult/score
+	GetScore() float64
+}
+
 type GuidanceResult_Trajectory interface {
 	// #exclude-ifndef messages/result/GuidanceResult/trajectory/x_vel
 	GetXVel() (float32, error)
@@ -53,37 +58,42 @@ type GuidanceResult interface {
 	hasTrajectory() bool
 }
 
-type SlamResult_RelativePosition interface {
-	// #exclude-ifndef messages/result/SlamResult/relative_position/x
+type PositionResult_RelativePosition interface {
+	// #exclude-ifndef messages/result/PositionResult/relative_position/x
 	GetX() (float32, error)
-	// #exclude-ifndef messages/result/SlamResult/relative_position/y
+	// #exclude-ifndef messages/result/PositionResult/relative_position/y
 	GetY() (float32, error)
-	// #exclude-ifndef messages/result/SlamResult/relative_position/z
+	// #exclude-ifndef messages/result/PositionResult/relative_position/z
 	GetZ() (float32, error)
-	// #exclude-ifndef messages/result/SlamResult/relative_position/angle
+	// #exclude-ifndef messages/result/PositionResult/relative_position/angle
 	GetAngle() (float32, error)
 }
 
-type SlamResult_GlobalPosition interface {
-	// #exclude-ifndef messages/result/SlamResult/global_position/latitude
+type PositionResult_GlobalPosition interface {
+	// #exclude-ifndef messages/result/PositionResult/global_position/latitude
 	GetLatitude() (float64, error)
-	// #exclude-ifndef messages/result/SlamResult/global_position/longitude
+	// #exclude-ifndef messages/result/PositionResult/global_position/longitude
 	GetLongitude() (float64, error)
-	// #exclude-ifndef messages/result/SlamResult/global_position/altitude
+	// #exclude-ifndef messages/result/PositionResult/global_position/altitude
 	GetAltitude() (float32, error)
-	// #exclude-ifndef messages/result/SlamResult/global_position/heading
+	// #exclude-ifndef messages/result/PositionResult/global_position/heading
 	GetHeading() (float32, error)
 }
 
-type SlamResult interface {
-	// #exclude-ifndef messages/result/SlamResult/relative_position
-	GetRelativePosition() (SlamResult_RelativePosition, error)
-	// #exclude-ifndef messages/result/SlamResult/relative_position
+type PositionResult interface {
+	// #exclude-ifndef messages/result/PositionResult/relative_position
+	GetRelativePosition() (PositionResult_RelativePosition, error)
+	// #exclude-ifndef messages/result/PositionResult/relative_position
 	hasRelativePosition() bool
-	// #exclude-ifndef messages/result/SlamResult/global_position
-	GetGlobalPosition() (SlamResult_GlobalPosition, error)
-	// #exclude-ifndef messages/result/SlamResult/global_position
+	// #exclude-ifndef messages/result/PositionResult/global_position
+	GetGlobalPosition() (PositionResult_GlobalPosition, error)
+	// #exclude-ifndef messages/result/PositionResult/global_position
 	hasGlobalPosition() bool
+}
+
+type GenericResult interface {
+	// #exclude-ifndef messages/result/GenericResult/payload
+	GetPayload() []byte
 }
 
 type ComputeResult interface {
@@ -95,16 +105,22 @@ type ComputeResult interface {
 	GetDetectionResult() (DetectionResult, error)
 	// #exclude-ifndef messages/result/ComputeResult/detection_result
 	hasDetectionResult() bool
+	// #exclude-ifndef messages/result/ComputeResult/classification_result
+	GetClassificationResult() (ClassificationResult, error)
+	// #exclude-ifndef messages/result/ComputeResult/classification_result
+	hasClassificationResult() bool
 	// #exclude-ifndef messages/result/ComputeResult/guidance_result
 	GetGuidanceResult() (GuidanceResult, error)
 	// #exclude-ifndef messages/result/ComputeResult/guidance_result
 	hasGuidanceResult() bool
-	// #exclude-ifndef messages/result/ComputeResult/slam_result
-	GetSlamResult() (SlamResult, error)
-	// #exclude-ifndef messages/result/ComputeResult/slam_result
-	hasSlamResult() bool
+	// #exclude-ifndef messages/result/ComputeResult/position_result
+	GetPositionResult() (PositionResult, error)
+	// #exclude-ifndef messages/result/ComputeResult/position_result
+	hasPositionResult() bool
 	// #exclude-ifndef messages/result/ComputeResult/generic_result
-	GetGenericResult() []byte
+	GetGenericResult() (GenericResult, error)
+	// #exclude-ifndef messages/result/ComputeResult/generic_result
+	hasGenericResult() bool
 }
 
 type BatteryInfo interface {

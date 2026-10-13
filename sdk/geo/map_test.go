@@ -1,15 +1,14 @@
 package geo
 
 import (
-	"strings"
 	"testing"
 )
 
-// TestGetPolygonFound checks that GetPolygon returns the polygon stored
+// TestPolygonFound checks that Polygon returns the polygon stored
 // under a matching key.
-func TestGetPolygonFound(t *testing.T) {
+func TestPolygonFound(t *testing.T) {
 	m := testMap()
-	poly, err := m.GetPolygon("poly")
+	poly, err := m.Polygon("poly")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -18,29 +17,29 @@ func TestGetPolygonFound(t *testing.T) {
 	}
 }
 
-// TestGetPolygonMissingKey checks that GetPolygon errors when the key
+// TestPolygonMissingKey checks that Polygon errors when the key
 // isn't present in geometry.
-func TestGetPolygonMissingKey(t *testing.T) {
+func TestPolygonMissingKey(t *testing.T) {
 	m := testMap()
-	if _, err := m.GetPolygon("missing"); err == nil {
+	if _, err := m.Polygon("missing"); err == nil {
 		t.Fatal("expected an error for a missing key")
 	}
 }
 
-// TestGetPolygonWrongType checks that GetPolygon errors when the key maps
+// TestPolygonWrongType checks that Polygon errors when the key maps
 // to a geometry that isn't a polygon.
-func TestGetPolygonWrongType(t *testing.T) {
+func TestPolygonWrongType(t *testing.T) {
 	m := testMap()
-	if _, err := m.GetPolygon("line"); err == nil {
+	if _, err := m.Polygon("line"); err == nil {
 		t.Fatal("expected an error for a key that isn't a polygon")
 	}
 }
 
-// TestGetLineStringFound checks that GetLineString returns the line
+// TestLineStringFound checks that LineString returns the line
 // string stored under a matching key.
-func TestGetLineStringFound(t *testing.T) {
+func TestLineStringFound(t *testing.T) {
 	m := testMap()
-	ls, err := m.GetLineString("line")
+	ls, err := m.LineString("line")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -49,20 +48,20 @@ func TestGetLineStringFound(t *testing.T) {
 	}
 }
 
-// TestGetLineStringMissingKey checks that GetLineString errors when the
+// TestLineStringMissingKey checks that LineString errors when the
 // key isn't present in geometry.
-func TestGetLineStringMissingKey(t *testing.T) {
+func TestLineStringMissingKey(t *testing.T) {
 	m := testMap()
-	if _, err := m.GetLineString("missing"); err == nil {
+	if _, err := m.LineString("missing"); err == nil {
 		t.Fatal("expected an error for a missing key")
 	}
 }
 
-// TestGetLineStringWrongType checks that GetLineString errors when the
+// TestLineStringWrongType checks that LineString errors when the
 // key maps to a geometry that isn't a line string.
-func TestGetLineStringWrongType(t *testing.T) {
+func TestLineStringWrongType(t *testing.T) {
 	m := testMap()
-	if _, err := m.GetLineString("poly"); err == nil {
+	if _, err := m.LineString("poly"); err == nil {
 		t.Fatal("expected an error for a key that isn't a line string")
 	}
 }
@@ -71,30 +70,30 @@ func TestGetLineStringWrongType(t *testing.T) {
 // geometry in it.
 func TestNewMapIsEmpty(t *testing.T) {
 	m := NewMap()
-	if _, err := m.GetPolygon("anything"); err == nil {
+	if _, err := m.Polygon("anything"); err == nil {
 		t.Fatal("expected an error looking up a polygon in an empty map")
 	}
 }
 
 // TestNewMapFromGeoJsonBuildsUsableMap checks that a map built directly
-// from GeoJSON data can be queried via GetPolygon/GetLineString.
+// from GeoJSON data can be queried via Polygon/LineString.
 func TestNewMapFromGeoJsonBuildsUsableMap(t *testing.T) {
-	m, err := NewMapFromGeoJson(strings.NewReader(sampleGeoJSON))
+	m, err := NewMapFromGeoJson([]byte(sampleGeoJson))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if _, err := m.GetPolygon("area"); err != nil {
-		t.Errorf("GetPolygon(area): %v", err)
+	if _, err := m.Polygon("area"); err != nil {
+		t.Errorf("Polygon(area): %v", err)
 	}
-	if _, err := m.GetLineString("path"); err != nil {
-		t.Errorf("GetLineString(path): %v", err)
+	if _, err := m.LineString("path"); err != nil {
+		t.Errorf("LineString(path): %v", err)
 	}
 }
 
-// TestNewMapFromGeoJsonInvalidJSON checks that malformed GeoJSON input
+// TestNewMapFromGeoJsonInvalidJson checks that malformed GeoJSON input
 // surfaces an error rather than returning a partially built map.
-func TestNewMapFromGeoJsonInvalidJSON(t *testing.T) {
-	if _, err := NewMapFromGeoJson(strings.NewReader("not json")); err == nil {
+func TestNewMapFromGeoJsonInvalidJson(t *testing.T) {
+	if _, err := NewMapFromGeoJson([]byte("not json")); err == nil {
 		t.Fatal("expected an error for invalid JSON")
 	}
 }

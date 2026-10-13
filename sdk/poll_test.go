@@ -10,7 +10,6 @@ import (
 	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
 	driverpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver"
 	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
-	"github.com/cmusatyalab/steeleagle/sdk/opt"
 )
 
 // TestFetchTelemetrySuccess tests to make sure fetchTelemetry works on a mock
@@ -115,7 +114,7 @@ func TestActionPollerImmediateMatch(t *testing.T) {
 	}.Build()
 	v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-	err := actionPoller(v, resp)(opt.WaitOptions{Timeout: time.Second})
+	err := actionPoller(v, resp)(WaitOptions{Timeout: time.Second})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -134,7 +133,7 @@ func TestActionPollerModeMismatchCancels(t *testing.T) {
 	}.Build()
 	v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-	err := actionPoller(v, resp)(opt.WaitOptions{Timeout: time.Hour, Stall: 20 * time.Millisecond})
+	err := actionPoller(v, resp)(WaitOptions{Timeout: time.Hour, Stall: 20 * time.Millisecond})
 	if !errors.Is(err, ErrCancelled) {
 		t.Fatalf("expected ErrCancelled, got %v", err)
 	}
@@ -160,7 +159,7 @@ func TestActionPollerModeMismatchRecoversWithinStall(t *testing.T) {
 	}
 	v := testVehicleContext(context.Background(), respond)
 
-	err := actionPoller(v, resp)(opt.WaitOptions{Timeout: time.Second, Stall: time.Hour})
+	err := actionPoller(v, resp)(WaitOptions{Timeout: time.Second, Stall: time.Hour})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -187,7 +186,7 @@ func TestActionPollerHonorsPollInterval(t *testing.T) {
 		timeout  = 220 * time.Millisecond
 		interval = 50 * time.Millisecond
 	)
-	err := actionPoller(v, resp)(opt.WaitOptions{Timeout: timeout, Interval: interval})
+	err := actionPoller(v, resp)(WaitOptions{Timeout: timeout, Interval: interval})
 	if !errors.Is(err, ErrTimeout) {
 		t.Fatalf("expected ErrTimeout, got %v", err)
 	}
@@ -209,7 +208,7 @@ func TestActionPollerTimeout(t *testing.T) {
 	}.Build()
 	v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-	err := actionPoller(v, resp)(opt.WaitOptions{Timeout: 20 * time.Millisecond})
+	err := actionPoller(v, resp)(WaitOptions{Timeout: 20 * time.Millisecond})
 	if !errors.Is(err, ErrTimeout) {
 		t.Fatalf("expected ErrTimeout, got %v", err)
 	}
@@ -237,7 +236,7 @@ func TestActionPollerZeroTimeoutNeverTimesOut(t *testing.T) {
 	}
 	v := testVehicleContext(context.Background(), respond)
 
-	err := actionPoller(v, resp)(opt.WaitOptions{}) // zero-value Timeout
+	err := actionPoller(v, resp)(WaitOptions{}) // zero-value Timeout
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -255,7 +254,7 @@ func TestActionPollerContextExpired(t *testing.T) {
 	// cancellation, not a normal telemetry-based exit
 	v := testVehicleContext(ctx, failingTelemetry)
 
-	err := actionPoller(v, resp)(opt.WaitOptions{Timeout: 5 * time.Second})
+	err := actionPoller(v, resp)(WaitOptions{Timeout: 5 * time.Second})
 	if !errors.Is(err, ErrContextExpired) {
 		t.Fatalf("expected ErrContextExpired, got %v", err)
 	}
@@ -269,14 +268,14 @@ func TestGuidancePollerImmediateMatch(t *testing.T) {
 		Setpoint:       setpoint,
 		ExpectedStatus: telemetrypb.MotionStatus_MOTION_STATUS_HOLDING,
 	}.Build()
-	tol := opt.Tolerances{PosTol: 5}
+	tol := Tolerances{PosTol: 5}
 
 	tel := telemetryForGuidance(setpoint, commonpb.GlobalPosition_builder{
 		Latitude: f64(1), Longitude: f64(1), Altitude: f32(10),
 	}.Build(), telemetrypb.MotionStatus_MOTION_STATUS_HOLDING)
 	v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-	err := guidancePoller(v, resp)(opt.WaitOptions{Timeout: time.Second, Tolerances: tol})
+	err := guidancePoller(v, resp)(WaitOptions{Timeout: time.Second, Tolerances: tol})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -298,7 +297,7 @@ func TestGuidancePollerSetpointChangedCancels(t *testing.T) {
 	tel := telemetryForGuidance(otherSetpoint, otherSetpoint, telemetrypb.MotionStatus_MOTION_STATUS_HOLDING)
 	v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-	err := guidancePoller(v, resp)(opt.WaitOptions{Timeout: time.Hour, Stall: 20 * time.Millisecond})
+	err := guidancePoller(v, resp)(WaitOptions{Timeout: time.Hour, Stall: 20 * time.Millisecond})
 	if !errors.Is(err, ErrCancelled) {
 		t.Fatalf("expected ErrCancelled, got %v", err)
 	}
@@ -312,7 +311,7 @@ func TestGuidancePollerSetpointRecoversWithinStall(t *testing.T) {
 		Setpoint:       setpoint,
 		ExpectedStatus: telemetrypb.MotionStatus_MOTION_STATUS_HOLDING,
 	}.Build()
-	tol := opt.Tolerances{PosTol: 5}
+	tol := Tolerances{PosTol: 5}
 
 	oldSetpoint := commonpb.GlobalPosition_builder{Latitude: f64(0), Longitude: f64(0)}.Build()
 	calls := 0
@@ -327,7 +326,7 @@ func TestGuidancePollerSetpointRecoversWithinStall(t *testing.T) {
 	}
 	v := testVehicleContext(context.Background(), respond)
 
-	err := guidancePoller(v, resp)(opt.WaitOptions{Timeout: time.Second, Stall: time.Hour, Tolerances: tol})
+	err := guidancePoller(v, resp)(WaitOptions{Timeout: time.Second, Stall: time.Hour, Tolerances: tol})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -340,7 +339,7 @@ func TestGuidancePollerTimeout(t *testing.T) {
 		Setpoint:       setpoint,
 		ExpectedStatus: telemetrypb.MotionStatus_MOTION_STATUS_HOLDING,
 	}.Build()
-	tol := opt.Tolerances{PosTol: 1}
+	tol := Tolerances{PosTol: 1}
 
 	// Far from the setpoint, but making steady one-way progress each call
 	// so the stall detector never trips before the timeout does
@@ -354,7 +353,7 @@ func TestGuidancePollerTimeout(t *testing.T) {
 		return vehiclepb.GetTelemetryResponse_builder{Telemetry: tel}.Build(), nil
 	})
 
-	err := guidancePoller(v, resp)(opt.WaitOptions{Timeout: 20 * time.Millisecond, Stall: time.Hour, Tolerances: tol})
+	err := guidancePoller(v, resp)(WaitOptions{Timeout: 20 * time.Millisecond, Stall: time.Hour, Tolerances: tol})
 	if !errors.Is(err, ErrTimeout) {
 		t.Fatalf("expected ErrTimeout, got %v", err)
 	}
@@ -371,7 +370,7 @@ func TestGuidancePollerStallDetected(t *testing.T) {
 		Setpoint:       setpoint,
 		ExpectedStatus: telemetrypb.MotionStatus_MOTION_STATUS_HOLDING,
 	}.Build()
-	tol := opt.Tolerances{PosTol: 1}
+	tol := Tolerances{PosTol: 1}
 
 	t.Run("no progress trips the stall timer", func(t *testing.T) {
 		// The vehicle reports the correct setpoint but never actually moves,
@@ -380,7 +379,7 @@ func TestGuidancePollerStallDetected(t *testing.T) {
 		tel := telemetryForGuidance(setpoint, actual, telemetrypb.MotionStatus_MOTION_STATUS_IN_TRANSIT)
 		v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-		err := guidancePoller(v, resp)(opt.WaitOptions{Timeout: time.Hour, Stall: 20 * time.Millisecond, Tolerances: tol})
+		err := guidancePoller(v, resp)(WaitOptions{Timeout: time.Hour, Stall: 20 * time.Millisecond, Tolerances: tol})
 		if !errors.Is(err, ErrFailedExpectation) {
 			t.Fatalf("expected ErrFailedExpectation, got %v", err)
 		}
@@ -416,7 +415,7 @@ func TestGuidancePollerStallDetected(t *testing.T) {
 			return vehiclepb.GetTelemetryResponse_builder{Telemetry: tel}.Build(), nil
 		})
 
-		err := guidancePoller(v, resp)(opt.WaitOptions{Timeout: 500 * time.Millisecond, Stall: stall, Tolerances: tol})
+		err := guidancePoller(v, resp)(WaitOptions{Timeout: 500 * time.Millisecond, Stall: stall, Tolerances: tol})
 		elapsed := time.Since(start)
 		if !errors.Is(err, ErrFailedExpectation) {
 			t.Fatalf("expected ErrFailedExpectation once the second stall completes, got %v (after %v)", err, elapsed)
@@ -444,7 +443,7 @@ func TestGuidancePollerStallDetected(t *testing.T) {
 			return vehiclepb.GetTelemetryResponse_builder{Telemetry: tel}.Build(), nil
 		})
 
-		err := guidancePoller(v, resp)(opt.WaitOptions{Timeout: time.Hour, Stall: 30 * time.Millisecond, Interval: time.Millisecond, Tolerances: tol})
+		err := guidancePoller(v, resp)(WaitOptions{Timeout: time.Hour, Stall: 30 * time.Millisecond, Interval: time.Millisecond, Tolerances: tol})
 		if !errors.Is(err, ErrFailedExpectation) {
 			t.Fatalf("expected ErrFailedExpectation, got %v", err)
 		}
@@ -460,12 +459,12 @@ func TestGuidancePollerStallDetectedAtZeroDistance(t *testing.T) {
 		Setpoint:       setpoint,
 		ExpectedStatus: telemetrypb.MotionStatus_MOTION_STATUS_HOLDING,
 	}.Build()
-	tol := opt.Tolerances{PosTol: 1}
+	tol := Tolerances{PosTol: 1}
 
 	tel := telemetryForGuidance(setpoint, setpoint, telemetrypb.MotionStatus_MOTION_STATUS_IN_TRANSIT)
 	v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-	err := guidancePoller(v, resp)(opt.WaitOptions{Timeout: time.Second, Stall: 20 * time.Millisecond, Tolerances: tol})
+	err := guidancePoller(v, resp)(WaitOptions{Timeout: time.Second, Stall: 20 * time.Millisecond, Tolerances: tol})
 	if !errors.Is(err, ErrFailedExpectation) {
 		t.Fatalf("expected ErrFailedExpectation, got %v", err)
 	}
@@ -486,7 +485,7 @@ func TestGuidancePollerContextExpired(t *testing.T) {
 	cancel()
 	v := testVehicleContext(ctx, constantTelemetry(tel))
 
-	err := guidancePoller(v, resp)(opt.WaitOptions{Timeout: 5 * time.Second, Stall: time.Hour})
+	err := guidancePoller(v, resp)(WaitOptions{Timeout: 5 * time.Second, Stall: time.Hour})
 	if !errors.Is(err, ErrContextExpired) {
 		t.Fatalf("expected ErrContextExpired, got %v", err)
 	}
@@ -497,12 +496,12 @@ func TestGuidancePollerContextExpired(t *testing.T) {
 func TestGimbalPollerImmediateMatch(t *testing.T) {
 	setpoint := commonpb.Pose_builder{Pitch: f32(10), Yaw: f32(90)}.Build()
 	resp := driverpb.SetGimbalAngleTargetResponse_builder{Setpoint: setpoint}.Build()
-	tol := opt.Tolerances{AngleTol: 3}
+	tol := Tolerances{AngleTol: 3}
 
 	tel := telemetryForGimbal(setpoint, commonpb.Pose_builder{Pitch: f32(10), Yaw: f32(90)}.Build())
 	v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-	err := gimbalPoller(v, resp)(opt.WaitOptions{Timeout: time.Second, Tolerances: tol})
+	err := gimbalPoller(v, resp)(WaitOptions{Timeout: time.Second, Tolerances: tol})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -519,7 +518,7 @@ func TestGimbalPollerSetpointChangedCancels(t *testing.T) {
 	tel := telemetryForGimbal(otherSetpoint, otherSetpoint)
 	v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-	err := gimbalPoller(v, resp)(opt.WaitOptions{Timeout: time.Hour, Stall: 20 * time.Millisecond})
+	err := gimbalPoller(v, resp)(WaitOptions{Timeout: time.Hour, Stall: 20 * time.Millisecond})
 	if !errors.Is(err, ErrCancelled) {
 		t.Fatalf("expected ErrCancelled, got %v", err)
 	}
@@ -530,7 +529,7 @@ func TestGimbalPollerSetpointChangedCancels(t *testing.T) {
 func TestGimbalPollerSetpointRecoversWithinStall(t *testing.T) {
 	setpoint := commonpb.Pose_builder{Pitch: f32(10)}.Build()
 	resp := driverpb.SetGimbalAngleTargetResponse_builder{Setpoint: setpoint}.Build()
-	tol := opt.Tolerances{AngleTol: 3}
+	tol := Tolerances{AngleTol: 3}
 
 	oldSetpoint := commonpb.Pose_builder{Pitch: f32(0)}.Build()
 	calls := 0
@@ -545,7 +544,7 @@ func TestGimbalPollerSetpointRecoversWithinStall(t *testing.T) {
 	}
 	v := testVehicleContext(context.Background(), respond)
 
-	err := gimbalPoller(v, resp)(opt.WaitOptions{Timeout: time.Second, Stall: time.Hour, Tolerances: tol})
+	err := gimbalPoller(v, resp)(WaitOptions{Timeout: time.Second, Stall: time.Hour, Tolerances: tol})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -555,13 +554,13 @@ func TestGimbalPollerSetpointRecoversWithinStall(t *testing.T) {
 func TestGimbalPollerTimeout(t *testing.T) {
 	setpoint := commonpb.Pose_builder{Pitch: f32(10)}.Build()
 	resp := driverpb.SetGimbalAngleTargetResponse_builder{Setpoint: setpoint}.Build()
-	tol := opt.Tolerances{AngleTol: 1}
+	tol := Tolerances{AngleTol: 1}
 
 	actual := commonpb.Pose_builder{Pitch: f32(90)}.Build() // stays far away
 	tel := telemetryForGimbal(setpoint, actual)
 	v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-	err := gimbalPoller(v, resp)(opt.WaitOptions{Timeout: 20 * time.Millisecond, Stall: time.Hour, Tolerances: tol})
+	err := gimbalPoller(v, resp)(WaitOptions{Timeout: 20 * time.Millisecond, Stall: time.Hour, Tolerances: tol})
 	if !errors.Is(err, ErrTimeout) {
 		t.Fatalf("expected ErrTimeout, got %v", err)
 	}
@@ -572,13 +571,13 @@ func TestGimbalPollerTimeout(t *testing.T) {
 func TestGimbalPollerStallDetected(t *testing.T) {
 	setpoint := commonpb.Pose_builder{Pitch: f32(10)}.Build()
 	resp := driverpb.SetGimbalAngleTargetResponse_builder{Setpoint: setpoint}.Build()
-	tol := opt.Tolerances{AngleTol: 1}
+	tol := Tolerances{AngleTol: 1}
 
 	actual := commonpb.Pose_builder{Pitch: f32(90)}.Build() // never moves
 	tel := telemetryForGimbal(setpoint, actual)
 	v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-	err := gimbalPoller(v, resp)(opt.WaitOptions{Timeout: time.Hour, Stall: 20 * time.Millisecond, Tolerances: tol})
+	err := gimbalPoller(v, resp)(WaitOptions{Timeout: time.Hour, Stall: 20 * time.Millisecond, Tolerances: tol})
 	if !errors.Is(err, ErrFailedExpectation) {
 		t.Fatalf("expected ErrFailedExpectation, got %v", err)
 	}
@@ -596,7 +595,7 @@ func TestGimbalPollerContextExpired(t *testing.T) {
 	cancel()
 	v := testVehicleContext(ctx, constantTelemetry(tel))
 
-	err := gimbalPoller(v, resp)(opt.WaitOptions{Timeout: 5 * time.Second, Stall: time.Hour})
+	err := gimbalPoller(v, resp)(WaitOptions{Timeout: 5 * time.Second, Stall: time.Hour})
 	if !errors.Is(err, ErrContextExpired) {
 		t.Fatalf("expected ErrContextExpired, got %v", err)
 	}

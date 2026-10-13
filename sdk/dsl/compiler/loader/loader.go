@@ -7,13 +7,22 @@ import (
 	"os"
 	"strings"
 
-	"github.com/cmusatyalab/steeleagle/sdk"
+	"github.com/alecthomas/participle/v2/lexer"
+	"github.com/cmusatyalab/steeleagle/sdk/buildtools"
 	"golang.org/x/tools/go/packages"
 )
 
 // dslPkgPath is the base DSL package which contains interface
 // definitions.
 const dslPkgPath = "github.com/cmusatyalab/steeleagle/sdk/dsl"
+
+// BuildFlags returns the go build flags LoadTypes loads packages with. A
+// go build of the loaded packages must pass the same flags, or it can't
+// reuse the build cache entries the load created and recompiles every
+// dependency.
+func BuildFlags() []string {
+	return []string{"-trimpath"}
+}
 
 // Stanza marks types as belonging to a particular stanza in the AST.
 type Stanza int
@@ -27,8 +36,9 @@ const (
 // PackageRequest represents an import request for a Go package.
 // A list of these is passed into the loader to load types.
 type PackageRequest struct {
-	Path  string // import path
-	Alias string // import alias
+	Path  string         // import path
+	Alias string         // import alias
+	Pos   lexer.Position // position of the import in the mission, if any
 }
 
 // Field holds a field's type and its comment.
@@ -64,8 +74,11 @@ type TypeRegistry struct {
 }
 
 // LoadTypes loads all DSL types present in imports (Actions, Events, and Datatypes).
-// Also loads comments and detects optional types by #optional tags.
-func LoadTypes(imports []*PackageRequest, workspace string, overlay map[string][]byte, env []string) (*TypeRegistry, []*sdk.CompileError) {
+// Also loads comments and detects optional types by #optional tags. The
+// base dsl package is always loaded, unaliased unless imports already
+// imports it under an alias. Importing a package twice, or two packages
+// under the same qualifier, is reported as an error.
+func LoadTypes(imports []*PackageRequest, workspace string, overlay map[string][]byte, env []string) (*TypeRegistry, []*buildtools.CompileError) {
 	registry := &TypeRegistry{
 		Packages:    make(map[string]*packages.Package),
 		AliasToPack: make(map[string]*packages.Package),
@@ -76,7 +89,8 @@ func LoadTypes(imports []*PackageRequest, workspace string, overlay map[string][
 		Datatypes:   make(map[string]*Base),
 		Enums:       make(map[string]*Base),
 	}
-	errors := []*sdk.CompileError{}
+	errors := []*buildtools.CompileError{}
+	imports = withDslImport(imports)
 
 	// Create a list of packages to import, remembering each one's alias so
 	// it can be attached once the package is actually loaded below.
@@ -89,15 +103,17 @@ func LoadTypes(imports []*PackageRequest, workspace string, overlay map[string][
 		}
 	}
 	cfg := &packages.Config{
-		Dir:        workspace,
-		Env:        append(append(os.Environ(), "GOFLAGS=-mod=mod"), env...),
-		BuildFlags: []string{"-trimpath"},
+		Dir: workspace,
+		Env: append(os.Environ(), env...),
+		// -mod=mod lets the load add missing requirements to go.mod, and is
+		// passed as a flag so a GOFLAGS in env can't drop it
+		BuildFlags: append(BuildFlags(), "-mod=mod"),
 		Mode:       packages.NeedName | packages.NeedTypes | packages.NeedSyntax,
 		Overlay:    overlay,
 	}
 	pkgs, err := packages.Load(cfg, pkgPaths...)
 	if err != nil {
-		return nil, append(errors, &sdk.CompileError{
+		return nil, append(errors, &buildtools.CompileError{
 			Err: fmt.Errorf("failed to load packages: %w", err),
 		})
 	}
@@ -116,6 +132,9 @@ func LoadTypes(imports []*PackageRequest, workspace string, overlay map[string][
 	if len(errors) > 0 {
 		return nil, errors
 	}
+	if errs := checkImports(imports, registry.Packages); len(errs) > 0 {
+		return nil, errs
+	}
 
 	// Lookup the concrete interface definitions in dslPkgPath for
 	// Action, Event, and Datatype. Return a compile error and nil if
@@ -123,7 +142,7 @@ func LoadTypes(imports []*PackageRequest, workspace string, overlay map[string][
 	// be found
 	dslPkg, ok := registry.Packages[dslPkgPath]
 	if !ok {
-		return nil, append(errors, &sdk.CompileError{
+		return nil, append(errors, &buildtools.CompileError{
 			Err: fmt.Errorf("base dsl package %q was not imported", dslPkgPath),
 		})
 	}
@@ -131,9 +150,9 @@ func LoadTypes(imports []*PackageRequest, workspace string, overlay map[string][
 		dslPkg, []string{"Action", "Event", "Datatype"},
 	)
 	if err != nil {
-		return nil, append(errors, &sdk.CompileError{Err: err, File: dslPkgPath})
+		return nil, append(errors, &buildtools.CompileError{Err: err, File: dslPkgPath})
 	} else if len(interfaces) != 3 {
-		return nil, append(errors, &sdk.CompileError{
+		return nil, append(errors, &buildtools.CompileError{
 			Err:  fmt.Errorf("expected 3 interfaces back, got %d instead", len(interfaces)),
 			File: dslPkgPath,
 		})
@@ -174,7 +193,7 @@ func LoadTypes(imports []*PackageRequest, workspace string, overlay map[string][
 			case *types.Struct:
 				idx, err := implements(named, interfaces)
 				if err != nil { // implements more than one interface
-					errors = append(errors, &sdk.CompileError{
+					errors = append(errors, &buildtools.CompileError{
 						Err:  fmt.Errorf("%s implements more than one of Action, Event, and Datatype", qualifiedName),
 						File: p.PkgPath,
 					})

@@ -2,13 +2,15 @@ package geo
 
 import (
 	"testing"
+
+	"github.com/cmusatyalab/steeleagle/sdk/params"
 )
 
 // TestCorridorScanMissingArea checks that CorridorScan surfaces an error
 // when the requested area key isn't present in the map's geometry.
 func TestCorridorScanMissingArea(t *testing.T) {
 	m := testMap()
-	if _, err := m.CorridorScan("missing", 0); err == nil {
+	if _, err := CorridorScan(m, params.Polygon("missing"), 0); err == nil {
 		t.Fatal("expected an error for a missing area key")
 	}
 }
@@ -17,7 +19,7 @@ func TestCorridorScanMissingArea(t *testing.T) {
 // area key maps to a non-polygon geometry.
 func TestCorridorScanAreaNotPolygon(t *testing.T) {
 	m := testMap()
-	if _, err := m.CorridorScan("line", 0); err == nil {
+	if _, err := CorridorScan(m, params.Polygon("line"), 0); err == nil {
 		t.Fatal("expected an error for a non-polygon area")
 	}
 }
@@ -27,7 +29,7 @@ func TestCorridorScanAreaNotPolygon(t *testing.T) {
 // with no extra or missing entries.
 func TestCorridorScanReturnsOneVertexPerCoordinate(t *testing.T) {
 	m := testMap() // "poly" ring: (0,0), (0,10), (10,10), (10,0), (0,0)
-	points, err := m.CorridorScan("poly", 50)
+	points, err := CorridorScan(m, params.Polygon("poly"), 50)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -48,7 +50,7 @@ func TestCorridorScanReturnsOneVertexPerCoordinate(t *testing.T) {
 // requested altitude.
 func TestCorridorScanSetsAltitude(t *testing.T) {
 	m := testMap()
-	points, err := m.CorridorScan("poly", 75)
+	points, err := CorridorScan(m, params.Polygon("poly"), 75)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -64,7 +66,7 @@ func TestCorridorScanSetsAltitude(t *testing.T) {
 // previous point to it.
 func TestCorridorScanSetsHeadings(t *testing.T) {
 	m := testMap()
-	points, err := m.CorridorScan("poly", 0)
+	points, err := CorridorScan(m, params.Polygon("poly"), 0)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

@@ -1,7 +1,6 @@
 package geo
 
 import (
-	"github.com/cmusatyalab/steeleagle/sdk/params"
 	"github.com/peterstace/simplefeatures/geom"
 )
 
@@ -10,7 +9,7 @@ func testMap() *Map {
 	poly := geom.NewSingleRingPolygonXY(0, 0, 0, 10, 10, 10, 10, 0, 0, 0)
 	line := geom.NewLineStringXY(0, 0, 10, 10)
 	return &Map{
-		geometry: map[params.MapFeature]geom.Geometry{
+		geometry: map[string]geom.Geometry{
 			"poly": poly.AsGeometry(),
 			"line": line.AsGeometry(),
 		},

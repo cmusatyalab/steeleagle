@@ -13,7 +13,7 @@ import (
 // SurveyScan computes a survey pattern over a WGS84 lon/lat polygon.
 // Spacing is the distance in meters between scan lines, and heading is
 // the heading of each survey corridor.
-func (m *Map) SurveyScan(area params.MapFeature, spacing, heading, altitude float32) ([]GeoPoint, error) {
+func SurveyScan(m *Map, area params.Polygon, spacing, heading, altitude float32) ([]GeoPoint, error) {
 	if spacing <= 0 {
 		return nil, fmt.Errorf("spacing must be positive")
 	}
@@ -21,7 +21,7 @@ func (m *Map) SurveyScan(area params.MapFeature, spacing, heading, altitude floa
 	angle := (90 - float64(heading)) * math.Pi / 180
 
 	// Retrieve polygon from store
-	poly, err := m.GetPolygon(area)
+	poly, err := m.Polygon(area)
 	if err != nil {
 		return nil, err
 	}

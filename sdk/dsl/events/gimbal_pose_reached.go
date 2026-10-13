@@ -5,7 +5,7 @@ import (
 
 	"github.com/cmusatyalab/steeleagle/sdk"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl"
-	"github.com/cmusatyalab/steeleagle/sdk/dsl/types"
+	"github.com/cmusatyalab/steeleagle/sdk/dsl/datatypes"
 	"github.com/cmusatyalab/steeleagle/sdk/enums"
 )
 
@@ -21,7 +21,7 @@ type gimbalPose interface {
 // within Tolerance of Target on every axis. Frame selects which
 // telemetry pose to compare against.
 type GimbalPoseReached struct {
-	Target types.Pose
+	Target datatypes.Pose
 	// #optional[3.0]
 	Tolerance float32
 	Frame     enums.ReferenceFrame

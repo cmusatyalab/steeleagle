@@ -39,7 +39,7 @@ action/event library, and vehicle-capability validation. Since then:
 - The frontend's existing `generateDsl()` (`PlanPage.jsx:69`) already
   emits text that matches the Go DSL's grammar (`Type instanceId(k = v,
   ...)` decls, `During X: event -> Y` transitions) almost exactly. It's
-  missing only the `Import:`/`Role:`/`Override:` stanzas the Go DSL
+  missing only the `Modules:`/`Imports:`/`Role:` stanzas the Go DSL
   needs that the Python-era DSL never had.
 
 ## Goals
@@ -78,12 +78,12 @@ action/event library, and vehicle-capability validation. Since then:
 - **GeoJSON-backed map features for `actions.Patrol`.** `actions.Patrol`'s
   required `Area` field (a `params.MapFeature`) cannot currently resolve
   through this service: `Validate`/`Build` never receive or thread a
-  GeoJSON feature collection, and `NewService` never populates `sdkTypes`
-  for `sdk.CreateOverlay`, so no `MapFeature` constants exist in the
+  GeoJSON feature collection, and `NewService` never populates the params constants
+  for `preprocess.CreateOverlay`, so no `MapFeature` constants exist in the
   palette either. This gap was discovered during this plan's
   implementation, not originally scoped out; full support (new proto
   fields, threading a GeoJSON payload through `Validate`/`Build`/
-  `NewService`, and populating `CreateOverlay`'s `sdkTypes`) is deferred
+  `NewService`, and populating `CreateOverlay`'s constants) is deferred
   to a follow-on plan.
 
 ## Architecture
@@ -119,7 +119,7 @@ action/event library, and vehicle-capability validation. Since then:
   gRPC endpoint").
 - **The registry loads once at startup**, not per request. The service
   loads the default import set (base `sdk`, `dsl/actions`, `dsl/events`,
-  `dsl/types`) into a `TypeRegistry` and keeps the build workspace/cache
+  `dsl/datatypes`) into a `TypeRegistry` and keeps the build workspace/cache
   resident in memory, since a persistent process was already the locked
   interop decision (Go and Python can't share process/state, and the
   frontend debounce-validates every ~500ms — a CLI subprocess per call,
@@ -168,7 +168,7 @@ today.
 top-level shape the frontend already consumes (`{"actions": {...},
 "events": {...}}`), sourced from Go instead of Python, plus the new
 `imports`/`default_role` keys the frontend needs to seed
-`generateDsl()`'s default `Import:`/`Role:` stanzas.
+`generateDsl()`'s default `Imports:`/`Role:` stanzas.
 
 ## Graph → AST Construction
 
@@ -249,7 +249,7 @@ the canvas needing dedicated UI for them.
 
 **Error mapping is direct, not position-based.** Since every `Decl.Name`
 is set to the canvas `instance_id` by convention, every
-`*sdk.CompileError` the pipeline returns already names the failing
+`*buildtools.CompileError` the pipeline returns already names the failing
 identifier — no line/offset translation is needed. Errors with no
 natural node/event owner (a bad `start_id`, a missing base import) come
 back with `node_id`/`event_id` unset, same as some cases in today's
@@ -294,8 +294,8 @@ scheme.
 
 ## Frontend Changes
 
-- **Default `Import:`/`Role:` generation.** `generateDsl()` prepends the
-  `Import:`/`Role:` stanzas from `/api/schema`'s new `imports`/
+- **Default `Imports:`/`Role:` generation.** `generateDsl()` prepends the
+  `Imports:`/`Role:` stanzas from `/api/schema`'s new `imports`/
   `default_role` fields automatically — no user action needed for the
   common case.
 - **The DSL tab becomes editable**, not read-only, as the escape hatch

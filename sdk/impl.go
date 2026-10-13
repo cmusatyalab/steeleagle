@@ -15,7 +15,7 @@ func (v *vehicleContext) Ctx() context.Context {
 }
 
 // TakeOff implements Vehicle.TakeOff for a vehicleContext.
-func (v *vehicleContext) TakeOff(options ...opt.Option[opt.TakeOffOption]) *waiter[TakeOffResponse] {
+func (v *vehicleContext) TakeOff(options ...opt.Option[opt.TakeOffOption]) *Waiter[TakeOffResponse] {
 	req := &driverpb.TakeOffRequest{}
 	for _, option := range options {
 		option(req)
@@ -23,7 +23,6 @@ func (v *vehicleContext) TakeOff(options ...opt.Option[opt.TakeOffOption]) *wait
 	resp, err := v.control.TakeOff(v.ctx, req)
 
 	return newWaiter[TakeOffResponse](
-		v.ctx,
 		&takeOffResponseWrapper{inner: resp},
 		grpcToSentinel(err),
 		actionPoller(v, resp),
@@ -31,12 +30,11 @@ func (v *vehicleContext) TakeOff(options ...opt.Option[opt.TakeOffOption]) *wait
 }
 
 // Land implements Vehicle.Land for a vehicleContext.
-func (v *vehicleContext) Land() *waiter[LandResponse] {
+func (v *vehicleContext) Land() *Waiter[LandResponse] {
 	req := &driverpb.LandRequest{}
 	resp, err := v.control.Land(v.ctx, req)
 
 	return newWaiter[LandResponse](
-		v.ctx,
 		&landResponseWrapper{inner: resp},
 		grpcToSentinel(err),
 		actionPoller(v, resp),
@@ -44,12 +42,11 @@ func (v *vehicleContext) Land() *waiter[LandResponse] {
 }
 
 // Hold implements Vehicle.Hold for a vehicleContext.
-func (v *vehicleContext) Hold() *waiter[HoldResponse] {
+func (v *vehicleContext) Hold() *Waiter[HoldResponse] {
 	req := &driverpb.HoldRequest{}
 	resp, err := v.control.Hold(v.ctx, req)
 
 	return newWaiter[HoldResponse](
-		v.ctx,
 		&holdResponseWrapper{inner: resp},
 		grpcToSentinel(err),
 		actionPoller(v, resp),
@@ -57,12 +54,11 @@ func (v *vehicleContext) Hold() *waiter[HoldResponse] {
 }
 
 // Kill implements Vehicle.Kill for a vehicleContext.
-func (v *vehicleContext) Kill() *waiter[KillResponse] {
+func (v *vehicleContext) Kill() *Waiter[KillResponse] {
 	req := &driverpb.KillRequest{}
 	resp, err := v.control.Kill(v.ctx, req)
 
 	return newWaiter[KillResponse](
-		v.ctx,
 		&killResponseWrapper{inner: resp},
 		grpcToSentinel(err),
 		actionPoller(v, resp),
@@ -70,7 +66,7 @@ func (v *vehicleContext) Kill() *waiter[KillResponse] {
 }
 
 // ReturnToHome implements Vehicle.ReturnToHome for a vehicleContext.
-func (v *vehicleContext) ReturnToHome(options ...opt.Option[opt.ReturnToHomeOption]) *waiter[ReturnToHomeResponse] {
+func (v *vehicleContext) ReturnToHome(options ...opt.Option[opt.ReturnToHomeOption]) *Waiter[ReturnToHomeResponse] {
 	req := &driverpb.ReturnToHomeRequest{}
 	for _, option := range options {
 		option(req)
@@ -78,7 +74,6 @@ func (v *vehicleContext) ReturnToHome(options ...opt.Option[opt.ReturnToHomeOpti
 	resp, err := v.control.ReturnToHome(v.ctx, req)
 
 	return newWaiter[ReturnToHomeResponse](
-		v.ctx,
 		&returnToHomeResponseWrapper{inner: resp},
 		grpcToSentinel(err),
 		actionPoller(v, resp),
@@ -88,7 +83,7 @@ func (v *vehicleContext) ReturnToHome(options ...opt.Option[opt.ReturnToHomeOpti
 // SetGlobalPositionTarget implements Vehicle.SetGlobalPositionTarget for a vehicleContext.
 func (v *vehicleContext) SetGlobalPositionTarget(
 	latitude float64, longitude float64, altitude, heading float32,
-	options ...opt.Option[opt.SetGlobalPositionTargetOption]) *waiter[SetGlobalPositionTargetResponse] {
+	options ...opt.Option[opt.SetGlobalPositionTargetOption]) *Waiter[SetGlobalPositionTargetResponse] {
 	req := &driverpb.SetGlobalPositionTargetRequest{}
 	for _, option := range options {
 		option(req)
@@ -102,7 +97,6 @@ func (v *vehicleContext) SetGlobalPositionTarget(
 	resp, err := v.control.SetGlobalPositionTarget(v.ctx, req)
 
 	return newWaiter[SetGlobalPositionTargetResponse](
-		v.ctx,
 		&setGlobalPositionTargetResponseWrapper{inner: resp},
 		grpcToSentinel(err),
 		guidancePoller(v, resp),
@@ -112,7 +106,7 @@ func (v *vehicleContext) SetGlobalPositionTarget(
 // SetRelativePositionTarget implements Vehicle.SetRelativePositionTarget for a vehicleContext.
 func (v *vehicleContext) SetRelativePositionTarget(
 	x, y, z, angle float32,
-	options ...opt.Option[opt.SetRelativePositionTargetOption]) *waiter[SetRelativePositionTargetResponse] {
+	options ...opt.Option[opt.SetRelativePositionTargetOption]) *Waiter[SetRelativePositionTargetResponse] {
 	req := &driverpb.SetRelativePositionTargetRequest{}
 	for _, option := range options {
 		option(req)
@@ -126,7 +120,6 @@ func (v *vehicleContext) SetRelativePositionTarget(
 	resp, err := v.control.SetRelativePositionTarget(v.ctx, req)
 
 	return newWaiter[SetRelativePositionTargetResponse](
-		v.ctx,
 		&setRelativePositionTargetResponseWrapper{inner: resp},
 		grpcToSentinel(err),
 		guidancePoller(v, resp),
@@ -136,7 +129,7 @@ func (v *vehicleContext) SetRelativePositionTarget(
 // SetVelocityTarget implements Vehicle.SetVelocityTarget for a vehicleContext.
 func (v *vehicleContext) SetVelocityTarget(
 	xVel, yVel, zVel, angularVel float32,
-	options ...opt.Option[opt.SetVelocityTargetOption]) *waiter[SetVelocityTargetResponse] {
+	options ...opt.Option[opt.SetVelocityTargetOption]) *Waiter[SetVelocityTargetResponse] {
 	req := &driverpb.SetVelocityTargetRequest{}
 	for _, option := range options {
 		option(req)
@@ -150,7 +143,6 @@ func (v *vehicleContext) SetVelocityTarget(
 	resp, err := v.control.SetVelocityTarget(v.ctx, req)
 
 	return newWaiter[SetVelocityTargetResponse](
-		v.ctx,
 		&setVelocityTargetResponseWrapper{inner: resp},
 		grpcToSentinel(err),
 		guidancePoller(v, resp),
@@ -160,7 +152,7 @@ func (v *vehicleContext) SetVelocityTarget(
 // SetGimbalAngleTarget implements Vehicle.SetGimbalAngleTarget for a vehicleContext.
 func (v *vehicleContext) SetGimbalAngleTarget(
 	pitch, roll, yaw float32,
-	options ...opt.Option[opt.SetGimbalAngleTargetOption]) *waiter[SetGimbalAngleTargetResponse] {
+	options ...opt.Option[opt.SetGimbalAngleTargetOption]) *Waiter[SetGimbalAngleTargetResponse] {
 	req := &driverpb.SetGimbalAngleTargetRequest{}
 	for _, option := range options {
 		option(req)
@@ -173,7 +165,6 @@ func (v *vehicleContext) SetGimbalAngleTarget(
 	resp, err := v.control.SetGimbalAngleTarget(v.ctx, req)
 
 	return newWaiter[SetGimbalAngleTargetResponse](
-		v.ctx,
 		&setGimbalAngleTargetResponseWrapper{inner: resp},
 		grpcToSentinel(err),
 		gimbalPoller(v, resp),
@@ -182,7 +173,7 @@ func (v *vehicleContext) SetGimbalAngleTarget(
 
 // SetGimbalVelocityTarget implements Vehicle.SetGimbalVelocityTarget for a vehicleContext.
 func (v *vehicleContext) SetGimbalVelocityTarget(
-	pitchVel, rollVel, yawVel float32) *waiter[SetGimbalVelocityTargetResponse] {
+	pitchVel, rollVel, yawVel float32) *Waiter[SetGimbalVelocityTargetResponse] {
 	req := &driverpb.SetGimbalVelocityTargetRequest{}
 	pose_vel := &commonpb.PoseVelocity{}
 	pose_vel.SetPitchVel(pitchVel)
@@ -192,7 +183,6 @@ func (v *vehicleContext) SetGimbalVelocityTarget(
 	resp, err := v.control.SetGimbalVelocityTarget(v.ctx, req)
 
 	return newWaiter[SetGimbalVelocityTargetResponse](
-		v.ctx,
 		&setGimbalVelocityTargetResponseWrapper{inner: resp},
 		grpcToSentinel(err),
 		gimbalPoller(v, resp),
@@ -200,7 +190,7 @@ func (v *vehicleContext) SetGimbalVelocityTarget(
 }
 
 // GetTelemetry implements Vehicle.GetTelemetry for a vehicleContext.
-func (v *vehicleContext) GetTelemetry() *waiter[Telemetry] {
+func (v *vehicleContext) GetTelemetry() *Waiter[Telemetry] {
 	req := &vehiclepb.GetTelemetryRequest{}
 	resp, err := v.data.GetTelemetry(v.ctx, req)
 	wrapper := &telemetryWrapper{}
@@ -209,7 +199,6 @@ func (v *vehicleContext) GetTelemetry() *waiter[Telemetry] {
 	}
 
 	return newWaiter[Telemetry](
-		v.ctx,
 		wrapper,
 		grpcToSentinel(err),
 		func(WaitOptions) error { return nil },

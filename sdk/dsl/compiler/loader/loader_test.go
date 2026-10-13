@@ -76,7 +76,7 @@ func TestLoaderExtractsEnumValues(t *testing.T) {
 
 // TestLoaderAmbiguousInterfaceReportsError checks that a struct
 // implementing more than one of Action/Event/Datatype (fixtures.Ambiguous)
-// produces a *sdk.CompileError instead of being silently registered under
+// produces a *buildtools.CompileError instead of being silently registered under
 // either interface.
 func TestLoaderAmbiguousInterfaceReportsError(t *testing.T) {
 	imports := []*PackageRequest{
@@ -92,18 +92,36 @@ func TestLoaderAmbiguousInterfaceReportsError(t *testing.T) {
 	}
 }
 
-// TestLoaderMissingDslImportErrors checks that omitting dslPkgPath from
-// the requested imports fails with a compile error naming the missing
-// package, instead of proceeding without the Action/Event/Datatype
-// interfaces to check against.
-func TestLoaderMissingDslImportErrors(t *testing.T) {
+// TestLoaderAddsDslImport checks that dslPkgPath is loaded, unaliased,
+// even when it isn't among the requested imports, so its types are still
+// classified against the Action/Event/Datatype interfaces.
+func TestLoaderAddsDslImport(t *testing.T) {
 	imports := []*PackageRequest{{Path: fixturesPkgPath}}
 	reg, errs := LoadTypes(imports, "", nil, nil)
-	if reg != nil {
-		t.Errorf("registry = %v, want nil", reg)
+	if len(errs) > 0 {
+		t.Fatalf("LoadTypes() errors = %v, want none", errs)
 	}
-	if len(errs) != 1 {
-		t.Fatalf("errors = %v, want exactly 1", errs)
+	if _, ok := reg.Packages[dslPkgPath]; !ok {
+		t.Errorf("Packages = %v, want %s loaded", keys(reg.Packages), dslPkgPath)
+	}
+	if alias, ok := reg.PackToAlias[dslPkgPath]; ok {
+		t.Errorf("dsl alias = %q, want none", alias)
+	}
+	if _, ok := reg.Actions["fixtures.Hover"]; !ok {
+		t.Errorf("Actions = %v, want fixtures.Hover", keys(reg.Actions))
+	}
+}
+
+// TestLoaderKeepsAliasedDslImport checks that an explicit import of
+// dslPkgPath under an alias replaces the implicit unaliased one.
+func TestLoaderKeepsAliasedDslImport(t *testing.T) {
+	imports := []*PackageRequest{{Path: fixturesPkgPath}, {Path: dslPkgPath, Alias: "d"}}
+	reg, errs := LoadTypes(imports, "", nil, nil)
+	if len(errs) > 0 {
+		t.Fatalf("LoadTypes() errors = %v, want none", errs)
+	}
+	if alias := reg.PackToAlias[dslPkgPath]; alias != "d" {
+		t.Errorf("dsl alias = %q, want %q", alias, "d")
 	}
 }
 

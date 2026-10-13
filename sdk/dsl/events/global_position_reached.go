@@ -5,7 +5,8 @@ import (
 
 	"github.com/cmusatyalab/steeleagle/sdk"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl"
-	"github.com/cmusatyalab/steeleagle/sdk/dsl/types"
+	"github.com/cmusatyalab/steeleagle/sdk/dsl/datatypes"
+	"github.com/cmusatyalab/steeleagle/sdk/geo"
 )
 
 // GlobalPositionReached fires once the vehicle's global position is
@@ -13,7 +14,7 @@ import (
 // [meters] for latitude/longitude, AltitudeTolerance [meters] for
 // altitude, and HeadingTolerance [degrees] for heading.
 type GlobalPositionReached struct {
-	Target types.GlobalPosition
+	Target datatypes.GlobalPosition
 	// #optional[0.5]
 	Tolerance float32
 	// #optional[0.5]
@@ -60,7 +61,7 @@ func (e *GlobalPositionReached) Monitor(v sdk.Vehicle, m dsl.MissionData) (bool,
 				continue
 			}
 
-			dist := haversineMeters(lat, lon, e.Target.Latitude, e.Target.Longitude)
+			dist := geo.DistanceMeters(lat, lon, e.Target.Latitude, e.Target.Longitude)
 			if dist <= float64(e.Tolerance) &&
 				withinTolerance(alt, e.Target.Altitude, e.AltitudeTolerance) &&
 				withinAngleTolerance(heading, e.Target.Heading, e.HeadingTolerance) {

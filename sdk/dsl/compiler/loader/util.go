@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/cmusatyalab/steeleagle/sdk"
+	"github.com/cmusatyalab/steeleagle/sdk/buildtools"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -28,10 +28,10 @@ func packageDocTypes(pkg *packages.Package) map[string]*doc.Type {
 }
 
 // packageError converts a packages.Error (as found on a loaded
-// packages.Package's Errors field) into an *sdk.CompileError, recovering
+// packages.Package's Errors field) into an *buildtools.CompileError, recovering
 // the offending file and line number from its "file:line[:col]" position
 // when one is available.
-func packageError(e packages.Error, pkgPath string) *sdk.CompileError {
+func packageError(e packages.Error, pkgPath string) *buildtools.CompileError {
 	file, lineNo := pkgPath, uint32(0)
 	if e.Pos != "" && e.Pos != "-" {
 		parts := strings.SplitN(e.Pos, ":", 3)
@@ -42,7 +42,7 @@ func packageError(e packages.Error, pkgPath string) *sdk.CompileError {
 			}
 		}
 	}
-	return &sdk.CompileError{Err: e, File: file, LineNo: lineNo}
+	return &buildtools.CompileError{Err: e, File: file, LineNo: lineNo}
 }
 
 // unifyComment combines a field's doc comment with its trailing line

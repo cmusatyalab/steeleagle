@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cmusatyalab/steeleagle/sdk/params"
 	"github.com/peterstace/simplefeatures/carto"
 	"github.com/peterstace/simplefeatures/geom"
 )
@@ -14,10 +13,10 @@ import (
 // its spacing argument before doing any geometric work.
 func TestSurveyScanRejectsNonPositiveSpacing(t *testing.T) {
 	m := &Map{
-		geometry: map[params.MapFeature]geom.Geometry{},
+		geometry: map[string]geom.Geometry{},
 	}
 	for _, spacing := range []float32{0, -1} {
-		_, err := m.SurveyScan("area", spacing, 0, 0)
+		_, err := SurveyScan(m, "area", spacing, 0, 0)
 		if err == nil || !strings.Contains(err.Error(), "spacing must be positive") {
 			t.Errorf("spacing=%v: expected 'spacing must be positive' error, got %v", spacing, err)
 		}
@@ -28,9 +27,9 @@ func TestSurveyScanRejectsNonPositiveSpacing(t *testing.T) {
 // the requested area key isn't present in the map's geometry.
 func TestSurveyScanMissingArea(t *testing.T) {
 	m := &Map{
-		geometry: map[params.MapFeature]geom.Geometry{},
+		geometry: map[string]geom.Geometry{},
 	}
-	if _, err := m.SurveyScan("missing", 10, 0, 0); err == nil {
+	if _, err := SurveyScan(m, "missing", 10, 0, 0); err == nil {
 		t.Fatal("expected an error for a missing area key")
 	}
 }
@@ -40,11 +39,11 @@ func TestSurveyScanMissingArea(t *testing.T) {
 func TestSurveyScanAreaNotPolygon(t *testing.T) {
 	line := geom.NewLineStringXY(-79.9, 40.4, -79.8, 40.4)
 	m := &Map{
-		geometry: map[params.MapFeature]geom.Geometry{
+		geometry: map[string]geom.Geometry{
 			"area": line.AsGeometry(),
 		},
 	}
-	if _, err := m.SurveyScan("area", 10, 0, 0); err == nil {
+	if _, err := SurveyScan(m, "area", 10, 0, 0); err == nil {
 		t.Fatal("expected an error for a non-polygon area")
 	}
 }
@@ -67,12 +66,12 @@ func TestSurveyScanConvexRectangleBoustrophedon(t *testing.T) {
 
 	poly := buildNicePolygon(base, verts)
 	m := &Map{
-		geometry: map[params.MapFeature]geom.Geometry{
+		geometry: map[string]geom.Geometry{
 			"area": poly.AsGeometry(),
 		},
 	}
 
-	points, err := m.SurveyScan("area", spacing, 90, 50)
+	points, err := SurveyScan(m, "area", spacing, 90, 50)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -143,12 +142,12 @@ func TestSurveyScanConcaveRoutesThroughShortConnector(t *testing.T) {
 
 	poly := buildNicePolygon(base, verts)
 	m := &Map{
-		geometry: map[params.MapFeature]geom.Geometry{
+		geometry: map[string]geom.Geometry{
 			"area": poly.AsGeometry(),
 		},
 	}
 
-	points, err := m.SurveyScan("area", float32(spacing), 90, 50)
+	points, err := SurveyScan(m, "area", float32(spacing), 90, 50)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -224,12 +223,12 @@ func TestSurveyScanConcaveRoutesAroundOutside(t *testing.T) {
 
 	poly := buildNicePolygon(base, verts)
 	m := &Map{
-		geometry: map[params.MapFeature]geom.Geometry{
+		geometry: map[string]geom.Geometry{
 			"area": poly.AsGeometry(),
 		},
 	}
 
-	points, err := m.SurveyScan("area", float32(spacing), 90, 50)
+	points, err := SurveyScan(m, "area", float32(spacing), 90, 50)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

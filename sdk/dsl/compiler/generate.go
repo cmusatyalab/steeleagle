@@ -9,7 +9,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/cmusatyalab/steeleagle/sdk"
+	"github.com/cmusatyalab/steeleagle/sdk/buildtools"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/compiler/linker"
 )
 
@@ -20,37 +20,31 @@ var mainTemplate = template.Must(template.New("main.go.tmpl").Parse(mainTemplate
 // templateData is the top-level value main.go.tmpl is executed with.
 type templateData struct {
 	*linker.IR
-	CapTOML      string
-	ManifestTOML string
-	GeoJSON      string
+	CapToml      string
+	ManifestToml string
+	GeoJson      string
 }
 
-// Generate renders a linked IR as a runnable main.go inside a given
-// workspace directory, embedding the cap, manifest, and GeoJSON files
-// verbatim so the built binary can reconstruct them without the
-// original files.
-func Generate(ir *linker.IR, capTOML, manifestTOML, geoJSON []byte, workspace string) *sdk.CompileError {
+// generate renders a linked IR as a runnable main.go inside the workspace
+// directory dir, embedding the cap, manifest, and GeoJSON files of cfg
+// verbatim so the built binary can reconstruct them without the original
+// files.
+func generate(ir *linker.IR, cfg *buildtools.Config, dir string) error {
 	data := &templateData{
 		IR:           ir,
-		CapTOML:      string(capTOML),
-		ManifestTOML: string(manifestTOML),
-		GeoJSON:      string(geoJSON),
+		CapToml:      string(cfg.CapToml),
+		ManifestToml: string(cfg.ManifestToml),
+		GeoJson:      string(cfg.GeoJson),
 	}
 
 	var buf strings.Builder
 	if err := mainTemplate.Execute(&buf, data); err != nil {
-		return &sdk.CompileError{Err: fmt.Errorf("executing main.go template: %w", err), File: "main.go"}
+		return fmt.Errorf("executing main.go template: %w", err)
 	}
 
 	formatted, err := format.Source([]byte(buf.String()))
 	if err != nil {
-		return &sdk.CompileError{
-			Err:  fmt.Errorf("generated main.go is not valid Go: %w\n%s", err, buf.String()),
-			File: "main.go",
-		}
+		return fmt.Errorf("generated main.go is not valid Go: %w\n%s", err, buf.String())
 	}
-	if err := os.WriteFile(filepath.Join(workspace, "main.go"), formatted, 0o644); err != nil {
-		return &sdk.CompileError{Err: err, File: "main.go"}
-	}
-	return nil
+	return os.WriteFile(filepath.Join(dir, "main.go"), formatted, 0o644)
 }

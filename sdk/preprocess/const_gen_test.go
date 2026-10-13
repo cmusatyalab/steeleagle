@@ -3,7 +3,7 @@ package preprocess
 import "testing"
 
 // TestGenerateConstsAppendsConsts checks that a single declared type with
-// entries in types gets one string const per entry, named <Type><entry>
+// entries in types gets one string const per entry, named <Type>_<entry>
 // and holding <entry> as its value.
 func TestGenerateConstsAppendsConsts(t *testing.T) {
 	src := "package sdk\n\ntype Engine string\n"
@@ -15,8 +15,8 @@ func TestGenerateConstsAppendsConsts(t *testing.T) {
 	}
 	consts := parseConsts(t, out)
 	want := map[string]string{
-		"EngineObjectDetection": "ObjectDetection",
-		"EngineFaceRecognition": "FaceRecognition",
+		"Engine_ObjectDetection": "ObjectDetection",
+		"Engine_FaceRecognition": "FaceRecognition",
 	}
 	for name, value := range want {
 		if got, ok := consts[name]; !ok {
@@ -41,9 +41,38 @@ func TestGenerateConstsMultipleTypes(t *testing.T) {
 	}
 	consts := parseConsts(t, out)
 	want := map[string]string{
-		"RoleLeader":    "Leader",
-		"SquawkRally":   "Rally",
-		"SquawkRetreat": "Retreat",
+		"Role_Leader":    "Leader",
+		"Squawk_Rally":   "Rally",
+		"Squawk_Retreat": "Retreat",
+	}
+	for name, value := range want {
+		if got, ok := consts[name]; !ok {
+			t.Errorf("const %s not found in output:\n%s", name, out)
+		} else if got != value {
+			t.Errorf("const %s = %q, want %q", name, got, value)
+		}
+	}
+}
+
+// TestGenerateConstsRawNames checks that each const name is the type name,
+// an underscore, then the entry verbatim, so entries differing only in case
+// produce distinct consts, and that the value is the entry unchanged.
+func TestGenerateConstsRawNames(t *testing.T) {
+	src := "package sdk\n\ntype Polygon string\n"
+	out, err := GenerateConsts(map[string][]string{
+		"Polygon": {"area", "Area", "éclair"},
+	}, []byte(src))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	consts := parseConsts(t, out)
+	want := map[string]string{
+		"Polygon_area":   "area",
+		"Polygon_Area":   "Area",
+		"Polygon_éclair": "éclair",
+	}
+	if len(consts) != len(want) {
+		t.Errorf("got %d consts, want %d:\n%s", len(consts), len(want), out)
 	}
 	for name, value := range want {
 		if got, ok := consts[name]; !ok {

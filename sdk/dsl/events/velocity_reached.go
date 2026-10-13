@@ -5,7 +5,7 @@ import (
 
 	"github.com/cmusatyalab/steeleagle/sdk"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl"
-	"github.com/cmusatyalab/steeleagle/sdk/dsl/types"
+	"github.com/cmusatyalab/steeleagle/sdk/dsl/datatypes"
 	"github.com/cmusatyalab/steeleagle/sdk/enums"
 )
 
@@ -22,7 +22,7 @@ type velocity interface {
 // of Target on every axis. Frame selects which telemetry velocity to
 // compare against.
 type VelocityReached struct {
-	Target types.Velocity
+	Target datatypes.Velocity
 	// #optional[0]
 	Tolerance float32
 	Frame     enums.ReferenceFrame

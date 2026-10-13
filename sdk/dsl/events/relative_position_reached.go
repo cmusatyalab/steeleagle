@@ -5,14 +5,14 @@ import (
 
 	"github.com/cmusatyalab/steeleagle/sdk"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl"
-	"github.com/cmusatyalab/steeleagle/sdk/dsl/types"
+	"github.com/cmusatyalab/steeleagle/sdk/dsl/datatypes"
 )
 
 // RelativePositionReached fires once the vehicle's relative position is
 // within tolerance of Target on every axis: Tolerance for X/Y/Z
 // [meters], AngleTolerance for Angle [degrees].
 type RelativePositionReached struct {
-	Target types.RelativePosition
+	Target datatypes.RelativePosition
 	// #optional[0.20]
 	Tolerance float32
 	// #optional[0]

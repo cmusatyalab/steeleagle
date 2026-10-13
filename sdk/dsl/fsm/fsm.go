@@ -122,7 +122,7 @@ func (d *DslFsm) enterState(state string) {
 	}
 
 	go func() {
-		vehicle := sdk.NewVehicleFromContext(stateCtx, d.conn)
+		vehicle := sdk.NewVehicleFromContext(stateCtx, d.conn, sdk.WithLogger(d.data.Log))
 		if err := action.Execute(vehicle, d.data); err != nil {
 			abort(fmt.Errorf("action %q: %w", state, err))
 			return
@@ -140,7 +140,7 @@ func (d *DslFsm) enterState(state string) {
 			continue
 		}
 		go func(name string, event dsl.Event) {
-			vehicle := sdk.NewVehicleFromContext(stateCtx, d.conn)
+			vehicle := sdk.NewVehicleFromContext(stateCtx, d.conn, sdk.WithLogger(d.data.Log))
 			ok, err := event.Monitor(vehicle, d.data)
 			if err != nil {
 				abort(fmt.Errorf("event %q: %w", name, err))

@@ -7,6 +7,7 @@ import (
 
 	commonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/common"
 	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
+	"github.com/cmusatyalab/steeleagle/sdk/geo"
 )
 
 // getDistance finds the distance between the setpoint and the vehicle
@@ -73,30 +74,6 @@ func absf32(v float32) float32 {
 	return v
 }
 
-// angularDiff returns the smallest difference between two angles in
-// degrees, correctly handling wraparound (e.g. 359 vs 1 is a 2-degree
-// difference, not 358).
-func angularDiff(a, b float32) float32 {
-	d := absf32(a - b)
-	if d > 180 {
-		d = 360 - d
-	}
-	return d
-}
-
-// haversineMeters returns the great-circle distance in meters between two
-// lat/lon points given in degrees.
-func haversineMeters(lat1, lon1, lat2, lon2 float64) float32 {
-	const earthRadiusM = 6371000.0
-	toRad := func(deg float64) float64 { return deg * math.Pi / 180 }
-	dLat := toRad(lat2 - lat1)
-	dLon := toRad(lon2 - lon1)
-	a := math.Sin(dLat/2)*math.Sin(dLat/2) +
-		math.Cos(toRad(lat1))*math.Cos(toRad(lat2))*math.Sin(dLon/2)*math.Sin(dLon/2)
-	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
-	return float32(earthRadiusM * c)
-}
-
 // globalPositionDistance gets the distance for a GlobalPosition setpoint.
 func globalPositionDistance(sp *commonpb.GlobalPosition, t *telemetrypb.Telemetry, tol Tolerances) (float32, bool, error) {
 	pi := t.GetPositionInfo()
@@ -114,7 +91,7 @@ func globalPositionDistance(sp *commonpb.GlobalPosition, t *telemetrypb.Telemetr
 		if !gp.HasLatitude() || !gp.HasLongitude() {
 			return 0, false, ErrInternal
 		}
-		horiz := haversineMeters(sp.GetLatitude(), sp.GetLongitude(), gp.GetLatitude(), gp.GetLongitude())
+		horiz := float32(geo.DistanceMeters(sp.GetLatitude(), sp.GetLongitude(), gp.GetLatitude(), gp.GetLongitude()))
 		acc.add(horiz, tol.PosTol)
 	}
 
@@ -129,7 +106,7 @@ func globalPositionDistance(sp *commonpb.GlobalPosition, t *telemetrypb.Telemetr
 		if !gp.HasHeading() {
 			return 0, false, ErrInternal
 		}
-		acc.add(angularDiff(sp.GetHeading(), gp.GetHeading()), tol.AngleTol)
+		acc.add(geo.AngleDiff(sp.GetHeading(), gp.GetHeading()), tol.AngleTol)
 	}
 
 	return acc.sum, acc.ok, nil
@@ -170,7 +147,7 @@ func relativePositionDistance(sp *commonpb.RelativePosition, t *telemetrypb.Tele
 		if !rp.HasAngle() {
 			return 0, false, ErrInternal
 		}
-		acc.add(angularDiff(sp.GetAngle(), rp.GetAngle()), tol.AngleTol)
+		acc.add(geo.AngleDiff(sp.GetAngle(), rp.GetAngle()), tol.AngleTol)
 	}
 
 	return acc.sum, acc.ok, nil
@@ -234,19 +211,19 @@ func poseDistance(sp *commonpb.Pose, t *telemetrypb.Telemetry, tol Tolerances) (
 		if !p.HasPitch() {
 			return 0, false, ErrInternal
 		}
-		acc.add(angularDiff(sp.GetPitch(), p.GetPitch()), tol.AngleTol)
+		acc.add(geo.AngleDiff(sp.GetPitch(), p.GetPitch()), tol.AngleTol)
 	}
 	if sp.HasRoll() {
 		if !p.HasRoll() {
 			return 0, false, ErrInternal
 		}
-		acc.add(angularDiff(sp.GetRoll(), p.GetRoll()), tol.AngleTol)
+		acc.add(geo.AngleDiff(sp.GetRoll(), p.GetRoll()), tol.AngleTol)
 	}
 	if sp.HasYaw() {
 		if !p.HasYaw() {
 			return 0, false, ErrInternal
 		}
-		acc.add(angularDiff(sp.GetYaw(), p.GetYaw()), tol.AngleTol)
+		acc.add(geo.AngleDiff(sp.GetYaw(), p.GetYaw()), tol.AngleTol)
 	}
 
 	return acc.sum, acc.ok, nil

@@ -1,12 +1,9 @@
 package sdk
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
-
-	"github.com/cmusatyalab/steeleagle/sdk/opt"
 )
 
 // TestWaiterConstructorErrorSkipsPoll checks that when newWaiter is given a
@@ -14,12 +11,12 @@ import (
 // that error and never invokes the poll function.
 func TestWaiterConstructorErrorSkipsPoll(t *testing.T) {
 	polled := false
-	poll := func(opt.WaitOptions) error {
+	poll := func(WaitOptions) error {
 		polled = true
 		return nil
 	}
 	wantErr := errors.New("rpc failed")
-	w := newWaiter(context.Background(), "resp", wantErr, poll)
+	w := newWaiter("resp", wantErr, poll)
 
 	// The constructor should have already marked the waiter done, before
 	// Wait is ever called
@@ -49,8 +46,8 @@ func TestWaiterConstructorErrorSkipsPoll(t *testing.T) {
 // response value and whatever error the poll function returns.
 func TestWaiterWaitReturnsPollResult(t *testing.T) {
 	wantErr := ErrTimeout
-	poll := func(opt.WaitOptions) error { return wantErr }
-	w := newWaiter(context.Background(), 42, nil, poll)
+	poll := func(WaitOptions) error { return wantErr }
+	w := newWaiter(42, nil, poll)
 
 	resp, err := w.Wait()
 	if resp != 42 { // the answer to life, the universe, and everything...
@@ -66,11 +63,11 @@ func TestWaiterWaitReturnsPollResult(t *testing.T) {
 // has returned.
 func TestWaiterCheckReflectsCompletion(t *testing.T) {
 	release := make(chan struct{})
-	poll := func(opt.WaitOptions) error {
+	poll := func(WaitOptions) error {
 		<-release
 		return nil
 	}
-	w := newWaiter(context.Background(), "resp", nil, poll)
+	w := newWaiter("resp", nil, poll)
 
 	if done, _ := w.Check(); done {
 		t.Fatalf("Check() = done before poll finished")
@@ -93,5 +90,30 @@ func TestWaiterCheckReflectsCompletion(t *testing.T) {
 
 	if done, err := w.Check(); !done || err != nil {
 		t.Fatalf("Check() after completion = (%v, %v), want (true, nil)", done, err)
+	}
+}
+
+// TestWaiterCheckReportsPollError checks that once Wait has returned, Check
+// reports the error polling ended with, not just the RPC's, and that a
+// second Wait returns the same result without polling again.
+func TestWaiterCheckReportsPollError(t *testing.T) {
+	polls := 0
+	poll := func(WaitOptions) error {
+		polls++
+		return ErrTimeout
+	}
+	w := newWaiter("resp", nil, poll)
+
+	if _, err := w.Wait(); !errors.Is(err, ErrTimeout) {
+		t.Fatalf("Wait() err = %v, want %v", err, ErrTimeout)
+	}
+	if done, err := w.Check(); !done || !errors.Is(err, ErrTimeout) {
+		t.Errorf("Check() = (%v, %v), want (true, %v)", done, err, ErrTimeout)
+	}
+	if resp, err := w.Wait(); resp != "resp" || !errors.Is(err, ErrTimeout) {
+		t.Errorf("second Wait() = (%q, %v), want (%q, %v)", resp, err, "resp", ErrTimeout)
+	}
+	if polls != 1 {
+		t.Errorf("poll ran %d times, want once", polls)
 	}
 }

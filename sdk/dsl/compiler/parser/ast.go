@@ -6,49 +6,48 @@ import (
 )
 
 type Ast struct {
-	Role     *RoleStanza     `parser:"@@?"`
-	Override *OverrideStanza `parser:"@@?"`
-	Import   *ImportStanza   `parser:"@@?"`
-	Data     *DataStanza     `parser:"@@?"`
-	Actions  *ActionsStanza  `parser:"@@?"`
-	Events   *EventsStanza   `parser:"@@?"`
-	Mission  *MissionStanza  `parser:"@@?"`
+	Role    *RoleStanza    `parser:"@@?"`
+	Modules *ModuleStanza  `parser:"@@?"`
+	Imports *ImportStanza  `parser:"@@?"`
+	Data    *DataStanza    `parser:"@@?"`
+	Actions *ActionsStanza `parser:"@@?"`
+	Events  *EventsStanza  `parser:"@@?"`
+	Mission *MissionStanza `parser:"@@?"`
 }
 
 type RoleStanza struct {
+	Pos  lexer.Position
 	Name string `parser:"\"Role\" @Ident \":\""`
 }
 
-// OverrideStanza lists local filesystem directories that the compiler adds
-// to its scratch Go workspace (see newWorkspace in compiler.go), so that any
-// Import whose module path matches one of these directories' own go.mod
-// resolves to the local source instead of being fetched.
-type OverrideStanza struct {
-	Paths []*OverrideSpec `parser:"\"Override\" \":\" @@*"`
+type ModuleStanza struct {
+	Modules []*ModuleSpec `parser:"\"Modules\" \":\" @@*"`
 }
 
-// OverrideSpec is a single local filesystem path, written as a quoted
-// string since filesystem paths commonly start with characters ('.', '/',
-// '~') that an unquoted token can't unambiguously begin with.
-type OverrideSpec struct {
-	Pos  lexer.Position
-	Path string `parser:"@String"`
+// ModuleSpec is a single Go module required by the mission, optionally
+// followed by a version and optionally by an override path that replaces
+// the module with a local directory, as in a go.mod replace directive
+// (e.g. "github.com/cmusatyalab/steeleagle/sdk" v1.2.3 => "../sdk"). When no
+// version is provided the latest version is fetched.
+type ModuleSpec struct {
+	Pos      lexer.Position
+	Path     string `parser:"@String"`
+	Version  string `parser:"@Version?"`
+	Override string `parser:"(\"=>\" @String)?"`
 }
 
 type ImportStanza struct {
-	Imports []*ImportSpec `parser:"\"Import\" \":\" @@*"`
+	Imports []*ImportSpec `parser:"\"Imports\" \":\" @@*"`
 }
 
 // ImportSpec is a single imported package path, optionally preceded by an
-// alias Ident used to qualify types from that package and optionally followed
-// by a version (e.g. "basesdk "github.com/cmusatyalab/steeleagle/sdk" v1.2.3").
-// When Alias is empty, the package's own name is used as the qualifier. When no
-// version is provided the latest version is fetched.
+// alias Ident used to qualify types from that package (e.g.
+// basesdk "github.com/cmusatyalab/steeleagle/sdk"). When Alias is empty, the
+// package's own name is used as the qualifier.
 type ImportSpec struct {
-	Pos     lexer.Position
-	Alias   string `parser:"(@Ident)?"`
-	Path    string `parser:"@String"`
-	Version string `parser:"@Version?"`
+	Pos   lexer.Position
+	Alias string `parser:"(@Ident)?"`
+	Path  string `parser:"@String"`
 }
 
 type DataStanza struct {
@@ -143,6 +142,7 @@ func (v *Value) StringValue() (s string, ok bool) {
 var dslLexer = lexer.MustSimple([]lexer.SimpleRule{
 	{Name: "Comment", Pattern: `#[^\n]*`},
 	{Name: "Arrow", Pattern: `->`},
+	{Name: "Replace", Pattern: `=>`},
 	{Name: "Float", Pattern: `-?\d+\.\d+`},
 	{Name: "Int", Pattern: `-?\d+`},
 	{Name: "String", Pattern: `'[^']*'|"[^"]*"`},

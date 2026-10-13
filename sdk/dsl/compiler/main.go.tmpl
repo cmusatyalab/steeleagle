@@ -13,8 +13,8 @@ import (
 
 	"github.com/cmusatyalab/steeleagle/sdk"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl"
-	"github.com/cmusatyalab/steeleagle/sdk/dsl/swarm"
 	"github.com/cmusatyalab/steeleagle/sdk/geo"
+	"github.com/cmusatyalab/steeleagle/sdk/params"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/fsm"
 {{range .Imports}}	{{.Render}}
 {{end -}}
@@ -23,40 +23,46 @@ import (
 // capToml is the vehicle capability file this mission was compiled
 // against, embedded so the generated binary can rebuild it without the
 // original file.
-var capToml = []byte({{printf "%q" .CapTOML}})
+var capToml = []byte({{printf "%q" .CapToml}})
 
 // manifestToml is the manifest file for the current mission, embedded
 // so the generated binary can rebuild it without the original file.
-var manifestToml = []byte({{printf "%q" .ManifestTOML}})
+var manifestToml = []byte({{printf "%q" .ManifestToml}})
 
 // missionGeoJson is the GeoJSON feature collection this mission was
 // compiled against, embedded the same way. Empty when none was given.
-var missionGeoJson = []byte({{printf "%q" .GeoJSON}})
+var missionGeoJson = []byte({{printf "%q" .GeoJson}})
 
 {{range .AllOrdered}}
 {{.Render}}
 {{end}}
 func main() {
-    log := zerolog.New(os.Stderr).With().Timestamp().Logger()
+	log := zerolog.New(os.Stderr).With().Timestamp().Logger()
 	socket := os.Getenv("CLIENT_SOCKET")
 	if socket == "" {
-        log.Fatal().Msg("CLIENT_SOCKET environment variable unset")
+		log.Fatal().Msg("CLIENT_SOCKET environment variable unset")
 	}
 
 	conn, err := grpc.NewClient("unix://"+socket, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-        log.Fatal().Err(err).Msg("failed to dial on socket")
+		log.Fatal().Err(err).Msg("failed to dial on socket")
 	}
 	defer conn.Close()
 
-	capFile, err := sdk.ParseCapFromBytes(capToml)
-	if err != nil {
-        log.Fatal().Err(err).Msg("failed to parse cap file")
+	capFile := &sdk.CapFile{}
+	if len(capToml) > 0 {
+		capFile, err = sdk.ParseCapFromBytes(capToml)
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to parse cap file")
+		}
 	}
-	
-    manifestFile, err := dsl.ParseManifestFromBytes(manifestToml)
-	if err != nil {
-        log.Fatal().Err(err).Msg("failed to parse manifest file")
+
+	manifestFile := &sdk.ManifestFile{}
+	if len(manifestToml) > 0 {
+		manifestFile, err = sdk.ParseManifestFromBytes(manifestToml)
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to parse manifest file")
+		}
 	}
 
 	missionMap := geo.NewMap()
@@ -68,9 +74,9 @@ func main() {
 
 	data := dsl.MissionData{
 		Cap:      *capFile,
-        Manifest: *manifestFile,
+		Manifest: *manifestFile,
 		Map:      *missionMap,
-		Role:     swarm.Role({{printf "%q" .Role}}),
+		Role:     params.Role({{printf "%q" .Role}}),
 		Log:      log,
 	}
 
@@ -97,7 +103,7 @@ func main() {
 
 	mission := fsm.NewDslFsm({{printf "%q" .Start}}, transitions, actions, events, data, conn)
 	if err := mission.Start(ctx); err != nil {
-        log.Fatal().Err(err).Msg("mission exited unexpectedly")
+		log.Fatal().Err(err).Msg("mission exited unexpectedly")
 	}
-    log.Info().Msg("mission complete!")
+	log.Info().Msg("mission complete!")
 }

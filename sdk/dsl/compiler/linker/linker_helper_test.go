@@ -1,11 +1,13 @@
 package linker
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
 
-	"github.com/cmusatyalab/steeleagle/sdk"
+	"github.com/cmusatyalab/steeleagle/sdk/buildtools"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/compiler/loader"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/compiler/parser"
 )
@@ -29,11 +31,11 @@ const geoPkgPath = "github.com/cmusatyalab/steeleagle/sdk/dsl/compiler/linker/te
 var (
 	sharedRegistryOnce sync.Once
 	sharedRegistryVal  *loader.TypeRegistry
-	sharedRegistryErrs []*sdk.CompileError
+	sharedRegistryErrs []*buildtools.CompileError
 
 	aliasedRegistryOnce sync.Once
 	aliasedRegistryVal  *loader.TypeRegistry
-	aliasedRegistryErrs []*sdk.CompileError
+	aliasedRegistryErrs []*buildtools.CompileError
 )
 
 // sharedRegistry returns the result of loading dslPkgPath, fixturesPkgPath
@@ -70,7 +72,11 @@ func aliasedRegistry(t *testing.T) *loader.TypeRegistry {
 // error.
 func mustParse(t *testing.T, src string) *parser.Ast {
 	t.Helper()
-	ast, err := parser.Parse("test.dsl", strings.NewReader(src))
+	path := filepath.Join(t.TempDir(), "test.dsl")
+	if err := os.WriteFile(path, []byte(src), 0o644); err != nil {
+		t.Fatalf("writing %s: %v", path, err)
+	}
+	ast, err := parser.ParseFromFile(path)
 	if err != nil {
 		t.Fatalf("Parse() error = %v", err)
 	}
@@ -79,12 +85,12 @@ func mustParse(t *testing.T, src string) *parser.Ast {
 
 // mission returns a complete mission source importing fixturesPkgPath,
 // with data and actions spliced into their stanzas. It always declares a
-// fixtures.Hover action named hover (which it starts in) and a
-// fixtures.Seen event named seen, since Link requires every stanza.
+// fixtures.Hover action named hover, which it starts in, and a
+// fixtures.Seen event named seen, for transition tests to use.
 // Each of data and actions should be zero or more newline-terminated
 // declaration lines.
 func mission(data, actions string) string {
-	return "Import:\n" +
+	return "Imports:\n" +
 		"    \"" + fixturesPkgPath + "\"\n" +
 		"Data:\n" + data +
 		"Actions:\n" +
@@ -111,7 +117,7 @@ func mustLink(t *testing.T, src string) *IR {
 
 // mustFailLink parses and links src against sharedRegistry, failing the
 // test unless linking reports at least one error and returns a nil IR.
-func mustFailLink(t *testing.T, src string) []*sdk.CompileError {
+func mustFailLink(t *testing.T, src string) []*buildtools.CompileError {
 	t.Helper()
 	ir, errs := Link(mustParse(t, src), sharedRegistry(t))
 	if len(errs) == 0 {
@@ -125,7 +131,7 @@ func mustFailLink(t *testing.T, src string) []*sdk.CompileError {
 
 // findError returns the first error whose message contains substr,
 // failing the test if there is none.
-func findError(t *testing.T, errs []*sdk.CompileError, substr string) *sdk.CompileError {
+func findError(t *testing.T, errs []*buildtools.CompileError, substr string) *buildtools.CompileError {
 	t.Helper()
 	for _, e := range errs {
 		if strings.Contains(e.Error(), substr) {

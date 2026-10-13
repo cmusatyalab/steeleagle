@@ -14,24 +14,6 @@ import (
 // an import, or a local variable in the generated main().
 const varPrefix = "decl_"
 
-// fixedImports are the packages main.go.tmpl always imports, keyed by
-// import path, with the identifier each is referenced by. This must be
-// kept in sync with main.go.tmpl.
-var fixedImports = map[string]string{
-	"context":                "context",
-	"os":                     "os",
-	"os/signal":              "signal",
-	"syscall":                "syscall",
-	"github.com/rs/zerolog":  "zerolog",
-	"google.golang.org/grpc": "grpc",
-	"google.golang.org/grpc/credentials/insecure":     "insecure",
-	"github.com/cmusatyalab/steeleagle/sdk":           "sdk",
-	"github.com/cmusatyalab/steeleagle/sdk/dsl":       "dsl",
-	"github.com/cmusatyalab/steeleagle/sdk/dsl/fsm":   "fsm",
-	"github.com/cmusatyalab/steeleagle/sdk/dsl/swarm": "swarm",
-	"github.com/cmusatyalab/steeleagle/sdk/geo":       "geo",
-}
-
 // varName returns the Go identifier for a DSL declaration.
 func varName(name string) string {
 	return varPrefix + name
@@ -151,6 +133,8 @@ func renderDefault(t types.Type, value string, registry *loader.TypeRegistry) st
 // a bool literal or an enum constant. Enum constants may be written bare
 // ("Corridor"), with the type name prefix ("PatrolModeCorridor"), or
 // qualified the way the mission names the package ("actions.PatrolModeCorridor").
+// Bare names also match constants generated as <Type>_<name> from the
+// manifest and GeoJSON, so "area" finds "Polygon_area".
 func renderConst(t types.Type, ident string, registry *loader.TypeRegistry) (string, bool) {
 	if basic, ok := t.Underlying().(*types.Basic); ok && basic.Info()&types.IsBoolean != 0 {
 		return ident, ident == "true" || ident == "false"
@@ -172,8 +156,9 @@ func renderConst(t types.Type, ident string, registry *loader.TypeRegistry) (str
 	if !ok {
 		return "", false
 	}
+	typeName := named.Obj().Name()
 	for _, f := range enum.Fields {
-		if f.Name == short || f.Name == named.Obj().Name()+short {
+		if f.Name == short || f.Name == typeName+short || f.Name == typeName+"_"+short {
 			return qualifier(registry)(pkg) + "." + f.Name, true
 		}
 	}

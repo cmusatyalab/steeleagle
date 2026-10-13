@@ -18,10 +18,12 @@ const (
 	PatrolModeSurvey                     // survey over the interior
 )
 
-// Patrol orders the vehicle to visit the waypoints on a
+// Patrol orders the vehicle to fly the waypoints of a patrol pattern over
+// Area at Altitude: a corridor scan around its exterior (the default), or a
+// survey over its interior.
 type Patrol struct {
-	Area     params.MapFeature // polygon to patrol around
-	Altitude float32           // altitude for each point in patrol
+	Area     params.Polygon // polygon to patrol around
+	Altitude float32        // altitude for each point in patrol
 	// #optional
 	AltitudeMode enums.AltitudeMode // how to interpret altitude, MSL or above take off
 	// #optional
@@ -40,9 +42,9 @@ func (p *Patrol) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 	var err error
 	var points []geo.GeoPoint
 	if p.Pattern == PatrolModeCorridor {
-		points, err = m.Map.CorridorScan(p.Area, p.Altitude)
+		points, err = geo.CorridorScan(&m.Map, p.Area, p.Altitude)
 	} else {
-		points, err = m.Map.SurveyScan(p.Area, p.SurveySpacing, p.SurveyHeading, p.Altitude)
+		points, err = geo.SurveyScan(&m.Map, p.Area, p.SurveySpacing, p.SurveyHeading, p.Altitude)
 	}
 	if err != nil {
 		return err

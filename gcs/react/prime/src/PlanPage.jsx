@@ -162,7 +162,7 @@ function generateDsl(nodes, edges, eventInstances, startNodeId, schema) {
             const version = imp.version ? ` ${imp.version}` : '';
             return `    ${alias}"${imp.path}"${version}`;
         });
-        parts.push(`Import:\n${importLines.join('\n')}`);
+        parts.push(`Imports:\n${importLines.join('\n')}`);
     }
     if (dataEntries.length) parts.push(`Data:\n${dataEntries.join('\n')}`);
     parts.push(`Actions:\n${actionLines.join('\n')}`);

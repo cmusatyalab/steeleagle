@@ -316,6 +316,14 @@ func (w *detectionResultWrapper) GetDetections() []Detection {
 	return out
 }
 
+type classificationResultWrapper struct {
+	inner *result.ClassificationResult // generated concrete type
+}
+
+func (w *classificationResultWrapper) GetScore() float64 {
+	return w.inner.GetScore()
+}
+
 type guidanceResultWrapper struct {
 	inner *result.GuidanceResult // generated concrete type
 }
@@ -331,30 +339,38 @@ func (w *guidanceResultWrapper) hasTrajectory() bool {
 	return w.inner.HasTrajectory()
 }
 
-type slamResultWrapper struct {
-	inner *result.SlamResult // generated concrete type
+type positionResultWrapper struct {
+	inner *result.PositionResult // generated concrete type
 }
 
-func (w *slamResultWrapper) GetRelativePosition() (SlamResult_RelativePosition, error) {
+func (w *positionResultWrapper) GetRelativePosition() (PositionResult_RelativePosition, error) {
 	if !w.hasRelativePosition() {
 		return nil, ErrFieldNotPresent
 	}
 	return &relativePositionWrapper{inner: w.inner.GetRelativePosition()}, nil
 }
 
-func (w *slamResultWrapper) hasRelativePosition() bool {
+func (w *positionResultWrapper) hasRelativePosition() bool {
 	return w.inner.HasRelativePosition()
 }
 
-func (w *slamResultWrapper) GetGlobalPosition() (SlamResult_GlobalPosition, error) {
+func (w *positionResultWrapper) GetGlobalPosition() (PositionResult_GlobalPosition, error) {
 	if !w.hasGlobalPosition() {
 		return nil, ErrFieldNotPresent
 	}
 	return &globalPositionWrapper{inner: w.inner.GetGlobalPosition()}, nil
 }
 
-func (w *slamResultWrapper) hasGlobalPosition() bool {
+func (w *positionResultWrapper) hasGlobalPosition() bool {
 	return w.inner.HasGlobalPosition()
+}
+
+type genericResultWrapper struct {
+	inner *result.GenericResult // generated concrete type
+}
+
+func (w *genericResultWrapper) GetPayload() []byte {
+	return w.inner.GetPayload()
 }
 
 type computeResultWrapper struct {
@@ -384,6 +400,17 @@ func (w *computeResultWrapper) hasDetectionResult() bool {
 	return w.inner.HasDetectionResult()
 }
 
+func (w *computeResultWrapper) GetClassificationResult() (ClassificationResult, error) {
+	if !w.hasClassificationResult() {
+		return nil, ErrFieldNotPresent
+	}
+	return &classificationResultWrapper{inner: w.inner.GetClassificationResult()}, nil
+}
+
+func (w *computeResultWrapper) hasClassificationResult() bool {
+	return w.inner.HasClassificationResult()
+}
+
 func (w *computeResultWrapper) GetGuidanceResult() (GuidanceResult, error) {
 	if !w.hasGuidanceResult() {
 		return nil, ErrFieldNotPresent
@@ -395,19 +422,26 @@ func (w *computeResultWrapper) hasGuidanceResult() bool {
 	return w.inner.HasGuidanceResult()
 }
 
-func (w *computeResultWrapper) GetSlamResult() (SlamResult, error) {
-	if !w.hasSlamResult() {
+func (w *computeResultWrapper) GetPositionResult() (PositionResult, error) {
+	if !w.hasPositionResult() {
 		return nil, ErrFieldNotPresent
 	}
-	return &slamResultWrapper{inner: w.inner.GetSlamResult()}, nil
+	return &positionResultWrapper{inner: w.inner.GetPositionResult()}, nil
 }
 
-func (w *computeResultWrapper) hasSlamResult() bool {
-	return w.inner.HasSlamResult()
+func (w *computeResultWrapper) hasPositionResult() bool {
+	return w.inner.HasPositionResult()
 }
 
-func (w *computeResultWrapper) GetGenericResult() []byte {
-	return w.inner.GetGenericResult()
+func (w *computeResultWrapper) GetGenericResult() (GenericResult, error) {
+	if !w.hasGenericResult() {
+		return nil, ErrFieldNotPresent
+	}
+	return &genericResultWrapper{inner: w.inner.GetGenericResult()}, nil
+}
+
+func (w *computeResultWrapper) hasGenericResult() bool {
+	return w.inner.HasGenericResult()
 }
 
 type batteryInfoWrapper struct {

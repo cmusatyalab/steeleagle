@@ -1,32 +1,27 @@
 package parser
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 )
 
-// Parse parses a DSL mission file and unquotes every Override and Import
-// path (captured raw as String tokens) in place. Absent Data, Actions and
-// Events stanzas are filled in with an empty Decl list so callers never see
-// them as nil.
-func Parse(filename string, r io.Reader) (*Ast, error) {
-	ast, err := dslParser.Parse(filename, r)
+// ParseFromFile parses the DSL mission file at path. See parse.
+func ParseFromFile(path string) (*Ast, error) {
+	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
-	fillEmptyStanzas(ast)
-	if ast.Override != nil {
-		for _, o := range ast.Override.Paths {
-			o.Path = unquoteString(o.Path)
-		}
-	}
-	if ast.Import != nil {
-		for _, imp := range ast.Import.Imports {
-			imp.Path = unquoteString(imp.Path)
-		}
-	}
-	return ast, nil
+	defer f.Close()
+	return parse(path, f)
+}
+
+// ParseFromSource parses a DSL mission from its source text. Errors carry
+// no file name, only a line and column. See parse.
+func ParseFromSource(src []byte) (*Ast, error) {
+	return parse("", bytes.NewReader(src))
 }
 
 // ParseFromJson decodes a JSON-encoded mission into an *Ast. The JSON
@@ -36,12 +31,12 @@ func Parse(filename string, r io.Reader) (*Ast, error) {
 //	{"Actions": {"Decls": [{"Type": "actions.TakeOff", "Name": "takeoff",
 //	  "Attrs": [{"Key": "altitude", "Value": {"Float": 2.5}}]}]}}
 //
-// Unknown keys are rejected. Override/Import paths and String values are
-// written unquoted; String values are re-quoted on decode so that
-// Value.StringValue behaves the same as for Parse. Absent Data, Actions and
-// Events stanzas are filled in with an empty Decl list, as in Parse.
-func ParseFromJson(r io.Reader) (*Ast, error) {
-	dec := json.NewDecoder(r)
+// Unknown keys are rejected. Modules paths and overrides, Imports paths and
+// String values are written unquoted; String values are re-quoted on
+// decode so that Value.StringValue behaves the same as for ParseFromFile.
+// Absent stanzas are filled in empty, as in ParseFromFile.
+func ParseFromJson(data []byte) (*Ast, error) {
+	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.DisallowUnknownFields()
 	ast := &Ast{}
 	if err := dec.Decode(ast); err != nil {
@@ -64,17 +59,67 @@ func ParseFromJson(r io.Reader) (*Ast, error) {
 	return ast, nil
 }
 
-// fillEmptyStanzas replaces absent Data, Actions and Events stanzas with
-// ones holding an empty Decl list.
+// parse parses a DSL mission read from r and unquotes every Modules path and
+// override and every Imports path (captured raw as String tokens) in place. Absent stanzas are filled in
+// empty, so callers never see them as nil.
+func parse(filename string, r io.Reader) (*Ast, error) {
+	ast, err := dslParser.Parse(filename, r)
+	if err != nil {
+		return nil, err
+	}
+	fillEmptyStanzas(ast)
+	for _, mod := range ast.Modules.Modules {
+		mod.Path = unquoteString(mod.Path)
+		if mod.Override != "" {
+			mod.Override = unquoteString(mod.Override)
+		}
+	}
+	for _, imp := range ast.Imports.Imports {
+		imp.Path = unquoteString(imp.Path)
+	}
+	return ast, nil
+}
+
+// fillEmptyStanzas replaces every absent stanza with an empty one: an
+// empty Role name and Mission Start, and empty Modules, Imports and Decl
+// lists. A stanza that is present but has no entries (e.g. a bare
+// "Modules:" header) likewise gets an empty, non-nil list.
 func fillEmptyStanzas(ast *Ast) {
+	if ast.Role == nil {
+		ast.Role = &RoleStanza{}
+	}
+	if ast.Modules == nil {
+		ast.Modules = &ModuleStanza{}
+	}
+	if ast.Modules.Modules == nil {
+		ast.Modules.Modules = []*ModuleSpec{}
+	}
+	if ast.Imports == nil {
+		ast.Imports = &ImportStanza{}
+	}
+	if ast.Imports.Imports == nil {
+		ast.Imports.Imports = []*ImportSpec{}
+	}
 	if ast.Data == nil {
-		ast.Data = &DataStanza{Decls: []*Decl{}}
+		ast.Data = &DataStanza{}
+	}
+	if ast.Data.Decls == nil {
+		ast.Data.Decls = []*Decl{}
 	}
 	if ast.Actions == nil {
-		ast.Actions = &ActionsStanza{Decls: []*Decl{}}
+		ast.Actions = &ActionsStanza{}
+	}
+	if ast.Actions.Decls == nil {
+		ast.Actions.Decls = []*Decl{}
 	}
 	if ast.Events == nil {
-		ast.Events = &EventsStanza{Decls: []*Decl{}}
+		ast.Events = &EventsStanza{}
+	}
+	if ast.Events.Decls == nil {
+		ast.Events.Decls = []*Decl{}
+	}
+	if ast.Mission == nil {
+		ast.Mission = &MissionStanza{}
 	}
 }
 

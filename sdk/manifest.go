@@ -1,4 +1,4 @@
-package dsl
+package sdk
 
 import (
 	"bytes"
@@ -7,15 +7,16 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-// Engine holds information about a cognitive engine.
-type Engine struct {
+// Flow holds information about a computational data flow.
+type Flow struct {
 	// Name of the engine
 	Name string `toml:"name"`
-	// Location of the engine, either local or remote
-	Location string `toml:"location"`
-	// Output type of the engine, either RoI, Classification, JSON,
-	// or generic bytes
-	Output string `toml:"output"`
+	// Result proto message id of the engine's output (e.g.
+	// "messages/result/DetectionResult"). Its last path element must name
+	// a result type declared in the params package: DetectionResult,
+	// ClassificationResult, PositionResult, GuidanceResult, or
+	// GenericResult.
+	Result string `toml:"result"`
 }
 
 // Info holds basic information about the mission.
@@ -24,8 +25,6 @@ type Info struct {
 	Name string `toml:"name"`
 	// Version string (e.g. 1.0.2)
 	Version string `toml:"version"`
-	// Role of this vehicle in the mission
-	Role string `toml:"role"`
 	// List of roles in the mission
 	Roles []string `toml:"roles"`
 	// List of squawks in the mission
@@ -37,8 +36,8 @@ type Info struct {
 type ManifestFile struct {
 	// Basic mission information
 	Info Info `toml:"info"`
-	// List of mission engines
-	Engines []Engine `toml:"engines"`
+	// List of mission flows
+	Flows []Flow `toml:"flows"`
 }
 
 // ParseManifestFromBytes parses a manifest file from a TOML byte slice.

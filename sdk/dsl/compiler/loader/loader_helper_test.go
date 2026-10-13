@@ -9,7 +9,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/cmusatyalab/steeleagle/sdk"
+	"github.com/cmusatyalab/steeleagle/sdk/buildtools"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -32,7 +32,7 @@ const ambiguousPkgPath = "github.com/cmusatyalab/steeleagle/sdk/dsl/compiler/loa
 var (
 	sharedRegistryOnce sync.Once
 	sharedRegistryVal  *TypeRegistry
-	sharedRegistryErrs []*sdk.CompileError
+	sharedRegistryErrs []*buildtools.CompileError
 )
 
 // sharedFixtureRegistry returns the result of loading dslPkgPath and

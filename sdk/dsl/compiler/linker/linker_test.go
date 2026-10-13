@@ -1,6 +1,7 @@
 package linker
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -10,7 +11,7 @@ import (
 // then Actions, then Events), each tagged with its stanza and prefixed Go
 // variable name, along with its start state and transitions.
 func TestLinkEndToEnd(t *testing.T) {
-	ir := mustLink(t, `Import:
+	ir := mustLink(t, `Imports:
     "`+fixturesPkgPath+`"
 Data:
     fixtures.Waypoint home(Lat=1.0, Lon=2.0)
@@ -138,6 +139,28 @@ func TestLinkAcceptsEveryValueKind(t *testing.T) {
 `))
 }
 
+// TestLinkGeneratedConstSpellings checks that a constant generated as
+// <Type>_<name> can be written bare, with its type prefix, or qualified,
+// and renders as the qualified constant every way.
+func TestLinkGeneratedConstSpellings(t *testing.T) {
+	ir := mustLink(t, mission("", `    fixtures.Fly a(Speed=1.0, Zone=north)
+    fixtures.Fly b(Speed=1.0, Zone=Zone_north)
+    fixtures.Fly c(Speed=1.0, Zone=fixtures.Zone_north)
+    fixtures.Fly d(Speed=1.0, Zone=South)
+`))
+	for decl, want := range map[string]string{
+		"a": "fixtures.Zone_north", "b": "fixtures.Zone_north",
+		"c": "fixtures.Zone_north", "d": "fixtures.Zone_South",
+	} {
+		if render := mustDecl(t, ir, decl).Render; !strings.Contains(render, "Zone: "+want) {
+			t.Errorf("%s Render = %s, want Zone: %s", decl, render, want)
+		}
+	}
+	// Bare names are matched case-sensitively, like every other identifier.
+	errs := mustFailLink(t, mission("", "    fixtures.Fly e(Speed=1.0, Zone=south)\n"))
+	findError(t, errs, "south is neither a fixtures.Zone constant")
+}
+
 // TestLinkInlineCtorRecursesIntoArgs checks that an inline constructor's
 // arguments are checked like a declaration's attributes, including in a
 // constructor nested inside another one.
@@ -200,6 +223,27 @@ func TestLinkReferenceWrongType(t *testing.T) {
 	findError(t, errs, "r has type fixtures.Route, but *fixtures.Waypoint is required")
 }
 
+// TestLinkMissingMission checks that a mission without a Mission stanza,
+// including an entirely empty one, is reported as an error.
+func TestLinkMissingMission(t *testing.T) {
+	for _, src := range []string{
+		"",
+		"Imports:\n    \"" + fixturesPkgPath + "\"\nActions:\n    fixtures.Hover hover()\n",
+	} {
+		findError(t, mustFailLink(t, src), "missing Mission Start")
+	}
+}
+
+// TestLinkMissingImport checks that a mission without an Imports stanza
+// still links, since it may only use packages the template imports. (Its types resolve here because the registry is loaded
+// independently of the AST's imports.)
+func TestLinkMissingImport(t *testing.T) {
+	ir := mustLink(t, "Actions:\n    fixtures.Hover hover()\nMission:\nStart hover\n")
+	if ir.Start != "hover" {
+		t.Errorf("Start = %q, want %q", ir.Start, "hover")
+	}
+}
+
 // TestLinkStartMustBeAction checks that the mission's start state must be
 // a declared action, not an event or an undeclared name.
 func TestLinkStartMustBeAction(t *testing.T) {
@@ -249,7 +293,7 @@ func TestLinkDoneIsAlwaysAnEvent(t *testing.T) {
 // TestLinkUnimportedPackage checks that importing a package the loader did
 // not load is reported against that import.
 func TestLinkUnimportedPackage(t *testing.T) {
-	src := strings.Replace(mission("", ""), "Import:\n", "Import:\n    \"example.com/missing\"\n", 1)
+	src := strings.Replace(mission("", ""), "Imports:\n", "Imports:\n    \"example.com/missing\"\n", 1)
 	errs := mustFailLink(t, src)
 	if e := findError(t, errs, "unimported package example.com/missing"); e.LineNo != 2 {
 		t.Errorf("LineNo = %d, want 2", e.LineNo)
@@ -263,7 +307,7 @@ func TestLinkErrorPosition(t *testing.T) {
 	errs := mustFailLink(t, mission("",
 		"    fixtures.Fly f(Speed=1.0,\n        Route=fixtures.Route(Start=fixtures.Waypoint(Lat=\"x\", Lon=2.0)))\n"))
 	e := findError(t, errs, "string given for float64")
-	if e.File != "test.dsl" || e.LineNo != 7 || e.Decl != "f" {
+	if filepath.Base(e.File) != "test.dsl" || e.LineNo != 7 || e.Decl != "f" {
 		t.Errorf("error at %s:%d in %q, want test.dsl:7 in %q", e.File, e.LineNo, e.Decl, "f")
 	}
 }
@@ -272,7 +316,7 @@ func TestLinkErrorPosition(t *testing.T) {
 // declarations reference are imported: neither a package that is imported
 // but never used, nor a package the template already imports.
 func TestLinkImportsOnlyUsedPackages(t *testing.T) {
-	src := strings.Replace(mission("", ""), "Import:\n", "Import:\n    \""+geoPkgPath+"\"\n    \""+dslPkgPath+"\"\n", 1)
+	src := strings.Replace(mission("", ""), "Imports:\n", "Imports:\n    \""+geoPkgPath+"\"\n    \""+dslPkgPath+"\"\n", 1)
 	ir := mustLink(t, src)
 	if len(ir.Imports) != 1 {
 		t.Fatalf("Imports = %v, want only %s", keys(ir.Imports), fixturesPkgPath)
@@ -299,7 +343,7 @@ func TestLinkImportsFromDefaults(t *testing.T) {
 // already taken by a template import is reported, since the generated code
 // would otherwise import two packages under the same name.
 func TestLinkImportNameConflict(t *testing.T) {
-	src := strings.Replace(mission("    geo.Spot s(X=1.0)\n", ""), "Import:\n", "Import:\n    \""+geoPkgPath+"\"\n", 1)
+	src := strings.Replace(mission("    geo.Spot s(X=1.0)\n", ""), "Imports:\n", "Imports:\n    \""+geoPkgPath+"\"\n", 1)
 	errs := mustFailLink(t, src)
 	findError(t, errs, "package "+geoPkgPath+" is named geo, which conflicts with github.com/cmusatyalab/steeleagle/sdk/geo")
 }
@@ -307,7 +351,7 @@ func TestLinkImportNameConflict(t *testing.T) {
 // TestLinkAliasedImport checks that a package imported under an alias is
 // referenced and imported under that alias.
 func TestLinkAliasedImport(t *testing.T) {
-	src := `Import:
+	src := `Imports:
     fx "` + fixturesPkgPath + `"
 Data:
 Actions:
@@ -335,4 +379,29 @@ func keys[V any](m map[string]V) []string {
 		ks = append(ks, k)
 	}
 	return ks
+}
+
+// TestLinkDuplicateDuringBlock checks that a second During block for the
+// same action is reported at its own position, instead of silently
+// replacing the first block's transitions.
+func TestLinkDuplicateDuringBlock(t *testing.T) {
+	src := mission("", "") +
+		"During hover:\n    seen -> hover\n" +
+		"During hover:\n    done -> hover\n"
+	e := findError(t, mustFailLink(t, src), "duplicate During block for hover")
+	if e.LineNo != 12 || e.Decl != "hover" {
+		t.Errorf("error at line %d in %q, want line 12 in %q", e.LineNo, e.Decl, "hover")
+	}
+}
+
+// TestLinkDuplicateRule checks that two rules for the same event in one
+// During block, which would render as duplicate map keys, are reported at
+// the second rule.
+func TestLinkDuplicateRule(t *testing.T) {
+	src := mission("", "") +
+		"During hover:\n    seen -> hover\n    done -> hover\n    seen -> hover\n"
+	e := findError(t, mustFailLink(t, src), "duplicate rule for seen in the During block for hover")
+	if e.LineNo != 13 || e.Decl != "seen" {
+		t.Errorf("error at line %d in %q, want line 13 in %q", e.LineNo, e.Decl, "seen")
+	}
 }

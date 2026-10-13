@@ -7,9 +7,9 @@ import (
 	"github.com/peterstace/simplefeatures/geom"
 )
 
-// sampleGeoJSON is a small FeatureCollection with one polygon and one line
+// sampleGeoJson is a small FeatureCollection with one polygon and one line
 // string feature, used across parse and map tests.
-const sampleGeoJSON = `{
+const sampleGeoJson = `{
 	"type": "FeatureCollection",
 	"features": [
 		{"type":"Feature","properties":{"name":"area"},"geometry":{"type":"Polygon","coordinates":[[[0,0],[0,10],[10,10],[10,0],[0,0]]]}},

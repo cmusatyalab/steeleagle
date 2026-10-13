@@ -1,10 +1,11 @@
 package preprocess
 
 // PreprocessError is an error generated while pre-processing SDK source
-// (scrubbing or generating params), optionally attributed to the line it
-// originated from.
+// (scrubbing or generating params), optionally attributed to the file (or
+// package) and line it originated from.
 type PreprocessError struct {
 	error
+	File   string // the file or package the error originates from (optional)
 	LineNo uint32 // the line number the error originates from (optional)
 }
 

@@ -1,14 +1,15 @@
 package sdk
 
 import (
-	"context"
 	"sync"
 	"time"
 )
 
-// waiter represents an in-flight long-running operation.
-type waiter[Resp any] struct {
-	ctx  context.Context
+// Waiter represents an in-flight long-running operation, returned by every
+// Vehicle command. Wait blocks until the operation completes; Check reports
+// whether it has, from another goroutine. A Waiter must not be waited on
+// by more than one goroutine.
+type Waiter[Resp any] struct {
 	poll pollFunc
 	resp Resp
 	err  error
@@ -35,10 +36,10 @@ type Tolerances struct {
 }
 
 // newWaiter creates a waiter object that checks the status of an in-flight
-// RPC, returning the result once it is complete.
-func newWaiter[Resp any](ctx context.Context, resp Resp, err error, poll pollFunc) *waiter[Resp] {
-	w := &waiter[Resp]{
-		ctx:  ctx,
+// RPC, returning the result once it is complete. A non-nil err means the
+// RPC failed, so there is nothing to wait on.
+func newWaiter[Resp any](resp Resp, err error, poll pollFunc) *Waiter[Resp] {
+	w := &Waiter[Resp]{
 		poll: poll,
 		resp: resp,
 		err:  err,
@@ -50,9 +51,16 @@ func newWaiter[Resp any](ctx context.Context, resp Resp, err error, poll pollFun
 	return w
 }
 
-// Wait blocks until the operation completes, ctx is done, or polling fails.
-func (w *waiter[Resp]) Wait(options ...WaitOption) (Resp, error) {
-	defer w.cleanup()
+// Wait blocks until the operation completes, the vehicle's context is
+// done, or polling fails, and returns the response along with the error
+// the operation ended with. Once the operation is done, Wait returns the
+// same result again without polling.
+func (w *Waiter[Resp]) Wait(options ...WaitOption) (Resp, error) {
+	select {
+	case <-w.done:
+		return w.resp, w.err
+	default:
+	}
 
 	// Apply options
 	opts := WaitOptions{
@@ -69,15 +77,16 @@ func (w *waiter[Resp]) Wait(options ...WaitOption) (Resp, error) {
 		option(&opts)
 	}
 
-	if w.err != nil {
-		return w.resp, w.err
-	} else {
-		return w.resp, w.poll(opts)
-	}
+	// Record the outcome before marking the operation done, so Check sees
+	// it
+	w.err = w.poll(opts)
+	w.cleanup()
+	return w.resp, w.err
 }
 
-// Check checks whether the operation has completed, and if so with what error.
-func (w *waiter[Resp]) Check() (bool, error) {
+// Check checks whether the operation has completed, and if so with what
+// error: the RPC's error, or else the error waiting for it ended with.
+func (w *Waiter[Resp]) Check() (bool, error) {
 	select {
 	case <-w.done:
 		return true, w.err // safe read, happens after close(done)
@@ -87,7 +96,7 @@ func (w *waiter[Resp]) Check() (bool, error) {
 }
 
 // cleanup closes the done channel in a safe way.
-func (w *waiter[Resp]) cleanup() {
+func (w *Waiter[Resp]) cleanup() {
 	w.once.Do(func() {
 		close(w.done)
 	})

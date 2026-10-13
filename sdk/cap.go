@@ -19,8 +19,8 @@ type Device struct {
 
 // Camera holds information about a vehicle camera.
 type Camera struct {
-	// Type of the camera ("rgb" e.g.)
-	Type string `toml:"type"`
+	// Name of the camera ("rgb" e.g.)
+	Name string `toml:"name"`
 	// Horizontal resolution of the camera
 	HRes uint32 `toml:"hres"`
 	// Vertical resolution of the camera
@@ -35,6 +35,9 @@ type Camera struct {
 	Latency float32 `toml:"latency"`
 	// Whether or not the camera is mounted on the primary gimbal
 	Gimbal bool `toml:"gimbal"`
+	// Whether or not the camera is a primary camera; primary cameras
+	// cannot be streamed simultaneously with other primary cameras
+	Primary bool `toml:"primary"`
 }
 
 // Unsupported holds all the unsupported SDK types for this vehicle.
