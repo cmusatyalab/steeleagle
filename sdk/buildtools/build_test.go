@@ -13,8 +13,8 @@ import (
 
 // Module paths the tests build against.
 const (
-	rootModPath = "github.com/cmusatyalab/steeleagle"
-	apiModPath  = "github.com/cmusatyalab/steeleagle/api/go"
+	sdkModPath = "github.com/cmusatyalab/steeleagle/sdk"
+	apiModPath = "github.com/cmusatyalab/steeleagle/api/go"
 )
 
 // testGeoJson holds one polygon named area.
@@ -36,7 +36,8 @@ result = "messages/result/DetectionResult"
 `
 
 // repoRoot returns the absolute path of the root of the steeleagle
-// repository, which holds the go.mod for rootModPath.
+// repository, which holds the SDK's module in sdk/ and the API's in
+// api/go/.
 func repoRoot(t *testing.T) string {
 	t.Helper()
 	_, file, _, ok := runtime.Caller(0)
@@ -106,11 +107,11 @@ func main() {
 	}
 	mustGo(t, dir, "mod", "init", "example.com/app")
 	mustGo(t, dir, "mod", "edit",
-		"-require="+rootModPath+"@v0.0.0", "-replace="+rootModPath+"="+root,
+		"-require="+sdkModPath+"@v0.0.0", "-replace="+sdkModPath+"="+filepath.Join(root, "sdk"),
 		"-require="+apiModPath+"@v0.0.0", "-replace="+apiModPath+"="+filepath.Join(root, "api", "go"),
 	)
 	// go get raises the module's go version to what the checkout requires
-	mustGo(t, dir, "get", rootModPath+"@v0.0.0")
+	mustGo(t, dir, "get", sdkModPath+"@v0.0.0")
 	mustGo(t, dir, "mod", "tidy")
 	return dir
 }

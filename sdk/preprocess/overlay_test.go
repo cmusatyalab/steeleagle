@@ -13,6 +13,7 @@ import (
 
 // Import paths the tests load or name packages by.
 const (
+	sdkModPath    = "github.com/cmusatyalab/steeleagle/sdk"
 	sdkPkgPath    = "github.com/cmusatyalab/steeleagle/sdk"
 	paramsPkgPath = "github.com/cmusatyalab/steeleagle/sdk/params"
 	otherPkgPath  = "example.com/consts/other"
@@ -189,7 +190,7 @@ func TestModulePackagesRealGraph(t *testing.T) {
 	got := ModulePackages(roots, nil, []string{sdkPkgPath})
 	paths := pkgPaths(got)
 	for _, p := range got {
-		if p.Module == nil || p.Module.Path != "github.com/cmusatyalab/steeleagle" {
+		if p.Module == nil || p.Module.Path != sdkModPath {
 			t.Errorf("package %s from module %v kept, want only the SDK's module", p.PkgPath, p.Module)
 		}
 	}

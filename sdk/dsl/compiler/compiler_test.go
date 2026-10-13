@@ -17,7 +17,7 @@ import (
 
 // Module and package paths the end-to-end tests compile against.
 const (
-	rootModPath   = "github.com/cmusatyalab/steeleagle"
+	sdkModPath    = "github.com/cmusatyalab/steeleagle/sdk"
 	apiModPath    = "github.com/cmusatyalab/steeleagle/api/go"
 	dslPkgPath    = "github.com/cmusatyalab/steeleagle/sdk/dsl"
 	paramsPkgPath = "github.com/cmusatyalab/steeleagle/sdk/params"
@@ -57,7 +57,7 @@ During takeoff:
 `
 
 // repoRoot returns the root of the steeleagle repository, which holds the
-// go.mod for rootModPath.
+// SDK's module in sdk/ and the API's in api/go/.
 func repoRoot(t *testing.T) string {
 	t.Helper()
 	_, file, _, ok := runtime.Caller(0)
@@ -82,7 +82,7 @@ func skipIfShort(t *testing.T) {
 // working tree. root may be relative to the mission file.
 func modulesStanza(root string) string {
 	return "Modules:\n" +
-		"    \"" + rootModPath + "\" => \"" + root + "\"\n" +
+		"    \"" + sdkModPath + "\" => \"" + filepath.Join(root, "sdk") + "\"\n" +
 		"    \"" + apiModPath + "\" => \"" + filepath.Join(root, "api", "go") + "\"\n"
 }
 
@@ -689,7 +689,7 @@ func TestLoadResetsModule(t *testing.T) {
 	if strings.Contains(string(mod), "example.com/foo") {
 		t.Errorf("go.mod still has the earlier module:\n%s", mod)
 	}
-	if !strings.Contains(string(mod), rootModPath) {
+	if !strings.Contains(string(mod), sdkModPath) {
 		t.Errorf("go.mod missing the mission's own module:\n%s", mod)
 	}
 }
