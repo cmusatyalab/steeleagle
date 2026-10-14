@@ -35,17 +35,11 @@ func WithTelemetryFps(fps uint32) VehicleOption {
 	}
 }
 
+// WithGabrielConfig sets the Gabriel flow the vehicle runs. Left unset, the
+// vehicle runs without Gabriel.
 func WithGabrielConfig(gabrielCfg GabrielConfig) VehicleOption {
 	return func(v *Vehicle) {
 		v.gabrielCfg = gabrielCfg
-	}
-}
-
-// WithDialer sets the Dialer outbound connections (e.g. to Gabriel) are
-// sourced from. Leave unset to use gRPC's default dialer.
-func WithDialer(dialer Dialer) VehicleOption {
-	return func(v *Vehicle) {
-		v.dialer = dialer
 	}
 }
 

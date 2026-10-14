@@ -43,9 +43,9 @@ func TestWithVideoStreamConfig(t *testing.T) {
 
 func TestWithGabrielConfig(t *testing.T) {
 	v := newTestVehicleForOptions()
-	cfg := GabrielConfig{ServerEndpoint: "localhost:9099"}
+	cfg := GabrielConfig{RemoteServer: "localhost:4433"}
 	WithGabrielConfig(cfg)(v)
-	if v.gabrielCfg.ServerEndpoint != cfg.ServerEndpoint {
+	if v.gabrielCfg.RemoteServer != cfg.RemoteServer {
 		t.Fatalf("expected gabriel config %v, got %v", cfg, v.gabrielCfg)
 	}
 }

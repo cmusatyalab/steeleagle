@@ -24,14 +24,40 @@ port-base = 9000
 #hostname = "-eagled"
 
 [gabriel]
-# If left blank, vehicles will not connect to Gabriel. host:port, and (like
-# backend.swarm-controller.address below) supports a MagicDNS name: each
-# vehicle dials out through its own tsnet node when it has one, so a MagicDNS
-# name resolves the same way regardless of the host machine's own DNS setup.
-server-endpoint = "cloudlet033:9099"
-telemetry-target-engines = ["telemetry"]
-video-frames-target-engines = ["telemetry"]
-prometheus-port-base = 9500
+# The Gabriel flow each vehicle runs: where its frames and telemetry go, and
+# which engines process them. Left without producers (as below), vehicles run
+# without Gabriel.
+#
+# Gabriel's names are global to a machine, so in names, "{vehicle}" stands for
+# the vehicle's name. A vehicle's frames are "{vehicle}.frames" and its
+# telemetry "{vehicle}.telemetry". A "local" engine runs on this machine; a
+# "remote" one on the remote gabriel-server below.
+#
+# The remote server's host:port. Gabriel connects to it over QUIC itself, not
+# through a vehicle's tsnet node, so this machine's own network must reach it
+# and its own DNS resolve it (or give an IP address).
+remote-server = "cloudlet033:4433"
+# The remote server's certificate (identity/certificate.der on the server),
+# base64 encoded: base64 -w0 identity/certificate.der
+# remote-certificate = ""
+# How many inputs each crossing to the remote server may have in flight.
+# crossing-capacity = 3
+# The largest serialized frame a vehicle sends, in bytes. Defaults to 4 MiB.
+# max-frame-size = 4194304
+#
+# For example, frames to a detector on the remote server:
+#
+# [[gabriel.flow.producers]]
+# name = "{vehicle}.frames"
+#
+# [[gabriel.flow.engines]]
+# name = "detector"
+# location = "remote"
+#
+# [[gabriel.flow.edges]]
+# from = "{vehicle}.frames"
+# to = "detector"
+# timeout = "2s"
 
 [backend.swarm-controller]
 # host:port of the swarm controller's RegistryService. Supports a MagicDNS name

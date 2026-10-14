@@ -33,7 +33,6 @@ func spawnVehicle(
 	ctx context.Context,
 	vehicleCfg VehicleConfig,
 	port int,
-	promPort int,
 	driverPlugin util.Plugin,
 	missionPlugin util.Plugin,
 	extraPlugins []util.Plugin,
@@ -83,20 +82,12 @@ func spawnVehicle(
 		vehicle.WithTelemetryFps(vehicleCfg.TelemetryFps),
 		vehicle.WithLogger(vehicleLog),
 	}
-	if dial != nil {
-		// So a MagicDNS gabriel.server-endpoint resolves via the vehicle's own
-		// tsnet node, same as swarm-controller registration does, instead of
-		// depending on the host's own DNS setup.
-		opts = append(opts, vehicle.WithDialer(vehicle.Dialer(dial)))
+	// decodeConfig already checked the Gabriel config.
+	vehicleGabrielCfg, err := gabrielCfg.vehicleConfig()
+	if err != nil {
+		return nil, fmt.Errorf("configuring gabriel for vehicle %s: %w", vehicleCfg.Name, err)
 	}
-	if gabrielCfg.ServerEndpoint != "" {
-		opts = append(opts, vehicle.WithGabrielConfig(vehicle.GabrielConfig{
-			ServerEndpoint:           gabrielCfg.ServerEndpoint,
-			TelemetryTargetEngines:   gabrielCfg.TelemetryTargetEngines,
-			VideoFramesTargetEngines: gabrielCfg.VideoFramesTargetEngines,
-			PrometheusPort:           promPort,
-		}))
-	}
+	opts = append(opts, vehicle.WithGabrielConfig(vehicleGabrielCfg))
 
 	veh, err := vehicle.NewVehicle(vehicle.PluginConfig{
 		Driver:  driverPlugin,

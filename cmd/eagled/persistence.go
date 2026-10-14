@@ -196,9 +196,10 @@ func persistedPluginsPath() (string, error) {
 }
 
 // decodeConfig parses a TOML document into a Config, warning (but not failing)
-// on unrecognized keys, and rejecting an empty or repeated vehicle name.  Both
-// would otherwise reach startVehicles, which keys everything by name and has
-// no way to tell two vehicles named the same thing (or a nameless one) apart.
+// on unrecognized keys, and rejecting an invalid Gabriel flow and an empty or
+// repeated vehicle name.  Both of the latter would otherwise reach
+// startVehicles, which keys everything by name and has no way to tell two
+// vehicles named the same thing (or a nameless one) apart.
 func decodeConfig(data string) (Config, error) {
 	var cfg Config
 	md, err := toml.Decode(data, &cfg)
@@ -211,6 +212,9 @@ func decodeConfig(data string) (Config, error) {
 			keys[i] = k.String()
 		}
 		log.Warn().Strs("keys", keys).Msg("unrecognized keys in config")
+	}
+	if _, err := cfg.Gabriel.vehicleConfig(); err != nil {
+		return Config{}, err
 	}
 	seen := make(map[string]bool, len(cfg.Vehicles))
 	for _, vc := range cfg.Vehicles {

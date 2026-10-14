@@ -10,7 +10,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	gabrielclient "github.com/cmusatyalab/gabriel/go-client"
 	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"github.com/google/uuid"
@@ -18,11 +17,6 @@ import (
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 )
-
-// Dialer sources an outbound connection from a specific network identity —
-// matches (*tailscale.Server).Dial's signature, so a vehicle's own tsnet node
-// can be passed straight in. A nil Dialer falls back to gRPC's default dialer.
-type Dialer func(ctx context.Context, network, addr string) (net.Conn, error)
 
 type Vehicle struct {
 	Name          string                  // vehicle name
@@ -34,14 +28,12 @@ type Vehicle struct {
 	videoCfg      VideoStreamConfig       // video stream config
 	telemetryFps  uint32                  // target telemetry rate, 0 lets the driver choose
 	gabrielCfg    GabrielConfig           // Gabriel config
-	dialer        Dialer                  // sources outbound connections (e.g. to Gabriel); nil uses gRPC's default dialer
 	policy        policyState             // active policy state
 	driver        *grpc.ClientConn        // driver gRPC client connection
 	mission       *grpc.ClientConn        // mission gRPC client connection
 	listeners     map[string]net.Listener // map of names to active listeners
 	services      *grpc.Server            // gRPC server instance
 	log           zerolog.Logger          // logger object
-	gabrielClient gabrielclient.Client    // Gabriel remote server client
 	store         *dataStore              // data store
 	pluginMonitor *pluginMonitor          // pluginMonitor
 	cancelFn      context.CancelFunc      // cancel function for vehicle context
@@ -276,24 +268,16 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	// disk periodically
 	v.store.init(ctx)
 
-	// Create gabriel client with telemetry and frame producers if a server
-	// endpoint is specified
-	if v.gabrielCfg.ServerEndpoint != "" {
-		err = v.createGabrielClient()
-		if err != nil {
-			v.log.Err(err).Msg("failed to create Gabriel client")
-			cancel()
-			return err
-		}
-		_, err = v.gabrielClient.Launch(ctx)
-		if err != nil {
-			v.log.Err(err).Msg("failed to launch Gabriel client")
+	// Run the Gabriel flow, if one is configured
+	if v.gabrielCfg.enabled() {
+		if err = v.startGabriel(ctx); err != nil {
+			v.log.Err(err).Msg("failed to start Gabriel")
 			cancel()
 			return err
 		}
 	} else {
 		v.log.Warn().
-			Msg("no Gabriel endpoints provided, starting vehicle without Gabriel")
+			Msg("no Gabriel flow configured, starting vehicle without Gabriel")
 	}
 
 	// Cleanup goroutine

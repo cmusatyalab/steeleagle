@@ -1,5 +1,12 @@
 package main
 
+import (
+	"encoding/base64"
+	"fmt"
+
+	"github.com/cmusatyalab/steeleagle/core/vehicle"
+)
+
 // TSAuthKeyEnv and TSVehicleAuthKeyEnv are the fixed env var names eagled
 // reads its own and every vehicle's tsnet auth key from. If
 // TSVehicleAuthKeyEnv is unset, vehicles fall back to TSAuthKeyEnv.
@@ -8,17 +15,43 @@ const (
 	TSVehicleAuthKeyEnv = "TS_VEHICLE_AUTHKEY"
 )
 
-// GabrielConfig models the [gabriel] table.
+// GabrielConfig models the [gabriel] table: the Gabriel flow every vehicle
+// runs, and the remote gabriel-server its remote engines run on.
 type GabrielConfig struct {
-	ServerEndpoint           string   `toml:"server-endpoint"`
-	TelemetryTargetEngines   []string `toml:"telemetry-target-engines,omitempty"`
-	VideoFramesTargetEngines []string `toml:"video-frames-target-engines,omitempty"`
-	// PrometheusPortBase, if set, has each vehicle's Gabriel client serve
-	// Prometheus metrics (input counts, token counts, end-to-end input
-	// processing latency) on its own port, assigned starting from this port in
-	// the same ascending order vehicle ports are assigned from PortBase.  Left
-	// unset (or 0), no metrics endpoint is served.
-	PrometheusPortBase int `toml:"prometheus-port-base,omitempty"`
+	// RemoteServer is the host:port of the remote gabriel-server.
+	RemoteServer string `toml:"remote-server,omitempty"`
+	// RemoteCertificate is the remote server's certificate.der, base64
+	// encoded.
+	RemoteCertificate string `toml:"remote-certificate,omitempty"`
+	// CrossingCapacity is how many inputs each crossing to the remote server
+	// may have in flight. Left unset (0), Gabriel picks its default.
+	CrossingCapacity int `toml:"crossing-capacity,omitempty"`
+	// MaxFrameSize is the largest serialized frame a vehicle sends, in bytes.
+	// Left unset (0), vehicle.DefaultGabrielMaxFrameSize.
+	MaxFrameSize int `toml:"max-frame-size,omitempty"`
+	// Flow is the flow each vehicle runs, with "{vehicle}" standing for the
+	// vehicle's name in its names. Left without producers, vehicles run
+	// without Gabriel.
+	Flow vehicle.GabrielFlow `toml:"flow"`
+}
+
+// vehicleConfig returns the config of a vehicle's Gabriel flow, and checks it.
+func (c GabrielConfig) vehicleConfig() (vehicle.GabrielConfig, error) {
+	certificate, err := base64.StdEncoding.DecodeString(c.RemoteCertificate)
+	if err != nil {
+		return vehicle.GabrielConfig{}, fmt.Errorf("gabriel.remote-certificate is not base64: %w", err)
+	}
+	cfg := vehicle.GabrielConfig{
+		Flow:              c.Flow,
+		RemoteServer:      c.RemoteServer,
+		RemoteCertificate: certificate,
+		CrossingCapacity:  c.CrossingCapacity,
+		MaxFrameSize:      c.MaxFrameSize,
+	}
+	if err := cfg.Validate(); err != nil {
+		return vehicle.GabrielConfig{}, err
+	}
+	return cfg, nil
 }
 
 // SwarmControllerConfig models the [backend.swarm-controller] table.

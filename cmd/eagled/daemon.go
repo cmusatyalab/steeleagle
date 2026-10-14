@@ -22,7 +22,7 @@ import (
 // gabrielModulePath and steeleagleProtocolModulePath are the module paths
 // whose resolved versions are logged on every Configure call.
 const (
-	gabrielModulePath            = "github.com/cmusatyalab/gabriel/go-client"
+	gabrielModulePath            = "github.com/cmusatyalab/gabriel"
 	steeleagleProtocolModulePath = "github.com/cmusatyalab/steeleagle/api/go"
 )
 
@@ -76,7 +76,6 @@ type runningVehicle struct {
 	err         error           // set if the spawn attempt failed; only meaningful once ready is closed
 	done        <-chan struct{} // closed once a successfully-spawned vehicle exits; nil if the spawn failed
 	port        int             // port its listener is bound on
-	promPort    int             // port its Gabriel client serves Prometheus metrics on; 0 if disabled
 	configStale bool            // true once a Configure call has replaced d.vehicleCfgs[name] out from under this still-running process; guarded by d.mu, like d.running itself
 }
 
@@ -103,24 +102,23 @@ type daemon struct {
 	controlPort int             // port gRPC server listens on
 	logs        *logstore.Store // per-source log capture and history
 
-	mu                 sync.Mutex
-	configured         bool
-	tsServer           *tailscale.Server // eagled's own tsnet node, once started; nil until then
-	tsHostname         string            // hostname tsServer is currently running under
-	baseCfg            Config            // last-applied config, minus Vehicles
-	daemonName         string            // resolved from baseCfg
-	pluginDir          string            // plugin runtime directory
-	vehicleAuthKey     string            // tsnet auth key every vehicle joins with
-	vehicleMemStore    bool              // whether vehicles keep tsnet state in memory instead of persisting it to disk
-	gabrielCfg         GabrielConfig
-	swarmCfg           SwarmControllerConfig
-	nextPort           int                           // next port to assign to a vehicle
-	nextPrometheusPort int                           // next port to assign a vehicle's Gabriel client metrics endpoint; 0 if disabled
-	running            map[string]*runningVehicle    // name -> vehicle, from the moment its name is reserved through teardown
-	vehicleCfgs        map[string]VehicleConfig      // vehicle configurations
-	installed          map[installedPluginKey]string // {name, category} -> ref
-	aviaryCommand      []string                      // resolved from baseCfg.Aviary.Command
-	aviaryDir          string                        // resolved from baseCfg.Aviary.Dir
+	mu              sync.Mutex
+	configured      bool
+	tsServer        *tailscale.Server // eagled's own tsnet node, once started; nil until then
+	tsHostname      string            // hostname tsServer is currently running under
+	baseCfg         Config            // last-applied config, minus Vehicles
+	daemonName      string            // resolved from baseCfg
+	pluginDir       string            // plugin runtime directory
+	vehicleAuthKey  string            // tsnet auth key every vehicle joins with
+	vehicleMemStore bool              // whether vehicles keep tsnet state in memory instead of persisting it to disk
+	gabrielCfg      GabrielConfig
+	swarmCfg        SwarmControllerConfig
+	nextPort        int                           // next port to assign to a vehicle
+	running         map[string]*runningVehicle    // name -> vehicle, from the moment its name is reserved through teardown
+	vehicleCfgs     map[string]VehicleConfig      // vehicle configurations
+	installed       map[installedPluginKey]string // {name, category} -> ref
+	aviaryCommand   []string                      // resolved from baseCfg.Aviary.Command
+	aviaryDir       string                        // resolved from baseCfg.Aviary.Dir
 
 	// configMu and aviaryMu each serialize their own slow, one-time setup
 	// call (tailscale.NewServer, spawnAviary) across concurrent RPCs, without
@@ -423,7 +421,7 @@ func (d *daemon) startOne(
 		return err
 	}
 
-	done, err := spawnVehicle(vCtx, vehicleCfg, rv.port, rv.promPort, driverPlugin, missionPlugin, extraPlugins, authKey, memStore, gabrielCfg, swarmCfg, daemonName, d.logs)
+	done, err := spawnVehicle(vCtx, vehicleCfg, rv.port, driverPlugin, missionPlugin, extraPlugins, authKey, memStore, gabrielCfg, swarmCfg, daemonName, d.logs)
 	if err != nil {
 		d.failSpawn(vehicleCfg.Name, rv, err)
 		return err
@@ -564,13 +562,8 @@ func (d *daemon) reserve(name string) (rv *runningVehicle, vCtx context.Context,
 	}
 	port := d.nextPort
 	d.nextPort++
-	promPort := 0
-	if d.nextPrometheusPort != 0 {
-		promPort = d.nextPrometheusPort
-		d.nextPrometheusPort++
-	}
 	vCtx, cancel := context.WithCancel(d.ctx)
-	rv = &runningVehicle{cancel: cancel, ready: make(chan struct{}), port: port, promPort: promPort}
+	rv = &runningVehicle{cancel: cancel, ready: make(chan struct{}), port: port}
 	d.running[name] = rv
 	return rv, vCtx, nil
 }
@@ -736,7 +729,6 @@ func (d *daemon) ensureConfigured(cfg Config) (applied, diverged bool, err error
 	d.aviaryCommand = cfg.Aviary.Command
 	d.aviaryDir = cfg.Aviary.Dir
 	d.nextPort = cfg.PortBase
-	d.nextPrometheusPort = cfg.Gabriel.PrometheusPortBase
 	d.configured = true
 	d.mu.Unlock()
 	log.Info().

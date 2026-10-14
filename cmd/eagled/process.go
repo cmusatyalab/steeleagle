@@ -65,7 +65,7 @@ func (d *daemon) GetStatus(ctx context.Context, req *eagledpb.GetStatusRequest) 
 			TailscaleAuthkeyEnv:    TSAuthKeyEnv,
 			SwarmControllerAddress: d.swarmCfg.Address,
 			DaemonName:             d.daemonName,
-			GabrielServerEndpoint:  d.gabrielCfg.ServerEndpoint,
+			GabrielServerEndpoint:  d.gabrielCfg.RemoteServer,
 		}.Build()
 	}
 

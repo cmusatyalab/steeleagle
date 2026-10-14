@@ -106,6 +106,50 @@ name = ""
 	t.Logf("got expected error: %v", err)
 }
 
+// TestConfigureRejectsInvalidGabrielFlow exercises decodeConfig's check of
+// the [gabriel] table: like a nameless vehicle, a bad flow is a malformed
+// request, so Configure itself should error. Each case breaks the flow in a
+// different way.
+func TestConfigureRejectsInvalidGabrielFlow(t *testing.T) {
+	inst := startEagled(t, "")
+	tests := []struct {
+		name    string
+		gabriel string
+	}{
+		{"producer that is not a vehicle stream", `
+[[gabriel.flow.producers]]
+name = "camera"
+`},
+		{"remote engine without a remote server", `
+[[gabriel.flow.producers]]
+name = "{vehicle}.frames"
+[[gabriel.flow.engines]]
+name = "detector"
+location = "remote"
+`},
+		{"certificate that is not base64", `
+[gabriel]
+remote-certificate = "not base64!"
+`},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := fmt.Sprintf(`
+port-base = %d
+hostname = "test-daemon"
+
+[backend.swarm-controller]
+address = "127.0.0.1:1"
+%s`, freePort(t), test.gabriel)
+			_, err := inst.Client.Configure(t.Context(), eagledpb.ConfigureRequest_builder{ConfigToml: cfg}.Build())
+			if err == nil {
+				t.Fatal("expected Configure to reject the gabriel config")
+			}
+			t.Logf("got expected error: %v", err)
+		})
+	}
+}
+
 // TestConfigureRejectsDuplicateVehicleName mirrors
 // TestConfigureRejectsEmptyVehicleName for two [[vehicles]] entries sharing a
 // name: without this check, the two entries would race on the same map key
