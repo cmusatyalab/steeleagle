@@ -5,11 +5,9 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import argparse
 import datetime
 import logging
 import os
-import signal
 import time
 from io import BytesIO
 
@@ -20,24 +18,24 @@ import numpy as np
 import pytz
 import redis
 from foxglove.schemas import CompressedImage, LocationFix
-from gabriel_protocol.v1 import gabriel_pb2
-from gabriel_server import cognitive_engine, local_engine
 from PIL import Image
-from steeleagle_protocol.v1.common import common_pb2
 from steeleagle_protocol.v1.messages.telemetry import telemetry_pb2 as telemetry
 
 logger = logging.getLogger(__name__)
 
 
-class TelemetryEngine(cognitive_engine.Engine):
-    ENGINE_NAME = "telemetry"
+# The full names of the payloads the engine takes, as the vehicle's producers
+# name their inputs' types.
+TELEMETRY_TYPE = telemetry.Telemetry.DESCRIPTOR.full_name
+FRAME_TYPE = telemetry.EncodedFrame.DESCRIPTOR.full_name
 
+
+class TelemetryEngine:
     def __init__(self, args):
         logger.info("Telemetry engine initializing...")
-        signal.signal(signal.SIGTERM, self.cleanup)
         # Connect to Redis database
         self.r = redis.Redis(
-            host="redis",
+            host=args.redis_host,
             port=args.redis,
             username="steeleagle",
             password=f"{args.auth}",
@@ -46,7 +44,7 @@ class TelemetryEngine(cognitive_engine.Engine):
         self.r.ping()
         logger.info(f"Connected to redis on port {args.redis}...")
 
-        self.storage_path = os.getcwd() + "/images/"
+        self.storage_path = args.storage + "/"
         try:
             os.makedirs(self.storage_path + "/raw")
         except FileExistsError:
@@ -61,7 +59,7 @@ class TelemetryEngine(cognitive_engine.Engine):
         )
         self.fg_server = foxglove.start_server(name="SteelEagle", host="0.0.0.0")
 
-    def cleanup(self, signum, frame):
+    def cleanup(self):
         logger.info("Stopping WS server and flushing MCAP file...")
         self.fg_server.stop()
         self.mcap.close()
@@ -71,7 +69,7 @@ class TelemetryEngine(cognitive_engine.Engine):
     frequently updated data is stored in a STREAM.
     """
 
-    def updateVehicle(self, vehicle_id, extras, model=""):
+    def updateVehicle(self, vehicle_id, extras):
         global_pos = extras.position_info.global_position
         rel_pos = extras.position_info.relative_position
         body_vel = extras.position_info.velocity_body
@@ -159,8 +157,6 @@ class TelemetryEngine(cognitive_engine.Engine):
 
         vehicle_key = f"vehicle:{vehicle_id}"
         self.r.hset(vehicle_key, "last_seen", f"{time.time()}")
-        if model:
-            self.r.hset(vehicle_key, "model", model)
         self.r.hset(vehicle_key, "battery", f"{extras.alert_info.battery_warning}")
         self.r.hset(vehicle_key, "mag", f"{extras.alert_info.magnetometer_warning}")
         self.r.hset(vehicle_key, "sats", f"{extras.alert_info.gps_warning}")
@@ -188,96 +184,71 @@ class TelemetryEngine(cognitive_engine.Engine):
         logger.debug(f"Updating {vehicle_key} status: last_seen: {time.time()}")
 
     """
-    Processes an input frame from Gabriel. For telemetry payloads,
-    it updates the vehicle's tables in Redis. For imagery payloads,
-    it writes the images to disk.
+    Processes an input from Gabriel. For telemetry payloads, it updates the
+    vehicle's tables in Redis. For imagery payloads, it writes the images to
+    disk. The vehicle names its producers "<vehicle>.telemetry" and
+    "<vehicle>.frames", so the producer's name gives the vehicle's id.
     """
 
-    def handle(self, input_frame, client_info):
-        logger.info("Processing incoming input frame from Gabriel...")
-
-        status = gabriel_pb2.Status()
-        status.code = gabriel_pb2.StatusCode.SUCCESS
-
-        vehicle_info = common_pb2.VehicleInfo()
-        client_info.Unpack(vehicle_info)
-        vehicle_id = vehicle_info.vehicle_id
+    def handle(self, input):
+        vehicle_id = input.id.producer.rpartition(".")[0]
         if vehicle_id == "":
-            status.code = gabriel_pb2.StatusCode.ENGINE_ERROR
-            status.message = "Client did not register a vehicle id"
-            return cognitive_engine.Result(status, None)
+            logger.error(f"Producer {input.id.producer} names no vehicle")
+            return
 
-        if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
+        if input.payload_type == TELEMETRY_TYPE:
             tel = telemetry.Telemetry()
-            assert input_frame.WhichOneof("payload") == "any_payload"
-            assert input_frame.any_payload.Is(telemetry.Telemetry.DESCRIPTOR)
-            input_frame.any_payload.Unpack(tel)
-
+            tel.ParseFromString(bytes(input.data))
             logger.info(vehicle_id)
-            self.updateVehicle(vehicle_id, tel, vehicle_info.model)
-            return cognitive_engine.Result(status, "Telemetry updated")
+            self.updateVehicle(vehicle_id, tel)
+            return
 
-        if input_frame.payload_type == gabriel_pb2.PayloadType.IMAGE:
+        if input.payload_type == FRAME_TYPE:
             frame = telemetry.EncodedFrame()
-            assert input_frame.WhichOneof("payload") == "any_payload"
-            assert input_frame.any_payload.Is(telemetry.EncodedFrame.DESCRIPTOR)
-            input_frame.any_payload.Unpack(frame)
-            image_np = np.frombuffer(frame.encoded_data, dtype=np.uint8)
+            frame.ParseFromString(bytes(input.data))
+            self.storeFrame(vehicle_id, frame)
+            return
 
-            # have redis publish the latest image
-            if self.publish:
-                logger.info(
-                    f"Publishing image to redis under imagery.{vehicle_id} topic."
-                )
-                self.r.publish(f"imagery.{vehicle_id}", frame.encoded_data)
-            # store images in the shared volume
-            try:
-                img = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
-                add_watermark(img)
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                img = Image.fromarray(img)
+        logger.error(f"Engine received wrong input format: {input.payload_type}")
 
-                vehicle_raw_dir = f"{self.storage_path}/raw/{vehicle_id}"
-                os.makedirs(vehicle_raw_dir, exist_ok=True)
-                now = datetime.datetime.now(pytz.timezone("America/New_York"))
-                current_path = f"{vehicle_raw_dir}/{now.strftime('%d-%b-%Y')}"
-                try:
-                    os.mkdir(current_path)
-                except FileExistsError:
-                    logger.debug(
-                        f"Directory {current_path} already exists. Moving on..."
-                    )
-                img.save(
-                    f"{current_path}/{now.strftime('%H%M.%S%f')}.jpg", format="JPEG"
-                )
+    def storeFrame(self, vehicle_id, frame):
+        image_np = np.frombuffer(frame.encoded_data, dtype=np.uint8)
 
-                img.save(f"{vehicle_raw_dir}/temp.jpg", format="JPEG")
-                os.rename(
-                    f"{vehicle_raw_dir}/temp.jpg", f"{vehicle_raw_dir}/latest.jpg"
-                )
-                resampled_out = BytesIO()
-                img.thumbnail((320, 240), Image.LANCZOS)
-                img.save(resampled_out, format="JPEG")
-                thumbnail = resampled_out.getvalue()
-                foxglove.log(
-                    f"/{vehicle_id}/imagery",
-                    CompressedImage(data=thumbnail, format="jpeg"),
-                    log_time=time.time_ns(),
-                )
-                logger.debug(f"Updated latest image for {vehicle_id}")
-                return cognitive_engine.Result(status, "Telemetry updated")
-            except Exception as e:
-                logger.error(f"Exception trying to store imagery: {e}")
-                status.code = gabriel_pb2.StatusCode.ENGINE_ERROR
-                status.message = str(e)
-                return cognitive_engine.Result(status, None)
+        # have redis publish the latest image
+        if self.publish:
+            logger.info(f"Publishing image to redis under imagery.{vehicle_id} topic.")
+            self.r.publish(f"imagery.{vehicle_id}", frame.encoded_data)
+        # store images in the shared volume
+        img = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
+        if img is None:
+            logger.error(f"Could not decode a frame from {vehicle_id}")
+            return
+        add_watermark(img)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = Image.fromarray(img)
 
-        logger.error(f"Engine received wrong input format: {input_frame.payload_type}")
-        status.code = gabriel_pb2.StatusCode.WRONG_INPUT_FORMAT
-        status.message = (
-            f"Engine received wrong input format: {input_frame.payload_type}"
+        vehicle_raw_dir = f"{self.storage_path}/raw/{vehicle_id}"
+        os.makedirs(vehicle_raw_dir, exist_ok=True)
+        now = datetime.datetime.now(pytz.timezone("America/New_York"))
+        current_path = f"{vehicle_raw_dir}/{now.strftime('%d-%b-%Y')}"
+        try:
+            os.mkdir(current_path)
+        except FileExistsError:
+            logger.debug(f"Directory {current_path} already exists. Moving on...")
+        img.save(f"{current_path}/{now.strftime('%H%M.%S%f')}.jpg", format="JPEG")
+
+        img.save(f"{vehicle_raw_dir}/temp.jpg", format="JPEG")
+        os.rename(f"{vehicle_raw_dir}/temp.jpg", f"{vehicle_raw_dir}/latest.jpg")
+        resampled_out = BytesIO()
+        img.thumbnail((320, 240), Image.LANCZOS)
+        img.save(resampled_out, format="JPEG")
+        thumbnail = resampled_out.getvalue()
+        foxglove.log(
+            f"/{vehicle_id}/imagery",
+            CompressedImage(data=thumbnail, format="jpeg"),
+            log_time=time.time_ns(),
         )
-        return cognitive_engine.Result(status, None)
+        logger.debug(f"Updated latest image for {vehicle_id}")
 
 
 def add_watermark(img):
@@ -295,68 +266,3 @@ def add_watermark(img):
         2,
         cv2.LINE_AA,
     )
-
-
-def main():
-    """Starts the Gabriel server."""
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-
-    parser.add_argument("-p", "--port", type=int, default=9099, help="Set port number")
-
-    parser.add_argument(
-        "-g",
-        "--gabriel",
-        default="gabriel-server:5555",
-        help="Gabriel server endpoint.",
-    )
-
-    parser.add_argument(
-        "-r",
-        "--redis",
-        type=int,
-        default=6379,
-        help="Set port number for redis connection [default: 6379]",
-    )
-
-    parser.add_argument("-a", "--auth", default="", help="Share key for redis user.")
-
-    parser.add_argument(
-        "-l", "--publish", action="store_true", help="Publish incoming images via redis"
-    )
-
-    parser.add_argument(
-        "-t",
-        "--ttl",
-        type=int,
-        default=7,
-        help="TTL in days before drones status tables are cleaned up in redis [default: 7]",
-    )
-
-    parser.add_argument(
-        "--unittest",
-        action="store_true",
-        default=False,
-        help="When enabled, will not connect to redis nor store images to disk.",
-    )
-
-    args, _ = parser.parse_known_args()
-
-    def engine_factory():
-        return TelemetryEngine(args)
-
-    engine = local_engine.LocalEngine(
-        engine_factory,
-        input_queue_maxsize=60,
-        port=args.port,
-        num_tokens=2,
-        engine_id="telemetry",
-        use_zeromq=True,
-    )
-
-    engine.run()
-
-
-if __name__ == "__main__":
-    main()

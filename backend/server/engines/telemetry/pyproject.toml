@@ -10,7 +10,15 @@ dependencies = [
    "numpy",
    "pytz",
    "Pillow",
-   "gabriel-server>=5.1.0",
-   "steeleagle-protocol>=0.1.18",
+   "gabriel",
+   "steeleagle-protocol",
    "foxglove-sdk",
 ]
+
+# Gabriel's Python binding loads libgabriel from its repository (cargo build
+# --release -p gabriel), so it stays in place, next to steeleagle-go as in
+# go.mod. The protocol comes from this repository, so that the engine's
+# messages match the vehicle's.
+[tool.uv.sources]
+gabriel = { path = "../../../../../gabriel-rust/python", editable = true }
+steeleagle-protocol = { path = "../../../../api/python", editable = true }

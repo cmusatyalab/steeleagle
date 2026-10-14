@@ -7,11 +7,20 @@
 
 import argparse
 import logging
+import os
+import signal
+import threading
 
-from gabriel_server.network_engine.engine_runner import EngineRunner
+import gabriel
 from telemetry_engine import TelemetryEngine
 
-SOURCE = "telemetry"
+ENGINE_NAME = "telemetry"
+# The engine forwards nothing and answers with no result, so it needs only a
+# small output buffer.
+MAX_OUTPUT_SIZE = 1024
+# How often the engine checks whether it was asked to stop, in seconds.
+STOP_CHECK_INTERVAL_S = 0.5
+
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s",
@@ -25,13 +34,15 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    parser.add_argument("-p", "--port", type=int, default=9099, help="Set port number")
+    parser.add_argument(
+        "-n",
+        "--name",
+        default=ENGINE_NAME,
+        help="The engine's name. The gabriel-server on this machine must serve it.",
+    )
 
     parser.add_argument(
-        "-g",
-        "--gabriel",
-        default="gabriel-server:5555",
-        help="Gabriel server endpoint.",
+        "--redis-host", default="redis", help="Host name of the redis server."
     )
 
     parser.add_argument(
@@ -43,6 +54,13 @@ def main():
     )
 
     parser.add_argument("-a", "--auth", default="", help="Share key for redis user.")
+
+    parser.add_argument(
+        "-s",
+        "--storage",
+        default=os.path.join(os.getcwd(), "images"),
+        help="Directory to store images and MCAP recordings in.",
+    )
 
     parser.add_argument(
         "-l", "--publish", action="store_true", help="Publish incoming images via redis"
@@ -58,17 +76,30 @@ def main():
 
     args, _ = parser.parse_known_args()
 
-    def engine_setup():
-        return TelemetryEngine(args)
+    gabriel.init_log()
+    telemetry_engine = TelemetryEngine(args)
 
-    logger.info("Starting telemetry cognitive engine..")
-    engine_runner = EngineRunner(
-        engine=engine_setup(),
-        engine_id=SOURCE,
-        server_address=args.gabriel,
-        all_responses_required=True,
-    )
-    engine_runner.run()
+    # The engine waits in Gabriel's C library, where Python can't interrupt it,
+    # so it waits in short steps and checks for a stop in between.
+    stopping = threading.Event()
+    for signum in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(signum, lambda *_: stopping.set())
+
+    logger.info(f"Starting telemetry cognitive engine {args.name}..")
+    try:
+        with gabriel.Engine(args.name, max_output_size=MAX_OUTPUT_SIZE) as engine:
+            while not stopping.is_set():
+                engine_input = engine.next(timeout=STOP_CHECK_INTERVAL_S)
+                if engine_input is None:
+                    continue
+                try:
+                    telemetry_engine.handle(engine_input)
+                except Exception:
+                    logger.exception(f"Failed to process an input from {engine_input.id.producer}")
+                finally:
+                    engine.stop()
+    finally:
+        telemetry_engine.cleanup()
 
 
 if __name__ == "__main__":
