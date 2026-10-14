@@ -6,6 +6,7 @@ require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/adrg/xdg v0.5.3
 	github.com/alecthomas/participle/v2 v2.1.4
+	github.com/cmusatyalab/gabriel v0.0.0
 	github.com/cmusatyalab/gabriel/go-client v0.5.0
 	github.com/cmusatyalab/gabriel/protocol/go v0.3.0
 	github.com/cmusatyalab/steeleagle/api/go v0.1.0
@@ -134,3 +135,8 @@ require (
 )
 
 replace github.com/cmusatyalab/steeleagle/api/go => ./api/go
+
+// Steps required:
+// git clone -b gabriel2 https://github.com/cmusatyalab/gabriel ../gabriel-rust
+// cargo build --release -p gabriel
+replace github.com/cmusatyalab/gabriel => ../gabriel-rust
