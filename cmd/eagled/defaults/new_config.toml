@@ -1,0 +1,51 @@
+
+# Example config for `eagle configure`. This config gets pushed to a running
+# instance over its control-plane API, which starts the vehicles it describes.
+# The daemon-wide settings (everything above [[vehicles]], including hostname)
+# only take effect on the first call to a given eagled instance; `eagle
+# configure` prints a note if a later call's daemon-wide settings differ from
+# what's already active, since those differences are silently not applied.
+
+# Vehicle ports are assigned in ascending order from this base port.
+hostname = "eagled"
+vehicle-port-base = 9000
+gabriel-port = 9099
+sc-port = 5003
+headless = true
+
+[[plugins]]
+[[plugins.vehicles]]
+# Name of the vehicle.
+name = "harpy"
+plugin = "parrot_anafi"
+[plugins.vehicles.sim]
+lat = 40.413664
+lon = -79.949285
+alt = 0
+[plugins.vehicles.args]
+ip = "10.202.0.1"
+
+[[plugins.engines]]
+name = "yolo_qnn"
+plugin = "yolo_qnn"
+[plugins.engines.args]
+
+[plugins.monitor]
+plugin = ""
+[plugins.monitor.args]
+exp = "early-discard"
+
+[plugins.simulator]
+plugin = "steeleagle_aviary"
+tag = "abecgd"
+override = "/home/..."
+runtime = "container | sandbox | process"
+
+[plugins.gcs]
+plugin = "steeleagle_gcs"
+
+[plugins.sc]
+plugin = "steeleagle_swarm_controller"
+
+[plugins.db]
+plugin = "steeleagle_db"
