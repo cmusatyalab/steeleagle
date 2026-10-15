@@ -16,7 +16,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /src/gabriel-rust
 COPY --from=gabriel-src . .
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
+RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/src/gabriel-rust/target \
     cargo build --release --locked -p gabriel \
     && cp target/release/libgabriel.so /libgabriel.so
