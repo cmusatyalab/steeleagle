@@ -18,7 +18,6 @@
 #
 #
 
-import argparse
 import json
 import logging
 import os
@@ -29,15 +28,11 @@ import cv2
 import numpy as np
 import redis
 import supervision as sv
-from gabriel_protocol.v1 import gabriel_pb2
-from gabriel_server import cognitive_engine, local_engine
-from google.protobuf.any_pb2 import Any
 from PIL import Image
 from predictors import UnknownModelArchError, load_predictor
 from pygeodesy.sphericalNvector import LatLon
 from pykml import parser
 from scipy.spatial.transform import Rotation as R
-from steeleagle_protocol.v1.common import common_pb2
 from steeleagle_protocol.v1.messages.result import result_pb2
 from steeleagle_protocol.v1.messages.telemetry import telemetry_pb2 as telemetry
 
@@ -47,6 +42,11 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
+
+# The inputs the engine takes, and the results it gives, by their payload
+# type: the full name of their protobuf message.
+FRAME_TYPE = telemetry.EncodedFrame.DESCRIPTOR.full_name
+DETECTION_RESULT_TYPE = result_pb2.DetectionResult.DESCRIPTOR.full_name
 
 
 def annotate_detections(image_bgr, detections):
@@ -60,9 +60,7 @@ def annotate_detections(image_bgr, detections):
     return sv.LabelAnnotator().annotate(annotated, detections, labels=labels)
 
 
-class OpenScoutObjectEngine(cognitive_engine.Engine):
-    ENGINE_NAME = "openscout-object"
-
+class OpenScoutObjectEngine:
     def __init__(self, args):
         self.detector = load_predictor(args.model, args.threshold)
         self.threshold = args.threshold
@@ -71,7 +69,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         self.unittest = args.unittest
         if not self.unittest:
             self.r = redis.Redis(
-                host="redis",
+                host=args.redis_host,
                 port=args.redis,
                 username="steeleagle",
                 password=f"{args.auth}",
@@ -156,7 +154,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         )
         return target_insct + (t * target_dir)
 
-    def calculate_target_pitch_yaw(self, box, image_np, position_info, gimbal_status):
+    def calculate_target_pitch_yaw(self, box, image_np, position_info, gimbal_info):
         img_width = image_np.shape[1]
         img_height = image_np.shape[0]
         pixel_center = (img_width / 2, img_height / 2)
@@ -174,7 +172,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         target_yaw_angle = (target_x_pix / img_width) * HFOV
         target_bottom_pitch_angle = (target_y_pix / img_height) * VFOV
 
-        gimbal_pitch = gimbal_status.pose_body.pitch
+        gimbal_pitch = gimbal_info.pose_body.pitch
         object_heading = position_info.global_position.heading + target_yaw_angle
         logger.info(
             f"BBox: {box}\nTargetXPix: {target_x_pix}\nTargetYPix: {target_y_pix}\nGimbal Pitch: {gimbal_pitch}\nBottom Angle {target_bottom_pitch_angle}\nHeading: {position_info.global_position.heading}\nTarget Yaw Offset {target_yaw_angle}\n"
@@ -304,73 +302,57 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         self.detector = detector
         self.model = model_name
 
-    def handle(self, input_frame, client_info):
-        if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
-            # if the payload is TEXT, say from a CNC client, we ignore
-            status = gabriel_pb2.Status()
-            status.code = gabriel_pb2.StatusCode.WRONG_INPUT_FORMAT
-            status.message = "Ignoring text payload"
-            return cognitive_engine.Result(status, None)
-
-        vehicle_info = common_pb2.VehicleInfo()
-        client_info.Unpack(vehicle_info)
-        vehicle_id = vehicle_info.vehicle_id
+    def handle(self, input):
+        """Detects objects in a frame from a vehicle, and returns them as a
+        serialized DetectionResult, empty if there are none. Returns None for an
+        input it cannot read."""
+        # A vehicle's producers are named "<vehicle>.<stream>".
+        vehicle_id = input.id.producer.rpartition(".")[0]
+        if vehicle_id == "":
+            logger.error(f"Producer {input.id.producer} names no vehicle")
+            return None
+        if input.payload_type != FRAME_TYPE:
+            logger.error(f"Engine received wrong input format: {input.payload_type}")
+            return None
 
         frame = telemetry.EncodedFrame()
-        assert input_frame.WhichOneof("payload") == "any_payload"
-        assert input_frame.any_payload.Is(telemetry.EncodedFrame.DESCRIPTOR)
-        input_frame.any_payload.Unpack(frame)
-
-        self.t0 = time.time()
-
-        gimbal_status = frame.gimbal_status if frame.HasField("gimbal_status") else None
+        frame.ParseFromString(bytes(input.data))
+        gimbal_info = frame.gimbal_info if frame.HasField("gimbal_info") else None
         results, image_np = self.process_image(frame.encoded_data)
+        if image_np is None:
+            logger.error(f"Could not decode a frame from {vehicle_id}")
+            return None
         detections = self.process_results(
             image_np,
             results,
             vehicle_id,
             frame.position_info,
-            gimbal_status,
+            gimbal_info,
         )
 
-        compute_result = result_pb2.ComputeResult()
-        compute_result.timestamp.GetCurrentTime()
-
-        try:
-            if detections is not None:
-                detection_result = result_pb2.DetectionResult()
-                for d in detections:
-                    det_object = result_pb2.Detection()
-                    det_object.class_name = d["class"]
-                    det_object.score = d["score"] * 100
-                    bbox = result_pb2.BoundingBox(
+        detection_result = result_pb2.DetectionResult()
+        for d in detections or []:
+            detection_result.detections.append(
+                result_pb2.Detection(
+                    class_name=d["class"],
+                    score=d["score"] * 100,
+                    bbox=result_pb2.BoundingBox(
                         x_min=float(np.clip(d["box"][1], 0.0001, 1.0)),
                         y_min=float(np.clip(d["box"][0], 0.0001, 1.0)),
                         x_max=float(np.clip(d["box"][3], 0.0001, 1.0)),
                         y_max=float(np.clip(d["box"][2], 0.0001, 1.0)),
-                    )
-                    det_object.bbox.CopyFrom(bbox)
-                    detection_result.detections.append(det_object)
-                compute_result.detection_result.CopyFrom(detection_result)
-
-            any_payload = Any()
-            any_payload.Pack(compute_result)
-        except Exception as e:
-            logger.error(e)
+                    ),
+                )
+            )
 
         self.count += 1
-
         if self.t1 - self.lastprint > 5:
             self.print_inference_stats()
-
         self.lasttime = self.t1
-
-        status = gabriel_pb2.Status()
-        status.code = gabriel_pb2.StatusCode.SUCCESS
-        return cognitive_engine.Result(status, any_payload)
+        return detection_result.SerializeToString()
 
     def process_results(
-        self, image_np, sv_detections, vehicle_id, position_info, gimbal_status
+        self, image_np, sv_detections, vehicle_id, position_info, gimbal_info
     ):
         exclusions = self.exclusions or []
         sv_detections = sv_detections[~np.isin(sv_detections.class_id, exclusions)]
@@ -406,7 +388,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 float(x2 / img_width),
             ]
             global_pos = position_info.global_position
-            if gimbal_status is None:
+            if gimbal_info is None:
                 logger.warning(
                     "No gimbal attached to this frame, using the vehicle global location for target coordinates"
                 )
@@ -415,7 +397,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 p = LatLon(lat, lon)
             else:
                 target_pitch, target_yaw = self.calculate_target_pitch_yaw(
-                    box, image_np, position_info, gimbal_status
+                    box, image_np, position_info, gimbal_info
                 )
 
                 rel_pos = position_info.relative_position
@@ -565,10 +547,14 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         return Image.fromarray(final)
 
     def process_image(self, image):
+        """Decodes an encoded image and detects objects in it. Returns no
+        results and no image if the image cannot be decoded."""
         self.t0 = time.time()
         np_data = np.frombuffer(image, dtype=np.uint8)
         img = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
-        # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        if img is None:
+            self.t1 = time.time()
+            return None, None
 
         results = self.inference(img)
         self.t1 = time.time()
@@ -621,126 +607,3 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         """Allow timing engine to override this"""
         return self.detector.predict(img)
 
-
-def main():
-    """Starts the Gabriel server."""
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-
-    parser.add_argument(
-        "--timing", action="store_true", help="Print timing information"
-    )
-
-    parser.add_argument("-p", "--port", type=int, default=9099, help="Set port number")
-
-    parser.add_argument(
-        "-m",
-        "--model",
-        default="coco",
-        help="(OBJECT DETECTION) Subdirectory under /openscout/server/model/ which contains Tensorflow model to load initially.",
-    )
-
-    parser.add_argument(
-        "-r", "--threshold", type=float, default=0.85, help="Confidence threshold"
-    )
-
-    parser.add_argument(
-        "-s",
-        "--store",
-        action="store_true",
-        default=False,
-        help="Store images with bounding boxes",
-    )
-
-    parser.add_argument(
-        "-g",
-        "--gabriel",
-        default="gabriel-server:5555",
-        help="Gabriel server endpoint.",
-    )
-
-    parser.add_argument(
-        "-src",
-        "--source",
-        default="telemetry",
-        help="Source for engine to register with.",
-    )
-
-    parser.add_argument(
-        "-x",
-        "--exclude",
-        help="Comma separated list of classes (ids) to exclude when performing detection. Consult model/<model_name>/label_map.pbtxt.",
-    )
-
-    parser.add_argument(
-        "-R",
-        "--redis",
-        type=int,
-        default=6379,
-        help="Set port number for redis connection [default: 6379]",
-    )
-
-    parser.add_argument("-a", "--auth", default="", help="Share key for redis user.")
-
-    parser.add_argument(
-        "-hsv",
-        "--hsv_threshold",
-        type=float,
-        default=5.0,
-        help="HSV filter threshold [0.0-100.0]",
-    )
-
-    parser.add_argument(
-        "--radius",
-        type=float,
-        default=5.0,
-        help="Radius in meters to consider when looking for previously found objects.",
-    )
-
-    parser.add_argument(
-        "--ttl",
-        type=int,
-        default=1200,
-        help="TTL in seconds before objects are cleaned up in redis [default: 1200]",
-    )
-
-    parser.add_argument(
-        "--geofence",
-        default="geofence.kml",
-        help="Path to KML file on the shared volume that specified the geofence. [default: geofence.kml]",
-    )
-
-    parser.add_argument(
-        "--geofence_enabled",
-        action="store_true",
-        default=False,
-        help="Whether to use a geofence to decide whether to store detections",
-    )
-
-    parser.add_argument(
-        "--unittest",
-        action="store_true",
-        default=False,
-        help="When enabled, will not connect to redis nor store images to disk",
-    )
-
-    args, _ = parser.parse_known_args()
-
-    def engine_factory():
-        return OpenScoutObjectEngine(args)
-
-    engine = local_engine.LocalEngine(
-        engine_factory,
-        input_queue_maxsize=60,
-        port=args.port,
-        num_tokens=2,
-        engine_id="openscout-object",
-        use_zeromq=True,
-    )
-
-    engine.run()
-
-
-if __name__ == "__main__":
-    main()

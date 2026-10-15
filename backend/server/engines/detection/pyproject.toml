@@ -15,9 +15,13 @@ dependencies = [
    "supervision>=0.29.1",
    "scipy",
    "Pillow",
-   "gabriel-server>=5.1.0",
-   "steeleagle-protocol>=0.1.18",
-   "torch"
+   "gabriel",
+   "steeleagle-protocol",
+   "torch",
+   # Listed, though ultralytics and rfdetr already require it, so that the
+   # torchvision source below applies: uv applies sources only to direct
+   # dependencies, and a torchvision from PyPI does not match a CUDA torch.
+   "torchvision",
 ]
 
 [dependency-groups]
@@ -30,7 +34,13 @@ override-dependencies = [
   "opencv-python ; sys_platform == 'never'",
 ]
 
+# Gabriel's Python binding loads libgabriel from its repository (cargo build
+# --release -p gabriel), so it stays in place, next to steeleagle-go as in
+# go.mod. The protocol comes from this repository, so that the engine's
+# messages match the vehicle's.
 [tool.uv.sources]
+gabriel = { path = "../../../../../gabriel-rust/python", editable = true }
+steeleagle-protocol = { path = "../../../../api/python", editable = true }
 torch = [
   { index = "pytorch-cu126", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]

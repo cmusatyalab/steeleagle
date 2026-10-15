@@ -11,8 +11,8 @@
 #                       ──▶ telemetry (remote)
 #
 # {vehicle}.yolo runs as in early-discard.toml, but with
-# --gabriel_forward never. The cloudlet must serve "detector", the detection
-# engine, which is not yet ported to the new Gabriel.
+# --gabriel_forward never. "detector" is the cloudlet's object engine
+# (backend/server/engines/detection), which gabriel-server serves.
 
 [[gabriel.flow.producers]]
 name = "{vehicle}.telemetry"

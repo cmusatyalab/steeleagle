@@ -19,12 +19,19 @@
 #
 #
 import argparse
-
-# from timing_engine import TimingObjectEngine
 import logging
+import signal
+import threading
 
-from gabriel_server.network_engine import engine_runner
-from openscout_object_engine import OpenScoutObjectEngine
+import gabriel
+from openscout_object_engine import DETECTION_RESULT_TYPE, OpenScoutObjectEngine
+
+ENGINE_NAME = "detector"
+# The largest DetectionResult the engine returns: room for hundreds of
+# detections. Gabriel reserves shared memory for it.
+MAX_OUTPUT_SIZE = 64 * 1024
+# How often the engine checks whether it was asked to stop, in seconds.
+STOP_CHECK_INTERVAL_S = 0.5
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -40,16 +47,17 @@ def main():
     )
 
     parser.add_argument(
-        "--timing", action="store_true", help="Print timing information"
+        "-n",
+        "--name",
+        default=ENGINE_NAME,
+        help="The engine's name. The gabriel-server on this machine must serve it.",
     )
-
-    parser.add_argument("-p", "--port", type=int, default=9099, help="Set port number")
 
     parser.add_argument(
         "-m",
         "--model",
         default="coco",
-        help="(OBJECT DETECTION) Subdirectory under /openscout/server/model/ which contains Tensorflow model to load initially.",
+        help="Model to load, from the model/ directory: <name>.pt, or <name>.json for another architecture.",
     )
 
     parser.add_argument(
@@ -65,28 +73,15 @@ def main():
     )
 
     parser.add_argument(
-        "-g",
-        "--gabriel",
-        default="gabriel-server:5555",
-        help="Gabriel server endpoint.",
-    )
-
-    parser.add_argument(
-        "-src", "--engine_id", default="object-engine", help="Engine identifier."
-    )
-
-    parser.add_argument(
         "-x",
         "--exclude",
-        help="Comma separated list of classes (ids) to exclude when performing detection. Consult model/<model_name>/label_map.pbtxt.",
+        help="Comma separated list of classes (ids) to exclude when performing detection.",
     )
 
     parser.add_argument(
-        "-d",
-        "--drone",
-        default="anafi",
-        help="Drone model ([anafi,usa]).  Used to define HFOV and VFOV for camera.",
+        "--redis-host", default="redis", help="Host name of the redis server."
     )
+
     parser.add_argument(
         "-R",
         "--redis",
@@ -140,15 +135,32 @@ def main():
     )
     args, _ = parser.parse_known_args()
 
-    logger.info("Starting object detection cognitive engine..")
-    runner = engine_runner.EngineRunner(
-        engine=OpenScoutObjectEngine(args),
-        engine_id=args.engine_id,
-        server_address=args.gabriel,
-        all_responses_required=True,
-    )
+    gabriel.init_log()
+    detector = OpenScoutObjectEngine(args)
 
-    runner.run()
+    # The engine waits in Gabriel's C library, where Python can't interrupt it,
+    # so it waits in short steps and checks for a stop in between.
+    stopping = threading.Event()
+    for signum in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(signum, lambda *_: stopping.set())
+
+    logger.info(f"Starting object detection cognitive engine {args.name}..")
+    with gabriel.Engine(
+        args.name, result_type=DETECTION_RESULT_TYPE, max_output_size=MAX_OUTPUT_SIZE
+    ) as engine:
+        while not stopping.is_set():
+            engine_input = engine.next(timeout=STOP_CHECK_INTERVAL_S)
+            if engine_input is None:
+                continue
+            result = None
+            try:
+                result = detector.handle(engine_input)
+            except Exception:
+                logger.exception(
+                    f"Failed to process an input from {engine_input.id.producer}"
+                )
+            finally:
+                engine.stop(result or b"")
 
 
 if __name__ == "__main__":
