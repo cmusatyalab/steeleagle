@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 )
@@ -23,8 +24,14 @@ const (
 )
 
 // serveMetrics serves the Prometheus metrics, among them the vehicles'
-// Gabriel metrics, on port until ctx ends.
+// Gabriel metrics and the host's, on port until ctx ends.
 func serveMetrics(ctx context.Context, port int) {
+	if host, err := newHostCollector(); err != nil {
+		log.Warn().Err(err).Msg("cannot read the host's metrics; serving the rest")
+	} else if err := prometheus.Register(host); err != nil {
+		log.Warn().Err(err).Msg("registering the host's metrics")
+	}
+
 	mux := http.NewServeMux()
 	mux.Handle(metricsPath, promhttp.Handler())
 	server := &http.Server{

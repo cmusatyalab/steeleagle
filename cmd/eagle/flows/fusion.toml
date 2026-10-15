@@ -1,0 +1,47 @@
+# Flow C, multi-tier: every frame goes both to YOLO on the vehicle's NPU and
+# to a larger detector on the cloudlet, in parallel. The local result comes
+# first; the remote one, when it comes, is the better one. Both are recorded,
+# so fusing them can be studied after the flight. A fusion engine that does it
+# live subscribes to both detectors' events, and is not part of the flow
+# (docs/dag-tokens.tex in Gabriel, "Multi-tier fusion").
+#
+#   {vehicle}.telemetry ──▶ telemetry (remote)
+#   {vehicle}.frames    ──▶ {vehicle}.yolo (local)
+#                       ──▶ detector (remote)
+#                       ──▶ telemetry (remote)
+#
+# {vehicle}.yolo runs as in early-discard.toml, but with
+# --gabriel_forward never. The cloudlet must serve "detector", the detection
+# engine, which is not yet ported to the new Gabriel.
+
+[[gabriel.flow.producers]]
+name = "{vehicle}.telemetry"
+[[gabriel.flow.producers]]
+name = "{vehicle}.frames"
+
+[[gabriel.flow.engines]]
+name = "{vehicle}.yolo"
+location = "local"
+[[gabriel.flow.engines]]
+name = "detector"
+location = "remote"
+[[gabriel.flow.engines]]
+name = "telemetry"
+location = "remote"
+
+[[gabriel.flow.edges]]
+from = "{vehicle}.telemetry"
+to = "telemetry"
+timeout = "2s"
+[[gabriel.flow.edges]]
+from = "{vehicle}.frames"
+to = "{vehicle}.yolo"
+timeout = "1s"
+[[gabriel.flow.edges]]
+from = "{vehicle}.frames"
+to = "detector"
+timeout = "2s"
+[[gabriel.flow.edges]]
+from = "{vehicle}.frames"
+to = "telemetry"
+timeout = "2s"

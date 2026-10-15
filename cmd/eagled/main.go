@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	gabriel "github.com/cmusatyalab/gabriel/go"
 	eagledpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/eagled"
 	"github.com/cmusatyalab/steeleagle/cmd/eagled/logstore"
 	"github.com/cmusatyalab/steeleagle/core/util"
@@ -30,6 +31,7 @@ const shutdownGracePeriod = 30 * time.Second
 func main() {
 	controlPort := flag.Int("control-port", DefaultControlPort, "port DaemonService listens on")
 	metricsPort := flag.Int("metrics-port", 0, "port to serve Prometheus metrics on, at "+metricsPath+"; 0 serves none")
+	gabrielMetricsPort := flag.Int("gabriel-metrics-port", 0, "port for Gabriel to serve its own Prometheus metrics on, at "+metricsPath+"; 0 serves none")
 	logLevel := flag.String("log-level", zerolog.InfoLevel.String(), "log level: trace, debug, info, warn, error, fatal, panic, or disabled")
 	flag.Parse()
 
@@ -58,6 +60,14 @@ func main() {
 
 	if *metricsPort != 0 {
 		serveMetrics(ctx, *metricsPort)
+	}
+	// Before any vehicle starts its Gabriel client, whose metrics are
+	// recorded only from then on.
+	if *gabrielMetricsPort != 0 {
+		if err := gabriel.ServeMetrics(fmt.Sprintf("0.0.0.0:%d", *gabrielMetricsPort)); err != nil {
+			log.Fatal().Msgf("serving Gabriel's metrics on port %d: %v", *gabrielMetricsPort, err)
+		}
+		log.Info().Int("port", *gabrielMetricsPort).Msgf("Gabriel serving Prometheus metrics on port %d", *gabrielMetricsPort)
 	}
 
 	d := newDaemon(ctx, cancel, logs)

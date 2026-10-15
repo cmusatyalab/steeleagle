@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -88,17 +90,21 @@ func TestGabrielFlowStoresResults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	recordDir := t.TempDir()
 	v := &Vehicle{
 		Name:  fmt.Sprintf("test%d", os.Getpid()),
 		store: store,
 		log:   zerolog.New(io.Discard),
-		gabrielCfg: GabrielConfig{Flow: GabrielFlow{
-			Producers: []GabrielProducer{{Name: GabrielFramesProducer}},
-			Engines:   []GabrielEngine{{Name: "{vehicle}.detector", Location: GabrielLocal}},
-			Edges: []GabrielEdge{
-				{From: GabrielFramesProducer, To: "{vehicle}.detector", Timeout: "1s"},
+		gabrielCfg: GabrielConfig{
+			Flow: GabrielFlow{
+				Producers: []GabrielProducer{{Name: GabrielFramesProducer}},
+				Engines:   []GabrielEngine{{Name: "{vehicle}.detector", Location: GabrielLocal}},
+				Edges: []GabrielEdge{
+					{From: GabrielFramesProducer, To: "{vehicle}.detector", Timeout: "1s"},
+				},
 			},
-		}},
+			RecordDir: recordDir,
+		},
 	}
 	engineName := v.Name + ".detector"
 	ctx, cancel := context.WithCancel(t.Context())
@@ -141,6 +147,21 @@ func TestGabrielFlowStoresResults(t *testing.T) {
 	}
 	if got := testutil.CollectAndCount(gabrielInputLatency); got < 1 {
 		t.Error("no result latency was recorded")
+	}
+
+	// The recording is closed once the flow stops, after cancel.
+	recordings, err := filepath.Glob(filepath.Join(recordDir, "*", gabrielEventsFile))
+	if err != nil || len(recordings) != 1 {
+		t.Fatalf("recordings = %v, %v, want one", recordings, err)
+	}
+	deadline = time.Now().Add(gabrielTestWait)
+	for !slices.ContainsFunc(readCSV(t, recordings[0]), func(row []string) bool {
+		return row[0] == "Result" && row[5] == engineName
+	}) {
+		if time.Now().After(deadline) {
+			t.Fatal("no result was recorded")
+		}
+		time.Sleep(gabrielTestPoll)
 	}
 }
 

@@ -195,10 +195,30 @@ behavior is unchanged: everything is still written there as before.
 ## Metrics
 
 With `-metrics-port <port>`, eagled serves Prometheus metrics at
-`http://<host>:<port>/metrics`, for watching the vehicles' Gabriel flows live.
-They count each producer's inputs and how each engine's offers ended, and time
-how old each engine's results are when they arrive. The list is at the top of
-`core/vehicle/gabriel_metrics.go`. Without the flag, eagled serves no metrics.
+`http://<host>:<port>/metrics`, for watching the vehicles and their computer
+live, e.g. during a flight. Without the flag, eagled serves no metrics.
+
+- Gabriel: each producer's inputs, how each engine's offers ended, and how old
+  each engine's results are when they arrive. The list is at the top of
+  `core/vehicle/gabriel_metrics.go`.
+- The host: CPU time and frequency, memory, the temperature of each thermal
+  zone, and the bytes on each network device. The list is at the top of
+  `host_metrics.go`.
+
+With `-gabriel-metrics-port <port>`, Gabriel serves its own metrics on a second
+port: each producer's tokens in use, how full each crossing is, and the round
+trip time, congestion window and losses of the connection to the remote
+server. The list is in Gabriel's `rust/src/metrics.rs`.
+
+## Gabriel recordings
+
+Each time a vehicle's Gabriel flow starts, eagled records every input and every
+event of it in `<data dir>/gabriel-recordings/<vehicle>/<start time>/`, in the
+format of Gabriel's bench, so that `bench/analyze.py` reads it as a bench run:
+`inputs.csv`, `events.csv`, and `run.toml` with the flow and when the recording
+started. A flow with 30 fps frames, 10 Hz telemetry and one engine records about
+50 MB an hour. A recording stops at 128 MiB, and old recordings are kept, so
+copy them off and delete them now and then.
 
 ## Testing with a throwaway eagled
 

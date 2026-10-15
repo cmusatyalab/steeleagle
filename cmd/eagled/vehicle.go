@@ -87,6 +87,11 @@ func spawnVehicle(
 	if err != nil {
 		return nil, fmt.Errorf("configuring gabriel for vehicle %s: %w", vehicleCfg.Name, err)
 	}
+	if dataDir, err := util.GetDataDir(); err != nil {
+		vehicleLog.Warn().Err(err).Msg("cannot resolve the data dir; not recording the gabriel flow")
+	} else {
+		vehicleGabrielCfg.RecordDir = filepath.Join(dataDir, gabrielRecordingsDir, vehicleCfg.Name)
+	}
 	opts = append(opts, vehicle.WithGabrielConfig(vehicleGabrielCfg))
 
 	veh, err := vehicle.NewVehicle(vehicle.PluginConfig{
@@ -202,6 +207,10 @@ func installedPluginPath(name, category string) (string, error) {
 // drone's IP address (e.g. parrot_anafi's "--ip 192.168.42.1"). Drivers that
 // take their target some other way (serial, USB, ...) have no address here to
 // probe.
+// gabrielRecordingsDir, in the data dir, holds a directory per vehicle of
+// recordings of its Gabriel flow.
+const gabrielRecordingsDir = "gabriel-recordings"
+
 const driverIPFlag = "--ip"
 
 // driverIP extracts the drone IP address from vehicleCfg's driver args, if

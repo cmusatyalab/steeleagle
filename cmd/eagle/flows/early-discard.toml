@@ -1,0 +1,37 @@
+# Flow B, early discard: YOLO on the vehicle's NPU passes on only the frames
+# it finds something in, so the others never use the network. Telemetry goes
+# to the cloudlet as in the baseline.
+#
+#   {vehicle}.telemetry ──▶ telemetry (remote)
+#   {vehicle}.frames    ──▶ {vehicle}.yolo (local) ──▶ telemetry (remote)
+#
+# {vehicle}.yolo is the Tachyon inference server run as a Gabriel engine, with
+# the vehicle's name in place of {vehicle}, e.g. for harpy:
+#
+#   qnn-sample-app --model <yolo> --backend libQnnHtp.so \
+#       --gabriel_engine harpy.yolo --gabriel_forward detections
+
+[[gabriel.flow.producers]]
+name = "{vehicle}.telemetry"
+[[gabriel.flow.producers]]
+name = "{vehicle}.frames"
+
+[[gabriel.flow.engines]]
+name = "{vehicle}.yolo"
+location = "local"
+[[gabriel.flow.engines]]
+name = "telemetry"
+location = "remote"
+
+[[gabriel.flow.edges]]
+from = "{vehicle}.telemetry"
+to = "telemetry"
+timeout = "2s"
+[[gabriel.flow.edges]]
+from = "{vehicle}.frames"
+to = "{vehicle}.yolo"
+timeout = "1s"
+[[gabriel.flow.edges]]
+from = "{vehicle}.yolo"
+to = "telemetry"
+timeout = "2s"

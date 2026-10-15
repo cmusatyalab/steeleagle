@@ -23,6 +23,9 @@ const DefaultCallTimeout = 5 * time.Minute
 // DefaultDaemonAddr matches eagled's own DefaultControlPort.
 const DefaultDaemonAddr = "localhost:9090"
 
+// defaultConfigPath is the config configure pushes without --config.
+const defaultConfigPath = "config.toml"
+
 // dial connects to eagled's control-plane API at daemonAddr.
 func dial(daemonAddr string) (eagledpb.DaemonServiceClient, func(), error) {
 	conn, err := grpc.NewClient(daemonAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -85,16 +88,18 @@ func printResults(results []*eagledpb.VehicleResult, verb string) bool {
 	return failed
 }
 
-// configure pushes the TOML config at configPath to the eagled instance at
-// daemonAddr, printing per-vehicle start results.
-func configure(ctx context.Context, daemonAddr, configPath string) error {
-	data, err := os.ReadFile(configPath)
+// configure pushes the TOML config in the files at configPaths, merged in
+// order (readConfig), to the eagled instance at daemonAddr, printing
+// per-vehicle start results.
+func configure(ctx context.Context, daemonAddr string, configPaths []string) error {
+	config, err := readConfig(configPaths)
 	if err != nil {
-		return fmt.Errorf("reading %s: %w", configPath, err)
+		return err
 	}
+	configPath := strings.Join(configPaths, " + ")
 	fmt.Printf("pushing %s to %s...\n", configPath, daemonAddr)
 	return withClient(ctx, daemonAddr, func(ctx context.Context, client eagledpb.DaemonServiceClient) error {
-		resp, err := client.Configure(ctx, eagledpb.ConfigureRequest_builder{ConfigToml: string(data)}.Build())
+		resp, err := client.Configure(ctx, eagledpb.ConfigureRequest_builder{ConfigToml: config}.Build())
 		if err != nil {
 			return fmt.Errorf("configuring %s: %w", daemonAddr, err)
 		}
@@ -349,7 +354,7 @@ func rejectFlagLikeArgs(fs *flag.FlagSet, names []string) {
 
 func usage() {
 	fmt.Fprintf(os.Stderr, `usage:
-  eagle configure --daemon <host:port> --config <path>
+  eagle configure --daemon <host:port> --config <path> [--config <path>...]
   eagle stop --daemon <host:port> <vehicle> [<vehicle>...]
   eagle restart --daemon <host:port> <vehicle> [<vehicle>...]
   eagle forget --daemon <host:port> [--yes] <vehicle> [<vehicle>...]
@@ -377,10 +382,14 @@ func main() {
 	case "configure":
 		fs := flag.NewFlagSet("configure", flag.ExitOnError)
 		daemonAddr := fs.String("daemon", DefaultDaemonAddr, "eagled's control-plane address")
-		configPath := fs.String("config", "config.toml", "path to the TOML config file to push")
+		var configPaths configFiles
+		fs.Var(&configPaths, "config", "path to a TOML config file to push; give it again to merge more files over it (default config.toml)")
 		fs.Parse(os.Args[2:])
 		rejectExtraArgs(fs)
-		err = configure(ctx, *daemonAddr, *configPath)
+		if len(configPaths) == 0 {
+			configPaths = configFiles{defaultConfigPath}
+		}
+		err = configure(ctx, *daemonAddr, configPaths)
 	case "stop":
 		fs := flag.NewFlagSet("stop", flag.ExitOnError)
 		daemonAddr := fs.String("daemon", DefaultDaemonAddr, "eagled's control-plane address")

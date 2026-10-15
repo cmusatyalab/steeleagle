@@ -33,6 +33,10 @@ type GabrielConfig struct {
 	// MaxFrameSize is the largest serialized frame the vehicle sends, in
 	// bytes. Left unset (0), DefaultGabrielMaxFrameSize.
 	MaxFrameSize int
+	// RecordDir is where the vehicle records every input and event of its
+	// flow, a directory per start of the flow. Left unset (""), it records
+	// nothing.
+	RecordDir string
 }
 
 // GabrielFlow describes a Gabriel flow: its producers, its engines and where

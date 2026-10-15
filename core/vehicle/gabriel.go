@@ -110,6 +110,18 @@ func (v *Vehicle) startGabriel(ctx context.Context) (err error) {
 		return fmt.Errorf("encoding the gabriel flow: %w", err)
 	}
 
+	var recorder *gabrielRecorder
+	if cfg.RecordDir != "" {
+		if recorder, err = newGabrielRecorder(cfg.RecordDir, v.Name, flow, cfg.RemoteServer, v.log); err != nil {
+			return err
+		}
+		defer func() {
+			if err != nil {
+				recorder.close()
+			}
+		}()
+	}
+
 	serverName := v.Name + ".server"
 	server, err := gabriel.NewServer(serverName)
 	if err != nil {
@@ -167,17 +179,17 @@ func (v *Vehicle) startGabriel(ctx context.Context) (err error) {
 		// Subscribed before the flow is added, so that no result is missed.
 		ready := make(chan error, 2)
 		published := newPublishTimes(p.Name)
-		streams.Go(func() { v.storeGabrielResults(streamsCtx, published, ready) })
+		streams.Go(func() { v.storeGabrielResults(streamsCtx, published, recorder, ready) })
 		switch cfg.Flow.Producers[i].Name {
 		case GabrielFramesProducer:
 			frames := v.store.subscribeToFrames()
 			streams.Go(func() {
-				runGabrielProducer(streamsCtx, published, v.Name, frames, maxFrameSize, ready, v.log)
+				runGabrielProducer(streamsCtx, published, recorder, v.Name, frames, maxFrameSize, ready, v.log)
 			})
 		case GabrielTelemetryProducer:
 			telemetry := v.store.subscribeToTelemetry()
 			streams.Go(func() {
-				runGabrielProducer(streamsCtx, published, v.Name, telemetry, gabrielMaxTelemetrySize, ready, v.log)
+				runGabrielProducer(streamsCtx, published, recorder, v.Name, telemetry, gabrielMaxTelemetrySize, ready, v.log)
 			})
 		}
 		if err := errors.Join(<-ready, <-ready); err != nil {
@@ -196,6 +208,7 @@ func (v *Vehicle) startGabriel(ctx context.Context) (err error) {
 		<-ctx.Done()
 		stopStreams()
 		streams.Wait()
+		recorder.close()
 		client.Close()
 		server.Close()
 	}()
@@ -203,11 +216,12 @@ func (v *Vehicle) startGabriel(ctx context.Context) (err error) {
 }
 
 // runGabrielProducer creates the producer published.producer, and publishes
-// each message from inputs on flow until ctx ends, noting when in published.
-// It reports on ready whether the producer started.
+// each message from inputs on flow until ctx ends, noting when in published
+// and recorder. It reports on ready whether the producer started.
 func runGabrielProducer[T proto.Message](
 	ctx context.Context,
 	published *publishTimes,
+	recorder *gabrielRecorder,
 	flow string,
 	inputs <-chan T,
 	maxSize int,
@@ -252,15 +266,21 @@ func runGabrielProducer[T proto.Message](
 				continue
 			}
 			published.published(seq, publishedAt)
+			recorder.input(name, producer.Session(), seq, publishedAt)
 		}
 	}
 }
 
 // storeGabrielResults subscribes to the events about the inputs of the
-// producer published.producer, and stores each engine's newest result and
-// records the metrics until ctx ends. It reports on ready whether the
-// subscription started.
-func (v *Vehicle) storeGabrielResults(ctx context.Context, published *publishTimes, ready chan<- error) {
+// producer published.producer, and stores each engine's newest result,
+// records the metrics and writes each event to recorder until ctx ends. It
+// reports on ready whether the subscription started.
+func (v *Vehicle) storeGabrielResults(
+	ctx context.Context,
+	published *publishTimes,
+	recorder *gabrielRecorder,
+	ready chan<- error,
+) {
 	producer := published.producer
 	events, err := gabriel.SubscribeProducer(producer)
 	ready <- err
@@ -280,6 +300,7 @@ func (v *Vehicle) storeGabrielResults(ctx context.Context, published *publishTim
 			return
 		}
 		metrics.record(event)
+		recorder.event(producer, event)
 		switch event.Kind {
 		case gabriel.EventResult:
 			// A filter that passes or stops an input may have no result.

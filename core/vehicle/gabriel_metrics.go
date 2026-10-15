@@ -17,6 +17,12 @@ package vehicle
 //     engine to its result, on the engine's machine.
 //   - gabriel_engine_wait_seconds: from the offer to an engine to sending it
 //     the input, i.e. how long the input waited for the engine to be free.
+//   - gabriel_remote_round_trip_seconds: for a remote engine, the result
+//     latency above minus the time from the offer to the result on the
+//     remote server: the network both ways, and the waits on the vehicle. It
+//     subtracts a time on one clock from a time on the other, so the clocks
+//     need not agree. For an engine after another on the remote server, it
+//     also counts the time on the remote server before its offer.
 //   - gabriel_disconnects_total: lost connections to a server of the flow.
 //   - gabriel_events_lost_total: events the vehicle missed, so the counts
 //     above are short by up to that many.
@@ -84,6 +90,12 @@ var (
 	gabrielEngineWait = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "gabriel_engine_wait_seconds",
 		Help:    "From the offer of an input to an engine to sending it",
+		Buckets: gabrielLatencyBuckets,
+	}, []string{"producer_id", "engine_id"})
+
+	gabrielRemoteRoundTrip = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "gabriel_remote_round_trip_seconds",
+		Help:    "Result latency of a remote engine, less the time on the remote server since the offer",
 		Buckets: gabrielLatencyBuckets,
 	}, []string{"producer_id", "engine_id"})
 
@@ -225,8 +237,13 @@ func (m *gabrielMetrics) record(event gabriel.Event) {
 				Observe(event.At.Sub(sent).Seconds())
 		}
 		if published, ok := m.published.publishedAt(event.ID.Seq); ok {
-			gabrielInputLatency.WithLabelValues(producer, event.Engine).
-				Observe(arrived.Sub(published).Seconds())
+			latency := arrived.Sub(published)
+			gabrielInputLatency.WithLabelValues(producer, event.Engine).Observe(latency.Seconds())
+			if !event.ReceivedAt.IsZero() && !event.OfferedAt.IsZero() {
+				onServer := event.At.Sub(event.OfferedAt)
+				gabrielRemoteRoundTrip.WithLabelValues(producer, event.Engine).
+					Observe((latency - onServer).Seconds())
+			}
 		}
 	case gabriel.EventSkipped:
 		gabrielOutcomes.WithLabelValues(producer, event.Engine, outcomeSkipped).Inc()

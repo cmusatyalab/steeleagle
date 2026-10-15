@@ -1,11 +1,14 @@
 package vehicle
 
 import (
+	"math"
 	"testing"
 	"time"
 
 	gabriel "github.com/cmusatyalab/gabriel/go"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
+	dto "github.com/prometheus/client_model/go"
 )
 
 func TestGabrielMetricsCountsLateResults(t *testing.T) {
@@ -47,6 +50,37 @@ func TestGabrielMetricsCountsLateResults(t *testing.T) {
 	}
 	if got := testutil.ToFloat64(gabrielInputsPublished.WithLabelValues(producer)); got != 2 {
 		t.Errorf("inputs published = %v, want 2", got)
+	}
+	if got := testutil.CollectAndCount(gabrielRemoteRoundTrip, "gabriel_remote_round_trip_seconds"); got != 0 {
+		t.Errorf("a local engine has %d round trip series, want none", got)
+	}
+}
+
+func TestGabrielMetricsRemoteRoundTrip(t *testing.T) {
+	const producer, engine = "round-trip-test.frames", "detector"
+	published := newPublishTimes(producer)
+	metrics := newGabrielMetrics(published)
+	start := gabriel.Timestamp(time.Hour)
+	published.published(1, start)
+	// The remote server's clock is a day ahead. The input reached it after
+	// 30 ms, the engine took 50 ms, and the result came back 20 ms later.
+	remote := start + gabriel.Timestamp(24*time.Hour)
+	metrics.record(gabriel.Event{
+		Kind:       gabriel.EventResult,
+		ID:         gabriel.InputID{Producer: producer, Seq: 1},
+		Engine:     engine,
+		OfferedAt:  remote + gabriel.Timestamp(30*time.Millisecond),
+		At:         remote + gabriel.Timestamp(80*time.Millisecond),
+		ReceivedAt: start + gabriel.Timestamp(100*time.Millisecond),
+	})
+
+	const want = 0.05 // 30 ms up and 20 ms down
+	histogram := &dto.Metric{}
+	if err := gabrielRemoteRoundTrip.WithLabelValues(producer, engine).(prometheus.Histogram).Write(histogram); err != nil {
+		t.Fatal(err)
+	}
+	if got := histogram.GetHistogram().GetSampleSum(); math.Abs(got-want) > 1e-9 {
+		t.Errorf("round trip = %v s, want %v s", got, want)
 	}
 }
 

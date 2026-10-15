@@ -1,4 +1,5 @@
-# The eagled instances to scrape, as host:port, where port is eagled's
-# -metrics-port. Use an IP address: Prometheus runs in a container, which may
-# not resolve tailnet names.
+# The eagled instances to scrape, as host:port. List each vehicle computer
+# twice: at eagled's -metrics-port, and at its -gabriel-metrics-port, where
+# Gabriel serves its own metrics. Use an IP address: Prometheus runs in a
+# container, which may not resolve tailnet names.
 - targets: []
