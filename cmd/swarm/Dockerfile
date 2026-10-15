@@ -6,6 +6,14 @@ FROM golang:1.26-bookworm AS build
 
 WORKDIR /src
 
+# go.mod replaces Gabriel with ../gabriel-rust, which is outside this build
+# context. The swarm controller doesn't import Gabriel, so Go only needs that
+# module's go.mod to load the module graph. Gabriel's go.mod has no
+# requirements, so a stub with the same module path and go version is
+# equivalent.
+RUN mkdir /gabriel-rust \
+    && printf 'module github.com/cmusatyalab/gabriel\n\ngo 1.24\n' > /gabriel-rust/go.mod
+
 # Cache module downloads separately from source changes
 COPY go.mod go.sum ./
 COPY api/go/go.mod api/go/go.sum api/go/

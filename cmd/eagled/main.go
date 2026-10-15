@@ -29,6 +29,7 @@ const shutdownGracePeriod = 30 * time.Second
 
 func main() {
 	controlPort := flag.Int("control-port", DefaultControlPort, "port DaemonService listens on")
+	metricsPort := flag.Int("metrics-port", 0, "port to serve Prometheus metrics on, at "+metricsPath+"; 0 serves none")
 	logLevel := flag.String("log-level", zerolog.InfoLevel.String(), "log level: trace, debug, info, warn, error, fatal, panic, or disabled")
 	flag.Parse()
 
@@ -53,6 +54,10 @@ func main() {
 	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", *controlPort))
 	if err != nil {
 		log.Fatal().Msgf("listening on control port %d: %v", *controlPort, err)
+	}
+
+	if *metricsPort != 0 {
+		serveMetrics(ctx, *metricsPort)
 	}
 
 	d := newDaemon(ctx, cancel, logs)

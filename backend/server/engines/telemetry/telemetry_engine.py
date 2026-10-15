@@ -157,6 +157,9 @@ class TelemetryEngine:
 
         vehicle_key = f"vehicle:{vehicle_id}"
         self.r.hset(vehicle_key, "last_seen", f"{time.time()}")
+        # The GCS requires a model, but the vehicle no longer sends one, so
+        # an unknown model is stored as empty.
+        self.r.hsetnx(vehicle_key, "model", "")
         self.r.hset(vehicle_key, "battery", f"{extras.alert_info.battery_warning}")
         self.r.hset(vehicle_key, "mag", f"{extras.alert_info.magnetometer_warning}")
         self.r.hset(vehicle_key, "sats", f"{extras.alert_info.gps_warning}")

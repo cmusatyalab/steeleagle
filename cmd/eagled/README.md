@@ -192,6 +192,14 @@ behavior is unchanged: everything is still written there as before.
 - Viewing: the GCS Orchestrate page's Logs tab streams and filters these, or
   read the files directly.
 
+## Metrics
+
+With `-metrics-port <port>`, eagled serves Prometheus metrics at
+`http://<host>:<port>/metrics`, for watching the vehicles' Gabriel flows live.
+They count each producer's inputs and how each engine's offers ended, and time
+how old each engine's results are when they arrive. The list is at the top of
+`core/vehicle/gabriel_metrics.go`. Without the flag, eagled serves no metrics.
+
 ## Testing with a throwaway eagled
 
 When you start a scratch eagled to test against, isolate it completely:

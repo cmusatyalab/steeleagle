@@ -9,35 +9,49 @@
 
 services:
   # Core Gabriel Server
-  # Handles incoming data connections from vehicles and
-  # routes data to cognitive engines for processing
+  # Accepts vehicles' Gabriel clients over QUIC, and serves them the engines
+  # listed below. Engines reach it through iceoryx2, so they share its
+  # /dev/shm and /tmp/iceoryx2. Vehicles trust its certificate, in
+  # ./gabriel-identity/certificate.der: give eagled's [gabriel] table
+  # remote-certificate = "$(base64 -w0 gabriel-identity/certificate.der)".
+  # GABRIEL_SRC is Gabriel's repository; by default next to steeleagle-go.
   gabriel-server:
-    image: cmusatyalab/gabriel-server:${GABRIEL_IMAGE_TAG}
+    build:
+      context: ${GABRIEL_SRC:-../../../gabriel-rust}
+      dockerfile: server/Dockerfile
+    image: steeleagle-gabriel-server:local
     container_name: gabriel-server
     ports:
-      - "8000:8000"
-      - "9099:9099"
-      - "5555:5555"
-    entrypoint: [ "./main.py", "-t", "${GABRIEL_TOKENS}", "-z"]
+      - "4433:4433/udp"
+    command: ["--identity-dir", "/identity", "--engine", "telemetry"]
     restart: unless-stopped
+    volumes:
+      - ./gabriel-identity:/identity
+      - gabriel-shm:/dev/shm
+      - gabriel-iceoryx2:/tmp/iceoryx2
     networks:
       - steeleagle-net
 
   # Telemetry Engine
   # Writes telemetry data to Redis and imagery to disk
   telemetry-engine:
-    image: cmusatyalab/steeleagle-telemetry-engine:${TELEMETRY_IMAGE_TAG}
+    build:
+      context: ./engines/telemetry
+      additional_contexts:
+        gabriel-src: ${GABRIEL_SRC:-../../../gabriel-rust}
+        protocol: ../../api/python
+    image: steeleagle-telemetry-engine:local
     container_name: telemetry-engine
     restart: on-failure:3
     privileged: true
-    entrypoint: [ "uv", "run", "./telemetry.py", "-a", "${REDIS_AUTH}"]
-    depends_on:
-      - gabriel-server
+    command: ["-a", "${REDIS_AUTH}", "-s", "/steeleagle/images"]
     networks:
       - steeleagle-net
       - redis
     volumes:
       - ./steeleagle-vol:/steeleagle/images/
+      - gabriel-shm:/dev/shm
+      - gabriel-iceoryx2:/tmp/iceoryx2
     logging:
       driver: "json-file"
       options:
@@ -47,6 +61,9 @@ services:
   # Obstacle Avoidance Engine
   # Uses Metric3D (or MiDaS) model to estimate depth for vehicles
   obstacle-engine:
+    # Uses the old Gabriel, so it can't reach gabriel-server until it is
+    # ported. Started only with --profile old-gabriel.
+    profiles: ["old-gabriel"]
     image: cmusatyalab/steeleagle-avoidance-engine:${OBSTACLE_IMAGE_TAG}
     container_name: obstacle-engine
     restart: on-failure:3
@@ -80,6 +97,9 @@ services:
   # stores detections in Redis; also optionally performs HSV filtering
   # on detected objects
   object-engine:
+    # Uses the old Gabriel, so it can't reach gabriel-server until it is
+    # ported. Started only with --profile old-gabriel.
+    profiles: ["old-gabriel"]
     image: cmusatyalab/steeleagle-detection-engine:${OBJECT_IMAGE_TAG}
     container_name: object-engine
     restart: on-failure:3
@@ -138,7 +158,7 @@ services:
       - "5004:5004"
       - "5003:5003"
     environment:
-      - TS_SWARM_AUTHKEY=${TS_SWARM_AUTHKEY}
+      - TS_AUTHKEY=${TS_AUTHKEY}
     volumes:
       - ./swarm-config.toml:/steeleagle/config.toml:ro
       - ./swarm-controller-state:/steeleagle/.local/share/steeleagle
@@ -186,6 +206,7 @@ services:
       - 9090:9090
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus-targets:/etc/prometheus/targets:ro
     networks:
       - steeleagle-net
 
@@ -202,6 +223,20 @@ services:
       - prometheus
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PWD}
+
+# Gabriel's shared memory, shared by gabriel-server and its engines. In
+# memory, so it is empty after a restart, like a host's /dev/shm. Docker's
+# default /dev/shm (64 MB) is too small for frames.
+volumes:
+  gabriel-shm:
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: "size=${GABRIEL_SHM_SIZE:-2g}"
+  gabriel-iceoryx2:
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
 
 networks:
   steeleagle-net:

@@ -11,6 +11,7 @@ import (
 	gabriel "github.com/cmusatyalab/gabriel/go"
 	resultpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/result"
 	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/proto"
 )
@@ -133,6 +134,13 @@ func TestGabrielFlowStoresResults(t *testing.T) {
 	cancel()
 	if err := <-engineErr; err != nil {
 		t.Fatal(err)
+	}
+	producer := v.Name + ".frames"
+	if got := testutil.ToFloat64(gabrielOutcomes.WithLabelValues(producer, engineName, outcomeResult)); got < 1 {
+		t.Errorf("results counted = %v, want at least 1", got)
+	}
+	if got := testutil.CollectAndCount(gabrielInputLatency); got < 1 {
+		t.Error("no result latency was recorded")
 	}
 }
 

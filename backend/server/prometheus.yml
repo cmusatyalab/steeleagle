@@ -2,6 +2,16 @@ global:
   scrape_interval: 5s
 
 scrape_configs:
-  - job_name: 'steeleagle'
+  # The cloudlet's engines, as gabriel-server sees them.
+  - job_name: 'gabriel-server'
+    scrape_interval: 2s
     static_configs:
       - targets: ['gabriel-server:8000']
+
+  # Each vehicle machine's eagled, started with -metrics-port. Their
+  # addresses are in prometheus-targets/eagled.yml, which Prometheus reads
+  # again when it changes, so a target can be added without a restart.
+  - job_name: 'eagled'
+    scrape_interval: 2s
+    file_sd_configs:
+      - files: ['/etc/prometheus/targets/eagled.yml']
