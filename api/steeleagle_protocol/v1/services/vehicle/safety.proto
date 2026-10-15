@@ -1,0 +1,75 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - Living Edge Lab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+package steeleagle_protocol.v1.services.vehicle;
+
+option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle;vehicle";
+
+import "google/protobuf/duration.proto";
+
+/*
+ * Used to configure safety features for the vehicle.
+ *
+ * This service is used to toggle/configure safety features like a dead man's switch,
+ * geofence, and mission geofence for a vehicle.
+ */
+service SafetyService {
+  /*
+   * Configure the dead man's switch.
+   *
+   * Adjust the manual command timeout for the dead man's switch. This controls the
+   * time after a `SetVelocityTarget` that a `Hold` is triggered (assuming no other
+   * control command is sent). The dead man's switch cannot be turned off, and has
+   * a maximum allowance of 5s.
+   */
+  rpc ConfigureDMS (ConfigureDMSRequest)
+    returns (ConfigureDMSResponse) {}
+
+  /*
+   * Sets the vehicle geofence.
+   *
+   * Sets the vehicle geofence to `polygon` in the provided `geojson`. If the vehicle
+   * ever leaves this polygon, a hold is automatically sent. If `off` is set, the
+   * vehicle turns its geofence off.
+   */
+  rpc SetGeofence (SetGeofenceRequest)
+    returns (SetGeofenceResponse) {}
+
+  /*
+   * Sets the mission geofence.
+   *
+   * Sets the mission geofence to `polygon` in the provided `geojson`. If the vehicle
+   * ever leaves this polygon when a mission is active a hold is automatically sent.
+   * If `off` is set, the vehicle turns the mission geofence off. Superceded by the
+   * vehicle geofence.
+   */
+  rpc SetMissionGeofence (SetMissionGeofenceRequest)
+    returns (SetMissionGeofenceResponse) {}
+}
+
+message ConfigureDMSRequest {
+  google.protobuf.Duration timeout = 1;
+}
+
+message ConfigureDMSResponse {}
+
+message Geofence {
+  string polygon = 1; // polygon name
+  bytes geojson = 2;  // geojson data, must contain `polygon`
+}
+
+message SetGeofenceRequest {
+  bool off = 1;          // on or off toggle
+  Geofence geofence = 2; // geofence data
+}
+
+message SetGeofenceResponse {}
+
+message SetMissionGeofenceRequest {
+  bool off = 1;          // on or off toggle
+  Geofence geofence = 2; // geofence data
+}
+
+message SetMissionGeofenceResponse {}

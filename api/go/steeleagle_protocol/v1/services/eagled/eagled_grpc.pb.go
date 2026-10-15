@@ -24,15 +24,11 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	DaemonService_Configure_FullMethodName          = "/steeleagle_protocol.v1.services.eagled.DaemonService/Configure"
-	DaemonService_StartServices_FullMethodName      = "/steeleagle_protocol.v1.services.eagled.DaemonService/StartServices"
-	DaemonService_StopServices_FullMethodName       = "/steeleagle_protocol.v1.services.eagled.DaemonService/StopServices"
-	DaemonService_ListServices_FullMethodName       = "/steeleagle_protocol.v1.services.eagled.DaemonService/ListServices"
+	DaemonService_GetConfiguration_FullMethodName   = "/steeleagle_protocol.v1.services.eagled.DaemonService/GetConfiguration"
+	DaemonService_ResetConfiguration_FullMethodName = "/steeleagle_protocol.v1.services.eagled.DaemonService/ResetConfiguration"
+	DaemonService_RestartServices_FullMethodName    = "/steeleagle_protocol.v1.services.eagled.DaemonService/RestartServices"
 	DaemonService_InstallPlugin_FullMethodName      = "/steeleagle_protocol.v1.services.eagled.DaemonService/InstallPlugin"
 	DaemonService_RemovePlugin_FullMethodName       = "/steeleagle_protocol.v1.services.eagled.DaemonService/RemovePlugin"
-	DaemonService_Restart_FullMethodName            = "/steeleagle_protocol.v1.services.eagled.DaemonService/Restart"
-	DaemonService_ResetConfiguration_FullMethodName = "/steeleagle_protocol.v1.services.eagled.DaemonService/ResetConfiguration"
-	DaemonService_StreamLogs_FullMethodName         = "/steeleagle_protocol.v1.services.eagled.DaemonService/StreamLogs"
-	DaemonService_ListLogSources_FullMethodName     = "/steeleagle_protocol.v1.services.eagled.DaemonService/ListLogSources"
 )
 
 // DaemonServiceClient is the client API for DaemonService service.
@@ -45,21 +41,39 @@ const (
 // with the global state of the daemon. This includes the starting/stopping of
 // plugins and vehicles.
 type DaemonServiceClient interface {
-	// Load a TOML configuration document.
+	// Load a TOML config.
 	//
 	// Configures the daemon with a TOML config according to eagled specification.
-	// Can be configured in auto-start mode, where eagled will try to start everything
-	// immediately. Can also be configured to install plugins that don't already exist.
+	// Automatically triggers a daemon restart, and will run all services. If
+	// `auto_install` is set to `true`, any unknown plugins will be installed on
+	// their latest branch version.
 	Configure(ctx context.Context, in *ConfigureRequest, opts ...grpc.CallOption) (*ConfigureResponse, error)
-	StartServices(ctx context.Context, in *StartServicesRequest, opts ...grpc.CallOption) (*StartServicesResponse, error)
-	StopServices(ctx context.Context, in *StopServicesRequest, opts ...grpc.CallOption) (*StopServicesResponse, error)
-	ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error)
-	InstallPlugin(ctx context.Context, in *InstallPluginRequest, opts ...grpc.CallOption) (*InstallPluginResponse, error)
-	RemovePlugin(ctx context.Context, in *RemovePluginRequest, opts ...grpc.CallOption) (*RemovePluginResponse, error)
-	Restart(ctx context.Context, in *RestartRequest, opts ...grpc.CallOption) (*RestartResponse, error)
+	// Gets the current TOML config.
+	//
+	// Returns the current TOML config as TOML bytes.
+	GetConfiguration(ctx context.Context, in *GetConfigurationRequest, opts ...grpc.CallOption) (*GetConfigurationResponse, error)
+	// Resets the current TOML config.
+	//
+	// Deletes the current TOML config and replaces it with the default config
+	// (base backend services, but no vehicles or engines).
 	ResetConfiguration(ctx context.Context, in *ResetConfigurationRequest, opts ...grpc.CallOption) (*ResetConfigurationResponse, error)
-	StreamLogs(ctx context.Context, in *StreamLogsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamLogsResponse], error)
-	ListLogSources(ctx context.Context, in *ListLogSourcesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ListLogSourcesResponse], error)
+	// Restart daemon services.
+	//
+	// Restarts a list of daemon services. These must be vehicles, monitors, or
+	// engines. Restarts of other services, like GCS or simulator, must be done
+	// through a `Configure` call.
+	RestartServices(ctx context.Context, in *RestartServicesRequest, opts ...grpc.CallOption) (*RestartServicesResponse, error)
+	// Install a plugin.
+	//
+	// Installs a new plugin for a given service locally. Upon success, this
+	// plugin is available for service. Future `Configure` calls can refer to
+	// this plugin by `url` or by an optionally provided `nickname` which must
+	// be locally unique.
+	InstallPlugin(ctx context.Context, in *InstallPluginRequest, opts ...grpc.CallOption) (*InstallPluginResponse, error)
+	// Remove a plugin.
+	//
+	// Removes a plugin identified by its `url` or `nickname`.
+	RemovePlugin(ctx context.Context, in *RemovePluginRequest, opts ...grpc.CallOption) (*RemovePluginResponse, error)
 }
 
 type daemonServiceClient struct {
@@ -80,30 +94,30 @@ func (c *daemonServiceClient) Configure(ctx context.Context, in *ConfigureReques
 	return out, nil
 }
 
-func (c *daemonServiceClient) StartServices(ctx context.Context, in *StartServicesRequest, opts ...grpc.CallOption) (*StartServicesResponse, error) {
+func (c *daemonServiceClient) GetConfiguration(ctx context.Context, in *GetConfigurationRequest, opts ...grpc.CallOption) (*GetConfigurationResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(StartServicesResponse)
-	err := c.cc.Invoke(ctx, DaemonService_StartServices_FullMethodName, in, out, cOpts...)
+	out := new(GetConfigurationResponse)
+	err := c.cc.Invoke(ctx, DaemonService_GetConfiguration_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *daemonServiceClient) StopServices(ctx context.Context, in *StopServicesRequest, opts ...grpc.CallOption) (*StopServicesResponse, error) {
+func (c *daemonServiceClient) ResetConfiguration(ctx context.Context, in *ResetConfigurationRequest, opts ...grpc.CallOption) (*ResetConfigurationResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(StopServicesResponse)
-	err := c.cc.Invoke(ctx, DaemonService_StopServices_FullMethodName, in, out, cOpts...)
+	out := new(ResetConfigurationResponse)
+	err := c.cc.Invoke(ctx, DaemonService_ResetConfiguration_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *daemonServiceClient) ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error) {
+func (c *daemonServiceClient) RestartServices(ctx context.Context, in *RestartServicesRequest, opts ...grpc.CallOption) (*RestartServicesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListServicesResponse)
-	err := c.cc.Invoke(ctx, DaemonService_ListServices_FullMethodName, in, out, cOpts...)
+	out := new(RestartServicesResponse)
+	err := c.cc.Invoke(ctx, DaemonService_RestartServices_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -130,64 +144,6 @@ func (c *daemonServiceClient) RemovePlugin(ctx context.Context, in *RemovePlugin
 	return out, nil
 }
 
-func (c *daemonServiceClient) Restart(ctx context.Context, in *RestartRequest, opts ...grpc.CallOption) (*RestartResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(RestartResponse)
-	err := c.cc.Invoke(ctx, DaemonService_Restart_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *daemonServiceClient) ResetConfiguration(ctx context.Context, in *ResetConfigurationRequest, opts ...grpc.CallOption) (*ResetConfigurationResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ResetConfigurationResponse)
-	err := c.cc.Invoke(ctx, DaemonService_ResetConfiguration_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *daemonServiceClient) StreamLogs(ctx context.Context, in *StreamLogsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamLogsResponse], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &DaemonService_ServiceDesc.Streams[0], DaemonService_StreamLogs_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[StreamLogsRequest, StreamLogsResponse]{ClientStream: stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type DaemonService_StreamLogsClient = grpc.ServerStreamingClient[StreamLogsResponse]
-
-func (c *daemonServiceClient) ListLogSources(ctx context.Context, in *ListLogSourcesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ListLogSourcesResponse], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &DaemonService_ServiceDesc.Streams[1], DaemonService_ListLogSources_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[ListLogSourcesRequest, ListLogSourcesResponse]{ClientStream: stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type DaemonService_ListLogSourcesClient = grpc.ServerStreamingClient[ListLogSourcesResponse]
-
 // DaemonServiceServer is the server API for DaemonService service.
 // All implementations must embed UnimplementedDaemonServiceServer
 // for forward compatibility.
@@ -198,21 +154,39 @@ type DaemonService_ListLogSourcesClient = grpc.ServerStreamingClient[ListLogSour
 // with the global state of the daemon. This includes the starting/stopping of
 // plugins and vehicles.
 type DaemonServiceServer interface {
-	// Load a TOML configuration document.
+	// Load a TOML config.
 	//
 	// Configures the daemon with a TOML config according to eagled specification.
-	// Can be configured in auto-start mode, where eagled will try to start everything
-	// immediately. Can also be configured to install plugins that don't already exist.
+	// Automatically triggers a daemon restart, and will run all services. If
+	// `auto_install` is set to `true`, any unknown plugins will be installed on
+	// their latest branch version.
 	Configure(context.Context, *ConfigureRequest) (*ConfigureResponse, error)
-	StartServices(context.Context, *StartServicesRequest) (*StartServicesResponse, error)
-	StopServices(context.Context, *StopServicesRequest) (*StopServicesResponse, error)
-	ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error)
-	InstallPlugin(context.Context, *InstallPluginRequest) (*InstallPluginResponse, error)
-	RemovePlugin(context.Context, *RemovePluginRequest) (*RemovePluginResponse, error)
-	Restart(context.Context, *RestartRequest) (*RestartResponse, error)
+	// Gets the current TOML config.
+	//
+	// Returns the current TOML config as TOML bytes.
+	GetConfiguration(context.Context, *GetConfigurationRequest) (*GetConfigurationResponse, error)
+	// Resets the current TOML config.
+	//
+	// Deletes the current TOML config and replaces it with the default config
+	// (base backend services, but no vehicles or engines).
 	ResetConfiguration(context.Context, *ResetConfigurationRequest) (*ResetConfigurationResponse, error)
-	StreamLogs(*StreamLogsRequest, grpc.ServerStreamingServer[StreamLogsResponse]) error
-	ListLogSources(*ListLogSourcesRequest, grpc.ServerStreamingServer[ListLogSourcesResponse]) error
+	// Restart daemon services.
+	//
+	// Restarts a list of daemon services. These must be vehicles, monitors, or
+	// engines. Restarts of other services, like GCS or simulator, must be done
+	// through a `Configure` call.
+	RestartServices(context.Context, *RestartServicesRequest) (*RestartServicesResponse, error)
+	// Install a plugin.
+	//
+	// Installs a new plugin for a given service locally. Upon success, this
+	// plugin is available for service. Future `Configure` calls can refer to
+	// this plugin by `url` or by an optionally provided `nickname` which must
+	// be locally unique.
+	InstallPlugin(context.Context, *InstallPluginRequest) (*InstallPluginResponse, error)
+	// Remove a plugin.
+	//
+	// Removes a plugin identified by its `url` or `nickname`.
+	RemovePlugin(context.Context, *RemovePluginRequest) (*RemovePluginResponse, error)
 	mustEmbedUnimplementedDaemonServiceServer()
 }
 
@@ -226,32 +200,20 @@ type UnimplementedDaemonServiceServer struct{}
 func (UnimplementedDaemonServiceServer) Configure(context.Context, *ConfigureRequest) (*ConfigureResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Configure not implemented")
 }
-func (UnimplementedDaemonServiceServer) StartServices(context.Context, *StartServicesRequest) (*StartServicesResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method StartServices not implemented")
+func (UnimplementedDaemonServiceServer) GetConfiguration(context.Context, *GetConfigurationRequest) (*GetConfigurationResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetConfiguration not implemented")
 }
-func (UnimplementedDaemonServiceServer) StopServices(context.Context, *StopServicesRequest) (*StopServicesResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method StopServices not implemented")
+func (UnimplementedDaemonServiceServer) ResetConfiguration(context.Context, *ResetConfigurationRequest) (*ResetConfigurationResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResetConfiguration not implemented")
 }
-func (UnimplementedDaemonServiceServer) ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method ListServices not implemented")
+func (UnimplementedDaemonServiceServer) RestartServices(context.Context, *RestartServicesRequest) (*RestartServicesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RestartServices not implemented")
 }
 func (UnimplementedDaemonServiceServer) InstallPlugin(context.Context, *InstallPluginRequest) (*InstallPluginResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method InstallPlugin not implemented")
 }
 func (UnimplementedDaemonServiceServer) RemovePlugin(context.Context, *RemovePluginRequest) (*RemovePluginResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RemovePlugin not implemented")
-}
-func (UnimplementedDaemonServiceServer) Restart(context.Context, *RestartRequest) (*RestartResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Restart not implemented")
-}
-func (UnimplementedDaemonServiceServer) ResetConfiguration(context.Context, *ResetConfigurationRequest) (*ResetConfigurationResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method ResetConfiguration not implemented")
-}
-func (UnimplementedDaemonServiceServer) StreamLogs(*StreamLogsRequest, grpc.ServerStreamingServer[StreamLogsResponse]) error {
-	return status.Error(codes.Unimplemented, "method StreamLogs not implemented")
-}
-func (UnimplementedDaemonServiceServer) ListLogSources(*ListLogSourcesRequest, grpc.ServerStreamingServer[ListLogSourcesResponse]) error {
-	return status.Error(codes.Unimplemented, "method ListLogSources not implemented")
 }
 func (UnimplementedDaemonServiceServer) mustEmbedUnimplementedDaemonServiceServer() {}
 func (UnimplementedDaemonServiceServer) testEmbeddedByValue()                       {}
@@ -292,56 +254,56 @@ func _DaemonService_Configure_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DaemonService_StartServices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StartServicesRequest)
+func _DaemonService_GetConfiguration_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConfigurationRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DaemonServiceServer).StartServices(ctx, in)
+		return srv.(DaemonServiceServer).GetConfiguration(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: DaemonService_StartServices_FullMethodName,
+		FullMethod: DaemonService_GetConfiguration_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DaemonServiceServer).StartServices(ctx, req.(*StartServicesRequest))
+		return srv.(DaemonServiceServer).GetConfiguration(ctx, req.(*GetConfigurationRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DaemonService_StopServices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StopServicesRequest)
+func _DaemonService_ResetConfiguration_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResetConfigurationRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DaemonServiceServer).StopServices(ctx, in)
+		return srv.(DaemonServiceServer).ResetConfiguration(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: DaemonService_StopServices_FullMethodName,
+		FullMethod: DaemonService_ResetConfiguration_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DaemonServiceServer).StopServices(ctx, req.(*StopServicesRequest))
+		return srv.(DaemonServiceServer).ResetConfiguration(ctx, req.(*ResetConfigurationRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DaemonService_ListServices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListServicesRequest)
+func _DaemonService_RestartServices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RestartServicesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DaemonServiceServer).ListServices(ctx, in)
+		return srv.(DaemonServiceServer).RestartServices(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: DaemonService_ListServices_FullMethodName,
+		FullMethod: DaemonService_RestartServices_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DaemonServiceServer).ListServices(ctx, req.(*ListServicesRequest))
+		return srv.(DaemonServiceServer).RestartServices(ctx, req.(*RestartServicesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -382,64 +344,6 @@ func _DaemonService_RemovePlugin_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DaemonService_Restart_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RestartRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DaemonServiceServer).Restart(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DaemonService_Restart_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DaemonServiceServer).Restart(ctx, req.(*RestartRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _DaemonService_ResetConfiguration_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ResetConfigurationRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DaemonServiceServer).ResetConfiguration(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DaemonService_ResetConfiguration_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DaemonServiceServer).ResetConfiguration(ctx, req.(*ResetConfigurationRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _DaemonService_StreamLogs_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(StreamLogsRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(DaemonServiceServer).StreamLogs(m, &grpc.GenericServerStream[StreamLogsRequest, StreamLogsResponse]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type DaemonService_StreamLogsServer = grpc.ServerStreamingServer[StreamLogsResponse]
-
-func _DaemonService_ListLogSources_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(ListLogSourcesRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(DaemonServiceServer).ListLogSources(m, &grpc.GenericServerStream[ListLogSourcesRequest, ListLogSourcesResponse]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type DaemonService_ListLogSourcesServer = grpc.ServerStreamingServer[ListLogSourcesResponse]
-
 // DaemonService_ServiceDesc is the grpc.ServiceDesc for DaemonService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -452,16 +356,16 @@ var DaemonService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _DaemonService_Configure_Handler,
 		},
 		{
-			MethodName: "StartServices",
-			Handler:    _DaemonService_StartServices_Handler,
+			MethodName: "GetConfiguration",
+			Handler:    _DaemonService_GetConfiguration_Handler,
 		},
 		{
-			MethodName: "StopServices",
-			Handler:    _DaemonService_StopServices_Handler,
+			MethodName: "ResetConfiguration",
+			Handler:    _DaemonService_ResetConfiguration_Handler,
 		},
 		{
-			MethodName: "ListServices",
-			Handler:    _DaemonService_ListServices_Handler,
+			MethodName: "RestartServices",
+			Handler:    _DaemonService_RestartServices_Handler,
 		},
 		{
 			MethodName: "InstallPlugin",
@@ -471,26 +375,7 @@ var DaemonService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "RemovePlugin",
 			Handler:    _DaemonService_RemovePlugin_Handler,
 		},
-		{
-			MethodName: "Restart",
-			Handler:    _DaemonService_Restart_Handler,
-		},
-		{
-			MethodName: "ResetConfiguration",
-			Handler:    _DaemonService_ResetConfiguration_Handler,
-		},
 	},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "StreamLogs",
-			Handler:       _DaemonService_StreamLogs_Handler,
-			ServerStreams: true,
-		},
-		{
-			StreamName:    "ListLogSources",
-			Handler:       _DaemonService_ListLogSources_Handler,
-			ServerStreams: true,
-		},
-	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "steeleagle_protocol/v1/services/eagled/eagled.proto",
 }
