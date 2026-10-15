@@ -203,7 +203,8 @@ services:
     image: prom/prometheus
     container_name: prometheus
     ports:
-      - 9090:9090
+      # PROMETHEUS_PORT, if eagled already uses 9090 on this machine.
+      - ${PROMETHEUS_PORT:-9090}:9090
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./prometheus-targets:/etc/prometheus/targets:ro
