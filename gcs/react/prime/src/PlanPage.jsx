@@ -22,6 +22,7 @@ import FsmPalette from './FsmPalette.jsx';
 import ConnectModal from './ConnectModal.jsx';
 import { getApiUrl } from './urls.js';
 import { runValidation } from './validation.js';
+import { missionRequestBody, renderDsl } from './missionGraph.js';
 
 const nodeTypes = { taskNode: TaskNode };
 const edgeTypes = { selfLoop: SelfLoopEdge };
@@ -78,99 +79,6 @@ function bfsLayout(nodeIds, startId, edges) {
         positions[id] = { x: col * 260, y: row * 130 };
     });
     return positions;
-}
-
-// Generate a DSL string from canvas state
-function generateDsl(nodes, edges, eventInstances, startNodeId, schema) {
-    const dataEntries = [];
-    const usedDataIds = new Set();
-
-    function dataId(instanceId, paramName) {
-        let id = `${instanceId}_${paramName}`;
-        let n = 2;
-        while (usedDataIds.has(id)) id = `${instanceId}_${paramName}_${n++}`;
-        usedDataIds.add(id);
-        return id;
-    }
-
-    function serializeVal(val, fieldSchema) {
-        if (val === undefined || val === null) return null;
-        if (typeof val === 'object' && !Array.isArray(val) && fieldSchema?.nested_fields?.length) {
-            const typeName = fieldSchema.object_type || 'Object';
-            const did = dataId(fieldSchema._ownerInstanceId || 'item', fieldSchema.name);
-            const attrParts = Object.entries(val)
-                .filter(([, v]) => v !== undefined && v !== null && v !== '')
-                .map(([k, v]) => `${k} = ${v}`);
-            dataEntries.push(`    ${typeName} ${did}(${attrParts.join(', ')})`);
-            return did;
-        }
-        if (typeof val === 'boolean') return val ? 'true' : 'false';
-        if (val === '') return null;
-        // An enum field's value is an unquoted ident_ref (e.g.
-        // PatrolModeSurvey) the compiler resolves against the SDK's
-        // generated consts -- everything else (map_feature area names
-        // included) is a plain string value and must round-trip through
-        // Apply/parse_dsl as one, or the parser reads it as an
-        // (unresolvable) identifier instead.
-        if (typeof val === 'string' && !fieldSchema?.enum_type) return JSON.stringify(val);
-        return String(val);
-    }
-
-    function buildAttrStr(params, fields, instanceId) {
-        const parts = [];
-        for (const [k, v] of Object.entries(params || {})) {
-            const fs = fields?.find(f => f.name === k);
-            const fsWithOwner = fs ? { ...fs, _ownerInstanceId: instanceId } : null;
-            const sv = serializeVal(v, fsWithOwner);
-            if (sv !== null) parts.push(`${k} = ${sv}`);
-        }
-        // Grammar requires the parens literally, even with no attrs inside
-        // (sdk/dsl/parser/ast.go's Decl: `"(" (Attr (","Attr)*)? ")"`).
-        return `(${parts.join(', ')})`;
-    }
-
-    const actionLines = nodes.map(n => {
-        const fields = schema.actions[n.data.type_name]?.fields ?? [];
-        return `    ${n.data.type_name} ${n.data.instance_id}${buildAttrStr(n.data.params, fields, n.data.instance_id)}`;
-    });
-
-    const eventLines = (eventInstances || []).map(ev => {
-        const fields = schema.events[ev.type_name]?.fields ?? [];
-        return `    ${ev.type_name} ${ev.instance_id}${buildAttrStr(ev.params, fields, ev.instance_id)}`;
-    });
-
-    const nodeById = Object.fromEntries(nodes.map(n => [n.id, n]));
-    const startNode = nodes.find(n => n.id === startNodeId);
-    const startInstId = startNode?.data.instance_id ?? '';
-
-    const duringBlocks = nodes.map(n => {
-        const nodeEdges = edges.filter(e => e.source === n.id);
-        if (!nodeEdges.length) return null;
-        const transLines = nodeEdges.map(e => {
-            const evId = e.data?.eventId ?? 'done';
-            const target = nodeById[e.target]?.data.instance_id ?? e.target;
-            return `        ${evId} -> ${target}`;
-        });
-        return `    During ${n.data.instance_id}:\n${transLines.join('\n')}`;
-    }).filter(Boolean);
-
-    const parts = [];
-    if (schema.default_role) parts.push(`Role ${schema.default_role}:`);
-    if (schema.imports?.length) {
-        const importLines = schema.imports.map(imp => {
-            const alias = imp.alias ? `${imp.alias} ` : '';
-            const version = imp.version ? ` ${imp.version}` : '';
-            return `    ${alias}"${imp.path}"${version}`;
-        });
-        parts.push(`Imports:\n${importLines.join('\n')}`);
-    }
-    if (dataEntries.length) parts.push(`Data:\n${dataEntries.join('\n')}`);
-    parts.push(`Actions:\n${actionLines.join('\n')}`);
-    if (eventLines.length) parts.push(`Events:\n${eventLines.join('\n')}`);
-    const missionContent = [`    Start ${startInstId}`, ...duringBlocks].join('\n');
-    parts.push(`Mission:\n${missionContent}`);
-
-    return parts.join('\n\n');
 }
 
 // Coerces a FieldSchema's raw string default (the proto's wire type,
@@ -445,6 +353,25 @@ function PlanPage({ theme, vehicles = [], squadList, uploadState, setUploadState
         return () => clearTimeout(timer);
     }, [nodes, startNodeId, schema]);
 
+    const [renderedDsl, setRenderedDsl] = useState('');
+    // Debounced like validation above. The backend renders the DSL from
+    // the same AST it compiles, so the tab never drifts from what's built.
+    useEffect(() => {
+        if (nodes.length === 0) return undefined;
+        const controller = new AbortController();
+        const timer = setTimeout(() => {
+            renderDsl(missionRequestBody(nodes, edges, eventInstances, startNodeId), controller.signal)
+                .then(setRenderedDsl)
+                .catch(e => {
+                    if (e.name !== 'AbortError') setRenderedDsl(`# DSL preview unavailable: ${e.message}`);
+                });
+        }, 300);
+        return () => {
+            clearTimeout(timer);
+            controller.abort();
+        };
+    }, [nodes, edges, eventInstances, startNodeId]);
+
     function snapshotCurrent() {
         return {
             nodes: nodes.map(n => ({
@@ -524,20 +451,7 @@ function PlanPage({ theme, vehicles = [], squadList, uploadState, setUploadState
     const startNode = nodes.find(n => n.id === startNodeId);
 
     function buildMissionRequestBody() {
-        return {
-            nodes: nodes.map(n => ({
-                instance_id: n.data.instance_id,
-                type_name: n.data.type_name,
-                params: n.data.params,
-            })),
-            events: eventInstances,
-            edges: edges.map(e => ({
-                source: nodes.find(n => n.id === e.source)?.data.instance_id,
-                event_id: e.data?.eventId ?? 'done',
-                target: nodes.find(n => n.id === e.target)?.data.instance_id,
-            })),
-            start_id: startNode?.data.instance_id,
-        };
+        return missionRequestBody(nodes, edges, eventInstances, startNodeId);
     }
 
     function highlightErrorNodes(errors) {
@@ -555,12 +469,22 @@ function PlanPage({ theme, vehicles = [], squadList, uploadState, setUploadState
         }
         setCompiling(true);
         try {
-            const body = buildMissionRequestBody();
+            const body = { ...buildMissionRequestBody(), geojson: features };
             const resp = await fetch(getApiUrl('/api/compile'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
             });
+            if (!resp.ok) {
+                let detail = `Server error ${resp.status}`;
+                try {
+                    const err = await resp.json();
+                    const d = err.detail;
+                    if (d !== undefined && d !== null) detail = typeof d === 'string' ? d : JSON.stringify(d);
+                } catch { /* keep the status message */ }
+                toast.current.show({ severity: 'error', summary: 'Compile failed', detail });
+                return;
+            }
             const result = await resp.json();
             if (result.errors) {
                 toast.current.show({ severity: 'error', summary: 'Compile error', detail: result.errors[0]?.message });
@@ -724,6 +648,11 @@ function PlanPage({ theme, vehicles = [], squadList, uploadState, setUploadState
         setDslText('');
     }
 
+    function showParseWarnings(parsed) {
+        (parsed.warnings ?? []).forEach(w =>
+            toast.current.show({ severity: 'warn', summary: 'DSL warning', detail: w, life: 8000 }));
+    }
+
     async function parseDslText(text) {
         const resp = await fetch(getApiUrl('/api/parse_dsl'), {
             method: 'POST',
@@ -745,6 +674,7 @@ function PlanPage({ theme, vehicles = [], squadList, uploadState, setUploadState
             const text = await file.text();
             const parsed = await parseDslText(text);
             loadFromParsed(parsed);
+            showParseWarnings(parsed);
             toast.current.show({ severity: 'success', summary: 'DSL loaded', detail: `${parsed.nodes.length} actions, ${parsed.events.length} events` });
         } catch (e) {
             toast.current.show({ severity: 'error', summary: 'DSL parse error', detail: e.message });
@@ -759,6 +689,7 @@ function PlanPage({ theme, vehicles = [], squadList, uploadState, setUploadState
         try {
             const parsed = await parseDslText(dslText);
             loadFromParsed(parsed);
+            showParseWarnings(parsed);
             toast.current.show({ severity: 'success', summary: 'DSL applied', detail: `${parsed.nodes.length} actions, ${parsed.events.length} events` });
         } catch (e) {
             toast.current.show({ severity: 'error', summary: 'DSL parse error', detail: e.message });
@@ -772,9 +703,15 @@ function PlanPage({ theme, vehicles = [], squadList, uploadState, setUploadState
         setDslText('');
     }
 
-    function handleExportDsl() {
-        const dsl = generateDsl(nodes, edges, eventInstances, startNodeId, schema);
-        const blob = new Blob([dsl + '\n'], { type: 'text/plain' });
+    async function handleExportDsl() {
+        let dsl;
+        try {
+            dsl = await renderDsl(buildMissionRequestBody());
+        } catch (e) {
+            toast.current.show({ severity: 'error', summary: 'Export failed', detail: e.message });
+            return;
+        }
+        const blob = new Blob([dsl], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -783,7 +720,7 @@ function PlanPage({ theme, vehicles = [], squadList, uploadState, setUploadState
         URL.revokeObjectURL(url);
     }
 
-    const liveDsl = nodes.length > 0 ? generateDsl(nodes, edges, eventInstances, startNodeId, schema) : '# Add nodes to see DSL preview';
+    const liveDsl = nodes.length > 0 ? renderedDsl : '# Add nodes to see DSL preview';
     const displayDsl = dslEdited ? dslText : liveDsl;
 
     const buildArchOptions = [

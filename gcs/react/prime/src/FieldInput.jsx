@@ -69,12 +69,11 @@ function unsetDisplay(field, zeroValue) {
 
 function FieldInput({ field, value, onChange, namedAreas = [], enums = {} }) {
     if (field.map_feature) {
-        // Valid values aren't a fixed compile-time list (unlike a real
-        // enum) -- they're whatever named areas the user has drawn on
-        // the Map tab. The compiler accepts any string here and only
-        // the vehicle, at mission runtime, resolves it against the
-        // mission's own GeoJSON -- so this dropdown (sourced from the
-        // areas actually drawn) is the only real typo guard there is.
+        // Valid values aren't a fixed list (unlike a real enum) -- they're
+        // whatever named features the user has drawn on the Map tab. The
+        // backend turns the chosen name into the params.<Geometry>_<name>
+        // constant the compiler generates from that GeoJSON, so a name
+        // that isn't drawn (or isn't the right geometry) is a compile error.
         return (
             <Dropdown
                 value={value ?? null}

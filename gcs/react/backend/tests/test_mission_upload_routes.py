@@ -5,10 +5,12 @@ import grpc
 import httpx
 import pytest
 from fastapi import FastAPI, HTTPException, UploadFile
-from steeleagle_protocol.v1.services.dslcompiler import dslcompiler_pb2
 
-import app.dslcompiler_routes as dslcompiler_routes
+import app.compiler_routes as compiler_routes
 import app.mission_upload_routes as routes
+from app.compiler_config import load_compiler_config
+from app.compiler_routes import CompileFailed
+from app.eaglec_client import EaglecFailure
 from app.mission_binary import MAX_MISSION_SIZE
 from app.mission_upload_routes import (
     DeployRequest,
@@ -19,7 +21,8 @@ from app.mission_upload_routes import (
     variants_from_files,
 )
 from tests.elf_fixtures import EM_AARCH64, EM_X86_64, fake_elf
-from tests.fake_dslcompiler import FakeDslCompilerClient
+from tests.fake_eaglec import FakeEaglecClient
+from tests.translate_examples import REGISTRY
 
 AMD = fake_elf(EM_X86_64, 200)
 ARM = fake_elf(EM_AARCH64, 100)
@@ -267,20 +270,21 @@ async def test_upload_asgi_streams_ndjson_with_repeated_vehicle_fields():
 # --- deploy -------------------------------------------------------------------
 
 
-def _chunks_ok():
-    return [
-        dslcompiler_pb2.BuildChunk(arch="amd64", data=AMD[:100]),
-        dslcompiler_pb2.BuildChunk(arch="arm64", data=ARM, done=True),
-        dslcompiler_pb2.BuildChunk(arch="amd64", data=AMD[100:], done=True),
-    ]
+def _build(result=None, error: Exception | None = None):
+    async def build():
+        if error is not None:
+            raise error
+        return result
+
+    return build
 
 
 async def test_deploy_events_builds_then_uploads_all_archs():
-    dsl = FakeDslCompilerClient(build_chunks=_chunks_ok())
     swarm = FakeSwarm(events=[_result("drone1")])
-    mission = dslcompiler_pb2.MissionGraph(start_id="takeoff")
 
-    events = await _collect(deploy_events(dsl, swarm, mission, b'{"x":1}', ["drone1"]))
+    events = await _collect(
+        deploy_events(_build({"amd64": AMD, "arm64": ARM}), swarm, ["drone1"])
+    )
 
     assert events == [
         {"type": "stage", "stage": "building"},
@@ -288,83 +292,67 @@ async def test_deploy_events_builds_then_uploads_all_archs():
         _result("drone1"),
     ]
     assert swarm.calls == [(["drone1"], {"amd64": AMD, "arm64": ARM})]
-    assert dsl.build_geojson_calls == [b'{"x":1}']
 
 
-async def test_deploy_events_build_error_stops_before_upload():
-    dsl = FakeDslCompilerClient(
-        build_chunks=[
-            dslcompiler_pb2.BuildChunk(arch="amd64", data=AMD, done=True),
-            dslcompiler_pb2.BuildChunk(
-                arch="arm64",
-                errors=[
-                    dslcompiler_pb2.CompileError(node_id="patrol", message="bad area")
-                ],
-            ),
-        ]
-    )
+async def test_deploy_events_compile_errors_stop_before_upload():
+    errors = [{"node_id": "patrol", "event_id": None, "message": "bad area"}]
     swarm = FakeSwarm()
 
     events = await _collect(
-        deploy_events(dsl, swarm, dslcompiler_pb2.MissionGraph(), b"", ["drone1"])
+        deploy_events(_build(error=CompileFailed(errors)), swarm, ["drone1"])
     )
 
-    assert events[0] == {"type": "stage", "stage": "building"}
-    assert events[-1]["type"] == "error"
-    assert "arm64" in events[-1]["detail"] and "bad area" in events[-1]["detail"]
-    assert events[-1]["errors"] == [
-        {"node_id": "patrol", "event_id": None, "message": "bad area"}
+    assert events == [
+        {"type": "stage", "stage": "building"},
+        {"type": "error", "detail": "Build failed: bad area", "errors": errors},
     ]
-    assert len(events) == 2
     assert swarm.calls == []
 
 
-async def test_deploy_events_non_grpc_build_exception_is_terminal_error_line():
-    class BoomDsl:
-        async def build(self, mission, geojson=b""):
-            yield dslcompiler_pb2.BuildChunk(arch="amd64", data=AMD[:10])
-            raise RuntimeError("boom")
-
+async def test_deploy_events_eaglec_failure_is_terminal_error_line():
     events = await _collect(
         deploy_events(
-            BoomDsl(), FakeSwarm(), dslcompiler_pb2.MissionGraph(), b"", ["d"]
-        )
-    )
-
-    assert events[0] == {"type": "stage", "stage": "building"}
-    assert events[-1]["type"] == "error"
-    assert "boom" in events[-1]["detail"]
-    assert len(events) == 2
-
-
-async def test_deploy_events_empty_build_is_error():
-    events = await _collect(
-        deploy_events(
-            FakeDslCompilerClient(build_chunks=[]),
+            _build(error=EaglecFailure("eaglec dsl timed out after 300 s")),
             FakeSwarm(),
-            dslcompiler_pb2.MissionGraph(),
-            b"",
             ["d"],
         )
     )
 
+    assert events[-1] == {
+        "type": "error",
+        "detail": "Build failed: eaglec dsl timed out after 300 s",
+    }
+    assert len(events) == 2
+
+
+async def test_deploy_events_unexpected_exception_is_terminal_error_line():
+    events = await _collect(
+        deploy_events(_build(error=RuntimeError("boom")), FakeSwarm(), ["d"])
+    )
+
+    assert events[-1] == {"type": "error", "detail": "Build failed: boom"}
+    assert len(events) == 2
+
+
+async def test_deploy_events_empty_build_is_error():
+    events = await _collect(deploy_events(_build({}), FakeSwarm(), ["d"]))
+
     assert events[-1] == {"type": "error", "detail": "Build produced no binaries"}
 
 
-async def test_deploy_route_streams_ndjson(monkeypatch):
-    schema = dslcompiler_pb2.GetSchemaResponse(
-        actions={"actions.TakeOff": dslcompiler_pb2.TypeSchema()}
+async def test_deploy_route_streams_ndjson(monkeypatch, tmp_path):
+    client = FakeEaglecClient(registry=REGISTRY, binaries={"amd64": AMD, "arm64": ARM})
+    state = await compiler_routes.load_state(
+        load_compiler_config(None, repo_root=tmp_path), client
     )
-    dsl = FakeDslCompilerClient(schema=schema, build_chunks=_chunks_ok())
+    monkeypatch.setattr(compiler_routes, "_state", state)
+    monkeypatch.setattr(compiler_routes, "_setup_task", None)
     swarm = FakeSwarm(events=[_result("drone1")])
-    monkeypatch.setattr(dslcompiler_routes, "_client", dsl)
     monkeypatch.setattr(routes, "_swarm_client_provider", lambda: swarm)
 
     response = await deploy_route(
         DeployRequest(
             nodes=[{"instance_id": "takeoff", "type_name": "TakeOff", "params": {}}],
-            events=[],
-            edges=[],
             start_id="takeoff",
             vehicles=["drone1"],
         )
@@ -373,15 +361,17 @@ async def test_deploy_route_streams_ndjson(monkeypatch):
     lines = await _ndjson_lines(response)
     assert lines[0] == {"type": "stage", "stage": "building"}
     assert lines[-1] == _result("drone1")
-    assert dsl.build_calls[0].nodes[0].type_name == "actions.TakeOff"
+    assert sorted(arch for _, _, arch in client.compile_calls) == ["amd64", "arm64"]
+    assert (
+        client.compile_calls[0][0]["Actions"]["Decls"][0]["Type"] == "actions.TakeOff"
+    )
+    assert swarm.calls == [(["drone1"], {"amd64": AMD, "arm64": ARM})]
 
 
 async def test_deploy_route_requires_vehicles(monkeypatch):
     monkeypatch.setattr(routes, "_swarm_client_provider", lambda: FakeSwarm())
 
     with pytest.raises(HTTPException) as exc:
-        await deploy_route(
-            DeployRequest(nodes=[], events=[], edges=[], start_id="x", vehicles=[])
-        )
+        await deploy_route(DeployRequest(nodes=[], start_id="x", vehicles=[]))
 
     assert exc.value.status_code == 400

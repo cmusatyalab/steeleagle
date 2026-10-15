@@ -13,7 +13,7 @@ dependencies = [
     "redis",
     "fastapi",
     "uvicorn",
-    "steeleagle-protocol>=0.1.18",
+    "steeleagle-protocol>=0.3.0",
     "websockets",
     "rich",
     "opencv-python",
@@ -23,13 +23,6 @@ dependencies = [
     "requests",
     "python-multipart>=0.0.32",
 ]
-
-[tool.uv.sources]
-# local override until api/python is tagged+published with the dslcompiler
-# proto (see .github/workflows/publish-steeleagle-protocol.yml) -- remove
-# once steeleagle-protocol>=0.1.21 (or whatever version includes it) is
-# released and bump the version pin in [project.dependencies] instead.
-steeleagle-protocol = { path = "../../../api/python", editable = true }
 
 [dependency-groups]
 dev = [

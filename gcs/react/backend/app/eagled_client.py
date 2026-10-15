@@ -1,7 +1,6 @@
 """Thin wrapper over DaemonServiceStub: one typed method per RPC this GCS
 wires up (see docs/superpowers/specs/2026-09-18-orchestration-eagled-wiring-design.md
-for which RPCs and why), mirroring app/swarm_client.py's and
-app/dslcompiler_client.py's pattern -- with one deliberate difference.
+for which RPCs and why), mirroring app/swarm_client.py's pattern -- with one deliberate difference.
 Those wrap a channel opened once at app startup against one address
 fixed in config.toml. eagled addresses are neither fixed nor known at
 startup -- they're arbitrary host:port strings a user adds/removes at

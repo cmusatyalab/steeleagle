@@ -6,7 +6,7 @@ import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import { MAPBOX_TOKEN } from './config.js';
 import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';
-import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature } from './mapUtils.js';
+import { defaultFeatureName, featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature } from './mapUtils.js';
 import { STYLE_URLS, STYLE_OPTIONS, applyBasemapConfig, applySatelliteLayerVisibility } from './mapStyles.js';
 import FeatureList from './FeatureList.jsx';
 
@@ -133,6 +133,10 @@ function MapDraw({ features, setFeatures, toast }) {
         function updateFeatures(e) {
             let temp = draw.current.get(e.features[0].id);
             temp.id = e.features[0].geometry.type + '-' + numFeaturesRef.current++;
+            if (!temp.properties?.name) {
+                const others = draw.current.getAll().features.filter(f => f.id !== e.features[0].id);
+                temp.properties = { ...(temp.properties || {}), name: defaultFeatureName(temp.geometry.type, others) };
+            }
             draw.current.add(temp);
             draw.current.delete(e.features[0].id);
             setFeatures(JSON.stringify(draw.current.getAll()));

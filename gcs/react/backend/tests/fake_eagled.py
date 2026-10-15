@@ -104,8 +104,8 @@ async def daemon_server_factory():
 class FakeEagledClient:
     """Duck-types EagledClient's public methods for testing
     eagled_routes' response-shaping functions without a live gRPC
-    server -- mirrors tests/fake_dslcompiler.py's FakeDslCompilerClient
-    pattern. Construct with canned return values for whichever methods a
+    server -- same pattern as tests/fake_eaglec.py's
+    FakeEaglecClient. Construct with canned return values for whichever methods a
     test exercises; calling a method with no canned value raises
     AssertionError so an unexpected call fails loudly."""
 

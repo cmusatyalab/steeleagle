@@ -6,7 +6,7 @@ const GEO_ICON = { Polygon: '⬡', LineString: '╱', Point: '●' };
 
 function displayName(feature, index) {
     if (feature.properties?.name) return feature.properties.name;
-    return `${feature.geometry?.type ?? 'Feature'} ${index + 1}`;
+    return `${feature.geometry?.type ?? 'Feature'}_${index + 1}`;
 }
 
 function FeatureList({ features, selectedFeatureId, onSelect, onDelete, onRename }) {

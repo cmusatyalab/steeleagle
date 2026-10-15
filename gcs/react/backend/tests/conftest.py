@@ -1,5 +1,4 @@
-"""No fixtures needed: api.py no longer depends on steeleagle_sdk (see
-docs/superpowers/plans/2026-09-02-gcs-dslcompiler-api-proxy.md Task 7) --
-its DSL type-checking now lives entirely in the dslcompiler Go service,
-which tests reach through FakeDslCompilerClient, not a real registry
-load."""
+"""No fixtures needed: the FSM-builder routes reach eaglec through
+EaglecClient, which tests replace with tests.fake_eaglec's fakes rather
+than running the real compiler (see tests/test_eaglec_integration.py for
+the opt-in end-to-end test)."""
