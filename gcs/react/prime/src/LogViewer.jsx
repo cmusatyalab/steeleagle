@@ -203,7 +203,25 @@ function LogStream({ address, sources, levels }) {
 
     const onScroll = useCallback((e) => {
         const el = e.target;
+        savedScrollTopRef.current = el.scrollTop;
         setFollow(el.scrollHeight - el.scrollTop - el.clientHeight < ROW_HEIGHT);
+    }, []);
+
+    // The Orchestrate page stays mounted but hidden (display: none) while
+    // another page is shown, which drops this container's scroll position.
+    // When it gets a size again, jump back to the tail or to where the user was.
+    const followRef = useRef(follow);
+    useEffect(() => { followRef.current = follow; }, [follow]);
+    const savedScrollTopRef = useRef(0);
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return undefined;
+        const ro = new ResizeObserver(() => {
+            if (el.clientHeight === 0) return;
+            el.scrollTop = followRef.current ? el.scrollHeight : savedScrollTopRef.current;
+        });
+        ro.observe(el);
+        return () => ro.disconnect();
     }, []);
 
     return (
