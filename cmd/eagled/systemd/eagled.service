@@ -5,7 +5,9 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/eagled
+# Prometheus metrics: eagled's on 8001 (the port the old Gabriel client
+# used), and Gabriel's own on 9464 (the OpenTelemetry Prometheus exporter's).
+ExecStart=/usr/local/bin/eagled -metrics-port 8001 -gabriel-metrics-port 9464
 User=eagled
 Group=eagled
 WorkingDirectory=/var/lib/eagled
@@ -30,8 +32,12 @@ ProtectSystem=strict
 # developer's home directory), so eagled needs to be able to reach anywhere
 # it's told to, not just /var/lib/eagled. Configure already implies that
 # trust -- it can already run any command eagled's uid can reach.
-ReadWritePaths=/var/lib/eagled
-PrivateTmp=true
+# /tmp, and not PrivateTmp=true: Gabriel (iceoryx2) keeps its services in
+# /tmp/iceoryx2, and a private /tmp would hide the vehicles' Gabriel servers
+# from local engines that run outside this unit, e.g. an inference server on
+# the NPU. Its shared memory is in /dev/shm, which ProtectSystem leaves
+# writable.
+ReadWritePaths=/var/lib/eagled /tmp
 
 [Install]
 WantedBy=multi-user.target
