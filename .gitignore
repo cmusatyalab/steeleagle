@@ -136,3 +136,6 @@ gcs/cli/drones.toml
 cmd/eagle/eagle
 cmd/eagled/eagled
 sdk/cmd/eaglec/eaglec
+
+# Build output (Makefile)
+/build/

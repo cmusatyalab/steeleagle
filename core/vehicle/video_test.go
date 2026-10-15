@@ -8,7 +8,7 @@ import (
 )
 
 func TestStreamingFromFile(t *testing.T) {
-	requireFFmpegFpsMode(t)
+	requireFFmpeg(t)
 
 	videoPath := fmt.Sprintf("%s/%s", t.TempDir(), testVideoFilename)
 	generateTestVideo(t, videoPath, testWidth, testHeight, testFPS, testDuration)
@@ -16,7 +16,7 @@ func TestStreamingFromFile(t *testing.T) {
 }
 
 func TestStreamingRTSP(t *testing.T) {
-	requireFFmpegFpsMode(t)
+	requireFFmpeg(t)
 
 	if _, err := exec.LookPath("mediamtx"); err != nil {
 		if errors.Is(err, exec.ErrNotFound) {

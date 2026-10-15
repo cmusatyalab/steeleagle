@@ -7,6 +7,7 @@ import (
 	"io"
 	"os/exec"
 	"strings"
+	"sync"
 
 	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
 	driverpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver"
@@ -124,6 +125,24 @@ func (v *Vehicle) streamRTSPVideo(ctx context.Context) error {
 	return group.Wait()
 }
 
+const (
+	// ffmpegFpsModeFlag sets FFmpeg's frame rate mode. It replaced
+	// ffmpegVsyncFlag in FFmpeg 5.1, which deprecated -vsync but still has it.
+	// Older FFmpeg, e.g. 4.2 on Ubuntu 20.04, has only -vsync.
+	ffmpegFpsModeFlag = "-fps_mode"
+	ffmpegVsyncFlag   = "-vsync"
+)
+
+// ffmpegSyncFlag is the flag that sets the installed FFmpeg's frame rate
+// mode: -fps_mode if FFmpeg lists it in its help, and -vsync otherwise.
+var ffmpegSyncFlag = sync.OnceValue(func() string {
+	out, err := exec.Command("ffmpeg", "-hide_banner", "-h", "full").CombinedOutput()
+	if err == nil && strings.Contains(string(out), ffmpegFpsModeFlag) {
+		return ffmpegFpsModeFlag
+	}
+	return ffmpegVsyncFlag
+})
+
 // getFFmpegArgs returns the arguments for the FFmpeg command corresponding
 // to the VideoStreamConfig.
 func getFFmpegArgs(url string, cfg VideoStreamConfig) []string {
@@ -149,7 +168,7 @@ func getFFmpegArgs(url string, cfg VideoStreamConfig) []string {
 		"-vf", filters,
 		"-pix_fmt", "bgr24", // convert to BGR 3 bytes per pixel
 		"-f", "rawvideo", // no video container
-		"-fps_mode", "passthrough", // don't retime/duplicate/drop frames
+		ffmpegSyncFlag(), "passthrough", // don't retime/duplicate/drop frames
 		"pipe:1", // write to fd 1
 	)
 
