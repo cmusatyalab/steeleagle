@@ -1,6 +1,7 @@
 import datetime
 
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
+from google.protobuf import duration_pb2 as _duration_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
@@ -10,16 +11,18 @@ from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
-class PluginCategory(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+class ServiceCategory(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
-    PLUGIN_CATEGORY_UNSPECIFIED: _ClassVar[PluginCategory]
-    PLUGIN_CATEGORY_DRIVER: _ClassVar[PluginCategory]
-    PLUGIN_CATEGORY_MISSION: _ClassVar[PluginCategory]
-    PLUGIN_CATEGORY_EXTRA: _ClassVar[PluginCategory]
-PLUGIN_CATEGORY_UNSPECIFIED: PluginCategory
-PLUGIN_CATEGORY_DRIVER: PluginCategory
-PLUGIN_CATEGORY_MISSION: PluginCategory
-PLUGIN_CATEGORY_EXTRA: PluginCategory
+    SERVICE_CATEGORY_UNSPECIFIED: _ClassVar[ServiceCategory]
+    SERVICE_CATEGORY_VEHICLE: _ClassVar[ServiceCategory]
+    SERVICE_CATEGORY_ENGINE: _ClassVar[ServiceCategory]
+    SERVICE_CATEGORY_MONITOR: _ClassVar[ServiceCategory]
+    SERVICE_CATEGORY_EXTRA: _ClassVar[ServiceCategory]
+SERVICE_CATEGORY_UNSPECIFIED: ServiceCategory
+SERVICE_CATEGORY_VEHICLE: ServiceCategory
+SERVICE_CATEGORY_ENGINE: ServiceCategory
+SERVICE_CATEGORY_MONITOR: ServiceCategory
+SERVICE_CATEGORY_EXTRA: ServiceCategory
 
 class ConfigureRequest(_message.Message):
     __slots__ = ("config_toml",)
@@ -28,176 +31,108 @@ class ConfigureRequest(_message.Message):
     def __init__(self, config_toml: _Optional[str] = ...) -> None: ...
 
 class ConfigureResponse(_message.Message):
-    __slots__ = ("vehicles", "daemon_settings_applied", "daemon_settings_diverged")
-    VEHICLES_FIELD_NUMBER: _ClassVar[int]
-    DAEMON_SETTINGS_APPLIED_FIELD_NUMBER: _ClassVar[int]
-    DAEMON_SETTINGS_DIVERGED_FIELD_NUMBER: _ClassVar[int]
-    vehicles: _containers.RepeatedCompositeFieldContainer[VehicleResult]
-    daemon_settings_applied: bool
-    daemon_settings_diverged: bool
-    def __init__(self, vehicles: _Optional[_Iterable[_Union[VehicleResult, _Mapping]]] = ..., daemon_settings_applied: _Optional[bool] = ..., daemon_settings_diverged: _Optional[bool] = ...) -> None: ...
+    __slots__ = ()
+    def __init__(self) -> None: ...
 
-class StopVehiclesRequest(_message.Message):
-    __slots__ = ("names",)
-    NAMES_FIELD_NUMBER: _ClassVar[int]
-    names: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, names: _Optional[_Iterable[str]] = ...) -> None: ...
+class ServiceRequest(_message.Message):
+    __slots__ = ("short_name", "url", "category")
+    SHORT_NAME_FIELD_NUMBER: _ClassVar[int]
+    URL_FIELD_NUMBER: _ClassVar[int]
+    CATEGORY_FIELD_NUMBER: _ClassVar[int]
+    short_name: str
+    url: str
+    category: ServiceCategory
+    def __init__(self, short_name: _Optional[str] = ..., url: _Optional[str] = ..., category: _Optional[_Union[ServiceCategory, str]] = ...) -> None: ...
 
-class StopVehiclesResponse(_message.Message):
-    __slots__ = ("vehicles",)
-    VEHICLES_FIELD_NUMBER: _ClassVar[int]
-    vehicles: _containers.RepeatedCompositeFieldContainer[VehicleResult]
-    def __init__(self, vehicles: _Optional[_Iterable[_Union[VehicleResult, _Mapping]]] = ...) -> None: ...
+class StartServicesRequest(_message.Message):
+    __slots__ = ("services",)
+    SERVICES_FIELD_NUMBER: _ClassVar[int]
+    services: _containers.RepeatedCompositeFieldContainer[ServiceRequest]
+    def __init__(self, services: _Optional[_Iterable[_Union[ServiceRequest, _Mapping]]] = ...) -> None: ...
 
-class RestartVehiclesRequest(_message.Message):
-    __slots__ = ("names",)
-    NAMES_FIELD_NUMBER: _ClassVar[int]
-    names: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, names: _Optional[_Iterable[str]] = ...) -> None: ...
+class StartServicesResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
 
-class RestartVehiclesResponse(_message.Message):
-    __slots__ = ("vehicles",)
-    VEHICLES_FIELD_NUMBER: _ClassVar[int]
-    vehicles: _containers.RepeatedCompositeFieldContainer[VehicleResult]
-    def __init__(self, vehicles: _Optional[_Iterable[_Union[VehicleResult, _Mapping]]] = ...) -> None: ...
+class StopServicesRequest(_message.Message):
+    __slots__ = ("services",)
+    SERVICES_FIELD_NUMBER: _ClassVar[int]
+    services: _containers.RepeatedCompositeFieldContainer[ServiceRequest]
+    def __init__(self, services: _Optional[_Iterable[_Union[ServiceRequest, _Mapping]]] = ...) -> None: ...
 
-class ForgetVehiclesRequest(_message.Message):
-    __slots__ = ("names",)
-    NAMES_FIELD_NUMBER: _ClassVar[int]
-    names: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, names: _Optional[_Iterable[str]] = ...) -> None: ...
+class StopServicesResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
 
-class ForgetVehiclesResponse(_message.Message):
-    __slots__ = ("vehicles",)
-    VEHICLES_FIELD_NUMBER: _ClassVar[int]
-    vehicles: _containers.RepeatedCompositeFieldContainer[VehicleResult]
-    def __init__(self, vehicles: _Optional[_Iterable[_Union[VehicleResult, _Mapping]]] = ...) -> None: ...
+class AvailableService(_message.Message):
+    __slots__ = ("short_name", "url", "tag", "category", "running", "uptime")
+    SHORT_NAME_FIELD_NUMBER: _ClassVar[int]
+    URL_FIELD_NUMBER: _ClassVar[int]
+    TAG_FIELD_NUMBER: _ClassVar[int]
+    CATEGORY_FIELD_NUMBER: _ClassVar[int]
+    RUNNING_FIELD_NUMBER: _ClassVar[int]
+    UPTIME_FIELD_NUMBER: _ClassVar[int]
+    short_name: str
+    url: str
+    tag: str
+    category: ServiceCategory
+    running: bool
+    uptime: _duration_pb2.Duration
+    def __init__(self, short_name: _Optional[str] = ..., url: _Optional[str] = ..., tag: _Optional[str] = ..., category: _Optional[_Union[ServiceCategory, str]] = ..., running: _Optional[bool] = ..., uptime: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ...) -> None: ...
 
-class VehicleResult(_message.Message):
-    __slots__ = ("name", "ok", "error", "reconfigured", "restart_required")
-    NAME_FIELD_NUMBER: _ClassVar[int]
-    OK_FIELD_NUMBER: _ClassVar[int]
-    ERROR_FIELD_NUMBER: _ClassVar[int]
-    RECONFIGURED_FIELD_NUMBER: _ClassVar[int]
-    RESTART_REQUIRED_FIELD_NUMBER: _ClassVar[int]
-    name: str
-    ok: bool
-    error: str
-    reconfigured: bool
-    restart_required: bool
-    def __init__(self, name: _Optional[str] = ..., ok: _Optional[bool] = ..., error: _Optional[str] = ..., reconfigured: _Optional[bool] = ..., restart_required: _Optional[bool] = ...) -> None: ...
+class ListServicesRequest(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class ListServicesResponse(_message.Message):
+    __slots__ = ("services",)
+    SERVICES_FIELD_NUMBER: _ClassVar[int]
+    services: _containers.RepeatedCompositeFieldContainer[AvailableService]
+    def __init__(self, services: _Optional[_Iterable[_Union[AvailableService, _Mapping]]] = ...) -> None: ...
 
 class InstallPluginRequest(_message.Message):
-    __slots__ = ("name", "repo", "ref", "subpath", "category")
-    NAME_FIELD_NUMBER: _ClassVar[int]
-    REPO_FIELD_NUMBER: _ClassVar[int]
-    REF_FIELD_NUMBER: _ClassVar[int]
-    SUBPATH_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("url", "tag", "category")
+    URL_FIELD_NUMBER: _ClassVar[int]
+    TAG_FIELD_NUMBER: _ClassVar[int]
     CATEGORY_FIELD_NUMBER: _ClassVar[int]
-    name: str
-    repo: str
-    ref: str
-    subpath: str
-    category: PluginCategory
-    def __init__(self, name: _Optional[str] = ..., repo: _Optional[str] = ..., ref: _Optional[str] = ..., subpath: _Optional[str] = ..., category: _Optional[_Union[PluginCategory, str]] = ...) -> None: ...
+    url: str
+    tag: str
+    category: ServiceCategory
+    def __init__(self, url: _Optional[str] = ..., tag: _Optional[str] = ..., category: _Optional[_Union[ServiceCategory, str]] = ...) -> None: ...
 
 class InstallPluginResponse(_message.Message):
-    __slots__ = ("ok", "error")
-    OK_FIELD_NUMBER: _ClassVar[int]
-    ERROR_FIELD_NUMBER: _ClassVar[int]
-    ok: bool
-    error: str
-    def __init__(self, ok: _Optional[bool] = ..., error: _Optional[str] = ...) -> None: ...
-
-class GetInstalledPluginsRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
-class GetInstalledPluginsResponse(_message.Message):
-    __slots__ = ("plugins",)
-    PLUGINS_FIELD_NUMBER: _ClassVar[int]
-    plugins: _containers.RepeatedCompositeFieldContainer[InstalledPlugin]
-    def __init__(self, plugins: _Optional[_Iterable[_Union[InstalledPlugin, _Mapping]]] = ...) -> None: ...
-
-class InstalledPlugin(_message.Message):
-    __slots__ = ("name", "ref", "category")
-    NAME_FIELD_NUMBER: _ClassVar[int]
-    REF_FIELD_NUMBER: _ClassVar[int]
+class RemovePluginRequest(_message.Message):
+    __slots__ = ("short_name", "url", "category")
+    SHORT_NAME_FIELD_NUMBER: _ClassVar[int]
+    URL_FIELD_NUMBER: _ClassVar[int]
     CATEGORY_FIELD_NUMBER: _ClassVar[int]
-    name: str
-    ref: str
-    category: PluginCategory
-    def __init__(self, name: _Optional[str] = ..., ref: _Optional[str] = ..., category: _Optional[_Union[PluginCategory, str]] = ...) -> None: ...
+    short_name: str
+    url: str
+    category: ServiceCategory
+    def __init__(self, short_name: _Optional[str] = ..., url: _Optional[str] = ..., category: _Optional[_Union[ServiceCategory, str]] = ...) -> None: ...
 
-class ResetConfigRequest(_message.Message):
+class RemovePluginResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
-class ResetConfigResponse(_message.Message):
+class RestartRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
-class RestartDaemonRequest(_message.Message):
+class RestartResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
-class RestartDaemonResponse(_message.Message):
+class ResetConfigurationRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
-class GetStatusRequest(_message.Message):
+class ResetConfigurationResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
-
-class GetStatusResponse(_message.Message):
-    __slots__ = ("configured", "config", "vehicles", "os", "arch")
-    CONFIGURED_FIELD_NUMBER: _ClassVar[int]
-    CONFIG_FIELD_NUMBER: _ClassVar[int]
-    VEHICLES_FIELD_NUMBER: _ClassVar[int]
-    OS_FIELD_NUMBER: _ClassVar[int]
-    ARCH_FIELD_NUMBER: _ClassVar[int]
-    configured: bool
-    config: DaemonConfig
-    vehicles: _containers.RepeatedCompositeFieldContainer[VehicleStatus]
-    os: str
-    arch: str
-    def __init__(self, configured: _Optional[bool] = ..., config: _Optional[_Union[DaemonConfig, _Mapping]] = ..., vehicles: _Optional[_Iterable[_Union[VehicleStatus, _Mapping]]] = ..., os: _Optional[str] = ..., arch: _Optional[str] = ...) -> None: ...
-
-class DaemonConfig(_message.Message):
-    __slots__ = ("vpn", "vehicle_vpn", "port_base", "plugin_dir", "tailscale_hostname", "tailscale_authkey_env", "swarm_controller_address", "daemon_name", "gabriel_server_endpoint")
-    VPN_FIELD_NUMBER: _ClassVar[int]
-    VEHICLE_VPN_FIELD_NUMBER: _ClassVar[int]
-    PORT_BASE_FIELD_NUMBER: _ClassVar[int]
-    PLUGIN_DIR_FIELD_NUMBER: _ClassVar[int]
-    TAILSCALE_HOSTNAME_FIELD_NUMBER: _ClassVar[int]
-    TAILSCALE_AUTHKEY_ENV_FIELD_NUMBER: _ClassVar[int]
-    SWARM_CONTROLLER_ADDRESS_FIELD_NUMBER: _ClassVar[int]
-    DAEMON_NAME_FIELD_NUMBER: _ClassVar[int]
-    GABRIEL_SERVER_ENDPOINT_FIELD_NUMBER: _ClassVar[int]
-    vpn: bool
-    vehicle_vpn: bool
-    port_base: int
-    plugin_dir: str
-    tailscale_hostname: str
-    tailscale_authkey_env: str
-    swarm_controller_address: str
-    daemon_name: str
-    gabriel_server_endpoint: str
-    def __init__(self, vpn: _Optional[bool] = ..., vehicle_vpn: _Optional[bool] = ..., port_base: _Optional[int] = ..., plugin_dir: _Optional[str] = ..., tailscale_hostname: _Optional[str] = ..., tailscale_authkey_env: _Optional[str] = ..., swarm_controller_address: _Optional[str] = ..., daemon_name: _Optional[str] = ..., gabriel_server_endpoint: _Optional[str] = ...) -> None: ...
-
-class VehicleStatus(_message.Message):
-    __slots__ = ("name", "driver", "running", "port", "config_stale")
-    NAME_FIELD_NUMBER: _ClassVar[int]
-    DRIVER_FIELD_NUMBER: _ClassVar[int]
-    RUNNING_FIELD_NUMBER: _ClassVar[int]
-    PORT_FIELD_NUMBER: _ClassVar[int]
-    CONFIG_STALE_FIELD_NUMBER: _ClassVar[int]
-    name: str
-    driver: str
-    running: bool
-    port: int
-    config_stale: bool
-    def __init__(self, name: _Optional[str] = ..., driver: _Optional[str] = ..., running: _Optional[bool] = ..., port: _Optional[int] = ..., config_stale: _Optional[bool] = ...) -> None: ...
 
 class StreamLogsRequest(_message.Message):
     __slots__ = ("sources", "tail", "follow", "after_seq")
@@ -218,7 +153,7 @@ class StreamLogsRequest(_message.Message):
     after_seq: _containers.ScalarMap[str, int]
     def __init__(self, sources: _Optional[_Iterable[str]] = ..., tail: _Optional[int] = ..., follow: _Optional[bool] = ..., after_seq: _Optional[_Mapping[str, int]] = ...) -> None: ...
 
-class LogRecord(_message.Message):
+class StreamLogsResponse(_message.Message):
     __slots__ = ("source", "seq", "time", "level", "text", "dropped")
     SOURCE_FIELD_NUMBER: _ClassVar[int]
     SEQ_FIELD_NUMBER: _ClassVar[int]
@@ -234,16 +169,6 @@ class LogRecord(_message.Message):
     dropped: int
     def __init__(self, source: _Optional[str] = ..., seq: _Optional[int] = ..., time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., level: _Optional[str] = ..., text: _Optional[str] = ..., dropped: _Optional[int] = ...) -> None: ...
 
-class ListLogSourcesRequest(_message.Message):
-    __slots__ = ()
-    def __init__(self) -> None: ...
-
-class ListLogSourcesResponse(_message.Message):
-    __slots__ = ("sources",)
-    SOURCES_FIELD_NUMBER: _ClassVar[int]
-    sources: _containers.RepeatedCompositeFieldContainer[LogSource]
-    def __init__(self, sources: _Optional[_Iterable[_Union[LogSource, _Mapping]]] = ...) -> None: ...
-
 class LogSource(_message.Message):
     __slots__ = ("name", "running", "size_bytes")
     NAME_FIELD_NUMBER: _ClassVar[int]
@@ -253,3 +178,13 @@ class LogSource(_message.Message):
     running: bool
     size_bytes: int
     def __init__(self, name: _Optional[str] = ..., running: _Optional[bool] = ..., size_bytes: _Optional[int] = ...) -> None: ...
+
+class ListLogSourcesRequest(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class ListLogSourcesResponse(_message.Message):
+    __slots__ = ("sources",)
+    SOURCES_FIELD_NUMBER: _ClassVar[int]
+    sources: _containers.RepeatedCompositeFieldContainer[LogSource]
+    def __init__(self, sources: _Optional[_Iterable[_Union[LogSource, _Mapping]]] = ...) -> None: ...

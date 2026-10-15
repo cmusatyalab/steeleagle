@@ -122,6 +122,7 @@ class ControlServiceServicer:
 
         Returns an _Action_ style response with `expected_mode` set to LAND
         and `expected_status` set to `MOTION_STATUS_STOPPED`.
+
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')

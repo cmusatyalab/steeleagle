@@ -5,283 +5,153 @@
 syntax = "proto3";
 package steeleagle_protocol.v1.services.eagled;
 
-import "google/protobuf/timestamp.proto";
-
 option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/eagled;eagled";
 
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
 /*
- * DaemonService is eagled's own control-plane API. It is used to provide a
- * configuration at runtime. Once applied, the resulting configuration is
- * persisted, so a restarted eagled comes back up with the same vehicles
- * running without another Configure call.
+ * Hosted by eagled as the core SteelEagle daemon service.
+ *
+ * This service represents eagled's control plane API. Each command interacts
+ * with the global state of the daemon. This includes the starting/stopping of
+ * plugins and vehicles.
  */
 service DaemonService {
   /*
-   * Load a TOML configuration document (the same shape as eagled's
-   * config.toml) and start the vehicles it describes.
+   * Load a TOML configuration document.
    *
-   * The first call configures the daemon itself (tailscale hostname, gabriel,
-   * swarm-controller settings) in addition to starting its vehicles. Later
-   * calls reuse that daemon-wide configuration and only start the vehicles
-   * newly listed. If the daemon-wide settings in a later call differ from
-   * what's already active, ConfigureResponse.daemon_settings_diverged reports
-   * that rather than silently dropping them. A vehicle name that's known but
-   * not currently running has its config replaced outright
-   * (VehicleResult.reconfigured is set on that result, to distinguish it
-   * from configuring the name for the first time). A vehicle name that's
-   * currently running also has its config replaced, but the running process
-   * itself is left alone -- VehicleResult.restart_required is set, and
-   * RestartVehicles picks up the new config next time it's called.
+   * Configures the daemon with a TOML config according to eagled specification.
+   * Can be configured in auto-start mode, where eagled will try to start everything
+   * immediately. Can also be configured to install plugins that don't already exist.
    */
-  rpc Configure (ConfigureRequest) returns (ConfigureResponse) {}
+  rpc Configure (ConfigureRequest)
+    returns (ConfigureResponse) {}
 
-  /*
-   * Stop one or more currently-running vehicles by name. Unlike
-   * ForgetVehicles, the daemon still knows about them afterward: they can be
-   * brought back with RestartVehicles, and they come back on a subsequent
-   * eagled restart too, same as any other configured vehicle. A name that
-   * isn't currently running is reported as a per-vehicle failure rather than
-   * aborting the whole call.
-   */
-  rpc StopVehicles (StopVehiclesRequest) returns (StopVehiclesResponse) {}
+  rpc StartServices (StartServicesRequest)
+    returns (StartServicesResponse) {}
 
-  /*
-   * Restart one or more vehicles by name, using the configuration they were
-   * last configured with. A name that isn't known to this daemon is reported
-   * as a per-vehicle failure rather than aborting the whole call.
-   */
-  rpc RestartVehicles (RestartVehiclesRequest) returns (RestartVehiclesResponse) {}
+  rpc StopServices (StopServicesRequest)
+    returns (StopServicesResponse) {}
 
-  /*
-   * Stop one or more currently-running vehicles by name (if running) and
-   * forget them. They will not come back on RestartVehicles or a subsequent
-   * eagled restart unless reconfigured. A name that isn't known to this daemon
-   * is reported as a per-vehicle failure rather than aborting the whole call.
-   */
-  rpc ForgetVehicles (ForgetVehiclesRequest) returns (ForgetVehiclesResponse) {}
+  rpc ListServices (ListServicesRequest)
+    returns (ListServicesResponse) {}
 
-  /*
-   * Fetch a plugin from a git repository at a pinned commit and install it
-   * under this name, running the plugin's own install.sh and only replacing
-   * whatever was previously installed under this name if it exits zero.
-   * Separate from starting a vehicle, so a plugin can be staged ahead of time
-   * and StartVehicle/Configure never has to wait on a network fetch.
-   */
-  rpc InstallPlugin (InstallPluginRequest) returns (InstallPluginResponse) {}
+  rpc InstallPlugin (InstallPluginRequest)
+    returns (InstallPluginResponse) {}
 
-  /*
-   * List every plugin this daemon has installed, the ref it was last installed
-   * at, and its category.
-   */
-  rpc GetInstalledPlugins (GetInstalledPluginsRequest) returns (GetInstalledPluginsResponse) {}
+  rpc RemovePlugin (RemovePluginRequest)
+    returns (RemovePluginResponse) {}
 
-  /*
-   * Delete the persisted config and terminate the daemon process, relying on
-   * systemd to bring it back up unconfigured, as if freshly installed. Every
-   * currently-running vehicle is torn down as part of that shutdown. This is
-   * the only way to change daemon-wide settings (gabriel, swarm-controller,
-   * port-base, plugin-dir): they're only ever established from the first
-   * Configure call after a process starts. The tailscale hostname is not
-   * affected: it's established once, on this host, and outlives ResetConfig;
-   * changing it is a manual, on-site operation, not something any RPC does.
-   */
-  rpc ResetConfig (ResetConfigRequest) returns (ResetConfigResponse) {}
+  rpc Restart (RestartRequest)
+    returns (RestartResponse) {}
 
-  /*
-   * Restart the daemon process without touching persisted state, relying on
-   * systemd to bring it back up with the existing configuration.
-   */
-  rpc RestartDaemon (RestartDaemonRequest) returns (RestartDaemonResponse) {}
+  rpc ResetConfiguration (ResetConfigurationRequest)
+    returns (ResetConfigurationResponse) {}
+  
+  rpc StreamLogs (StreamLogsRequest)
+    returns (stream StreamLogsResponse) {}
 
-  /*
-   * Report the daemon's current configuration and the state of every vehicle
-   * it knows about, including whether a running vehicle's config has since
-   * been replaced by a Configure call it hasn't picked up yet (see
-   * VehicleStatus.config_stale).
-   */
-  rpc GetStatus (GetStatusRequest) returns (GetStatusResponse) {}
-
-  /*
-   * Stream log records captured by this daemon (its own logs plus every
-   * vehicle's and plugin's output), oldest first. The daemon persists logs
-   * per source, so a stream can replay backlog (tail lines per source, or
-   * everything after a per-source resume cursor) and then, if follow is set,
-   * keep streaming live records until the client cancels. When the daemon
-   * shuts down the stream ends with UNAVAILABLE.
-   */
-  rpc StreamLogs (StreamLogsRequest) returns (stream LogRecord) {}
-
-  /*
-   * List every log source this daemon has on disk (running or not).
-   */
-  rpc ListLogSources (ListLogSourcesRequest) returns (ListLogSourcesResponse) {}
+  rpc ListLogSources (ListLogSourcesRequest)
+    returns (stream ListLogSourcesResponse) {}
 }
 
 message ConfigureRequest {
-  string config_toml = 1; // raw TOML document, same shape as config.toml
+  string config_toml = 1; // eagled config.toml
 }
 
-message ConfigureResponse {
-  repeated VehicleResult vehicles = 1;
-  // True only for the first Configure call a fresh daemon ever receives, when
-  // daemon-wide settings were actually established from this call.
-  bool daemon_settings_applied = 2;
-  // True when this was not the first Configure call and this call's
-  // daemon-wide settings differ from what's already active -- i.e. some
-  // requested settings were silently not applied. Always false when
-  // daemon_settings_applied is true, and also false on a later call whose
-  // daemon-wide settings already matched what's active (nothing to report).
-  bool daemon_settings_diverged = 3;
+message ConfigureResponse {}
+
+enum ServiceCategory {
+  SERVICE_CATEGORY_UNSPECIFIED = 0;
+  SERVICE_CATEGORY_VEHICLE = 1;
+  SERVICE_CATEGORY_ENGINE = 2;
+  SERVICE_CATEGORY_MONITOR = 3;
+  SERVICE_CATEGORY_EXTRA = 4;
 }
 
-message StopVehiclesRequest {
-  repeated string names = 1;
+message ServiceRequest {
+  string short_name = 1;
+  optional string url = 2;
+  ServiceCategory category = 3;
 }
 
-message StopVehiclesResponse {
-  repeated VehicleResult vehicles = 1;
+message StartServicesRequest {
+  repeated ServiceRequest services = 1;
 }
 
-message RestartVehiclesRequest {
-  repeated string names = 1;
+message StartServicesResponse {}
+
+message StopServicesRequest {
+  repeated ServiceRequest services = 1;
 }
 
-message RestartVehiclesResponse {
-  repeated VehicleResult vehicles = 1;
+message StopServicesResponse {}
+
+message AvailableService {
+  string short_name = 1;
+  string url = 2;
+  string tag = 3;
+  ServiceCategory category = 4;
+  bool running = 5;
+  google.protobuf.Duration uptime = 6; 
 }
 
-message ForgetVehiclesRequest {
-  repeated string names = 1;
-}
+message ListServicesRequest {}
 
-message ForgetVehiclesResponse {
-  repeated VehicleResult vehicles = 1;
-}
-
-message VehicleResult {
-  string name = 1;
-  bool ok = 2;
-  string error = 3; // populated iff !ok
-  // True iff ok and this Configure call replaced an already-known vehicle's
-  // config -- as opposed to configuring name for the first time. Only
-  // meaningful in a ConfigureResponse; always false from StopVehicles/
-  // RestartVehicles/ForgetVehicles.
-  bool reconfigured = 4;
-  // True iff ok, reconfigured, and name was already running: its new config
-  // is saved and becomes what a future RestartVehicles/eagled restart uses,
-  // but the running process itself was left alone, so it's still running
-  // under its *previous* config until explicitly restarted. Only meaningful
-  // in a ConfigureResponse.
-  bool restart_required = 5;
-}
-
-enum PluginCategory {
-  PLUGIN_CATEGORY_UNSPECIFIED = 0;
-  PLUGIN_CATEGORY_DRIVER = 1;
-  PLUGIN_CATEGORY_MISSION = 2;
-  PLUGIN_CATEGORY_EXTRA = 3;
+message ListServicesResponse {
+  repeated AvailableService services = 1;
 }
 
 message InstallPluginRequest {
-  string name = 1;    // plugin identifier, matches a VehicleConfig field of the same category
-  string repo = 2;    // git URL
-  string ref = 3;     // commit SHA, branch, or tag to check out
-  string subpath = 4; // subfolder containing install.sh/run.sh; empty means repo root
-  PluginCategory category = 5;
+  string url = 1;  
+  optional string tag = 2;  
+  ServiceCategory category = 3;
 }
 
-message InstallPluginResponse {
-  bool ok = 1;
-  string error = 2; // populated iff !ok; install.sh's captured output on a nonzero exit
+message InstallPluginResponse {}
+
+message RemovePluginRequest {
+  string short_name = 1;
+  optional string url = 2;
+  ServiceCategory category = 5;
 }
 
-message GetInstalledPluginsRequest {}
+message RemovePluginResponse {}
 
-message GetInstalledPluginsResponse {
-  repeated InstalledPlugin plugins = 1;
-}
+message RestartRequest {}
 
-message InstalledPlugin {
-  string name = 1;
-  string ref = 2;
-  PluginCategory category = 3;
-}
+message RestartResponse {}
 
-message ResetConfigRequest {}
+message ResetConfigurationRequest {}
 
-message ResetConfigResponse {}
-
-message RestartDaemonRequest {}
-
-message RestartDaemonResponse {}
-
-message GetStatusRequest {}
-
-message GetStatusResponse {
-  bool configured = 1;
-  DaemonConfig config = 2; // populated iff configured
-  repeated VehicleStatus vehicles = 3;
-  // The platform this daemon binary is running on, as Go's runtime.GOOS and
-  // runtime.GOARCH report it (e.g. "linux" / "amd64" or "arm64"). Always
-  // populated, configured or not: it's a fact about the running binary, not
-  // part of the daemon-wide config, and callers need it (e.g. to pick a
-  // matching mission build) before the first Configure. The arch values match
-  // the "amd64" | "arm64" names the DSL compiler service already uses.
-  string os = 4;
-  string arch = 5;
-}
-
-// DaemonConfig reports the daemon-wide settings established by the first
-// Configure call. Secrets stay out of it: authkey_env names the env var
-// holding the tsnet auth key, never the resolved key itself.
-message DaemonConfig {
-  bool vpn = 1;
-  bool vehicle_vpn = 2;
-  int32 port_base = 3;
-  string plugin_dir = 4;
-  string tailscale_hostname = 5;
-  string tailscale_authkey_env = 6;
-  string swarm_controller_address = 7;
-  string daemon_name = 8;
-  string gabriel_server_endpoint = 9; // empty if Gabriel is not in use
-}
-
-message VehicleStatus {
-  string name = 1;
-  string driver = 2;
-  bool running = 3;
-  int32 port = 4; // its ControlService/MissionService port; 0 if not running
-  // True iff running and a Configure call has replaced this vehicle's config
-  // since this running process was spawned -- it's still running under its
-  // previous config, and picks up the new one on its next restart. Always
-  // false when not running.
-  bool config_stale = 5;
-}
+message ResetConfigurationResponse {}
 
 message StreamLogsRequest {
   repeated string sources = 1;        // empty = all sources
   int32 tail = 2;                     // backlog lines per source before following; 0 = none
   bool follow = 3;                    // false: send backlog and end; true: keep streaming
-  map<string, uint64> after_seq = 4;  // resume cursor: only records with seq > value; takes precedence over tail for that source
+  map<string, uint64> after_seq = 4;  // resume cursor: only records with seq > value
 }
 
-message LogRecord {
+message StreamLogsResponse {
   string source = 1;
-  uint64 seq = 2;                     // monotonic per source; 0 on gap markers
+  uint64 seq = 2;                     // monotonic per source, 0 on gap markers
   google.protobuf.Timestamp time = 3; // daemon receive time
   string level = 4;                   // empty if unknown
-  string text = 5;
-  uint64 dropped = 6;                 // nonzero iff this is a synthetic gap marker (lines dropped for a slow consumer)
+  string text = 5;                    // log text
+  uint64 dropped = 6;                 // nonzero marks dropped logs
+}
+
+// Log source file.
+message LogSource {
+  string name = 1;      // source file name
+  bool running = 2;     // a live process is currently producing it
+  int64 size_bytes = 3; // total bytes on disk across rotated files
 }
 
 message ListLogSourcesRequest {}
 
 message ListLogSourcesResponse {
-  repeated LogSource sources = 1;
-}
-
-message LogSource {
-  string name = 1;
-  bool running = 2;                   // a live process is currently producing it
-  int64 size_bytes = 3;               // total bytes on disk across rotated files
+  repeated LogSource sources = 1; // list of all source
 }

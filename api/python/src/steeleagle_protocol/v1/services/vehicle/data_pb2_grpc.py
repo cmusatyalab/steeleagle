@@ -7,10 +7,11 @@ from steeleagle_protocol.v1.services.vehicle import data_pb2 as steeleagle__prot
 
 class DataServiceStub:
     """
-    Used to get up-to-date results, telemetry, and video frames.
+    Used to configure Gabriel flows for sensor streams.
 
-    This service is used to retrieve the most recent results, telemetry,
-    and video frames from the driver or other publisher plugins.
+    This service is used to configure the current Gabriel flow. Gabriel flows describe
+    how data from sensor streams move between cognitive engines. Each flow creates a 
+    result, which can be accessed here.
     """
 
     def __init__(self, channel):
@@ -19,6 +20,16 @@ class DataServiceStub:
         Args:
             channel: A grpc.Channel.
         """
+        self.SetDataflow = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.vehicle.DataService/SetDataflow',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.SetDataflowRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.SetDataflowResponse.FromString,
+                _registered_method=True)
+        self.RevertToDefaultDataflow = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.vehicle.DataService/RevertToDefaultDataflow',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.RevertToDefaultDataflowRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.RevertToDefaultDataflowResponse.FromString,
+                _registered_method=True)
         self.GetResult = channel.unary_unary(
                 '/steeleagle_protocol.v1.services.vehicle.DataService/GetResult',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetResultRequest.SerializeToString,
@@ -29,36 +40,51 @@ class DataServiceStub:
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetTelemetryRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetTelemetryResponse.FromString,
                 _registered_method=True)
-        self.GetFrame = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.vehicle.DataService/GetFrame',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetFrameRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetFrameResponse.FromString,
-                _registered_method=True)
-        self.StreamVideoFrames = channel.unary_stream(
-                '/steeleagle_protocol.v1.services.vehicle.DataService/StreamVideoFrames',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamVideoFramesRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamVideoFramesResponse.FromString,
-                _registered_method=True)
-        self.StreamTelemetry = channel.unary_stream(
-                '/steeleagle_protocol.v1.services.vehicle.DataService/StreamTelemetry',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamTelemetryRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamTelemetryResponse.FromString,
+        self.GetStreamInfo = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.vehicle.DataService/GetStreamInfo',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetStreamInfoRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetStreamInfoResponse.FromString,
                 _registered_method=True)
 
 
 class DataServiceServicer:
     """
-    Used to get up-to-date results, telemetry, and video frames.
+    Used to configure Gabriel flows for sensor streams.
 
-    This service is used to retrieve the most recent results, telemetry,
-    and video frames from the driver or other publisher plugins.
+    This service is used to configure the current Gabriel flow. Gabriel flows describe
+    how data from sensor streams move between cognitive engines. Each flow creates a 
+    result, which can be accessed here.
     """
+
+    def SetDataflow(self, request, context):
+        """
+        Set the current flow.
+
+        Parses and executes the current flow from TOML bytes.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RevertToDefaultDataflow(self, request, context):
+        """
+        Set the current flow back to default.
+
+        Sets the current flow to be the default flow, which relays streams from the
+        driver to both the remote and local backends. Used to restore stream throughput
+        for manual piloting.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def GetResult(self, request, context):
         """
-        Get the most recent produced result.
+        Query a dataflow.
 
-        Retrieves the most recent produced result from the named engine.
+        Queries a dataflow for results, returning all results that match the query
+        timestamps. If no start timestamp or end timestamp is provided, this will
+        return the most recent result for that dataflow.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -66,39 +92,22 @@ class DataServiceServicer:
 
     def GetTelemetry(self, request, context):
         """
-        Get the most recent telemetry data.
+        Query telemetry data.
 
-        Retrieves the most recent telemetry data from the driver.
+        Queries telemetry, returning all received telemetry that match the query
+        timestamps. If no start timestamp or end timestamp is provided, this will
+        return the most recent received telemetry.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetFrame(self, request, context):
+    def GetStreamInfo(self, request, context):
         """
-        Get the most recent video frame.
+        Get all active producers for this vehicle.
 
-        Retrieves the most recent video frame from the driver.
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def StreamVideoFrames(self, request, context):
-        """
-        Stream individual video frames from the vehicle.
-
-        Retrieves a stream of individual video frame from the vehicle.
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def StreamTelemetry(self, request, context):
-        """
-        Stream telemetry from the vehicle.
-
-        Streams up-to-date telemetry from the vehicle.
+        Lists all the producer URIs for this vehicle that have been registered, and
+        whether they are currently active.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -107,6 +116,16 @@ class DataServiceServicer:
 
 def add_DataServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'SetDataflow': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetDataflow,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.SetDataflowRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.SetDataflowResponse.SerializeToString,
+            ),
+            'RevertToDefaultDataflow': grpc.unary_unary_rpc_method_handler(
+                    servicer.RevertToDefaultDataflow,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.RevertToDefaultDataflowRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.RevertToDefaultDataflowResponse.SerializeToString,
+            ),
             'GetResult': grpc.unary_unary_rpc_method_handler(
                     servicer.GetResult,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetResultRequest.FromString,
@@ -117,20 +136,10 @@ def add_DataServiceServicer_to_server(servicer, server):
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetTelemetryRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetTelemetryResponse.SerializeToString,
             ),
-            'GetFrame': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetFrame,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetFrameRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetFrameResponse.SerializeToString,
-            ),
-            'StreamVideoFrames': grpc.unary_stream_rpc_method_handler(
-                    servicer.StreamVideoFrames,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamVideoFramesRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamVideoFramesResponse.SerializeToString,
-            ),
-            'StreamTelemetry': grpc.unary_stream_rpc_method_handler(
-                    servicer.StreamTelemetry,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamTelemetryRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamTelemetryResponse.SerializeToString,
+            'GetStreamInfo': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetStreamInfo,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetStreamInfoRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetStreamInfoResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -142,11 +151,66 @@ def add_DataServiceServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class DataService:
     """
-    Used to get up-to-date results, telemetry, and video frames.
+    Used to configure Gabriel flows for sensor streams.
 
-    This service is used to retrieve the most recent results, telemetry,
-    and video frames from the driver or other publisher plugins.
+    This service is used to configure the current Gabriel flow. Gabriel flows describe
+    how data from sensor streams move between cognitive engines. Each flow creates a 
+    result, which can be accessed here.
     """
+
+    @staticmethod
+    def SetDataflow(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/steeleagle_protocol.v1.services.vehicle.DataService/SetDataflow',
+            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.SetDataflowRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.SetDataflowResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RevertToDefaultDataflow(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/steeleagle_protocol.v1.services.vehicle.DataService/RevertToDefaultDataflow',
+            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.RevertToDefaultDataflowRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.RevertToDefaultDataflowResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def GetResult(request,
@@ -203,7 +267,7 @@ class DataService:
             _registered_method=True)
 
     @staticmethod
-    def GetFrame(request,
+    def GetStreamInfo(request,
             target,
             options=(),
             channel_credentials=None,
@@ -216,63 +280,9 @@ class DataService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.vehicle.DataService/GetFrame',
-            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetFrameRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetFrameResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def StreamVideoFrames(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_stream(
-            request,
-            target,
-            '/steeleagle_protocol.v1.services.vehicle.DataService/StreamVideoFrames',
-            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamVideoFramesRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamVideoFramesResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def StreamTelemetry(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_stream(
-            request,
-            target,
-            '/steeleagle_protocol.v1.services.vehicle.DataService/StreamTelemetry',
-            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamTelemetryRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamTelemetryResponse.FromString,
+            '/steeleagle_protocol.v1.services.vehicle.DataService/GetStreamInfo',
+            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetStreamInfoRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetStreamInfoResponse.FromString,
             options,
             channel_credentials,
             insecure,

@@ -23,23 +23,25 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	RegistryService_Register_FullMethodName = "/steeleagle_protocol.v1.services.swarm.RegistryService/Register"
+	RegistryService_RegisterVehicle_FullMethodName = "/steeleagle_protocol.v1.services.swarm.RegistryService/RegisterVehicle"
 )
 
 // RegistryServiceClient is the client API for RegistryService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
+// Registration service for the swarm controller.
+//
 // Used by per-host daemons (eagled) to announce a single vehicle they host to
-// the swarm controller. This service is hosted by the swarm controller.
+// the swarm controller.
 type RegistryServiceClient interface {
 	// Register a vehicle with the swarm controller.
 	//
 	// eagled calls this once per vehicle, at the moment that vehicle starts. The
-	// returned stream is a liveness signal, not a data channel. eagled holds
-	// this call open for exactly as long as that vehicle is running. When the
-	// stream closes, the controller evicts that vehicle.
-	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[RegisterResponse], error)
+	// returned stream is a liveness signal which lives as long as the vehicle is
+	// running. If a vehicle connection is broken, eagled will keep attempting to
+	// reconnect.
+	RegisterVehicle(ctx context.Context, in *RegisterVehicleRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[RegisterVehicleResponse], error)
 }
 
 type registryServiceClient struct {
@@ -50,13 +52,13 @@ func NewRegistryServiceClient(cc grpc.ClientConnInterface) RegistryServiceClient
 	return &registryServiceClient{cc}
 }
 
-func (c *registryServiceClient) Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[RegisterResponse], error) {
+func (c *registryServiceClient) RegisterVehicle(ctx context.Context, in *RegisterVehicleRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[RegisterVehicleResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &RegistryService_ServiceDesc.Streams[0], RegistryService_Register_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &RegistryService_ServiceDesc.Streams[0], RegistryService_RegisterVehicle_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[RegisterRequest, RegisterResponse]{ClientStream: stream}
+	x := &grpc.GenericClientStream[RegisterVehicleRequest, RegisterVehicleResponse]{ClientStream: stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -67,22 +69,24 @@ func (c *registryServiceClient) Register(ctx context.Context, in *RegisterReques
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type RegistryService_RegisterClient = grpc.ServerStreamingClient[RegisterResponse]
+type RegistryService_RegisterVehicleClient = grpc.ServerStreamingClient[RegisterVehicleResponse]
 
 // RegistryServiceServer is the server API for RegistryService service.
 // All implementations must embed UnimplementedRegistryServiceServer
 // for forward compatibility.
 //
+// Registration service for the swarm controller.
+//
 // Used by per-host daemons (eagled) to announce a single vehicle they host to
-// the swarm controller. This service is hosted by the swarm controller.
+// the swarm controller.
 type RegistryServiceServer interface {
 	// Register a vehicle with the swarm controller.
 	//
 	// eagled calls this once per vehicle, at the moment that vehicle starts. The
-	// returned stream is a liveness signal, not a data channel. eagled holds
-	// this call open for exactly as long as that vehicle is running. When the
-	// stream closes, the controller evicts that vehicle.
-	Register(*RegisterRequest, grpc.ServerStreamingServer[RegisterResponse]) error
+	// returned stream is a liveness signal which lives as long as the vehicle is
+	// running. If a vehicle connection is broken, eagled will keep attempting to
+	// reconnect.
+	RegisterVehicle(*RegisterVehicleRequest, grpc.ServerStreamingServer[RegisterVehicleResponse]) error
 	mustEmbedUnimplementedRegistryServiceServer()
 }
 
@@ -93,8 +97,8 @@ type RegistryServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedRegistryServiceServer struct{}
 
-func (UnimplementedRegistryServiceServer) Register(*RegisterRequest, grpc.ServerStreamingServer[RegisterResponse]) error {
-	return status.Error(codes.Unimplemented, "method Register not implemented")
+func (UnimplementedRegistryServiceServer) RegisterVehicle(*RegisterVehicleRequest, grpc.ServerStreamingServer[RegisterVehicleResponse]) error {
+	return status.Error(codes.Unimplemented, "method RegisterVehicle not implemented")
 }
 func (UnimplementedRegistryServiceServer) mustEmbedUnimplementedRegistryServiceServer() {}
 func (UnimplementedRegistryServiceServer) testEmbeddedByValue()                         {}
@@ -117,16 +121,16 @@ func RegisterRegistryServiceServer(s grpc.ServiceRegistrar, srv RegistryServiceS
 	s.RegisterService(&RegistryService_ServiceDesc, srv)
 }
 
-func _RegistryService_Register_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(RegisterRequest)
+func _RegistryService_RegisterVehicle_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(RegisterVehicleRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(RegistryServiceServer).Register(m, &grpc.GenericServerStream[RegisterRequest, RegisterResponse]{ServerStream: stream})
+	return srv.(RegistryServiceServer).RegisterVehicle(m, &grpc.GenericServerStream[RegisterVehicleRequest, RegisterVehicleResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type RegistryService_RegisterServer = grpc.ServerStreamingServer[RegisterResponse]
+type RegistryService_RegisterVehicleServer = grpc.ServerStreamingServer[RegisterVehicleResponse]
 
 // RegistryService_ServiceDesc is the grpc.ServiceDesc for RegistryService service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -137,8 +141,8 @@ var RegistryService_ServiceDesc = grpc.ServiceDesc{
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "Register",
-			Handler:       _RegistryService_Register_Handler,
+			StreamName:    "RegisterVehicle",
+			Handler:       _RegistryService_RegisterVehicle_Handler,
 			ServerStreams: true,
 		},
 	},

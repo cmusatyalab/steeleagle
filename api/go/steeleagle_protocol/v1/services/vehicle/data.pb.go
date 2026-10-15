@@ -15,6 +15,8 @@ import (
 	telemetry "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	unsafe "unsafe"
 )
@@ -26,16 +28,275 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type GetResultRequest struct {
+// Type of the stream.
+type StreamType int32
+
+const (
+	StreamType_STREAM_TYPE_UNSPECIFIED StreamType = 0 // unknown
+	StreamType_STREAM_TYPE_TELEMETRY   StreamType = 1 // telemetry stream (from driver)
+	StreamType_STREAM_TYPE_VIDEO       StreamType = 2 // video stream (from driver)
+	StreamType_STREAM_TYPE_SENSOR      StreamType = 3 // sensor stream (from driver), e.g. LIDAR
+	StreamType_STREAM_TYPE_METRICS     StreamType = 4 // metrics stream (from vehicle)
+	StreamType_STREAM_TYPE_MISSION     StreamType = 5 // mission info strema (from mission)
+)
+
+// Enum value maps for StreamType.
+var (
+	StreamType_name = map[int32]string{
+		0: "STREAM_TYPE_UNSPECIFIED",
+		1: "STREAM_TYPE_TELEMETRY",
+		2: "STREAM_TYPE_VIDEO",
+		3: "STREAM_TYPE_SENSOR",
+		4: "STREAM_TYPE_METRICS",
+		5: "STREAM_TYPE_MISSION",
+	}
+	StreamType_value = map[string]int32{
+		"STREAM_TYPE_UNSPECIFIED": 0,
+		"STREAM_TYPE_TELEMETRY":   1,
+		"STREAM_TYPE_VIDEO":       2,
+		"STREAM_TYPE_SENSOR":      3,
+		"STREAM_TYPE_METRICS":     4,
+		"STREAM_TYPE_MISSION":     5,
+	}
+)
+
+func (x StreamType) Enum() *StreamType {
+	p := new(StreamType)
+	*p = x
+	return p
+}
+
+func (x StreamType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (StreamType) Descriptor() protoreflect.EnumDescriptor {
+	return file_steeleagle_protocol_v1_services_vehicle_data_proto_enumTypes[0].Descriptor()
+}
+
+func (StreamType) Type() protoreflect.EnumType {
+	return &file_steeleagle_protocol_v1_services_vehicle_data_proto_enumTypes[0]
+}
+
+func (x StreamType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+type SetDataflowRequest struct {
 	state           protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Name string                 `protobuf:"bytes,1,opt,name=name,proto3"`
+	xxx_hidden_Toml []byte                 `protobuf:"bytes,2,opt,name=toml,proto3"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
 
+func (x *SetDataflowRequest) Reset() {
+	*x = SetDataflowRequest{}
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetDataflowRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetDataflowRequest) ProtoMessage() {}
+
+func (x *SetDataflowRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SetDataflowRequest) GetName() string {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return ""
+}
+
+func (x *SetDataflowRequest) GetToml() []byte {
+	if x != nil {
+		return x.xxx_hidden_Toml
+	}
+	return nil
+}
+
+func (x *SetDataflowRequest) SetName(v string) {
+	x.xxx_hidden_Name = v
+}
+
+func (x *SetDataflowRequest) SetToml(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Toml = v
+}
+
+type SetDataflowRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Name string
+	Toml []byte
+}
+
+func (b0 SetDataflowRequest_builder) Build() *SetDataflowRequest {
+	m0 := &SetDataflowRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Name = b.Name
+	x.xxx_hidden_Toml = b.Toml
+	return m0
+}
+
+type SetDataflowResponse struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetDataflowResponse) Reset() {
+	*x = SetDataflowResponse{}
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetDataflowResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetDataflowResponse) ProtoMessage() {}
+
+func (x *SetDataflowResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type SetDataflowResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 SetDataflowResponse_builder) Build() *SetDataflowResponse {
+	m0 := &SetDataflowResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
+type RevertToDefaultDataflowRequest struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevertToDefaultDataflowRequest) Reset() {
+	*x = RevertToDefaultDataflowRequest{}
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevertToDefaultDataflowRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevertToDefaultDataflowRequest) ProtoMessage() {}
+
+func (x *RevertToDefaultDataflowRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type RevertToDefaultDataflowRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 RevertToDefaultDataflowRequest_builder) Build() *RevertToDefaultDataflowRequest {
+	m0 := &RevertToDefaultDataflowRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
+type RevertToDefaultDataflowResponse struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevertToDefaultDataflowResponse) Reset() {
+	*x = RevertToDefaultDataflowResponse{}
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevertToDefaultDataflowResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevertToDefaultDataflowResponse) ProtoMessage() {}
+
+func (x *RevertToDefaultDataflowResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type RevertToDefaultDataflowResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 RevertToDefaultDataflowResponse_builder) Build() *RevertToDefaultDataflowResponse {
+	m0 := &RevertToDefaultDataflowResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
+type GetResultRequest struct {
+	state                protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Name      string                 `protobuf:"bytes,1,opt,name=name,proto3"`
+	xxx_hidden_TimeStart *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=time_start,json=timeStart,proto3,oneof"`
+	xxx_hidden_TimeEnd   *durationpb.Duration   `protobuf:"bytes,3,opt,name=time_end,json=timeEnd,proto3,oneof"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
 func (x *GetResultRequest) Reset() {
 	*x = GetResultRequest{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[0]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -47,7 +308,7 @@ func (x *GetResultRequest) String() string {
 func (*GetResultRequest) ProtoMessage() {}
 
 func (x *GetResultRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[0]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -65,14 +326,60 @@ func (x *GetResultRequest) GetName() string {
 	return ""
 }
 
+func (x *GetResultRequest) GetTimeStart() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_TimeStart
+	}
+	return nil
+}
+
+func (x *GetResultRequest) GetTimeEnd() *durationpb.Duration {
+	if x != nil {
+		return x.xxx_hidden_TimeEnd
+	}
+	return nil
+}
+
 func (x *GetResultRequest) SetName(v string) {
 	x.xxx_hidden_Name = v
+}
+
+func (x *GetResultRequest) SetTimeStart(v *timestamppb.Timestamp) {
+	x.xxx_hidden_TimeStart = v
+}
+
+func (x *GetResultRequest) SetTimeEnd(v *durationpb.Duration) {
+	x.xxx_hidden_TimeEnd = v
+}
+
+func (x *GetResultRequest) HasTimeStart() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_TimeStart != nil
+}
+
+func (x *GetResultRequest) HasTimeEnd() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_TimeEnd != nil
+}
+
+func (x *GetResultRequest) ClearTimeStart() {
+	x.xxx_hidden_TimeStart = nil
+}
+
+func (x *GetResultRequest) ClearTimeEnd() {
+	x.xxx_hidden_TimeEnd = nil
 }
 
 type GetResultRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Name string
+	Name      string
+	TimeStart *timestamppb.Timestamp
+	TimeEnd   *durationpb.Duration
 }
 
 func (b0 GetResultRequest_builder) Build() *GetResultRequest {
@@ -80,19 +387,21 @@ func (b0 GetResultRequest_builder) Build() *GetResultRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Name = b.Name
+	x.xxx_hidden_TimeStart = b.TimeStart
+	x.xxx_hidden_TimeEnd = b.TimeEnd
 	return m0
 }
 
 type GetResultResponse struct {
-	state             protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Result *result.ComputeResult  `protobuf:"bytes,1,opt,name=result,proto3"`
+	state             protoimpl.MessageState   `protogen:"opaque.v1"`
+	xxx_hidden_Result *[]*result.ComputeResult `protobuf:"bytes,1,rep,name=result,proto3"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
 
 func (x *GetResultResponse) Reset() {
 	*x = GetResultResponse{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[1]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -104,7 +413,7 @@ func (x *GetResultResponse) String() string {
 func (*GetResultResponse) ProtoMessage() {}
 
 func (x *GetResultResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[1]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -115,51 +424,44 @@ func (x *GetResultResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *GetResultResponse) GetResult() *result.ComputeResult {
+func (x *GetResultResponse) GetResult() []*result.ComputeResult {
 	if x != nil {
-		return x.xxx_hidden_Result
+		if x.xxx_hidden_Result != nil {
+			return *x.xxx_hidden_Result
+		}
 	}
 	return nil
 }
 
-func (x *GetResultResponse) SetResult(v *result.ComputeResult) {
-	x.xxx_hidden_Result = v
-}
-
-func (x *GetResultResponse) HasResult() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Result != nil
-}
-
-func (x *GetResultResponse) ClearResult() {
-	x.xxx_hidden_Result = nil
+func (x *GetResultResponse) SetResult(v []*result.ComputeResult) {
+	x.xxx_hidden_Result = &v
 }
 
 type GetResultResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Result *result.ComputeResult
+	Result []*result.ComputeResult
 }
 
 func (b0 GetResultResponse_builder) Build() *GetResultResponse {
 	m0 := &GetResultResponse{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_Result = b.Result
+	x.xxx_hidden_Result = &b.Result
 	return m0
 }
 
 type GetTelemetryRequest struct {
-	state         protoimpl.MessageState `protogen:"opaque.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_TimeStart *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=time_start,json=timeStart,proto3,oneof"`
+	xxx_hidden_TimeEnd   *durationpb.Duration   `protobuf:"bytes,2,opt,name=time_end,json=timeEnd,proto3,oneof"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *GetTelemetryRequest) Reset() {
 	*x = GetTelemetryRequest{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[2]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -171,7 +473,7 @@ func (x *GetTelemetryRequest) String() string {
 func (*GetTelemetryRequest) ProtoMessage() {}
 
 func (x *GetTelemetryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[2]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -182,28 +484,76 @@ func (x *GetTelemetryRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
+func (x *GetTelemetryRequest) GetTimeStart() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_TimeStart
+	}
+	return nil
+}
+
+func (x *GetTelemetryRequest) GetTimeEnd() *durationpb.Duration {
+	if x != nil {
+		return x.xxx_hidden_TimeEnd
+	}
+	return nil
+}
+
+func (x *GetTelemetryRequest) SetTimeStart(v *timestamppb.Timestamp) {
+	x.xxx_hidden_TimeStart = v
+}
+
+func (x *GetTelemetryRequest) SetTimeEnd(v *durationpb.Duration) {
+	x.xxx_hidden_TimeEnd = v
+}
+
+func (x *GetTelemetryRequest) HasTimeStart() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_TimeStart != nil
+}
+
+func (x *GetTelemetryRequest) HasTimeEnd() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_TimeEnd != nil
+}
+
+func (x *GetTelemetryRequest) ClearTimeStart() {
+	x.xxx_hidden_TimeStart = nil
+}
+
+func (x *GetTelemetryRequest) ClearTimeEnd() {
+	x.xxx_hidden_TimeEnd = nil
+}
+
 type GetTelemetryRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
+	TimeStart *timestamppb.Timestamp
+	TimeEnd   *durationpb.Duration
 }
 
 func (b0 GetTelemetryRequest_builder) Build() *GetTelemetryRequest {
 	m0 := &GetTelemetryRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
+	x.xxx_hidden_TimeStart = b.TimeStart
+	x.xxx_hidden_TimeEnd = b.TimeEnd
 	return m0
 }
 
 type GetTelemetryResponse struct {
-	state                protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Telemetry *telemetry.Telemetry   `protobuf:"bytes,1,opt,name=telemetry,proto3"`
+	state                protoimpl.MessageState  `protogen:"opaque.v1"`
+	xxx_hidden_Telemetry *[]*telemetry.Telemetry `protobuf:"bytes,1,rep,name=telemetry,proto3"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
 
 func (x *GetTelemetryResponse) Reset() {
 	*x = GetTelemetryResponse{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[3]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -215,7 +565,7 @@ func (x *GetTelemetryResponse) String() string {
 func (*GetTelemetryResponse) ProtoMessage() {}
 
 func (x *GetTelemetryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[3]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -226,284 +576,56 @@ func (x *GetTelemetryResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *GetTelemetryResponse) GetTelemetry() *telemetry.Telemetry {
+func (x *GetTelemetryResponse) GetTelemetry() []*telemetry.Telemetry {
 	if x != nil {
-		return x.xxx_hidden_Telemetry
+		if x.xxx_hidden_Telemetry != nil {
+			return *x.xxx_hidden_Telemetry
+		}
 	}
 	return nil
 }
 
-func (x *GetTelemetryResponse) SetTelemetry(v *telemetry.Telemetry) {
-	x.xxx_hidden_Telemetry = v
-}
-
-func (x *GetTelemetryResponse) HasTelemetry() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Telemetry != nil
-}
-
-func (x *GetTelemetryResponse) ClearTelemetry() {
-	x.xxx_hidden_Telemetry = nil
+func (x *GetTelemetryResponse) SetTelemetry(v []*telemetry.Telemetry) {
+	x.xxx_hidden_Telemetry = &v
 }
 
 type GetTelemetryResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Telemetry *telemetry.Telemetry
+	Telemetry []*telemetry.Telemetry
 }
 
 func (b0 GetTelemetryResponse_builder) Build() *GetTelemetryResponse {
 	m0 := &GetTelemetryResponse{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_Telemetry = b.Telemetry
+	x.xxx_hidden_Telemetry = &b.Telemetry
 	return m0
 }
 
-type GetFrameRequest struct {
-	state         protoimpl.MessageState `protogen:"opaque.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+type StreamInfo struct {
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Uri    string                 `protobuf:"bytes,1,opt,name=uri,proto3"`
+	xxx_hidden_Type   StreamType             `protobuf:"varint,2,opt,name=type,proto3,enum=steeleagle_protocol.v1.services.vehicle.StreamType"`
+	xxx_hidden_Active bool                   `protobuf:"varint,3,opt,name=active,proto3"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
-func (x *GetFrameRequest) Reset() {
-	*x = GetFrameRequest{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetFrameRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetFrameRequest) ProtoMessage() {}
-
-func (x *GetFrameRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-type GetFrameRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-}
-
-func (b0 GetFrameRequest_builder) Build() *GetFrameRequest {
-	m0 := &GetFrameRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	return m0
-}
-
-type GetFrameResponse struct {
-	state            protoimpl.MessageState  `protogen:"opaque.v1"`
-	xxx_hidden_Frame *telemetry.EncodedFrame `protobuf:"bytes,1,opt,name=frame,proto3"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *GetFrameResponse) Reset() {
-	*x = GetFrameResponse{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetFrameResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetFrameResponse) ProtoMessage() {}
-
-func (x *GetFrameResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *GetFrameResponse) GetFrame() *telemetry.EncodedFrame {
-	if x != nil {
-		return x.xxx_hidden_Frame
-	}
-	return nil
-}
-
-func (x *GetFrameResponse) SetFrame(v *telemetry.EncodedFrame) {
-	x.xxx_hidden_Frame = v
-}
-
-func (x *GetFrameResponse) HasFrame() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Frame != nil
-}
-
-func (x *GetFrameResponse) ClearFrame() {
-	x.xxx_hidden_Frame = nil
-}
-
-type GetFrameResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Frame *telemetry.EncodedFrame
-}
-
-func (b0 GetFrameResponse_builder) Build() *GetFrameResponse {
-	m0 := &GetFrameResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Frame = b.Frame
-	return m0
-}
-
-type StreamVideoFramesRequest struct {
-	state         protoimpl.MessageState `protogen:"opaque.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *StreamVideoFramesRequest) Reset() {
-	*x = StreamVideoFramesRequest{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *StreamVideoFramesRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*StreamVideoFramesRequest) ProtoMessage() {}
-
-func (x *StreamVideoFramesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-type StreamVideoFramesRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-}
-
-func (b0 StreamVideoFramesRequest_builder) Build() *StreamVideoFramesRequest {
-	m0 := &StreamVideoFramesRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	return m0
-}
-
-type StreamVideoFramesResponse struct {
-	state            protoimpl.MessageState  `protogen:"opaque.v1"`
-	xxx_hidden_Frame *telemetry.EncodedFrame `protobuf:"bytes,1,opt,name=frame,proto3"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *StreamVideoFramesResponse) Reset() {
-	*x = StreamVideoFramesResponse{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[7]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *StreamVideoFramesResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*StreamVideoFramesResponse) ProtoMessage() {}
-
-func (x *StreamVideoFramesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[7]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *StreamVideoFramesResponse) GetFrame() *telemetry.EncodedFrame {
-	if x != nil {
-		return x.xxx_hidden_Frame
-	}
-	return nil
-}
-
-func (x *StreamVideoFramesResponse) SetFrame(v *telemetry.EncodedFrame) {
-	x.xxx_hidden_Frame = v
-}
-
-func (x *StreamVideoFramesResponse) HasFrame() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Frame != nil
-}
-
-func (x *StreamVideoFramesResponse) ClearFrame() {
-	x.xxx_hidden_Frame = nil
-}
-
-type StreamVideoFramesResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Frame *telemetry.EncodedFrame
-}
-
-func (b0 StreamVideoFramesResponse_builder) Build() *StreamVideoFramesResponse {
-	m0 := &StreamVideoFramesResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Frame = b.Frame
-	return m0
-}
-
-type StreamTelemetryRequest struct {
-	state         protoimpl.MessageState `protogen:"opaque.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *StreamTelemetryRequest) Reset() {
-	*x = StreamTelemetryRequest{}
+func (x *StreamInfo) Reset() {
+	*x = StreamInfo{}
 	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *StreamTelemetryRequest) String() string {
+func (x *StreamInfo) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*StreamTelemetryRequest) ProtoMessage() {}
+func (*StreamInfo) ProtoMessage() {}
 
-func (x *StreamTelemetryRequest) ProtoReflect() protoreflect.Message {
+func (x *StreamInfo) ProtoReflect() protoreflect.Message {
 	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -515,39 +637,77 @@ func (x *StreamTelemetryRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-type StreamTelemetryRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
+func (x *StreamInfo) GetUri() string {
+	if x != nil {
+		return x.xxx_hidden_Uri
+	}
+	return ""
 }
 
-func (b0 StreamTelemetryRequest_builder) Build() *StreamTelemetryRequest {
-	m0 := &StreamTelemetryRequest{}
+func (x *StreamInfo) GetType() StreamType {
+	if x != nil {
+		return x.xxx_hidden_Type
+	}
+	return StreamType_STREAM_TYPE_UNSPECIFIED
+}
+
+func (x *StreamInfo) GetActive() bool {
+	if x != nil {
+		return x.xxx_hidden_Active
+	}
+	return false
+}
+
+func (x *StreamInfo) SetUri(v string) {
+	x.xxx_hidden_Uri = v
+}
+
+func (x *StreamInfo) SetType(v StreamType) {
+	x.xxx_hidden_Type = v
+}
+
+func (x *StreamInfo) SetActive(v bool) {
+	x.xxx_hidden_Active = v
+}
+
+type StreamInfo_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Uri    string
+	Type   StreamType
+	Active bool
+}
+
+func (b0 StreamInfo_builder) Build() *StreamInfo {
+	m0 := &StreamInfo{}
 	b, x := &b0, m0
 	_, _ = b, x
+	x.xxx_hidden_Uri = b.Uri
+	x.xxx_hidden_Type = b.Type
+	x.xxx_hidden_Active = b.Active
 	return m0
 }
 
-type StreamTelemetryResponse struct {
-	state                protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Telemetry *telemetry.Telemetry   `protobuf:"bytes,1,opt,name=telemetry,proto3"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+type GetStreamInfoRequest struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
-func (x *StreamTelemetryResponse) Reset() {
-	*x = StreamTelemetryResponse{}
+func (x *GetStreamInfoRequest) Reset() {
+	*x = GetStreamInfoRequest{}
 	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *StreamTelemetryResponse) String() string {
+func (x *GetStreamInfoRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*StreamTelemetryResponse) ProtoMessage() {}
+func (*GetStreamInfoRequest) ProtoMessage() {}
 
-func (x *StreamTelemetryResponse) ProtoReflect() protoreflect.Message {
+func (x *GetStreamInfoRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -559,39 +719,74 @@ func (x *StreamTelemetryResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *StreamTelemetryResponse) GetTelemetry() *telemetry.Telemetry {
+type GetStreamInfoRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 GetStreamInfoRequest_builder) Build() *GetStreamInfoRequest {
+	m0 := &GetStreamInfoRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
+type GetStreamInfoResponse struct {
+	state           protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Info *[]*StreamInfo         `protobuf:"bytes,1,rep,name=info,proto3"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *GetStreamInfoResponse) Reset() {
+	*x = GetStreamInfoResponse{}
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetStreamInfoResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetStreamInfoResponse) ProtoMessage() {}
+
+func (x *GetStreamInfoResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[10]
 	if x != nil {
-		return x.xxx_hidden_Telemetry
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GetStreamInfoResponse) GetInfo() []*StreamInfo {
+	if x != nil {
+		if x.xxx_hidden_Info != nil {
+			return *x.xxx_hidden_Info
+		}
 	}
 	return nil
 }
 
-func (x *StreamTelemetryResponse) SetTelemetry(v *telemetry.Telemetry) {
-	x.xxx_hidden_Telemetry = v
+func (x *GetStreamInfoResponse) SetInfo(v []*StreamInfo) {
+	x.xxx_hidden_Info = &v
 }
 
-func (x *StreamTelemetryResponse) HasTelemetry() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Telemetry != nil
-}
-
-func (x *StreamTelemetryResponse) ClearTelemetry() {
-	x.xxx_hidden_Telemetry = nil
-}
-
-type StreamTelemetryResponse_builder struct {
+type GetStreamInfoResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Telemetry *telemetry.Telemetry
+	Info []*StreamInfo
 }
 
-func (b0 StreamTelemetryResponse_builder) Build() *StreamTelemetryResponse {
-	m0 := &StreamTelemetryResponse{}
+func (b0 GetStreamInfoResponse_builder) Build() *GetStreamInfoResponse {
+	m0 := &GetStreamInfoResponse{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_Telemetry = b.Telemetry
+	x.xxx_hidden_Info = &b.Info
 	return m0
 }
 
@@ -599,68 +794,98 @@ var File_steeleagle_protocol_v1_services_vehicle_data_proto protoreflect.FileDes
 
 const file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDesc = "" +
 	"\n" +
-	"2steeleagle_protocol/v1/services/vehicle/data.proto\x12'steeleagle_protocol.v1.services.vehicle\x1a3steeleagle_protocol/v1/messages/result/result.proto\x1a9steeleagle_protocol/v1/messages/telemetry/telemetry.proto\"&\n" +
+	"2steeleagle_protocol/v1/services/vehicle/data.proto\x12'steeleagle_protocol.v1.services.vehicle\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a3steeleagle_protocol/v1/messages/result/result.proto\x1a9steeleagle_protocol/v1/messages/telemetry/telemetry.proto\"<\n" +
+	"\x12SetDataflowRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
+	"\x04toml\x18\x02 \x01(\fR\x04toml\"\x15\n" +
+	"\x13SetDataflowResponse\" \n" +
+	"\x1eRevertToDefaultDataflowRequest\"!\n" +
+	"\x1fRevertToDefaultDataflowResponse\"\xbd\x01\n" +
 	"\x10GetResultRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\"b\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12>\n" +
+	"\n" +
+	"time_start\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\ttimeStart\x88\x01\x01\x129\n" +
+	"\btime_end\x18\x03 \x01(\v2\x19.google.protobuf.DurationH\x01R\atimeEnd\x88\x01\x01B\r\n" +
+	"\v_time_startB\v\n" +
+	"\t_time_end\"b\n" +
 	"\x11GetResultResponse\x12M\n" +
-	"\x06result\x18\x01 \x01(\v25.steeleagle_protocol.v1.messages.result.ComputeResultR\x06result\"\x15\n" +
-	"\x13GetTelemetryRequest\"j\n" +
+	"\x06result\x18\x01 \x03(\v25.steeleagle_protocol.v1.messages.result.ComputeResultR\x06result\"\xac\x01\n" +
+	"\x13GetTelemetryRequest\x12>\n" +
+	"\n" +
+	"time_start\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\ttimeStart\x88\x01\x01\x129\n" +
+	"\btime_end\x18\x02 \x01(\v2\x19.google.protobuf.DurationH\x01R\atimeEnd\x88\x01\x01B\r\n" +
+	"\v_time_startB\v\n" +
+	"\t_time_end\"j\n" +
 	"\x14GetTelemetryResponse\x12R\n" +
-	"\ttelemetry\x18\x01 \x01(\v24.steeleagle_protocol.v1.messages.telemetry.TelemetryR\ttelemetry\"\x11\n" +
-	"\x0fGetFrameRequest\"a\n" +
-	"\x10GetFrameResponse\x12M\n" +
-	"\x05frame\x18\x01 \x01(\v27.steeleagle_protocol.v1.messages.telemetry.EncodedFrameR\x05frame\"\x1a\n" +
-	"\x18StreamVideoFramesRequest\"j\n" +
-	"\x19StreamVideoFramesResponse\x12M\n" +
-	"\x05frame\x18\x01 \x01(\v27.steeleagle_protocol.v1.messages.telemetry.EncodedFrameR\x05frame\"\x18\n" +
-	"\x16StreamTelemetryRequest\"m\n" +
-	"\x17StreamTelemetryResponse\x12R\n" +
-	"\ttelemetry\x18\x01 \x01(\v24.steeleagle_protocol.v1.messages.telemetry.TelemetryR\ttelemetry2\xe0\x05\n" +
-	"\vDataService\x12\x84\x01\n" +
+	"\ttelemetry\x18\x01 \x03(\v24.steeleagle_protocol.v1.messages.telemetry.TelemetryR\ttelemetry\"\x7f\n" +
+	"\n" +
+	"StreamInfo\x12\x10\n" +
+	"\x03uri\x18\x01 \x01(\tR\x03uri\x12G\n" +
+	"\x04type\x18\x02 \x01(\x0e23.steeleagle_protocol.v1.services.vehicle.StreamTypeR\x04type\x12\x16\n" +
+	"\x06active\x18\x03 \x01(\bR\x06active\"\x16\n" +
+	"\x14GetStreamInfoRequest\"`\n" +
+	"\x15GetStreamInfoResponse\x12G\n" +
+	"\x04info\x18\x01 \x03(\v23.steeleagle_protocol.v1.services.vehicle.StreamInfoR\x04info*\xa5\x01\n" +
+	"\n" +
+	"StreamType\x12\x1b\n" +
+	"\x17STREAM_TYPE_UNSPECIFIED\x10\x00\x12\x19\n" +
+	"\x15STREAM_TYPE_TELEMETRY\x10\x01\x12\x15\n" +
+	"\x11STREAM_TYPE_VIDEO\x10\x02\x12\x16\n" +
+	"\x12STREAM_TYPE_SENSOR\x10\x03\x12\x17\n" +
+	"\x13STREAM_TYPE_METRICS\x10\x04\x12\x17\n" +
+	"\x13STREAM_TYPE_MISSION\x10\x052\xf5\x05\n" +
+	"\vDataService\x12\x8a\x01\n" +
+	"\vSetDataflow\x12;.steeleagle_protocol.v1.services.vehicle.SetDataflowRequest\x1a<.steeleagle_protocol.v1.services.vehicle.SetDataflowResponse\"\x00\x12\xae\x01\n" +
+	"\x17RevertToDefaultDataflow\x12G.steeleagle_protocol.v1.services.vehicle.RevertToDefaultDataflowRequest\x1aH.steeleagle_protocol.v1.services.vehicle.RevertToDefaultDataflowResponse\"\x00\x12\x84\x01\n" +
 	"\tGetResult\x129.steeleagle_protocol.v1.services.vehicle.GetResultRequest\x1a:.steeleagle_protocol.v1.services.vehicle.GetResultResponse\"\x00\x12\x8d\x01\n" +
-	"\fGetTelemetry\x12<.steeleagle_protocol.v1.services.vehicle.GetTelemetryRequest\x1a=.steeleagle_protocol.v1.services.vehicle.GetTelemetryResponse\"\x00\x12\x81\x01\n" +
-	"\bGetFrame\x128.steeleagle_protocol.v1.services.vehicle.GetFrameRequest\x1a9.steeleagle_protocol.v1.services.vehicle.GetFrameResponse\"\x00\x12\x9c\x01\n" +
-	"\x11StreamVideoFrames\x12A.steeleagle_protocol.v1.services.vehicle.StreamVideoFramesRequest\x1aB.steeleagle_protocol.v1.services.vehicle.StreamVideoFramesResponse0\x01\x12\x96\x01\n" +
-	"\x0fStreamTelemetry\x12?.steeleagle_protocol.v1.services.vehicle.StreamTelemetryRequest\x1a@.steeleagle_protocol.v1.services.vehicle.StreamTelemetryResponse0\x01B\xc6\x02\n" +
+	"\fGetTelemetry\x12<.steeleagle_protocol.v1.services.vehicle.GetTelemetryRequest\x1a=.steeleagle_protocol.v1.services.vehicle.GetTelemetryResponse\"\x00\x12\x90\x01\n" +
+	"\rGetStreamInfo\x12=.steeleagle_protocol.v1.services.vehicle.GetStreamInfoRequest\x1a>.steeleagle_protocol.v1.services.vehicle.GetStreamInfoResponse\"\x00B\xc6\x02\n" +
 	"+com.steeleagle_protocol.v1.services.vehicleB\tDataProtoP\x01ZPgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle\xa2\x02\x04SVSV\xaa\x02&SteeleagleProtocol.V1.Services.Vehicle\xca\x02&SteeleagleProtocol\\V1\\Services\\Vehicle\xe2\x022SteeleagleProtocol\\V1\\Services\\Vehicle\\GPBMetadata\xea\x02)SteeleagleProtocol::V1::Services::Vehicleb\x06proto3"
 
-var file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_steeleagle_protocol_v1_services_vehicle_data_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_steeleagle_protocol_v1_services_vehicle_data_proto_goTypes = []any{
-	(*GetResultRequest)(nil),          // 0: steeleagle_protocol.v1.services.vehicle.GetResultRequest
-	(*GetResultResponse)(nil),         // 1: steeleagle_protocol.v1.services.vehicle.GetResultResponse
-	(*GetTelemetryRequest)(nil),       // 2: steeleagle_protocol.v1.services.vehicle.GetTelemetryRequest
-	(*GetTelemetryResponse)(nil),      // 3: steeleagle_protocol.v1.services.vehicle.GetTelemetryResponse
-	(*GetFrameRequest)(nil),           // 4: steeleagle_protocol.v1.services.vehicle.GetFrameRequest
-	(*GetFrameResponse)(nil),          // 5: steeleagle_protocol.v1.services.vehicle.GetFrameResponse
-	(*StreamVideoFramesRequest)(nil),  // 6: steeleagle_protocol.v1.services.vehicle.StreamVideoFramesRequest
-	(*StreamVideoFramesResponse)(nil), // 7: steeleagle_protocol.v1.services.vehicle.StreamVideoFramesResponse
-	(*StreamTelemetryRequest)(nil),    // 8: steeleagle_protocol.v1.services.vehicle.StreamTelemetryRequest
-	(*StreamTelemetryResponse)(nil),   // 9: steeleagle_protocol.v1.services.vehicle.StreamTelemetryResponse
-	(*result.ComputeResult)(nil),      // 10: steeleagle_protocol.v1.messages.result.ComputeResult
-	(*telemetry.Telemetry)(nil),       // 11: steeleagle_protocol.v1.messages.telemetry.Telemetry
-	(*telemetry.EncodedFrame)(nil),    // 12: steeleagle_protocol.v1.messages.telemetry.EncodedFrame
+	(StreamType)(0),                         // 0: steeleagle_protocol.v1.services.vehicle.StreamType
+	(*SetDataflowRequest)(nil),              // 1: steeleagle_protocol.v1.services.vehicle.SetDataflowRequest
+	(*SetDataflowResponse)(nil),             // 2: steeleagle_protocol.v1.services.vehicle.SetDataflowResponse
+	(*RevertToDefaultDataflowRequest)(nil),  // 3: steeleagle_protocol.v1.services.vehicle.RevertToDefaultDataflowRequest
+	(*RevertToDefaultDataflowResponse)(nil), // 4: steeleagle_protocol.v1.services.vehicle.RevertToDefaultDataflowResponse
+	(*GetResultRequest)(nil),                // 5: steeleagle_protocol.v1.services.vehicle.GetResultRequest
+	(*GetResultResponse)(nil),               // 6: steeleagle_protocol.v1.services.vehicle.GetResultResponse
+	(*GetTelemetryRequest)(nil),             // 7: steeleagle_protocol.v1.services.vehicle.GetTelemetryRequest
+	(*GetTelemetryResponse)(nil),            // 8: steeleagle_protocol.v1.services.vehicle.GetTelemetryResponse
+	(*StreamInfo)(nil),                      // 9: steeleagle_protocol.v1.services.vehicle.StreamInfo
+	(*GetStreamInfoRequest)(nil),            // 10: steeleagle_protocol.v1.services.vehicle.GetStreamInfoRequest
+	(*GetStreamInfoResponse)(nil),           // 11: steeleagle_protocol.v1.services.vehicle.GetStreamInfoResponse
+	(*timestamppb.Timestamp)(nil),           // 12: google.protobuf.Timestamp
+	(*durationpb.Duration)(nil),             // 13: google.protobuf.Duration
+	(*result.ComputeResult)(nil),            // 14: steeleagle_protocol.v1.messages.result.ComputeResult
+	(*telemetry.Telemetry)(nil),             // 15: steeleagle_protocol.v1.messages.telemetry.Telemetry
 }
 var file_steeleagle_protocol_v1_services_vehicle_data_proto_depIdxs = []int32{
-	10, // 0: steeleagle_protocol.v1.services.vehicle.GetResultResponse.result:type_name -> steeleagle_protocol.v1.messages.result.ComputeResult
-	11, // 1: steeleagle_protocol.v1.services.vehicle.GetTelemetryResponse.telemetry:type_name -> steeleagle_protocol.v1.messages.telemetry.Telemetry
-	12, // 2: steeleagle_protocol.v1.services.vehicle.GetFrameResponse.frame:type_name -> steeleagle_protocol.v1.messages.telemetry.EncodedFrame
-	12, // 3: steeleagle_protocol.v1.services.vehicle.StreamVideoFramesResponse.frame:type_name -> steeleagle_protocol.v1.messages.telemetry.EncodedFrame
-	11, // 4: steeleagle_protocol.v1.services.vehicle.StreamTelemetryResponse.telemetry:type_name -> steeleagle_protocol.v1.messages.telemetry.Telemetry
-	0,  // 5: steeleagle_protocol.v1.services.vehicle.DataService.GetResult:input_type -> steeleagle_protocol.v1.services.vehicle.GetResultRequest
-	2,  // 6: steeleagle_protocol.v1.services.vehicle.DataService.GetTelemetry:input_type -> steeleagle_protocol.v1.services.vehicle.GetTelemetryRequest
-	4,  // 7: steeleagle_protocol.v1.services.vehicle.DataService.GetFrame:input_type -> steeleagle_protocol.v1.services.vehicle.GetFrameRequest
-	6,  // 8: steeleagle_protocol.v1.services.vehicle.DataService.StreamVideoFrames:input_type -> steeleagle_protocol.v1.services.vehicle.StreamVideoFramesRequest
-	8,  // 9: steeleagle_protocol.v1.services.vehicle.DataService.StreamTelemetry:input_type -> steeleagle_protocol.v1.services.vehicle.StreamTelemetryRequest
-	1,  // 10: steeleagle_protocol.v1.services.vehicle.DataService.GetResult:output_type -> steeleagle_protocol.v1.services.vehicle.GetResultResponse
-	3,  // 11: steeleagle_protocol.v1.services.vehicle.DataService.GetTelemetry:output_type -> steeleagle_protocol.v1.services.vehicle.GetTelemetryResponse
-	5,  // 12: steeleagle_protocol.v1.services.vehicle.DataService.GetFrame:output_type -> steeleagle_protocol.v1.services.vehicle.GetFrameResponse
-	7,  // 13: steeleagle_protocol.v1.services.vehicle.DataService.StreamVideoFrames:output_type -> steeleagle_protocol.v1.services.vehicle.StreamVideoFramesResponse
-	9,  // 14: steeleagle_protocol.v1.services.vehicle.DataService.StreamTelemetry:output_type -> steeleagle_protocol.v1.services.vehicle.StreamTelemetryResponse
-	10, // [10:15] is the sub-list for method output_type
-	5,  // [5:10] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	12, // 0: steeleagle_protocol.v1.services.vehicle.GetResultRequest.time_start:type_name -> google.protobuf.Timestamp
+	13, // 1: steeleagle_protocol.v1.services.vehicle.GetResultRequest.time_end:type_name -> google.protobuf.Duration
+	14, // 2: steeleagle_protocol.v1.services.vehicle.GetResultResponse.result:type_name -> steeleagle_protocol.v1.messages.result.ComputeResult
+	12, // 3: steeleagle_protocol.v1.services.vehicle.GetTelemetryRequest.time_start:type_name -> google.protobuf.Timestamp
+	13, // 4: steeleagle_protocol.v1.services.vehicle.GetTelemetryRequest.time_end:type_name -> google.protobuf.Duration
+	15, // 5: steeleagle_protocol.v1.services.vehicle.GetTelemetryResponse.telemetry:type_name -> steeleagle_protocol.v1.messages.telemetry.Telemetry
+	0,  // 6: steeleagle_protocol.v1.services.vehicle.StreamInfo.type:type_name -> steeleagle_protocol.v1.services.vehicle.StreamType
+	9,  // 7: steeleagle_protocol.v1.services.vehicle.GetStreamInfoResponse.info:type_name -> steeleagle_protocol.v1.services.vehicle.StreamInfo
+	1,  // 8: steeleagle_protocol.v1.services.vehicle.DataService.SetDataflow:input_type -> steeleagle_protocol.v1.services.vehicle.SetDataflowRequest
+	3,  // 9: steeleagle_protocol.v1.services.vehicle.DataService.RevertToDefaultDataflow:input_type -> steeleagle_protocol.v1.services.vehicle.RevertToDefaultDataflowRequest
+	5,  // 10: steeleagle_protocol.v1.services.vehicle.DataService.GetResult:input_type -> steeleagle_protocol.v1.services.vehicle.GetResultRequest
+	7,  // 11: steeleagle_protocol.v1.services.vehicle.DataService.GetTelemetry:input_type -> steeleagle_protocol.v1.services.vehicle.GetTelemetryRequest
+	10, // 12: steeleagle_protocol.v1.services.vehicle.DataService.GetStreamInfo:input_type -> steeleagle_protocol.v1.services.vehicle.GetStreamInfoRequest
+	2,  // 13: steeleagle_protocol.v1.services.vehicle.DataService.SetDataflow:output_type -> steeleagle_protocol.v1.services.vehicle.SetDataflowResponse
+	4,  // 14: steeleagle_protocol.v1.services.vehicle.DataService.RevertToDefaultDataflow:output_type -> steeleagle_protocol.v1.services.vehicle.RevertToDefaultDataflowResponse
+	6,  // 15: steeleagle_protocol.v1.services.vehicle.DataService.GetResult:output_type -> steeleagle_protocol.v1.services.vehicle.GetResultResponse
+	8,  // 16: steeleagle_protocol.v1.services.vehicle.DataService.GetTelemetry:output_type -> steeleagle_protocol.v1.services.vehicle.GetTelemetryResponse
+	11, // 17: steeleagle_protocol.v1.services.vehicle.DataService.GetStreamInfo:output_type -> steeleagle_protocol.v1.services.vehicle.GetStreamInfoResponse
+	13, // [13:18] is the sub-list for method output_type
+	8,  // [8:13] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_steeleagle_protocol_v1_services_vehicle_data_proto_init() }
@@ -668,18 +893,21 @@ func file_steeleagle_protocol_v1_services_vehicle_data_proto_init() {
 	if File_steeleagle_protocol_v1_services_vehicle_data_proto != nil {
 		return
 	}
+	file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[4].OneofWrappers = []any{}
+	file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[6].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDesc), len(file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   10,
+			NumEnums:      1,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_steeleagle_protocol_v1_services_vehicle_data_proto_goTypes,
 		DependencyIndexes: file_steeleagle_protocol_v1_services_vehicle_data_proto_depIdxs,
+		EnumInfos:         file_steeleagle_protocol_v1_services_vehicle_data_proto_enumTypes,
 		MessageInfos:      file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes,
 	}.Build()
 	File_steeleagle_protocol_v1_services_vehicle_data_proto = out.File

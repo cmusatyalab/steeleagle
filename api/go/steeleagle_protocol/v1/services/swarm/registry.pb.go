@@ -24,7 +24,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type RegisterRequest struct {
+type RegisterVehicleRequest struct {
 	state                 protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_DaemonName string                 `protobuf:"bytes,1,opt,name=daemon_name,json=daemonName,proto3"`
 	xxx_hidden_Name       string                 `protobuf:"bytes,2,opt,name=name,proto3"`
@@ -33,20 +33,20 @@ type RegisterRequest struct {
 	sizeCache             protoimpl.SizeCache
 }
 
-func (x *RegisterRequest) Reset() {
-	*x = RegisterRequest{}
+func (x *RegisterVehicleRequest) Reset() {
+	*x = RegisterVehicleRequest{}
 	mi := &file_steeleagle_protocol_v1_services_swarm_registry_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *RegisterRequest) String() string {
+func (x *RegisterVehicleRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RegisterRequest) ProtoMessage() {}
+func (*RegisterVehicleRequest) ProtoMessage() {}
 
-func (x *RegisterRequest) ProtoReflect() protoreflect.Message {
+func (x *RegisterVehicleRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_steeleagle_protocol_v1_services_swarm_registry_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -58,40 +58,40 @@ func (x *RegisterRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *RegisterRequest) GetDaemonName() string {
+func (x *RegisterVehicleRequest) GetDaemonName() string {
 	if x != nil {
 		return x.xxx_hidden_DaemonName
 	}
 	return ""
 }
 
-func (x *RegisterRequest) GetName() string {
+func (x *RegisterVehicleRequest) GetName() string {
 	if x != nil {
 		return x.xxx_hidden_Name
 	}
 	return ""
 }
 
-func (x *RegisterRequest) GetPort() uint32 {
+func (x *RegisterVehicleRequest) GetPort() uint32 {
 	if x != nil {
 		return x.xxx_hidden_Port
 	}
 	return 0
 }
 
-func (x *RegisterRequest) SetDaemonName(v string) {
+func (x *RegisterVehicleRequest) SetDaemonName(v string) {
 	x.xxx_hidden_DaemonName = v
 }
 
-func (x *RegisterRequest) SetName(v string) {
+func (x *RegisterVehicleRequest) SetName(v string) {
 	x.xxx_hidden_Name = v
 }
 
-func (x *RegisterRequest) SetPort(v uint32) {
+func (x *RegisterVehicleRequest) SetPort(v uint32) {
 	x.xxx_hidden_Port = v
 }
 
-type RegisterRequest_builder struct {
+type RegisterVehicleRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	DaemonName string
@@ -99,8 +99,8 @@ type RegisterRequest_builder struct {
 	Port       uint32
 }
 
-func (b0 RegisterRequest_builder) Build() *RegisterRequest {
-	m0 := &RegisterRequest{}
+func (b0 RegisterVehicleRequest_builder) Build() *RegisterVehicleRequest {
+	m0 := &RegisterVehicleRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_DaemonName = b.DaemonName
@@ -109,26 +109,26 @@ func (b0 RegisterRequest_builder) Build() *RegisterRequest {
 	return m0
 }
 
-type RegisterResponse struct {
+type RegisterVehicleResponse struct {
 	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *RegisterResponse) Reset() {
-	*x = RegisterResponse{}
+func (x *RegisterVehicleResponse) Reset() {
+	*x = RegisterVehicleResponse{}
 	mi := &file_steeleagle_protocol_v1_services_swarm_registry_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *RegisterResponse) String() string {
+func (x *RegisterVehicleResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RegisterResponse) ProtoMessage() {}
+func (*RegisterVehicleResponse) ProtoMessage() {}
 
-func (x *RegisterResponse) ProtoReflect() protoreflect.Message {
+func (x *RegisterVehicleResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_steeleagle_protocol_v1_services_swarm_registry_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -140,13 +140,13 @@ func (x *RegisterResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-type RegisterResponse_builder struct {
+type RegisterVehicleResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 }
 
-func (b0 RegisterResponse_builder) Build() *RegisterResponse {
-	m0 := &RegisterResponse{}
+func (b0 RegisterVehicleResponse_builder) Build() *RegisterVehicleResponse {
+	m0 := &RegisterVehicleResponse{}
 	b, x := &b0, m0
 	_, _ = b, x
 	return m0
@@ -156,25 +156,25 @@ var File_steeleagle_protocol_v1_services_swarm_registry_proto protoreflect.FileD
 
 const file_steeleagle_protocol_v1_services_swarm_registry_proto_rawDesc = "" +
 	"\n" +
-	"4steeleagle_protocol/v1/services/swarm/registry.proto\x12%steeleagle_protocol.v1.services.swarm\"Z\n" +
-	"\x0fRegisterRequest\x12\x1f\n" +
+	"4steeleagle_protocol/v1/services/swarm/registry.proto\x12%steeleagle_protocol.v1.services.swarm\"a\n" +
+	"\x16RegisterVehicleRequest\x12\x1f\n" +
 	"\vdaemon_name\x18\x01 \x01(\tR\n" +
 	"daemonName\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
-	"\x04port\x18\x03 \x01(\rR\x04port\"\x12\n" +
-	"\x10RegisterResponse2\x92\x01\n" +
-	"\x0fRegistryService\x12\x7f\n" +
-	"\bRegister\x126.steeleagle_protocol.v1.services.swarm.RegisterRequest\x1a7.steeleagle_protocol.v1.services.swarm.RegisterResponse\"\x000\x01B\xbe\x02\n" +
+	"\x04port\x18\x03 \x01(\rR\x04port\"\x19\n" +
+	"\x17RegisterVehicleResponse2\xa8\x01\n" +
+	"\x0fRegistryService\x12\x94\x01\n" +
+	"\x0fRegisterVehicle\x12=.steeleagle_protocol.v1.services.swarm.RegisterVehicleRequest\x1a>.steeleagle_protocol.v1.services.swarm.RegisterVehicleResponse\"\x000\x01B\xbe\x02\n" +
 	")com.steeleagle_protocol.v1.services.swarmB\rRegistryProtoP\x01ZNgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/swarm\xa2\x02\x04SVSS\xaa\x02$SteeleagleProtocol.V1.Services.Swarm\xca\x02$SteeleagleProtocol\\V1\\Services\\Swarm\xe2\x020SteeleagleProtocol\\V1\\Services\\Swarm\\GPBMetadata\xea\x02'SteeleagleProtocol::V1::Services::Swarmb\x06proto3"
 
 var file_steeleagle_protocol_v1_services_swarm_registry_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_steeleagle_protocol_v1_services_swarm_registry_proto_goTypes = []any{
-	(*RegisterRequest)(nil),  // 0: steeleagle_protocol.v1.services.swarm.RegisterRequest
-	(*RegisterResponse)(nil), // 1: steeleagle_protocol.v1.services.swarm.RegisterResponse
+	(*RegisterVehicleRequest)(nil),  // 0: steeleagle_protocol.v1.services.swarm.RegisterVehicleRequest
+	(*RegisterVehicleResponse)(nil), // 1: steeleagle_protocol.v1.services.swarm.RegisterVehicleResponse
 }
 var file_steeleagle_protocol_v1_services_swarm_registry_proto_depIdxs = []int32{
-	0, // 0: steeleagle_protocol.v1.services.swarm.RegistryService.Register:input_type -> steeleagle_protocol.v1.services.swarm.RegisterRequest
-	1, // 1: steeleagle_protocol.v1.services.swarm.RegistryService.Register:output_type -> steeleagle_protocol.v1.services.swarm.RegisterResponse
+	0, // 0: steeleagle_protocol.v1.services.swarm.RegistryService.RegisterVehicle:input_type -> steeleagle_protocol.v1.services.swarm.RegisterVehicleRequest
+	1, // 1: steeleagle_protocol.v1.services.swarm.RegistryService.RegisterVehicle:output_type -> steeleagle_protocol.v1.services.swarm.RegisterVehicleResponse
 	1, // [1:2] is the sub-list for method output_type
 	0, // [0:1] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name

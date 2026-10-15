@@ -7,8 +7,10 @@ from steeleagle_protocol.v1.services.swarm import registry_pb2 as steeleagle__pr
 
 class RegistryServiceStub:
     """
+    Registration service for the swarm controller.
+
     Used by per-host daemons (eagled) to announce a single vehicle they host to
-    the swarm controller. This service is hosted by the swarm controller.
+    the swarm controller. 
     """
 
     def __init__(self, channel):
@@ -17,27 +19,29 @@ class RegistryServiceStub:
         Args:
             channel: A grpc.Channel.
         """
-        self.Register = channel.unary_stream(
-                '/steeleagle_protocol.v1.services.swarm.RegistryService/Register',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_registry__pb2.RegisterRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_registry__pb2.RegisterResponse.FromString,
+        self.RegisterVehicle = channel.unary_stream(
+                '/steeleagle_protocol.v1.services.swarm.RegistryService/RegisterVehicle',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_registry__pb2.RegisterVehicleRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_registry__pb2.RegisterVehicleResponse.FromString,
                 _registered_method=True)
 
 
 class RegistryServiceServicer:
     """
+    Registration service for the swarm controller.
+
     Used by per-host daemons (eagled) to announce a single vehicle they host to
-    the swarm controller. This service is hosted by the swarm controller.
+    the swarm controller. 
     """
 
-    def Register(self, request, context):
+    def RegisterVehicle(self, request, context):
         """
         Register a vehicle with the swarm controller.
 
         eagled calls this once per vehicle, at the moment that vehicle starts. The
-        returned stream is a liveness signal, not a data channel. eagled holds
-        this call open for exactly as long as that vehicle is running. When the
-        stream closes, the controller evicts that vehicle.
+        returned stream is a liveness signal which lives as long as the vehicle is
+        running. If a vehicle connection is broken, eagled will keep attempting to
+        reconnect.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -46,10 +50,10 @@ class RegistryServiceServicer:
 
 def add_RegistryServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'Register': grpc.unary_stream_rpc_method_handler(
-                    servicer.Register,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_registry__pb2.RegisterRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_registry__pb2.RegisterResponse.SerializeToString,
+            'RegisterVehicle': grpc.unary_stream_rpc_method_handler(
+                    servicer.RegisterVehicle,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_registry__pb2.RegisterVehicleRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_registry__pb2.RegisterVehicleResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -61,12 +65,14 @@ def add_RegistryServiceServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class RegistryService:
     """
+    Registration service for the swarm controller.
+
     Used by per-host daemons (eagled) to announce a single vehicle they host to
-    the swarm controller. This service is hosted by the swarm controller.
+    the swarm controller. 
     """
 
     @staticmethod
-    def Register(request,
+    def RegisterVehicle(request,
             target,
             options=(),
             channel_credentials=None,
@@ -79,9 +85,9 @@ class RegistryService:
         return grpc.experimental.unary_stream(
             request,
             target,
-            '/steeleagle_protocol.v1.services.swarm.RegistryService/Register',
-            steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_registry__pb2.RegisterRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_registry__pb2.RegisterResponse.FromString,
+            '/steeleagle_protocol.v1.services.swarm.RegistryService/RegisterVehicle',
+            steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_registry__pb2.RegisterVehicleRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_swarm_dot_registry__pb2.RegisterVehicleResponse.FromString,
             options,
             channel_credentials,
             insecure,

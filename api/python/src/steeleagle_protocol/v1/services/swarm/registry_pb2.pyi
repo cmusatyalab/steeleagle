@@ -4,7 +4,7 @@ from typing import ClassVar as _ClassVar, Optional as _Optional
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
-class RegisterRequest(_message.Message):
+class RegisterVehicleRequest(_message.Message):
     __slots__ = ("daemon_name", "name", "port")
     DAEMON_NAME_FIELD_NUMBER: _ClassVar[int]
     NAME_FIELD_NUMBER: _ClassVar[int]
@@ -14,6 +14,6 @@ class RegisterRequest(_message.Message):
     port: int
     def __init__(self, daemon_name: _Optional[str] = ..., name: _Optional[str] = ..., port: _Optional[int] = ...) -> None: ...
 
-class RegisterResponse(_message.Message):
+class RegisterVehicleResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...

@@ -11,7 +11,6 @@
 package driver
 
 import (
-	telemetry "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -25,6 +24,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Resolutions that can be requested by the vehicle.
 type Resolution int32
 
 const (
@@ -78,27 +78,33 @@ func (x Resolution) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-type GetVideoStreamURLRequest struct {
-	state                 protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Resolution Resolution             `protobuf:"varint,1,opt,name=resolution,proto3,enum=steeleagle_protocol.v1.services.driver.Resolution"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
+// Request for a single camera stream.
+type CameraRequest struct {
+	state                       protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id               string                 `protobuf:"bytes,1,opt,name=id,proto3"`
+	xxx_hidden_TargetFps        uint32                 `protobuf:"varint,2,opt,name=target_fps,json=targetFps,proto3,oneof"`
+	xxx_hidden_TargetResolution Resolution             `protobuf:"varint,3,opt,name=target_resolution,json=targetResolution,proto3,enum=steeleagle_protocol.v1.services.driver.Resolution,oneof"`
+	xxx_hidden_Uri              string                 `protobuf:"bytes,4,opt,name=uri,proto3"`
+	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
+	XXX_presence                [1]uint32
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
 }
 
-func (x *GetVideoStreamURLRequest) Reset() {
-	*x = GetVideoStreamURLRequest{}
+func (x *CameraRequest) Reset() {
+	*x = CameraRequest{}
 	mi := &file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetVideoStreamURLRequest) String() string {
+func (x *CameraRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetVideoStreamURLRequest) ProtoMessage() {}
+func (*CameraRequest) ProtoMessage() {}
 
-func (x *GetVideoStreamURLRequest) ProtoReflect() protoreflect.Message {
+func (x *CameraRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -110,145 +116,127 @@ func (x *GetVideoStreamURLRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *GetVideoStreamURLRequest) GetResolution() Resolution {
+func (x *CameraRequest) GetId() string {
 	if x != nil {
-		return x.xxx_hidden_Resolution
-	}
-	return Resolution_RESOLUTION_UNSPECIFIED
-}
-
-func (x *GetVideoStreamURLRequest) SetResolution(v Resolution) {
-	x.xxx_hidden_Resolution = v
-}
-
-type GetVideoStreamURLRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Resolution Resolution
-}
-
-func (b0 GetVideoStreamURLRequest_builder) Build() *GetVideoStreamURLRequest {
-	m0 := &GetVideoStreamURLRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Resolution = b.Resolution
-	return m0
-}
-
-type GetVideoStreamURLResponse struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_StreamUrl   string                 `protobuf:"bytes,1,opt,name=stream_url,json=streamUrl,proto3"`
-	xxx_hidden_TargetFps   uint32                 `protobuf:"varint,2,opt,name=target_fps,json=targetFps,proto3,oneof"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
-}
-
-func (x *GetVideoStreamURLResponse) Reset() {
-	*x = GetVideoStreamURLResponse{}
-	mi := &file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetVideoStreamURLResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetVideoStreamURLResponse) ProtoMessage() {}
-
-func (x *GetVideoStreamURLResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *GetVideoStreamURLResponse) GetStreamUrl() string {
-	if x != nil {
-		return x.xxx_hidden_StreamUrl
+		return x.xxx_hidden_Id
 	}
 	return ""
 }
 
-func (x *GetVideoStreamURLResponse) GetTargetFps() uint32 {
+func (x *CameraRequest) GetTargetFps() uint32 {
 	if x != nil {
 		return x.xxx_hidden_TargetFps
 	}
 	return 0
 }
 
-func (x *GetVideoStreamURLResponse) SetStreamUrl(v string) {
-	x.xxx_hidden_StreamUrl = v
+func (x *CameraRequest) GetTargetResolution() Resolution {
+	if x != nil {
+		if protoimpl.X.Present(&(x.XXX_presence[0]), 2) {
+			return x.xxx_hidden_TargetResolution
+		}
+	}
+	return Resolution_RESOLUTION_UNSPECIFIED
 }
 
-func (x *GetVideoStreamURLResponse) SetTargetFps(v uint32) {
+func (x *CameraRequest) GetUri() string {
+	if x != nil {
+		return x.xxx_hidden_Uri
+	}
+	return ""
+}
+
+func (x *CameraRequest) SetId(v string) {
+	x.xxx_hidden_Id = v
+}
+
+func (x *CameraRequest) SetTargetFps(v uint32) {
 	x.xxx_hidden_TargetFps = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 2)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 4)
 }
 
-func (x *GetVideoStreamURLResponse) HasTargetFps() bool {
+func (x *CameraRequest) SetTargetResolution(v Resolution) {
+	x.xxx_hidden_TargetResolution = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
+}
+
+func (x *CameraRequest) SetUri(v string) {
+	x.xxx_hidden_Uri = v
+}
+
+func (x *CameraRequest) HasTargetFps() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
 }
 
-func (x *GetVideoStreamURLResponse) ClearTargetFps() {
+func (x *CameraRequest) HasTargetResolution() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *CameraRequest) ClearTargetFps() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
 	x.xxx_hidden_TargetFps = 0
 }
 
-type GetVideoStreamURLResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	StreamUrl string
-	TargetFps *uint32
+func (x *CameraRequest) ClearTargetResolution() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_TargetResolution = Resolution_RESOLUTION_UNSPECIFIED
 }
 
-func (b0 GetVideoStreamURLResponse_builder) Build() *GetVideoStreamURLResponse {
-	m0 := &GetVideoStreamURLResponse{}
+type CameraRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Id               string
+	TargetFps        *uint32
+	TargetResolution *Resolution
+	Uri              string
+}
+
+func (b0 CameraRequest_builder) Build() *CameraRequest {
+	m0 := &CameraRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_StreamUrl = b.StreamUrl
+	x.xxx_hidden_Id = b.Id
 	if b.TargetFps != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 2)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 4)
 		x.xxx_hidden_TargetFps = *b.TargetFps
 	}
+	if b.TargetResolution != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
+		x.xxx_hidden_TargetResolution = *b.TargetResolution
+	}
+	x.xxx_hidden_Uri = b.Uri
 	return m0
 }
 
-type StreamVideoFramesRequest struct {
+type StreamCamerasRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_TargetFps   uint32                 `protobuf:"varint,1,opt,name=target_fps,json=targetFps,proto3,oneof"`
-	xxx_hidden_Resolution  Resolution             `protobuf:"varint,2,opt,name=resolution,proto3,enum=steeleagle_protocol.v1.services.driver.Resolution"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
+	xxx_hidden_Primary     *CameraRequest         `protobuf:"bytes,1,opt,name=primary,proto3"`
+	xxx_hidden_Secondaries *[]*CameraRequest      `protobuf:"bytes,2,rep,name=secondaries,proto3"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
 
-func (x *StreamVideoFramesRequest) Reset() {
-	*x = StreamVideoFramesRequest{}
-	mi := &file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[2]
+func (x *StreamCamerasRequest) Reset() {
+	*x = StreamCamerasRequest{}
+	mi := &file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *StreamVideoFramesRequest) String() string {
+func (x *StreamCamerasRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*StreamVideoFramesRequest) ProtoMessage() {}
+func (*StreamCamerasRequest) ProtoMessage() {}
 
-func (x *StreamVideoFramesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[2]
+func (x *StreamCamerasRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -259,131 +247,104 @@ func (x *StreamVideoFramesRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *StreamVideoFramesRequest) GetTargetFps() uint32 {
+func (x *StreamCamerasRequest) GetPrimary() *CameraRequest {
 	if x != nil {
-		return x.xxx_hidden_TargetFps
-	}
-	return 0
-}
-
-func (x *StreamVideoFramesRequest) GetResolution() Resolution {
-	if x != nil {
-		return x.xxx_hidden_Resolution
-	}
-	return Resolution_RESOLUTION_UNSPECIFIED
-}
-
-func (x *StreamVideoFramesRequest) SetTargetFps(v uint32) {
-	x.xxx_hidden_TargetFps = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 2)
-}
-
-func (x *StreamVideoFramesRequest) SetResolution(v Resolution) {
-	x.xxx_hidden_Resolution = v
-}
-
-func (x *StreamVideoFramesRequest) HasTargetFps() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
-}
-
-func (x *StreamVideoFramesRequest) ClearTargetFps() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
-	x.xxx_hidden_TargetFps = 0
-}
-
-type StreamVideoFramesRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	TargetFps  *uint32
-	Resolution Resolution
-}
-
-func (b0 StreamVideoFramesRequest_builder) Build() *StreamVideoFramesRequest {
-	m0 := &StreamVideoFramesRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	if b.TargetFps != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 2)
-		x.xxx_hidden_TargetFps = *b.TargetFps
-	}
-	x.xxx_hidden_Resolution = b.Resolution
-	return m0
-}
-
-type StreamVideoFramesResponse struct {
-	state            protoimpl.MessageState  `protogen:"opaque.v1"`
-	xxx_hidden_Frame *telemetry.EncodedFrame `protobuf:"bytes,1,opt,name=frame,proto3"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *StreamVideoFramesResponse) Reset() {
-	*x = StreamVideoFramesResponse{}
-	mi := &file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *StreamVideoFramesResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*StreamVideoFramesResponse) ProtoMessage() {}
-
-func (x *StreamVideoFramesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *StreamVideoFramesResponse) GetFrame() *telemetry.EncodedFrame {
-	if x != nil {
-		return x.xxx_hidden_Frame
+		return x.xxx_hidden_Primary
 	}
 	return nil
 }
 
-func (x *StreamVideoFramesResponse) SetFrame(v *telemetry.EncodedFrame) {
-	x.xxx_hidden_Frame = v
+func (x *StreamCamerasRequest) GetSecondaries() []*CameraRequest {
+	if x != nil {
+		if x.xxx_hidden_Secondaries != nil {
+			return *x.xxx_hidden_Secondaries
+		}
+	}
+	return nil
 }
 
-func (x *StreamVideoFramesResponse) HasFrame() bool {
+func (x *StreamCamerasRequest) SetPrimary(v *CameraRequest) {
+	x.xxx_hidden_Primary = v
+}
+
+func (x *StreamCamerasRequest) SetSecondaries(v []*CameraRequest) {
+	x.xxx_hidden_Secondaries = &v
+}
+
+func (x *StreamCamerasRequest) HasPrimary() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_Frame != nil
+	return x.xxx_hidden_Primary != nil
 }
 
-func (x *StreamVideoFramesResponse) ClearFrame() {
-	x.xxx_hidden_Frame = nil
+func (x *StreamCamerasRequest) ClearPrimary() {
+	x.xxx_hidden_Primary = nil
 }
 
-type StreamVideoFramesResponse_builder struct {
+type StreamCamerasRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Frame *telemetry.EncodedFrame
+	Primary     *CameraRequest
+	Secondaries []*CameraRequest
 }
 
-func (b0 StreamVideoFramesResponse_builder) Build() *StreamVideoFramesResponse {
-	m0 := &StreamVideoFramesResponse{}
+func (b0 StreamCamerasRequest_builder) Build() *StreamCamerasRequest {
+	m0 := &StreamCamerasRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_Frame = b.Frame
+	x.xxx_hidden_Primary = b.Primary
+	x.xxx_hidden_Secondaries = &b.Secondaries
+	return m0
+}
+
+type StreamCamerasResponse struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StreamCamerasResponse) Reset() {
+	*x = StreamCamerasResponse{}
+	mi := &file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StreamCamerasResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StreamCamerasResponse) ProtoMessage() {}
+
+func (x *StreamCamerasResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type StreamCamerasResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 StreamCamerasResponse_builder) Build() *StreamCamerasResponse {
+	m0 := &StreamCamerasResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
 	return m0
 }
 
 type StreamTelemetryRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_TargetFps   uint32                 `protobuf:"varint,1,opt,name=target_fps,json=targetFps,proto3,oneof"`
+	xxx_hidden_Uri         string                 `protobuf:"bytes,2,opt,name=uri,proto3"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -392,7 +353,7 @@ type StreamTelemetryRequest struct {
 
 func (x *StreamTelemetryRequest) Reset() {
 	*x = StreamTelemetryRequest{}
-	mi := &file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[4]
+	mi := &file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -404,7 +365,7 @@ func (x *StreamTelemetryRequest) String() string {
 func (*StreamTelemetryRequest) ProtoMessage() {}
 
 func (x *StreamTelemetryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[4]
+	mi := &file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -422,9 +383,20 @@ func (x *StreamTelemetryRequest) GetTargetFps() uint32 {
 	return 0
 }
 
+func (x *StreamTelemetryRequest) GetUri() string {
+	if x != nil {
+		return x.xxx_hidden_Uri
+	}
+	return ""
+}
+
 func (x *StreamTelemetryRequest) SetTargetFps(v uint32) {
 	x.xxx_hidden_TargetFps = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 2)
+}
+
+func (x *StreamTelemetryRequest) SetUri(v string) {
+	x.xxx_hidden_Uri = v
 }
 
 func (x *StreamTelemetryRequest) HasTargetFps() bool {
@@ -443,6 +415,7 @@ type StreamTelemetryRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	TargetFps *uint32
+	Uri       string
 }
 
 func (b0 StreamTelemetryRequest_builder) Build() *StreamTelemetryRequest {
@@ -450,22 +423,22 @@ func (b0 StreamTelemetryRequest_builder) Build() *StreamTelemetryRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.TargetFps != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 2)
 		x.xxx_hidden_TargetFps = *b.TargetFps
 	}
+	x.xxx_hidden_Uri = b.Uri
 	return m0
 }
 
 type StreamTelemetryResponse struct {
-	state                protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Telemetry *telemetry.Telemetry   `protobuf:"bytes,1,opt,name=telemetry,proto3"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *StreamTelemetryResponse) Reset() {
 	*x = StreamTelemetryResponse{}
-	mi := &file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[5]
+	mi := &file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -477,7 +450,7 @@ func (x *StreamTelemetryResponse) String() string {
 func (*StreamTelemetryResponse) ProtoMessage() {}
 
 func (x *StreamTelemetryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[5]
+	mi := &file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -488,39 +461,15 @@ func (x *StreamTelemetryResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *StreamTelemetryResponse) GetTelemetry() *telemetry.Telemetry {
-	if x != nil {
-		return x.xxx_hidden_Telemetry
-	}
-	return nil
-}
-
-func (x *StreamTelemetryResponse) SetTelemetry(v *telemetry.Telemetry) {
-	x.xxx_hidden_Telemetry = v
-}
-
-func (x *StreamTelemetryResponse) HasTelemetry() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Telemetry != nil
-}
-
-func (x *StreamTelemetryResponse) ClearTelemetry() {
-	x.xxx_hidden_Telemetry = nil
-}
-
 type StreamTelemetryResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Telemetry *telemetry.Telemetry
 }
 
 func (b0 StreamTelemetryResponse_builder) Build() *StreamTelemetryResponse {
 	m0 := &StreamTelemetryResponse{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_Telemetry = b.Telemetry
 	return m0
 }
 
@@ -528,32 +477,25 @@ var File_steeleagle_protocol_v1_services_driver_stream_proto protoreflect.FileDe
 
 const file_steeleagle_protocol_v1_services_driver_stream_proto_rawDesc = "" +
 	"\n" +
-	"3steeleagle_protocol/v1/services/driver/stream.proto\x12&steeleagle_protocol.v1.services.driver\x1a9steeleagle_protocol/v1/messages/telemetry/telemetry.proto\"n\n" +
-	"\x18GetVideoStreamURLRequest\x12R\n" +
+	"3steeleagle_protocol/v1/services/driver/stream.proto\x12&steeleagle_protocol.v1.services.driver\"\xe0\x01\n" +
+	"\rCameraRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\"\n" +
 	"\n" +
-	"resolution\x18\x01 \x01(\x0e22.steeleagle_protocol.v1.services.driver.ResolutionR\n" +
-	"resolution\"m\n" +
-	"\x19GetVideoStreamURLResponse\x12\x1d\n" +
-	"\n" +
-	"stream_url\x18\x01 \x01(\tR\tstreamUrl\x12\"\n" +
-	"\n" +
-	"target_fps\x18\x02 \x01(\rH\x00R\ttargetFps\x88\x01\x01B\r\n" +
-	"\v_target_fps\"\xa1\x01\n" +
-	"\x18StreamVideoFramesRequest\x12\"\n" +
-	"\n" +
-	"target_fps\x18\x01 \x01(\rH\x00R\ttargetFps\x88\x01\x01\x12R\n" +
-	"\n" +
-	"resolution\x18\x02 \x01(\x0e22.steeleagle_protocol.v1.services.driver.ResolutionR\n" +
-	"resolutionB\r\n" +
-	"\v_target_fps\"j\n" +
-	"\x19StreamVideoFramesResponse\x12M\n" +
-	"\x05frame\x18\x01 \x01(\v27.steeleagle_protocol.v1.messages.telemetry.EncodedFrameR\x05frame\"K\n" +
+	"target_fps\x18\x02 \x01(\rH\x00R\ttargetFps\x88\x01\x01\x12d\n" +
+	"\x11target_resolution\x18\x03 \x01(\x0e22.steeleagle_protocol.v1.services.driver.ResolutionH\x01R\x10targetResolution\x88\x01\x01\x12\x10\n" +
+	"\x03uri\x18\x04 \x01(\tR\x03uriB\r\n" +
+	"\v_target_fpsB\x14\n" +
+	"\x12_target_resolution\"\xc0\x01\n" +
+	"\x14StreamCamerasRequest\x12O\n" +
+	"\aprimary\x18\x01 \x01(\v25.steeleagle_protocol.v1.services.driver.CameraRequestR\aprimary\x12W\n" +
+	"\vsecondaries\x18\x02 \x03(\v25.steeleagle_protocol.v1.services.driver.CameraRequestR\vsecondaries\"\x17\n" +
+	"\x15StreamCamerasResponse\"]\n" +
 	"\x16StreamTelemetryRequest\x12\"\n" +
 	"\n" +
-	"target_fps\x18\x01 \x01(\rH\x00R\ttargetFps\x88\x01\x01B\r\n" +
-	"\v_target_fps\"m\n" +
-	"\x17StreamTelemetryResponse\x12R\n" +
-	"\ttelemetry\x18\x01 \x01(\v24.steeleagle_protocol.v1.messages.telemetry.TelemetryR\ttelemetry*\x90\x01\n" +
+	"target_fps\x18\x01 \x01(\rH\x00R\ttargetFps\x88\x01\x01\x12\x10\n" +
+	"\x03uri\x18\x02 \x01(\tR\x03uriB\r\n" +
+	"\v_target_fps\"\x19\n" +
+	"\x17StreamTelemetryResponse*\x90\x01\n" +
 	"\n" +
 	"Resolution\x12\x1a\n" +
 	"\x16RESOLUTION_UNSPECIFIED\x10\x00\x12\x13\n" +
@@ -561,42 +503,35 @@ const file_steeleagle_protocol_v1_services_driver_stream_proto_rawDesc = "" +
 	"\x0fRESOLUTION_480P\x10\x02\x12\x13\n" +
 	"\x0fRESOLUTION_720P\x10\x03\x12\x14\n" +
 	"\x10RESOLUTION_1080P\x10\x04\x12\x11\n" +
-	"\rRESOLUTION_4K\x10\x052\xde\x03\n" +
-	"\rStreamService\x12\x98\x01\n" +
-	"\x11GetVideoStreamURL\x12@.steeleagle_protocol.v1.services.driver.GetVideoStreamURLRequest\x1aA.steeleagle_protocol.v1.services.driver.GetVideoStreamURLResponse\x12\x9a\x01\n" +
-	"\x11StreamVideoFrames\x12@.steeleagle_protocol.v1.services.driver.StreamVideoFramesRequest\x1aA.steeleagle_protocol.v1.services.driver.StreamVideoFramesResponse0\x01\x12\x94\x01\n" +
-	"\x0fStreamTelemetry\x12>.steeleagle_protocol.v1.services.driver.StreamTelemetryRequest\x1a?.steeleagle_protocol.v1.services.driver.StreamTelemetryResponse0\x01B\xc2\x02\n" +
+	"\rRESOLUTION_4K\x10\x052\xb7\x02\n" +
+	"\rStreamService\x12\x8e\x01\n" +
+	"\rStreamCameras\x12<.steeleagle_protocol.v1.services.driver.StreamCamerasRequest\x1a=.steeleagle_protocol.v1.services.driver.StreamCamerasResponse\"\x00\x12\x94\x01\n" +
+	"\x0fStreamTelemetry\x12>.steeleagle_protocol.v1.services.driver.StreamTelemetryRequest\x1a?.steeleagle_protocol.v1.services.driver.StreamTelemetryResponse\"\x00B\xc2\x02\n" +
 	"*com.steeleagle_protocol.v1.services.driverB\vStreamProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\xa2\x02\x04SVSD\xaa\x02%SteeleagleProtocol.V1.Services.Driver\xca\x02%SteeleagleProtocol\\V1\\Services\\Driver\xe2\x021SteeleagleProtocol\\V1\\Services\\Driver\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Services::Driverb\x06proto3"
 
 var file_steeleagle_protocol_v1_services_driver_stream_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_steeleagle_protocol_v1_services_driver_stream_proto_goTypes = []any{
-	(Resolution)(0),                   // 0: steeleagle_protocol.v1.services.driver.Resolution
-	(*GetVideoStreamURLRequest)(nil),  // 1: steeleagle_protocol.v1.services.driver.GetVideoStreamURLRequest
-	(*GetVideoStreamURLResponse)(nil), // 2: steeleagle_protocol.v1.services.driver.GetVideoStreamURLResponse
-	(*StreamVideoFramesRequest)(nil),  // 3: steeleagle_protocol.v1.services.driver.StreamVideoFramesRequest
-	(*StreamVideoFramesResponse)(nil), // 4: steeleagle_protocol.v1.services.driver.StreamVideoFramesResponse
-	(*StreamTelemetryRequest)(nil),    // 5: steeleagle_protocol.v1.services.driver.StreamTelemetryRequest
-	(*StreamTelemetryResponse)(nil),   // 6: steeleagle_protocol.v1.services.driver.StreamTelemetryResponse
-	(*telemetry.EncodedFrame)(nil),    // 7: steeleagle_protocol.v1.messages.telemetry.EncodedFrame
-	(*telemetry.Telemetry)(nil),       // 8: steeleagle_protocol.v1.messages.telemetry.Telemetry
+	(Resolution)(0),                 // 0: steeleagle_protocol.v1.services.driver.Resolution
+	(*CameraRequest)(nil),           // 1: steeleagle_protocol.v1.services.driver.CameraRequest
+	(*StreamCamerasRequest)(nil),    // 2: steeleagle_protocol.v1.services.driver.StreamCamerasRequest
+	(*StreamCamerasResponse)(nil),   // 3: steeleagle_protocol.v1.services.driver.StreamCamerasResponse
+	(*StreamTelemetryRequest)(nil),  // 4: steeleagle_protocol.v1.services.driver.StreamTelemetryRequest
+	(*StreamTelemetryResponse)(nil), // 5: steeleagle_protocol.v1.services.driver.StreamTelemetryResponse
 }
 var file_steeleagle_protocol_v1_services_driver_stream_proto_depIdxs = []int32{
-	0, // 0: steeleagle_protocol.v1.services.driver.GetVideoStreamURLRequest.resolution:type_name -> steeleagle_protocol.v1.services.driver.Resolution
-	0, // 1: steeleagle_protocol.v1.services.driver.StreamVideoFramesRequest.resolution:type_name -> steeleagle_protocol.v1.services.driver.Resolution
-	7, // 2: steeleagle_protocol.v1.services.driver.StreamVideoFramesResponse.frame:type_name -> steeleagle_protocol.v1.messages.telemetry.EncodedFrame
-	8, // 3: steeleagle_protocol.v1.services.driver.StreamTelemetryResponse.telemetry:type_name -> steeleagle_protocol.v1.messages.telemetry.Telemetry
-	1, // 4: steeleagle_protocol.v1.services.driver.StreamService.GetVideoStreamURL:input_type -> steeleagle_protocol.v1.services.driver.GetVideoStreamURLRequest
-	3, // 5: steeleagle_protocol.v1.services.driver.StreamService.StreamVideoFrames:input_type -> steeleagle_protocol.v1.services.driver.StreamVideoFramesRequest
-	5, // 6: steeleagle_protocol.v1.services.driver.StreamService.StreamTelemetry:input_type -> steeleagle_protocol.v1.services.driver.StreamTelemetryRequest
-	2, // 7: steeleagle_protocol.v1.services.driver.StreamService.GetVideoStreamURL:output_type -> steeleagle_protocol.v1.services.driver.GetVideoStreamURLResponse
-	4, // 8: steeleagle_protocol.v1.services.driver.StreamService.StreamVideoFrames:output_type -> steeleagle_protocol.v1.services.driver.StreamVideoFramesResponse
-	6, // 9: steeleagle_protocol.v1.services.driver.StreamService.StreamTelemetry:output_type -> steeleagle_protocol.v1.services.driver.StreamTelemetryResponse
-	7, // [7:10] is the sub-list for method output_type
-	4, // [4:7] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	0, // 0: steeleagle_protocol.v1.services.driver.CameraRequest.target_resolution:type_name -> steeleagle_protocol.v1.services.driver.Resolution
+	1, // 1: steeleagle_protocol.v1.services.driver.StreamCamerasRequest.primary:type_name -> steeleagle_protocol.v1.services.driver.CameraRequest
+	1, // 2: steeleagle_protocol.v1.services.driver.StreamCamerasRequest.secondaries:type_name -> steeleagle_protocol.v1.services.driver.CameraRequest
+	2, // 3: steeleagle_protocol.v1.services.driver.StreamService.StreamCameras:input_type -> steeleagle_protocol.v1.services.driver.StreamCamerasRequest
+	4, // 4: steeleagle_protocol.v1.services.driver.StreamService.StreamTelemetry:input_type -> steeleagle_protocol.v1.services.driver.StreamTelemetryRequest
+	3, // 5: steeleagle_protocol.v1.services.driver.StreamService.StreamCameras:output_type -> steeleagle_protocol.v1.services.driver.StreamCamerasResponse
+	5, // 6: steeleagle_protocol.v1.services.driver.StreamService.StreamTelemetry:output_type -> steeleagle_protocol.v1.services.driver.StreamTelemetryResponse
+	5, // [5:7] is the sub-list for method output_type
+	3, // [3:5] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_steeleagle_protocol_v1_services_driver_stream_proto_init() }
@@ -604,16 +539,15 @@ func file_steeleagle_protocol_v1_services_driver_stream_proto_init() {
 	if File_steeleagle_protocol_v1_services_driver_stream_proto != nil {
 		return
 	}
-	file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[1].OneofWrappers = []any{}
-	file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[2].OneofWrappers = []any{}
-	file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[4].OneofWrappers = []any{}
+	file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[0].OneofWrappers = []any{}
+	file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[3].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_services_driver_stream_proto_rawDesc), len(file_steeleagle_protocol_v1_services_driver_stream_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   6,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

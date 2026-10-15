@@ -31,7 +31,6 @@ const (
 	SwarmService_SwarmSetVelocityTarget_FullMethodName    = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmSetVelocityTarget"
 	SwarmService_SwarmSetGimbalAngleTarget_FullMethodName = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmSetGimbalAngleTarget"
 	SwarmService_SwarmStartMission_FullMethodName         = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmStartMission"
-	SwarmService_SwarmUploadMission_FullMethodName        = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmUploadMission"
 	SwarmService_SwarmStopMission_FullMethodName          = "/steeleagle_protocol.v1.services.swarm.SwarmService/SwarmStopMission"
 )
 
@@ -107,14 +106,6 @@ type SwarmServiceClient interface {
 	// control mode, which can be interrupted by sending a `SwarmStopMission` or
 	// `SwarmHold`.
 	SwarmStartMission(ctx context.Context, in *SwarmStartMissionRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SwarmStartMissionResponse], error)
-	// Upload a mission to multiple vehicles.
-	//
-	// The client streams a `header` (target vehicles plus one variant per
-	// architecture) followed by `chunk`s. The server validates the complete
-	// upload, then streams each vehicle the variant matching its architecture,
-	// sending throttled `progress` messages and exactly one final result per
-	// vehicle. Can be started by sending a subsequent `SwarmStartMission`.
-	SwarmUploadMission(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[SwarmUploadMissionRequest, SwarmUploadMissionResponse], error)
 	// Order multiple vehicles to stop a mission.
 	//
 	// Causes vehicles to stop their running mission. This will enable manual
@@ -282,22 +273,9 @@ func (c *swarmServiceClient) SwarmStartMission(ctx context.Context, in *SwarmSta
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SwarmService_SwarmStartMissionClient = grpc.ServerStreamingClient[SwarmStartMissionResponse]
 
-func (c *swarmServiceClient) SwarmUploadMission(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[SwarmUploadMissionRequest, SwarmUploadMissionResponse], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &SwarmService_ServiceDesc.Streams[8], SwarmService_SwarmUploadMission_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[SwarmUploadMissionRequest, SwarmUploadMissionResponse]{ClientStream: stream}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type SwarmService_SwarmUploadMissionClient = grpc.BidiStreamingClient[SwarmUploadMissionRequest, SwarmUploadMissionResponse]
-
 func (c *swarmServiceClient) SwarmStopMission(ctx context.Context, in *SwarmStopMissionRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SwarmStopMissionResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &SwarmService_ServiceDesc.Streams[9], SwarmService_SwarmStopMission_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &SwarmService_ServiceDesc.Streams[8], SwarmService_SwarmStopMission_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -386,14 +364,6 @@ type SwarmServiceServer interface {
 	// control mode, which can be interrupted by sending a `SwarmStopMission` or
 	// `SwarmHold`.
 	SwarmStartMission(*SwarmStartMissionRequest, grpc.ServerStreamingServer[SwarmStartMissionResponse]) error
-	// Upload a mission to multiple vehicles.
-	//
-	// The client streams a `header` (target vehicles plus one variant per
-	// architecture) followed by `chunk`s. The server validates the complete
-	// upload, then streams each vehicle the variant matching its architecture,
-	// sending throttled `progress` messages and exactly one final result per
-	// vehicle. Can be started by sending a subsequent `SwarmStartMission`.
-	SwarmUploadMission(grpc.BidiStreamingServer[SwarmUploadMissionRequest, SwarmUploadMissionResponse]) error
 	// Order multiple vehicles to stop a mission.
 	//
 	// Causes vehicles to stop their running mission. This will enable manual
@@ -432,9 +402,6 @@ func (UnimplementedSwarmServiceServer) SwarmSetGimbalAngleTarget(*SwarmSetGimbal
 }
 func (UnimplementedSwarmServiceServer) SwarmStartMission(*SwarmStartMissionRequest, grpc.ServerStreamingServer[SwarmStartMissionResponse]) error {
 	return status.Error(codes.Unimplemented, "method SwarmStartMission not implemented")
-}
-func (UnimplementedSwarmServiceServer) SwarmUploadMission(grpc.BidiStreamingServer[SwarmUploadMissionRequest, SwarmUploadMissionResponse]) error {
-	return status.Error(codes.Unimplemented, "method SwarmUploadMission not implemented")
 }
 func (UnimplementedSwarmServiceServer) SwarmStopMission(*SwarmStopMissionRequest, grpc.ServerStreamingServer[SwarmStopMissionResponse]) error {
 	return status.Error(codes.Unimplemented, "method SwarmStopMission not implemented")
@@ -548,13 +515,6 @@ func _SwarmService_SwarmStartMission_Handler(srv interface{}, stream grpc.Server
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SwarmService_SwarmStartMissionServer = grpc.ServerStreamingServer[SwarmStartMissionResponse]
 
-func _SwarmService_SwarmUploadMission_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(SwarmServiceServer).SwarmUploadMission(&grpc.GenericServerStream[SwarmUploadMissionRequest, SwarmUploadMissionResponse]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type SwarmService_SwarmUploadMissionServer = grpc.BidiStreamingServer[SwarmUploadMissionRequest, SwarmUploadMissionResponse]
-
 func _SwarmService_SwarmStopMission_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(SwarmStopMissionRequest)
 	if err := stream.RecvMsg(m); err != nil {
@@ -613,12 +573,6 @@ var SwarmService_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "SwarmStartMission",
 			Handler:       _SwarmService_SwarmStartMission_Handler,
 			ServerStreams: true,
-		},
-		{
-			StreamName:    "SwarmUploadMission",
-			Handler:       _SwarmService_SwarmUploadMission_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
 		},
 		{
 			StreamName:    "SwarmStopMission",

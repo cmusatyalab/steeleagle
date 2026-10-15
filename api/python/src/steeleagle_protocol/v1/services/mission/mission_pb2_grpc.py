@@ -10,9 +10,9 @@ class MissionServiceStub:
     Used to start a new mission or stop an active mission.
 
     This service is hosted by the driver module and represents the
-    mission interface for the vehicle. While a single vehicle will
-    return an OK message as soon as a command is acked and sent,
-    multiple vehicles will return a message stream when proxied.
+    mission interface for the vehicle. All missions must implement
+    both StartMission and StopMission, and may optionally publish
+    mission status updates to the URI provided over a Gabriel producer.
     """
 
     def __init__(self, channel):
@@ -26,20 +26,10 @@ class MissionServiceStub:
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_mission_dot_mission__pb2.StartMissionRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_mission_dot_mission__pb2.StartMissionResponse.FromString,
                 _registered_method=True)
-        self.UploadMission = channel.stream_unary(
-                '/steeleagle_protocol.v1.services.mission.MissionService/UploadMission',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_mission_dot_mission__pb2.UploadMissionRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_mission_dot_mission__pb2.UploadMissionResponse.FromString,
-                _registered_method=True)
         self.StopMission = channel.unary_unary(
                 '/steeleagle_protocol.v1.services.mission.MissionService/StopMission',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_mission_dot_mission__pb2.StopMissionRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_mission_dot_mission__pb2.StopMissionResponse.FromString,
-                _registered_method=True)
-        self.GetMissionInfo = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.mission.MissionService/GetMissionInfo',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_mission_dot_mission__pb2.GetMissionInfoRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_mission_dot_mission__pb2.GetMissionInfoResponse.FromString,
                 _registered_method=True)
 
 
@@ -48,9 +38,9 @@ class MissionServiceServicer:
     Used to start a new mission or stop an active mission.
 
     This service is hosted by the driver module and represents the
-    mission interface for the vehicle. While a single vehicle will
-    return an OK message as soon as a command is acked and sent,
-    multiple vehicles will return a message stream when proxied.
+    mission interface for the vehicle. All missions must implement
+    both StartMission and StopMission, and may optionally publish
+    mission status updates to the URI provided over a Gabriel producer.
     """
 
     def StartMission(self, request, context):
@@ -59,20 +49,8 @@ class MissionServiceServicer:
 
         Causes the vehicle to start its uploaded mission. This will enable autonomous
         control mode, which can be interrupted by sending a `StopMission` or
-        `SwarmHold`.
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def UploadMission(self, request_iterator, context):
-        """
-        Upload a mission to a vehicle
-
-        Streams a mission binary to a vehicle. The first message must carry a
-        `header`; every later message carries a `chunk`. The upload is committed
-        only if the byte count and SHA-256 match the header. Can be started by
-        sending a subsequent `StartMission` command.
+        `SwarmHold`. The mission will also publish its status to the provided URI
+        using a Gabriel producer.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -89,16 +67,6 @@ class MissionServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetMissionInfo(self, request, context):
-        """
-        Report what this mission service can run
-
-        Lets an uploader pick the right binary variant before sending any bytes.
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
 
 def add_MissionServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -107,20 +75,10 @@ def add_MissionServiceServicer_to_server(servicer, server):
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_mission_dot_mission__pb2.StartMissionRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_mission_dot_mission__pb2.StartMissionResponse.SerializeToString,
             ),
-            'UploadMission': grpc.stream_unary_rpc_method_handler(
-                    servicer.UploadMission,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_mission_dot_mission__pb2.UploadMissionRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_mission_dot_mission__pb2.UploadMissionResponse.SerializeToString,
-            ),
             'StopMission': grpc.unary_unary_rpc_method_handler(
                     servicer.StopMission,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_mission_dot_mission__pb2.StopMissionRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_mission_dot_mission__pb2.StopMissionResponse.SerializeToString,
-            ),
-            'GetMissionInfo': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetMissionInfo,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_mission_dot_mission__pb2.GetMissionInfoRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_mission_dot_mission__pb2.GetMissionInfoResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -135,9 +93,9 @@ class MissionService:
     Used to start a new mission or stop an active mission.
 
     This service is hosted by the driver module and represents the
-    mission interface for the vehicle. While a single vehicle will
-    return an OK message as soon as a command is acked and sent,
-    multiple vehicles will return a message stream when proxied.
+    mission interface for the vehicle. All missions must implement
+    both StartMission and StopMission, and may optionally publish
+    mission status updates to the URI provided over a Gabriel producer.
     """
 
     @staticmethod
@@ -168,33 +126,6 @@ class MissionService:
             _registered_method=True)
 
     @staticmethod
-    def UploadMission(request_iterator,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.stream_unary(
-            request_iterator,
-            target,
-            '/steeleagle_protocol.v1.services.mission.MissionService/UploadMission',
-            steeleagle__protocol_dot_v1_dot_services_dot_mission_dot_mission__pb2.UploadMissionRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_mission_dot_mission__pb2.UploadMissionResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
     def StopMission(request,
             target,
             options=(),
@@ -211,33 +142,6 @@ class MissionService:
             '/steeleagle_protocol.v1.services.mission.MissionService/StopMission',
             steeleagle__protocol_dot_v1_dot_services_dot_mission_dot_mission__pb2.StopMissionRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_mission_dot_mission__pb2.StopMissionResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def GetMissionInfo(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/steeleagle_protocol.v1.services.mission.MissionService/GetMissionInfo',
-            steeleagle__protocol_dot_v1_dot_services_dot_mission_dot_mission__pb2.GetMissionInfoRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_mission_dot_mission__pb2.GetMissionInfoResponse.FromString,
             options,
             channel_credentials,
             insecure,

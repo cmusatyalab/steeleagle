@@ -452,8 +452,3 @@ type SetGimbalVelocityTargetResponse interface {
 	// #exclude-ifndef services/control/SetGimbalVelocityTargetResponse/setpoint
 	hasSetpoint() bool
 }
-
-type GetVehicleInfoResponse interface {
-	// #exclude-ifndef services/info/GetVehicleInfoResponse/model
-	GetModel() string
-}

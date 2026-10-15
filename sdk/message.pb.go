@@ -872,11 +872,3 @@ func (w *setGimbalVelocityTargetResponseWrapper) GetSetpoint() (SetGimbalVelocit
 func (w *setGimbalVelocityTargetResponseWrapper) hasSetpoint() bool {
 	return w.inner.HasSetpoint()
 }
-
-type getVehicleInfoResponseWrapper struct {
-	inner *driver.GetVehicleInfoResponse // generated concrete type
-}
-
-func (w *getVehicleInfoResponseWrapper) GetModel() string {
-	return w.inner.GetModel()
-}

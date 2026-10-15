@@ -7,10 +7,11 @@ from steeleagle_protocol.v1.services.eagled import eagled_pb2 as steeleagle__pro
 
 class DaemonServiceStub:
     """
-    DaemonService is eagled's own control-plane API. It is used to provide a
-    configuration at runtime. Once applied, the resulting configuration is
-    persisted, so a restarted eagled comes back up with the same vehicles
-    running without another Configure call.
+    Hosted by eagled as the core SteelEagle daemon service.
+
+    This service represents eagled's control plane API. Each command interacts
+    with the global state of the daemon. This includes the starting/stopping of
+    plugins and vehicles.
     """
 
     def __init__(self, channel):
@@ -24,52 +25,47 @@ class DaemonServiceStub:
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ConfigureRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ConfigureResponse.FromString,
                 _registered_method=True)
-        self.StopVehicles = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.eagled.DaemonService/StopVehicles',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StopVehiclesRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StopVehiclesResponse.FromString,
+        self.StartServices = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.eagled.DaemonService/StartServices',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StartServicesRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StartServicesResponse.FromString,
                 _registered_method=True)
-        self.RestartVehicles = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.eagled.DaemonService/RestartVehicles',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.RestartVehiclesRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.RestartVehiclesResponse.FromString,
+        self.StopServices = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.eagled.DaemonService/StopServices',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StopServicesRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StopServicesResponse.FromString,
                 _registered_method=True)
-        self.ForgetVehicles = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.eagled.DaemonService/ForgetVehicles',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ForgetVehiclesRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ForgetVehiclesResponse.FromString,
+        self.ListServices = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.eagled.DaemonService/ListServices',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ListServicesRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ListServicesResponse.FromString,
                 _registered_method=True)
         self.InstallPlugin = channel.unary_unary(
                 '/steeleagle_protocol.v1.services.eagled.DaemonService/InstallPlugin',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.InstallPluginRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.InstallPluginResponse.FromString,
                 _registered_method=True)
-        self.GetInstalledPlugins = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.eagled.DaemonService/GetInstalledPlugins',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetInstalledPluginsRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetInstalledPluginsResponse.FromString,
+        self.RemovePlugin = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.eagled.DaemonService/RemovePlugin',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.RemovePluginRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.RemovePluginResponse.FromString,
                 _registered_method=True)
-        self.ResetConfig = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.eagled.DaemonService/ResetConfig',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ResetConfigRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ResetConfigResponse.FromString,
+        self.Restart = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.eagled.DaemonService/Restart',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.RestartRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.RestartResponse.FromString,
                 _registered_method=True)
-        self.RestartDaemon = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.eagled.DaemonService/RestartDaemon',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.RestartDaemonRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.RestartDaemonResponse.FromString,
-                _registered_method=True)
-        self.GetStatus = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.eagled.DaemonService/GetStatus',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetStatusRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetStatusResponse.FromString,
+        self.ResetConfiguration = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.eagled.DaemonService/ResetConfiguration',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ResetConfigurationRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ResetConfigurationResponse.FromString,
                 _registered_method=True)
         self.StreamLogs = channel.unary_stream(
                 '/steeleagle_protocol.v1.services.eagled.DaemonService/StreamLogs',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StreamLogsRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.LogRecord.FromString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StreamLogsResponse.FromString,
                 _registered_method=True)
-        self.ListLogSources = channel.unary_unary(
+        self.ListLogSources = channel.unary_stream(
                 '/steeleagle_protocol.v1.services.eagled.DaemonService/ListLogSources',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ListLogSourcesRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ListLogSourcesResponse.FromString,
@@ -78,141 +74,75 @@ class DaemonServiceStub:
 
 class DaemonServiceServicer:
     """
-    DaemonService is eagled's own control-plane API. It is used to provide a
-    configuration at runtime. Once applied, the resulting configuration is
-    persisted, so a restarted eagled comes back up with the same vehicles
-    running without another Configure call.
+    Hosted by eagled as the core SteelEagle daemon service.
+
+    This service represents eagled's control plane API. Each command interacts
+    with the global state of the daemon. This includes the starting/stopping of
+    plugins and vehicles.
     """
 
     def Configure(self, request, context):
         """
-        Load a TOML configuration document (the same shape as eagled's
-        config.toml) and start the vehicles it describes.
+        Load a TOML configuration document.
 
-        The first call configures the daemon itself (tailscale hostname, gabriel,
-        swarm-controller settings) in addition to starting its vehicles. Later
-        calls reuse that daemon-wide configuration and only start the vehicles
-        newly listed. If the daemon-wide settings in a later call differ from
-        what's already active, ConfigureResponse.daemon_settings_diverged reports
-        that rather than silently dropping them. A vehicle name that's known but
-        not currently running has its config replaced outright
-        (VehicleResult.reconfigured is set on that result, to distinguish it
-        from configuring the name for the first time). A vehicle name that's
-        currently running also has its config replaced, but the running process
-        itself is left alone -- VehicleResult.restart_required is set, and
-        RestartVehicles picks up the new config next time it's called.
+        Configures the daemon with a TOML config according to eagled specification.
+        Can be configured in auto-start mode, where eagled will try to start everything
+        immediately. Can also be configured to install plugins that don't already exist.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def StopVehicles(self, request, context):
-        """
-        Stop one or more currently-running vehicles by name. Unlike
-        ForgetVehicles, the daemon still knows about them afterward: they can be
-        brought back with RestartVehicles, and they come back on a subsequent
-        eagled restart too, same as any other configured vehicle. A name that
-        isn't currently running is reported as a per-vehicle failure rather than
-        aborting the whole call.
-        """
+    def StartServices(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def RestartVehicles(self, request, context):
-        """
-        Restart one or more vehicles by name, using the configuration they were
-        last configured with. A name that isn't known to this daemon is reported
-        as a per-vehicle failure rather than aborting the whole call.
-        """
+    def StopServices(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def ForgetVehicles(self, request, context):
-        """
-        Stop one or more currently-running vehicles by name (if running) and
-        forget them. They will not come back on RestartVehicles or a subsequent
-        eagled restart unless reconfigured. A name that isn't known to this daemon
-        is reported as a per-vehicle failure rather than aborting the whole call.
-        """
+    def ListServices(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def InstallPlugin(self, request, context):
-        """
-        Fetch a plugin from a git repository at a pinned commit and install it
-        under this name, running the plugin's own install.sh and only replacing
-        whatever was previously installed under this name if it exits zero.
-        Separate from starting a vehicle, so a plugin can be staged ahead of time
-        and StartVehicle/Configure never has to wait on a network fetch.
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetInstalledPlugins(self, request, context):
-        """
-        List every plugin this daemon has installed, the ref it was last installed
-        at, and its category.
-        """
+    def RemovePlugin(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def ResetConfig(self, request, context):
-        """
-        Delete the persisted config and terminate the daemon process, relying on
-        systemd to bring it back up unconfigured, as if freshly installed. Every
-        currently-running vehicle is torn down as part of that shutdown. This is
-        the only way to change daemon-wide settings (gabriel, swarm-controller,
-        port-base, plugin-dir): they're only ever established from the first
-        Configure call after a process starts. The tailscale hostname is not
-        affected: it's established once, on this host, and outlives ResetConfig;
-        changing it is a manual, on-site operation, not something any RPC does.
-        """
+    def Restart(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def RestartDaemon(self, request, context):
-        """
-        Restart the daemon process without touching persisted state, relying on
-        systemd to bring it back up with the existing configuration.
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def GetStatus(self, request, context):
-        """
-        Report the daemon's current configuration and the state of every vehicle
-        it knows about, including whether a running vehicle's config has since
-        been replaced by a Configure call it hasn't picked up yet (see
-        VehicleStatus.config_stale).
-        """
+    def ResetConfiguration(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def StreamLogs(self, request, context):
-        """
-        Stream log records captured by this daemon (its own logs plus every
-        vehicle's and plugin's output), oldest first. The daemon persists logs
-        per source, so a stream can replay backlog (tail lines per source, or
-        everything after a per-source resume cursor) and then, if follow is set,
-        keep streaming live records until the client cancels. When the daemon
-        shuts down the stream ends with UNAVAILABLE.
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def ListLogSources(self, request, context):
-        """
-        List every log source this daemon has on disk (running or not).
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -225,52 +155,47 @@ def add_DaemonServiceServicer_to_server(servicer, server):
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ConfigureRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ConfigureResponse.SerializeToString,
             ),
-            'StopVehicles': grpc.unary_unary_rpc_method_handler(
-                    servicer.StopVehicles,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StopVehiclesRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StopVehiclesResponse.SerializeToString,
+            'StartServices': grpc.unary_unary_rpc_method_handler(
+                    servicer.StartServices,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StartServicesRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StartServicesResponse.SerializeToString,
             ),
-            'RestartVehicles': grpc.unary_unary_rpc_method_handler(
-                    servicer.RestartVehicles,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.RestartVehiclesRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.RestartVehiclesResponse.SerializeToString,
+            'StopServices': grpc.unary_unary_rpc_method_handler(
+                    servicer.StopServices,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StopServicesRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StopServicesResponse.SerializeToString,
             ),
-            'ForgetVehicles': grpc.unary_unary_rpc_method_handler(
-                    servicer.ForgetVehicles,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ForgetVehiclesRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ForgetVehiclesResponse.SerializeToString,
+            'ListServices': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListServices,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ListServicesRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ListServicesResponse.SerializeToString,
             ),
             'InstallPlugin': grpc.unary_unary_rpc_method_handler(
                     servicer.InstallPlugin,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.InstallPluginRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.InstallPluginResponse.SerializeToString,
             ),
-            'GetInstalledPlugins': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetInstalledPlugins,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetInstalledPluginsRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetInstalledPluginsResponse.SerializeToString,
+            'RemovePlugin': grpc.unary_unary_rpc_method_handler(
+                    servicer.RemovePlugin,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.RemovePluginRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.RemovePluginResponse.SerializeToString,
             ),
-            'ResetConfig': grpc.unary_unary_rpc_method_handler(
-                    servicer.ResetConfig,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ResetConfigRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ResetConfigResponse.SerializeToString,
+            'Restart': grpc.unary_unary_rpc_method_handler(
+                    servicer.Restart,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.RestartRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.RestartResponse.SerializeToString,
             ),
-            'RestartDaemon': grpc.unary_unary_rpc_method_handler(
-                    servicer.RestartDaemon,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.RestartDaemonRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.RestartDaemonResponse.SerializeToString,
-            ),
-            'GetStatus': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetStatus,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetStatusRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetStatusResponse.SerializeToString,
+            'ResetConfiguration': grpc.unary_unary_rpc_method_handler(
+                    servicer.ResetConfiguration,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ResetConfigurationRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ResetConfigurationResponse.SerializeToString,
             ),
             'StreamLogs': grpc.unary_stream_rpc_method_handler(
                     servicer.StreamLogs,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StreamLogsRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.LogRecord.SerializeToString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StreamLogsResponse.SerializeToString,
             ),
-            'ListLogSources': grpc.unary_unary_rpc_method_handler(
+            'ListLogSources': grpc.unary_stream_rpc_method_handler(
                     servicer.ListLogSources,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ListLogSourcesRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ListLogSourcesResponse.SerializeToString,
@@ -285,10 +210,11 @@ def add_DaemonServiceServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class DaemonService:
     """
-    DaemonService is eagled's own control-plane API. It is used to provide a
-    configuration at runtime. Once applied, the resulting configuration is
-    persisted, so a restarted eagled comes back up with the same vehicles
-    running without another Configure call.
+    Hosted by eagled as the core SteelEagle daemon service.
+
+    This service represents eagled's control plane API. Each command interacts
+    with the global state of the daemon. This includes the starting/stopping of
+    plugins and vehicles.
     """
 
     @staticmethod
@@ -319,7 +245,7 @@ class DaemonService:
             _registered_method=True)
 
     @staticmethod
-    def StopVehicles(request,
+    def StartServices(request,
             target,
             options=(),
             channel_credentials=None,
@@ -332,9 +258,9 @@ class DaemonService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.eagled.DaemonService/StopVehicles',
-            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StopVehiclesRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StopVehiclesResponse.FromString,
+            '/steeleagle_protocol.v1.services.eagled.DaemonService/StartServices',
+            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StartServicesRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StartServicesResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -346,7 +272,7 @@ class DaemonService:
             _registered_method=True)
 
     @staticmethod
-    def RestartVehicles(request,
+    def StopServices(request,
             target,
             options=(),
             channel_credentials=None,
@@ -359,9 +285,9 @@ class DaemonService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.eagled.DaemonService/RestartVehicles',
-            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.RestartVehiclesRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.RestartVehiclesResponse.FromString,
+            '/steeleagle_protocol.v1.services.eagled.DaemonService/StopServices',
+            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StopServicesRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StopServicesResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -373,7 +299,7 @@ class DaemonService:
             _registered_method=True)
 
     @staticmethod
-    def ForgetVehicles(request,
+    def ListServices(request,
             target,
             options=(),
             channel_credentials=None,
@@ -386,9 +312,9 @@ class DaemonService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.eagled.DaemonService/ForgetVehicles',
-            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ForgetVehiclesRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ForgetVehiclesResponse.FromString,
+            '/steeleagle_protocol.v1.services.eagled.DaemonService/ListServices',
+            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ListServicesRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ListServicesResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -427,7 +353,7 @@ class DaemonService:
             _registered_method=True)
 
     @staticmethod
-    def GetInstalledPlugins(request,
+    def RemovePlugin(request,
             target,
             options=(),
             channel_credentials=None,
@@ -440,9 +366,9 @@ class DaemonService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.eagled.DaemonService/GetInstalledPlugins',
-            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetInstalledPluginsRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetInstalledPluginsResponse.FromString,
+            '/steeleagle_protocol.v1.services.eagled.DaemonService/RemovePlugin',
+            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.RemovePluginRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.RemovePluginResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -454,7 +380,7 @@ class DaemonService:
             _registered_method=True)
 
     @staticmethod
-    def ResetConfig(request,
+    def Restart(request,
             target,
             options=(),
             channel_credentials=None,
@@ -467,9 +393,9 @@ class DaemonService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.eagled.DaemonService/ResetConfig',
-            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ResetConfigRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ResetConfigResponse.FromString,
+            '/steeleagle_protocol.v1.services.eagled.DaemonService/Restart',
+            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.RestartRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.RestartResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -481,7 +407,7 @@ class DaemonService:
             _registered_method=True)
 
     @staticmethod
-    def RestartDaemon(request,
+    def ResetConfiguration(request,
             target,
             options=(),
             channel_credentials=None,
@@ -494,36 +420,9 @@ class DaemonService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.eagled.DaemonService/RestartDaemon',
-            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.RestartDaemonRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.RestartDaemonResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def GetStatus(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/steeleagle_protocol.v1.services.eagled.DaemonService/GetStatus',
-            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetStatusRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.GetStatusResponse.FromString,
+            '/steeleagle_protocol.v1.services.eagled.DaemonService/ResetConfiguration',
+            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ResetConfigurationRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.ResetConfigurationResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -550,7 +449,7 @@ class DaemonService:
             target,
             '/steeleagle_protocol.v1.services.eagled.DaemonService/StreamLogs',
             steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StreamLogsRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.LogRecord.FromString,
+            steeleagle__protocol_dot_v1_dot_services_dot_eagled_dot_eagled__pb2.StreamLogsResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -572,7 +471,7 @@ class DaemonService:
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(
+        return grpc.experimental.unary_stream(
             request,
             target,
             '/steeleagle_protocol.v1.services.eagled.DaemonService/ListLogSources',

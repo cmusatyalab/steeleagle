@@ -11,9 +11,9 @@ option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protoco
  * Used to start a new mission or stop an active mission.
  *
  * This service is hosted by the driver module and represents the
- * mission interface for the vehicle. While a single vehicle will
- * return an OK message as soon as a command is acked and sent,
- * multiple vehicles will return a message stream when proxied.
+ * mission interface for the vehicle. All missions must implement
+ * both StartMission and StopMission, and may optionally publish
+ * mission status updates to the URI provided over a Gabriel producer.
  */
 service MissionService {
   /*
@@ -21,20 +21,12 @@ service MissionService {
    *
    * Causes the vehicle to start its uploaded mission. This will enable autonomous
    * control mode, which can be interrupted by sending a `StopMission` or
-   * `SwarmHold`.
+   * `SwarmHold`. The mission will also publish its status to the provided URI
+   * using a Gabriel producer.
    */
   rpc StartMission (StartMissionRequest)
 	returns (StartMissionResponse) {}
-  /*
-   * Upload a mission to a vehicle
-   *
-   * Streams a mission binary to a vehicle. The first message must carry a
-   * `header`; every later message carries a `chunk`. The upload is committed
-   * only if the byte count and SHA-256 match the header. Can be started by
-   * sending a subsequent `StartMission` command.
-   */
-  rpc UploadMission (stream UploadMissionRequest)
-	returns (UploadMissionResponse) {}
+  
   /*
    * Order a vehicle to stop its mission.
    *
@@ -43,38 +35,11 @@ service MissionService {
    */
   rpc StopMission (StopMissionRequest)
 	returns (StopMissionResponse) {}
-  /*
-   * Report what this mission service can run
-   *
-   * Lets an uploader pick the right binary variant before sending any bytes.
-   */
-  rpc GetMissionInfo (GetMissionInfoRequest)
-	returns (GetMissionInfoResponse) {}
 }
 
-// Describes the mission binary that follows in an upload stream.
-message MissionHeader {
-  string arch = 1; // GOARCH-style architecture: "amd64" | "arm64"
-  uint64 size = 2; // exact byte length of the binary
-  bytes sha256 = 3; // 32-byte SHA-256 digest of the binary
+message StartMissionRequest {
+  string uri = 1; // info URI to publish at 
 }
-
-message UploadMissionRequest {
-  oneof part {
-    MissionHeader header = 1; // first message only
-    bytes chunk = 2; // every later message
-  }
-}
-
-message UploadMissionResponse {}
-
-message GetMissionInfoRequest {}
-
-message GetMissionInfoResponse {
-  string arch = 1; // GOARCH of the host the mission service runs on
-}
-
-message StartMissionRequest {}
 
 message StartMissionResponse {}
 

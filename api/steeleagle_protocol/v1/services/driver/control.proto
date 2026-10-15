@@ -38,6 +38,7 @@ service ControlService {
    */
   rpc TakeOff (TakeOffRequest)
 	returns (TakeOffResponse) {}
+
   /*
    * Order the vehicle to land _(Action)_.
    *
@@ -47,8 +48,10 @@ service ControlService {
    * Returns an _Action_ style response with `expected_mode` set to LAND
    * and `expected_status` set to `MOTION_STATUS_STOPPED`.
    */
+
   rpc Land (LandRequest)
 	returns (LandResponse) {}
+  
   /*
    * Order the vehicle to hold/loiter _(Action)_.
    *
@@ -60,6 +63,7 @@ service ControlService {
    */
   rpc Hold (HoldRequest)
 	returns (HoldResponse) {}
+  
   /*
    * Orders an emergency shutdown of the vehicle motors _(Action)_.
    *
@@ -71,6 +75,7 @@ service ControlService {
    */
   rpc Kill (KillRequest)
 	returns (KillResponse) {}
+  
   /*
    * Order the vehicle to return to its home position _(Action)_.
    *
@@ -91,6 +96,7 @@ service ControlService {
    */
   rpc ReturnToHome (ReturnToHomeRequest)
 	returns (ReturnToHomeResponse) {}
+  
   /*
    * Order the device to move to a global position target _(Guidance)_.
    *
@@ -119,6 +125,7 @@ service ControlService {
    */
   rpc SetGlobalPositionTarget (SetGlobalPositionTargetRequest)
 	returns (SetGlobalPositionTargetResponse) {}
+  
   /*
    * Order the device to move to a relative position target _(Guidance)_.
    *
@@ -137,6 +144,7 @@ service ControlService {
    */
   rpc SetRelativePositionTarget (SetRelativePositionTargetRequest)
 	returns (SetRelativePositionTargetResponse) {}
+  
   /*
    * Order the device to accelerate to a velocity target _(Guidance)_.
    *
@@ -151,6 +159,7 @@ service ControlService {
    */
   rpc SetVelocityTarget (SetVelocityTargetRequest)
 	returns (SetVelocityTargetResponse) {}
+  
   /*
    * Order the device to set the angle pose of the gimbal _(Gimbal)_.
    *
@@ -164,6 +173,7 @@ service ControlService {
    */
   rpc SetGimbalAngleTarget (SetGimbalAngleTargetRequest)
 	returns (SetGimbalAngleTargetResponse) {}
+  
   /*
    * Order the device to set the velocity of the gimbal _(Gimbal)_.
    *
@@ -177,36 +187,36 @@ service ControlService {
 // ReturnToHome mode switch.
 enum ReturnToHomeEndBehavior {
   RETURN_TO_HOME_END_BEHAVIOR_UNSPECIFIED = 0; // defaults to `HOVER`
-  RETURN_TO_HOME_END_BEHAVIOR_HOVER = 1; // hover upon return to home
-  RETURN_TO_HOME_END_BEHAVIOR_LAND = 2; // land upon return to home
+  RETURN_TO_HOME_END_BEHAVIOR_HOVER = 1;       // hover upon return to home
+  RETURN_TO_HOME_END_BEHAVIOR_LAND = 2;        // land upon return to home
 }
 
 // Altitude mode switch.
 enum AltitudeMode {
   ALTITUDE_MODE_UNSPECIFIED = 0; // defaults to `RELATIVE`
-  ALTITUDE_MODE_RELATIVE = 1; // meters above takeoff position
-  ALTITUDE_MODE_ABSOLUTE = 2; // meters above Mean Sea Level
+  ALTITUDE_MODE_RELATIVE = 1;    // meters above takeoff position
+  ALTITUDE_MODE_ABSOLUTE = 2;    // meters above Mean Sea Level
 }
 
 // Heading mode switch.
 enum HeadingMode {
   HEADING_MODE_UNSPECIFIED = 0; // defaults to `TO_TARGET`
-  HEADING_MODE_TO_TARGET = 1; // orient towards the target location
-  HEADING_MODE_START = 2; // orient towards the given heading
+  HEADING_MODE_TO_TARGET = 1;   // orient towards the target location
+  HEADING_MODE_START = 2;       // orient towards the given heading
 }
 
 // Reference frame mode switch.
 enum ReferenceFrame {
   REFERENCE_FRAME_UNSPECIFIED = 0; // defaults to `BODY`
-  REFERENCE_FRAME_BODY = 1; // device reference frame
-  REFERENCE_FRAME_NEU = 2; // NEU (North, East, Up) reference frame
+  REFERENCE_FRAME_BODY = 1;        // device reference frame
+  REFERENCE_FRAME_NEU = 2;         // NEU (North, East, Up) reference frame
 }
 
 // Angle mode switch.
 enum AngleMode {
   ANGLE_MODE_UNSPECIFIED = 0; // defaults to `ABSOLUTE`
-  ANGLE_MODE_ABSOLUTE = 1; // absolute angle
-  ANGLE_MODE_OFFSET = 2; // offset from current
+  ANGLE_MODE_ABSOLUTE = 1;    // absolute angle
+  ANGLE_MODE_OFFSET = 2;      // offset from current
 }
 
 message TakeOffRequest {
@@ -215,29 +225,37 @@ message TakeOffRequest {
 }
 
 message TakeOffResponse {
-  steeleagle_protocol.v1.messages.telemetry.Mode expected_mode = 1; // flight mode expectation
-  steeleagle_protocol.v1.messages.telemetry.MotionStatus expected_status = 2; // motion status expectation
+  // flight mode expectation
+  steeleagle_protocol.v1.messages.telemetry.Mode expected_mode = 1;
+  // motion status expectation
+  steeleagle_protocol.v1.messages.telemetry.MotionStatus expected_status = 2;
 }
 
 message LandRequest {}
 
 message LandResponse {
-  steeleagle_protocol.v1.messages.telemetry.Mode expected_mode = 1; // flight mode expectation
-  steeleagle_protocol.v1.messages.telemetry.MotionStatus expected_status = 2; // motion status expectation
+  // flight mode expectation
+  steeleagle_protocol.v1.messages.telemetry.Mode expected_mode = 1;
+  // motion status expectation
+  steeleagle_protocol.v1.messages.telemetry.MotionStatus expected_status = 2;
 }
 
 message HoldRequest {}
 
 message HoldResponse {
-  steeleagle_protocol.v1.messages.telemetry.Mode expected_mode = 1; // flight mode expectation
-  steeleagle_protocol.v1.messages.telemetry.MotionStatus expected_status = 2; // motion status expectation
+  // flight mode expectation
+  steeleagle_protocol.v1.messages.telemetry.Mode expected_mode = 1;
+  // motion status expectation
+  steeleagle_protocol.v1.messages.telemetry.MotionStatus expected_status = 2;
 }
 
 message KillRequest {}
 
 message KillResponse {
-  steeleagle_protocol.v1.messages.telemetry.Mode expected_mode = 1; // flight mode expectation
-  steeleagle_protocol.v1.messages.telemetry.MotionStatus expected_status = 2; // motion status expectation
+  // flight mode expectation
+  steeleagle_protocol.v1.messages.telemetry.Mode expected_mode = 1;
+  // motion status expectation
+  steeleagle_protocol.v1.messages.telemetry.MotionStatus expected_status = 2;
 }
 
 message ReturnToHomeRequest {
@@ -250,8 +268,10 @@ message ReturnToHomeRequest {
 }
 
 message ReturnToHomeResponse {
-  steeleagle_protocol.v1.messages.telemetry.Mode expected_mode = 1; // flight mode expectation
-  steeleagle_protocol.v1.messages.telemetry.MotionStatus expected_status = 2; // motion status expectation
+  // flight mode expectation
+  steeleagle_protocol.v1.messages.telemetry.Mode expected_mode = 1;
+  // motion status expectation
+  steeleagle_protocol.v1.messages.telemetry.MotionStatus expected_status = 2;
 }
 
 message SetGlobalPositionTargetRequest {
@@ -267,8 +287,10 @@ message SetGlobalPositionTargetRequest {
 }
 
 message SetGlobalPositionTargetResponse {
-  common.GlobalPosition setpoint = 1; // global position setpoint for the request
-  steeleagle_protocol.v1.messages.telemetry.MotionStatus expected_status = 2; // motion status expectation
+  // global position setpoint for the request
+  common.GlobalPosition setpoint = 1;
+  // motion status expectation
+  steeleagle_protocol.v1.messages.telemetry.MotionStatus expected_status = 2;
 }
 
 message SetRelativePositionTargetRequest {
@@ -285,7 +307,8 @@ message SetRelativePositionTargetRequest {
 message SetRelativePositionTargetResponse {
   // relative position setpoint for the request (converted to NEU)
   common.RelativePosition setpoint = 1;
-  steeleagle_protocol.v1.messages.telemetry.MotionStatus expected_status = 2; // motion status expectation
+  // motion status expectation
+  steeleagle_protocol.v1.messages.telemetry.MotionStatus expected_status = 2;
 }
 
 message SetVelocityTargetRequest {
@@ -296,12 +319,14 @@ message SetVelocityTargetRequest {
 }
 
 message SetVelocityTargetResponse {
-  common.Velocity setpoint = 1; // velocity setpoint for the request (converted to NEU)
-  steeleagle_protocol.v1.messages.telemetry.MotionStatus expected_status = 2; // motion status expectation
+  // velocity setpoint for the request (converted to NEU)
+  common.Velocity setpoint = 1;
+  // motion status expectation
+  steeleagle_protocol.v1.messages.telemetry.MotionStatus expected_status = 2;
 }
 
 message SetGimbalAngleTargetRequest {
-  common.Pose pose = 1; // target pose
+  common.Pose pose = 1;              // target pose
   optional AngleMode angle_mode = 2; // specifies how to interpret the target pose
   optional ReferenceFrame frame = 3; // frame of reference
 }

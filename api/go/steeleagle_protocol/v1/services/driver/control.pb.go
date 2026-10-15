@@ -385,7 +385,9 @@ func (x *TakeOffResponse) SetExpectedStatus(v telemetry.MotionStatus) {
 type TakeOffResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	ExpectedMode   telemetry.Mode
+	// flight mode expectation
+	ExpectedMode telemetry.Mode
+	// motion status expectation
 	ExpectedStatus telemetry.MotionStatus
 }
 
@@ -499,7 +501,9 @@ func (x *LandResponse) SetExpectedStatus(v telemetry.MotionStatus) {
 type LandResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	ExpectedMode   telemetry.Mode
+	// flight mode expectation
+	ExpectedMode telemetry.Mode
+	// motion status expectation
 	ExpectedStatus telemetry.MotionStatus
 }
 
@@ -613,7 +617,9 @@ func (x *HoldResponse) SetExpectedStatus(v telemetry.MotionStatus) {
 type HoldResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	ExpectedMode   telemetry.Mode
+	// flight mode expectation
+	ExpectedMode telemetry.Mode
+	// motion status expectation
 	ExpectedStatus telemetry.MotionStatus
 }
 
@@ -727,7 +733,9 @@ func (x *KillResponse) SetExpectedStatus(v telemetry.MotionStatus) {
 type KillResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	ExpectedMode   telemetry.Mode
+	// flight mode expectation
+	ExpectedMode telemetry.Mode
+	// motion status expectation
 	ExpectedStatus telemetry.MotionStatus
 }
 
@@ -886,7 +894,9 @@ func (x *ReturnToHomeResponse) SetExpectedStatus(v telemetry.MotionStatus) {
 type ReturnToHomeResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	ExpectedMode   telemetry.Mode
+	// flight mode expectation
+	ExpectedMode telemetry.Mode
+	// motion status expectation
 	ExpectedStatus telemetry.MotionStatus
 }
 
@@ -1166,7 +1176,9 @@ func (x *SetGlobalPositionTargetResponse) ClearSetpoint() {
 type SetGlobalPositionTargetResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Setpoint       *common.GlobalPosition
+	// global position setpoint for the request
+	Setpoint *common.GlobalPosition
+	// motion status expectation
 	ExpectedStatus telemetry.MotionStatus
 }
 
@@ -1415,7 +1427,8 @@ type SetRelativePositionTargetResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// relative position setpoint for the request (converted to NEU)
-	Setpoint       *common.RelativePosition
+	Setpoint *common.RelativePosition
+	// motion status expectation
 	ExpectedStatus telemetry.MotionStatus
 }
 
@@ -1601,7 +1614,9 @@ func (x *SetVelocityTargetResponse) ClearSetpoint() {
 type SetVelocityTargetResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Setpoint       *common.Velocity
+	// velocity setpoint for the request (converted to NEU)
+	Setpoint *common.Velocity
+	// motion status expectation
 	ExpectedStatus telemetry.MotionStatus
 }
 

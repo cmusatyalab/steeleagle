@@ -11,7 +11,8 @@ class StreamServiceStub:
 
     This is an internal service used to retrieve imagery and telemetry from the
     driver. These are processed by the OS and then served as the `DataService`
-    to other connected plugins.
+    to other plugins. Drivers are expected to publish their streams over Gabriel
+    using a Gabriel producer.
     """
 
     def __init__(self, channel):
@@ -20,17 +21,12 @@ class StreamServiceStub:
         Args:
             channel: A grpc.Channel.
         """
-        self.GetVideoStreamURL = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.driver.StreamService/GetVideoStreamURL',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_stream__pb2.GetVideoStreamURLRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_stream__pb2.GetVideoStreamURLResponse.FromString,
+        self.StreamCameras = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.driver.StreamService/StreamCameras',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_stream__pb2.StreamCamerasRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_stream__pb2.StreamCamerasResponse.FromString,
                 _registered_method=True)
-        self.StreamVideoFrames = channel.unary_stream(
-                '/steeleagle_protocol.v1.services.driver.StreamService/StreamVideoFrames',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_stream__pb2.StreamVideoFramesRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_stream__pb2.StreamVideoFramesResponse.FromString,
-                _registered_method=True)
-        self.StreamTelemetry = channel.unary_stream(
+        self.StreamTelemetry = channel.unary_unary(
                 '/steeleagle_protocol.v1.services.driver.StreamService/StreamTelemetry',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_stream__pb2.StreamTelemetryRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_stream__pb2.StreamTelemetryResponse.FromString,
@@ -43,28 +39,16 @@ class StreamServiceServicer:
 
     This is an internal service used to retrieve imagery and telemetry from the
     driver. These are processed by the OS and then served as the `DataService`
-    to other connected plugins.
+    to other plugins. Drivers are expected to publish their streams over Gabriel
+    using a Gabriel producer.
     """
 
-    def GetVideoStreamURL(self, request, context):
+    def StreamCameras(self, request, context):
         """
-        Get the video streaming URL from the vehicle.
+        Start streaming cameras to the vehicle.
 
-        Retrieves the video stream URL from the vehicle so that it can be
-        broadcast to the rest of the system. This function should only be called
-        by the OS, and not by any plugins.
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def StreamVideoFrames(self, request, context):
-        """
-        Stream individual video frames from the vehicle.
-
-        Retrieves a stream of individual video frame from the vehicle. This is
-        used when camera data is accessible without needing a stream. This
-        function should only be called by the OS, and not by any plugins.
+        Publishes one primary camera and any number of secondary cameras under the
+        given URI to the vehicle using a Gabriel producer.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -72,10 +56,10 @@ class StreamServiceServicer:
 
     def StreamTelemetry(self, request, context):
         """
-        Stream telemetry from the vehicle.
+        Start streaming telemetry to the vehicle.
 
-        Streams up-to-date telemetry from the vehicle. This function should only
-        be called by the OS, and not by any plugins.
+        Publishes telemetry messages to the vehicle using a Gabriel producer under the
+        given URI.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -84,17 +68,12 @@ class StreamServiceServicer:
 
 def add_StreamServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'GetVideoStreamURL': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetVideoStreamURL,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_stream__pb2.GetVideoStreamURLRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_stream__pb2.GetVideoStreamURLResponse.SerializeToString,
+            'StreamCameras': grpc.unary_unary_rpc_method_handler(
+                    servicer.StreamCameras,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_stream__pb2.StreamCamerasRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_stream__pb2.StreamCamerasResponse.SerializeToString,
             ),
-            'StreamVideoFrames': grpc.unary_stream_rpc_method_handler(
-                    servicer.StreamVideoFrames,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_stream__pb2.StreamVideoFramesRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_stream__pb2.StreamVideoFramesResponse.SerializeToString,
-            ),
-            'StreamTelemetry': grpc.unary_stream_rpc_method_handler(
+            'StreamTelemetry': grpc.unary_unary_rpc_method_handler(
                     servicer.StreamTelemetry,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_stream__pb2.StreamTelemetryRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_stream__pb2.StreamTelemetryResponse.SerializeToString,
@@ -113,11 +92,12 @@ class StreamService:
 
     This is an internal service used to retrieve imagery and telemetry from the
     driver. These are processed by the OS and then served as the `DataService`
-    to other connected plugins.
+    to other plugins. Drivers are expected to publish their streams over Gabriel
+    using a Gabriel producer.
     """
 
     @staticmethod
-    def GetVideoStreamURL(request,
+    def StreamCameras(request,
             target,
             options=(),
             channel_credentials=None,
@@ -130,36 +110,9 @@ class StreamService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.StreamService/GetVideoStreamURL',
-            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_stream__pb2.GetVideoStreamURLRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_stream__pb2.GetVideoStreamURLResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def StreamVideoFrames(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_stream(
-            request,
-            target,
-            '/steeleagle_protocol.v1.services.driver.StreamService/StreamVideoFrames',
-            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_stream__pb2.StreamVideoFramesRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_stream__pb2.StreamVideoFramesResponse.FromString,
+            '/steeleagle_protocol.v1.services.driver.StreamService/StreamCameras',
+            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_stream__pb2.StreamCamerasRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_stream__pb2.StreamCamerasResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -181,7 +134,7 @@ class StreamService:
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_stream(
+        return grpc.experimental.unary_unary(
             request,
             target,
             '/steeleagle_protocol.v1.services.driver.StreamService/StreamTelemetry',

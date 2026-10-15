@@ -32,6 +32,7 @@ service SwarmService {
    */
   rpc SwarmTakeOff (SwarmTakeOffRequest)
 	returns (stream SwarmTakeOffResponse) {}
+  
   /*
    * Order multiple vehicle to land.
    *
@@ -40,6 +41,7 @@ service SwarmService {
    */
   rpc SwarmLand (SwarmLandRequest)
 	returns (stream SwarmLandResponse) {}
+  
   /*
    * Order multiple vehicle to hold/loiter.
    *
@@ -48,6 +50,7 @@ service SwarmService {
    */
   rpc SwarmHold (SwarmHoldRequest)
 	returns (stream SwarmHoldResponse) {}
+  
   /*
    * Orders an emergency shutdown of multiple vehicles.
    *
@@ -56,6 +59,7 @@ service SwarmService {
    */
   rpc SwarmKill (SwarmKillRequest)
 	returns (stream SwarmKillResponse) {}
+  
   /*
    * Order multiple vehicles to return to their home positions.
    *
@@ -71,6 +75,7 @@ service SwarmService {
    */
   rpc SwarmReturnToHome (SwarmReturnToHomeRequest)
 	returns (stream SwarmReturnToHomeResponse) {}
+  
   /*
    * Order multiple vehicles to accelerate to a velocity.
    *
@@ -81,6 +86,7 @@ service SwarmService {
    */
   rpc SwarmSetVelocityTarget (SwarmSetVelocityTargetRequest)
 	returns (stream SwarmSetVelocityTargetResponse) {}
+  
   /*
    * Order multiple vehicles to set the angle of a gimbal.
    *
@@ -96,6 +102,7 @@ service SwarmService {
    */
   rpc SwarmSetGimbalAngleTarget (SwarmSetGimbalAngleTargetRequest)
 	returns (stream SwarmSetGimbalAngleTargetResponse) {}
+  
   /*
    * Order multiple vehicles to start a mission.
    *
@@ -105,17 +112,7 @@ service SwarmService {
    */
   rpc SwarmStartMission (SwarmStartMissionRequest)
     returns (stream SwarmStartMissionResponse) {}
-  /*
-   * Upload a mission to multiple vehicles.
-   *
-   * The client streams a `header` (target vehicles plus one variant per
-   * architecture) followed by `chunk`s. The server validates the complete
-   * upload, then streams each vehicle the variant matching its architecture,
-   * sending throttled `progress` messages and exactly one final result per
-   * vehicle. Can be started by sending a subsequent `SwarmStartMission`.
-   */
-  rpc SwarmUploadMission (stream SwarmUploadMissionRequest)
-    returns (stream SwarmUploadMissionResponse) {}
+  
   /*
    * Order multiple vehicles to stop a mission.
    *
@@ -127,139 +124,163 @@ service SwarmService {
 }
 
 message SwarmTakeOffRequest {
-  repeated string vehicles = 1; // target vehicles
-  steeleagle_protocol.v1.services.driver.TakeOffRequest request = 2; // proxied request object
+  // target vehicles
+  repeated string vehicles = 1;
+  // proxied request object
+  steeleagle_protocol.v1.services.driver.TakeOffRequest request = 2;
 }
 
 message SwarmTakeOffResponse {
-  string vehicle = 1; // ID of vehicle
-  steeleagle_protocol.v1.services.driver.TakeOffResponse response = 2; // proxied response object
-  uint32 code = 3; // gRPC status code
-  string details = 4; // error details, if applicable
+  // ID of the vehicle
+  string vehicle = 1;
+  // proxied response object
+  steeleagle_protocol.v1.services.driver.TakeOffResponse response = 2;
+  // gRPC status code
+  uint32 code = 3;
+  // error details, if applicable
+  string details = 4;
 }
 
 message SwarmLandRequest {
-  repeated string vehicles = 1; // target vehicles
-  steeleagle_protocol.v1.services.driver.LandRequest request = 2; // proxied request object
+  // target vehicles
+  repeated string vehicles = 1;
+  // proxied request object
+  steeleagle_protocol.v1.services.driver.LandRequest request = 2;
 }
 
 message SwarmLandResponse {
-  string vehicle = 1; // ID of vehicle
-  steeleagle_protocol.v1.services.driver.LandResponse response = 2; // proxied response object
-  uint32 code = 3; // gRPC status code
-  string details = 4; // error details, if applicable
+  // ID of the vehicle
+  string vehicle = 1;
+  // proxied response object
+  steeleagle_protocol.v1.services.driver.LandResponse response = 2;
+  // gRPC status code
+  uint32 code = 3;
+  // error details, if applicable
+  string details = 4;
 }
 
 message SwarmHoldRequest {
-  repeated string vehicles = 1; // target vehicles
-  steeleagle_protocol.v1.services.driver.HoldRequest request = 2; // proxied request object
+  // target vehicles
+  repeated string vehicles = 1;
+  // proxied request object
+  steeleagle_protocol.v1.services.driver.HoldRequest request = 2;
 }
 
 message SwarmHoldResponse {
-  string vehicle = 1; // ID of vehicle
-  steeleagle_protocol.v1.services.driver.HoldResponse response = 2; // proxied response object
-  uint32 code = 3; // gRPC status code
-  string details = 4; // error details, if applicable
+  // ID of the vehicle
+  string vehicle = 1;
+  // proxied response object
+  steeleagle_protocol.v1.services.driver.HoldResponse response = 2;
+  // gRPC status code
+  uint32 code = 3;
+  // error details, if applicable
+  string details = 4;
 }
 
 message SwarmKillRequest {
-  repeated string vehicles = 1; // target vehicles
-  steeleagle_protocol.v1.services.driver.KillRequest request = 2; // proxied request object
+  // target vehicles
+  repeated string vehicles = 1;
+  // proxied request object
+  steeleagle_protocol.v1.services.driver.KillRequest request = 2;
 }
 
 message SwarmKillResponse {
-  string vehicle = 1; // ID of vehicle
-  steeleagle_protocol.v1.services.driver.KillResponse response = 2; // proxied response object
-  uint32 code = 3; // gRPC status code
-  string details = 4; // error details, if applicable
+  // ID of the vehicle
+  string vehicle = 1;
+  // proxied response object
+  steeleagle_protocol.v1.services.driver.KillResponse response = 2;
+  // gRPC status code
+  uint32 code = 3;
+  // error details, if applicable
+  string details = 4;
 }
 
 message SwarmReturnToHomeRequest {
-  repeated string vehicles = 1; // target vehicles
-  steeleagle_protocol.v1.services.driver.ReturnToHomeRequest request = 2; // proxied request object
+  // target vehicles
+  repeated string vehicles = 1;
+  // proxied request object
+  steeleagle_protocol.v1.services.driver.ReturnToHomeRequest request = 2;
 }
 
 message SwarmReturnToHomeResponse {
-  string vehicle = 1; // ID of vehicle
-  steeleagle_protocol.v1.services.driver.ReturnToHomeResponse response = 2; // proxied response object
-  uint32 code = 3; // gRPC status code
-  string details = 4; // error details, if applicable
+  // ID of the vehicle
+  string vehicle = 1;
+  // proxied response object
+  steeleagle_protocol.v1.services.driver.ReturnToHomeResponse response = 2;
+  // gRPC status code
+  uint32 code = 3;
+  // error details, if applicable
+  string details = 4;
 }
 
 message SwarmSetVelocityTargetRequest {
-  repeated string vehicles = 1; // target vehicles
-  steeleagle_protocol.v1.services.driver.SetVelocityTargetRequest request = 2; // proxied request object
+  // target vehicles
+  repeated string vehicles = 1;
+  // proxied request object
+  steeleagle_protocol.v1.services.driver.SetVelocityTargetRequest request = 2;
 }
 
 message SwarmSetVelocityTargetResponse {
-  string vehicle = 1; // ID of vehicle
-  steeleagle_protocol.v1.services.driver.SetVelocityTargetResponse response = 2; // proxied response object
-  uint32 code = 3; // gRPC status code
-  string details = 4; // error details, if applicable
+  // ID of the vehicle
+  string vehicle = 1;
+  // proxied response object
+  steeleagle_protocol.v1.services.driver.SetVelocityTargetResponse response = 2;
+  // gRPC status code
+  uint32 code = 3;
+  // error details, if applicable
+  string details = 4;
 }
 
 message SwarmSetGimbalAngleTargetRequest{
-  repeated string vehicles = 1; // target vehicles
-  steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetRequest request = 2; // proxied request object
+  // target vehicles
+  repeated string vehicles = 1;
+  // proxied request object
+  steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetRequest request = 2;
 }
 
 message SwarmSetGimbalAngleTargetResponse {
-  string vehicle = 1; // ID of vehicle
-  steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetResponse response = 2; // proxied response object
-  uint32 code = 3; // gRPC status code
-  string details = 4; // error details, if applicable
-}
-
-message SwarmUploadMissionHeader {
-  repeated string vehicles = 1; // target vehicles
-  repeated steeleagle_protocol.v1.services.mission.MissionHeader variants = 2; // one per architecture, architectures unique
-}
-
-message SwarmUploadMissionChunk {
-  string arch = 1; // which variant this chunk belongs to
-  bytes data = 2;
-}
-
-message SwarmUploadMissionRequest {
-  oneof part {
-    SwarmUploadMissionHeader header = 1; // first message only
-    SwarmUploadMissionChunk chunk = 2; // every later message
-  }
-}
-
-message UploadProgress {
-  uint64 sent = 1; // bytes accepted by the vehicle stream so far
-  uint64 total = 2; // size of the variant being sent to this vehicle
-}
-
-message SwarmUploadMissionResponse {
-  string vehicle = 1; // ID of vehicle
-  steeleagle_protocol.v1.services.mission.UploadMissionResponse response = 2; // proxied response object, set on success
-  uint32 code = 3; // gRPC status code (final result only)
-  string details = 4; // error details, if applicable
-  UploadProgress progress = 5; // set on progress messages; unset on the final result
+  // ID of the vehicle
+  string vehicle = 1;
+  // proxied response object
+  steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetResponse response = 2;
+  // gRPC status code
+  uint32 code = 3;
+  // error details, if applicable
+  string details = 4;
 }
 
 message SwarmStartMissionRequest {
-  repeated string vehicles = 1; // target vehicles
-  steeleagle_protocol.v1.services.mission.StartMissionRequest request = 2; // proxied request object
+  // target vehicles
+  repeated string vehicles = 1;
+  // proxied request object
+  steeleagle_protocol.v1.services.mission.StartMissionRequest request = 2;
 }
 
 message SwarmStartMissionResponse {
-  string vehicle = 1; // ID of vehicle
-  steeleagle_protocol.v1.services.mission.StartMissionResponse response = 2; // proxied response object
-  uint32 code = 3; // gRPC status code
-  string details = 4; // error details, if applicable
+  // ID of the vehicle
+  string vehicle = 1;
+  // proxied response object
+  steeleagle_protocol.v1.services.mission.StartMissionResponse response = 2;
+  // gRPC status code
+  uint32 code = 3;
+  // error details, if applicable
+  string details = 4;
 }
 
 message SwarmStopMissionRequest {
-  repeated string vehicles = 1; // target vehicles
-  steeleagle_protocol.v1.services.mission.StopMissionRequest request = 2; // proxied request object
+  // target vehicles
+  repeated string vehicles = 1;
+  // proxied request object
+  steeleagle_protocol.v1.services.mission.StopMissionRequest request = 2;
 }
 
 message SwarmStopMissionResponse {
-  string vehicle = 1; // ID of vehicle
-  steeleagle_protocol.v1.services.mission.StopMissionResponse response = 2; // proxied response object
-  uint32 code = 3; // gRPC status code
-  string details = 4; // error details, if applicable
+  // ID of the vehicle
+  string vehicle = 1;
+  // proxied response object
+  steeleagle_protocol.v1.services.mission.StopMissionResponse response = 2;
+  // gRPC status code
+  uint32 code = 3;
+  // error details, if applicable
+  string details = 4;
 }

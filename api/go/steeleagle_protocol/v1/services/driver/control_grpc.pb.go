@@ -62,13 +62,6 @@ type ControlServiceClient interface {
 	// Returns an _Action_ style response with `expected_mode` set to LOITER
 	// and `expected_status` set to `MOTION_STATUS_HOLDING`.
 	TakeOff(ctx context.Context, in *TakeOffRequest, opts ...grpc.CallOption) (*TakeOffResponse, error)
-	// Order the vehicle to land _(Action)_.
-	//
-	// Causes the vehicle to land at its current location. Implicitly
-	// disarms the vehicle.
-	//
-	// Returns an _Action_ style response with `expected_mode` set to LAND
-	// and `expected_status` set to `MOTION_STATUS_STOPPED`.
 	Land(ctx context.Context, in *LandRequest, opts ...grpc.CallOption) (*LandResponse, error)
 	// Order the vehicle to hold/loiter _(Action)_.
 	//
@@ -306,13 +299,6 @@ type ControlServiceServer interface {
 	// Returns an _Action_ style response with `expected_mode` set to LOITER
 	// and `expected_status` set to `MOTION_STATUS_HOLDING`.
 	TakeOff(context.Context, *TakeOffRequest) (*TakeOffResponse, error)
-	// Order the vehicle to land _(Action)_.
-	//
-	// Causes the vehicle to land at its current location. Implicitly
-	// disarms the vehicle.
-	//
-	// Returns an _Action_ style response with `expected_mode` set to LAND
-	// and `expected_status` set to `MOTION_STATUS_STOPPED`.
 	Land(context.Context, *LandRequest) (*LandResponse, error)
 	// Order the vehicle to hold/loiter _(Action)_.
 	//

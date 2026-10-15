@@ -1,4 +1,3 @@
-
 # Example config for `eagle configure`. This config gets pushed to a running
 # instance over its control-plane API, which starts the vehicles it describes.
 # The daemon-wide settings (everything above [[vehicles]], including hostname)
@@ -10,42 +9,62 @@
 hostname = "eagled"
 vehicle-port-base = 9000
 gabriel-port = 9099
-sc-port = 5003
+swarm-controller-port = 5003
 headless = true
+auto-run = true
+auto-install = true
 
-[[plugins]]
-[[plugins.vehicles]]
+[[vehicles]]
 # Name of the vehicle.
 name = "harpy"
-plugin = "parrot_anafi"
-[plugins.vehicles.sim]
+[vehicles.plugin]
+id = "parrot_anafi"
+url = ""
+tag = ""
+override = ""
+[vehicles.plugin.args]
+runtime = "container | sandbox | process"
+[vehicles.sim]
+default = false
 lat = 40.413664
 lon = -79.949285
 alt = 0
-[plugins.vehicles.args]
+[vehicles.args]
 ip = "10.202.0.1"
 
-[[plugins.engines]]
+[[engines]]
 name = "yolo_qnn"
+[engines.plugin]
 plugin = "yolo_qnn"
-[plugins.engines.args]
+[engines.plugin.args]
 
-[plugins.monitor]
+[[monitors]]
+name = ""
+[monitors.plugin]
 plugin = ""
-[plugins.monitor.args]
-exp = "early-discard"
+[monitors.plugin.args]
 
-[plugins.simulator]
-plugin = "steeleagle_aviary"
-tag = "abecgd"
-override = "/home/..."
-runtime = "container | sandbox | process"
+[[extras]] # extra uncategorized services
 
-[plugins.gcs]
-plugin = "steeleagle_gcs"
+# These are managed services, and are not exposed to the GCS for starting/stopping.
+# They can be changed under an advanced settings dropdown, and trigger a daemon
+# restart when they are changed.
+[simulator]
+[simulator.plugin]
+id = "steeleagle_aviary"
+[simulator.plugin.args]
 
-[plugins.sc]
+[gcs]
+[gcs.plugin]
+id = "steeleagle_gcs"
+[gcs.plugin.args]
+
+[swarm-controller]
+[swarm-controller.plugin]
 plugin = "steeleagle_swarm_controller"
+[swarm-controller.plugin.args]
 
-[plugins.db]
+[db]
+[db.plugin]
 plugin = "steeleagle_db"
+[db.plugin.args]

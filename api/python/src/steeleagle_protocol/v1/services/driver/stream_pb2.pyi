@@ -1,8 +1,8 @@
-from steeleagle_protocol.v1.messages.telemetry import telemetry_pb2 as _telemetry_pb2
+from google.protobuf.internal import containers as _containers
 from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
-from collections.abc import Mapping as _Mapping
+from collections.abc import Iterable as _Iterable, Mapping as _Mapping
 from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
@@ -22,42 +22,38 @@ RESOLUTION_720P: Resolution
 RESOLUTION_1080P: Resolution
 RESOLUTION_4K: Resolution
 
-class GetVideoStreamURLRequest(_message.Message):
-    __slots__ = ("resolution",)
-    RESOLUTION_FIELD_NUMBER: _ClassVar[int]
-    resolution: Resolution
-    def __init__(self, resolution: _Optional[_Union[Resolution, str]] = ...) -> None: ...
-
-class GetVideoStreamURLResponse(_message.Message):
-    __slots__ = ("stream_url", "target_fps")
-    STREAM_URL_FIELD_NUMBER: _ClassVar[int]
+class CameraRequest(_message.Message):
+    __slots__ = ("id", "target_fps", "target_resolution", "uri")
+    ID_FIELD_NUMBER: _ClassVar[int]
     TARGET_FPS_FIELD_NUMBER: _ClassVar[int]
-    stream_url: str
+    TARGET_RESOLUTION_FIELD_NUMBER: _ClassVar[int]
+    URI_FIELD_NUMBER: _ClassVar[int]
+    id: str
     target_fps: int
-    def __init__(self, stream_url: _Optional[str] = ..., target_fps: _Optional[int] = ...) -> None: ...
+    target_resolution: Resolution
+    uri: str
+    def __init__(self, id: _Optional[str] = ..., target_fps: _Optional[int] = ..., target_resolution: _Optional[_Union[Resolution, str]] = ..., uri: _Optional[str] = ...) -> None: ...
 
-class StreamVideoFramesRequest(_message.Message):
-    __slots__ = ("target_fps", "resolution")
-    TARGET_FPS_FIELD_NUMBER: _ClassVar[int]
-    RESOLUTION_FIELD_NUMBER: _ClassVar[int]
-    target_fps: int
-    resolution: Resolution
-    def __init__(self, target_fps: _Optional[int] = ..., resolution: _Optional[_Union[Resolution, str]] = ...) -> None: ...
+class StreamCamerasRequest(_message.Message):
+    __slots__ = ("primary", "secondaries")
+    PRIMARY_FIELD_NUMBER: _ClassVar[int]
+    SECONDARIES_FIELD_NUMBER: _ClassVar[int]
+    primary: CameraRequest
+    secondaries: _containers.RepeatedCompositeFieldContainer[CameraRequest]
+    def __init__(self, primary: _Optional[_Union[CameraRequest, _Mapping]] = ..., secondaries: _Optional[_Iterable[_Union[CameraRequest, _Mapping]]] = ...) -> None: ...
 
-class StreamVideoFramesResponse(_message.Message):
-    __slots__ = ("frame",)
-    FRAME_FIELD_NUMBER: _ClassVar[int]
-    frame: _telemetry_pb2.EncodedFrame
-    def __init__(self, frame: _Optional[_Union[_telemetry_pb2.EncodedFrame, _Mapping]] = ...) -> None: ...
+class StreamCamerasResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
 
 class StreamTelemetryRequest(_message.Message):
-    __slots__ = ("target_fps",)
+    __slots__ = ("target_fps", "uri")
     TARGET_FPS_FIELD_NUMBER: _ClassVar[int]
+    URI_FIELD_NUMBER: _ClassVar[int]
     target_fps: int
-    def __init__(self, target_fps: _Optional[int] = ...) -> None: ...
+    uri: str
+    def __init__(self, target_fps: _Optional[int] = ..., uri: _Optional[str] = ...) -> None: ...
 
 class StreamTelemetryResponse(_message.Message):
-    __slots__ = ("telemetry",)
-    TELEMETRY_FIELD_NUMBER: _ClassVar[int]
-    telemetry: _telemetry_pb2.Telemetry
-    def __init__(self, telemetry: _Optional[_Union[_telemetry_pb2.Telemetry, _Mapping]] = ...) -> None: ...
+    __slots__ = ()
+    def __init__(self) -> None: ...

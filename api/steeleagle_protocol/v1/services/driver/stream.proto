@@ -7,46 +7,35 @@ package steeleagle_protocol.v1.services.driver;
 
 option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver;driver";
 
-import "steeleagle_protocol/v1/messages/telemetry/telemetry.proto";
-
 /*
  * Used to get streams from the driver.
  *
  * This is an internal service used to retrieve imagery and telemetry from the
  * driver. These are processed by the OS and then served as the `DataService`
- * to other connected plugins.
+ * to other plugins. Drivers are expected to publish their streams over Gabriel
+ * using a Gabriel producer.
  */
 service StreamService {
   /*
-   * Get the video streaming URL from the vehicle.
-   *
-   * Retrieves the video stream URL from the vehicle so that it can be
-   * broadcast to the rest of the system. This function should only be called
-   * by the OS, and not by any plugins.
+   * Start streaming cameras to the vehicle.
+   * 
+   * Publishes one primary camera and any number of secondary cameras under the
+   * given URI to the vehicle using a Gabriel producer.
    */
-  rpc GetVideoStreamURL (GetVideoStreamURLRequest)
-    returns (GetVideoStreamURLResponse);
+  rpc StreamCameras (StreamCamerasRequest)
+    returns (StreamCamerasResponse) {}
 
   /*
-   * Stream individual video frames from the vehicle.
+   * Start streaming telemetry to the vehicle.
    *
-   * Retrieves a stream of individual video frame from the vehicle. This is
-   * used when camera data is accessible without needing a stream. This
-   * function should only be called by the OS, and not by any plugins.
-   */
-  rpc StreamVideoFrames (StreamVideoFramesRequest)
-    returns (stream StreamVideoFramesResponse);
-
-  /*
-   * Stream telemetry from the vehicle.
-   *
-   * Streams up-to-date telemetry from the vehicle. This function should only
-   * be called by the OS, and not by any plugins.
+   * Publishes telemetry messages to the vehicle using a Gabriel producer under the
+   * given URI.
    */
   rpc StreamTelemetry (StreamTelemetryRequest)
-    returns (stream StreamTelemetryResponse);
+    returns (StreamTelemetryResponse) {}
 }
 
+// Resolutions that can be requested by the vehicle.
 enum Resolution {
   RESOLUTION_UNSPECIFIED = 0; // defaults to 720P
   RESOLUTION_360P = 1;
@@ -56,28 +45,24 @@ enum Resolution {
   RESOLUTION_4K = 5;
 }
 
-message GetVideoStreamURLRequest {
-  Resolution resolution = 1; // video stream resolution
+// Request for a single camera stream.
+message CameraRequest {
+  string id = 1;                             // camera ID
+  optional uint32 target_fps = 2;            // target fps to stream at, (default: chosen by driver)
+  optional Resolution target_resolution = 3; // resolution to stream at, (default: chosen by driver)
+  string uri = 4;                            // stream URI to publish at
 }
 
-message GetVideoStreamURLResponse {
-  string stream_url = 1; // URL of the video stream
-  optional uint32 target_fps = 2; // target fps to stream at, if 0 is provided will choose fps
+message StreamCamerasRequest {
+  CameraRequest primary = 1;              // one primary camera to stream
+  repeated CameraRequest secondaries = 2; // any number of secondary cameras to stream
 }
 
-message StreamVideoFramesRequest {
-  optional uint32 target_fps = 1; // target fps to stream at, if 0 is provided will choose fps
-  Resolution resolution = 2; // target frame resolution, if unspecified the driver's native resolution is used
-}
-
-message StreamVideoFramesResponse {
-  steeleagle_protocol.v1.messages.telemetry.EncodedFrame frame = 1; // encoded frame from the camera
-}
+message StreamCamerasResponse {}
 
 message StreamTelemetryRequest {
-  optional uint32 target_fps = 1; // target fps to stream at, if 0 is provided will choose fps
+  optional uint32 target_fps = 1; // target fps to stream at, (default: chosen by driver)
+  string uri = 2;                 // stream URI to publish at
 }
 
-message StreamTelemetryResponse {
-  steeleagle_protocol.v1.messages.telemetry.Telemetry telemetry = 1; // telemetry from the driver
-}
+message StreamTelemetryResponse {}
