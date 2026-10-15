@@ -127,7 +127,13 @@ services:
         "--radius",
         "${OBJECT_RADIUS}"
       ]
-    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities:
+                - gpu
     # The engine finds these in its working directory in the image.
     volumes:
       - ./models:/src/steeleagle-go/backend/server/engines/detection/model/
