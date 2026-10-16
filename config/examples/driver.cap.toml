@@ -1,0 +1,114 @@
+[plugin]
+# Display name for the plugin
+name = "Parrot Plugin"
+# Description of what the plugin does
+description = "Contains drivers for Parrot drones"
+
+[[args]] # Top level args shared by all variants
+# Name of the argument
+name = "ip"
+# JSON type: (string, object, boolean, array, number)
+type = "string" 
+# Description of the argument (optional)
+description = "IP the driver connects to"
+# Default value (optional)
+default = "192.168.42.1" 
+
+
+
+[[drivers]] # Driver variants
+# Name of this variant (must be unique in this section)
+name = "Parrot Anafi 4K"
+# Purely cosmetic fields so users know what this driver controls (optional)
+model = "Anafi 4K"
+manufacturer = "Parrot"
+type = "copter" # (copter, legged, wheeled, boat)
+
+[[drivers.args]] # Args specific to this driver
+
+[[drivers.cameras]]
+# Name of the camera
+name = "rgb"
+# Type of input it creates
+type = "steeleagle_protocol/v1/messages/frame/RawFrame"
+# Description of which camera it is on the device (optional)
+description = "Main RGB camera on gimbal"
+# Resolution and frame rate information
+hres = 1080
+vres = 720
+hfov = 69
+vfov = 43
+fps = 30
+# Average latency of frame capture (optional)
+latency = 280
+# Whether or not the camera is on the main gimbal
+gimbal = true
+# Whether or not the camera is a primary camera; primary cameras
+# cannot be streamed alongside other primary cameras, enforced at
+# dataflow creation
+primary = true
+
+[drivers.supported]
+# Services hosted by this driver
+services = [
+    "steeleagle_protocol/v1/services/driver/ControlService",
+    "steeleagle_protocol/v1/services/driver/StreamService",
+    "steeleagle_protocol/v1/services/driver/CalibrateService",
+]
+
+[drivers.unsupported]
+# Unsupported types, methods, and enums by this driver
+methods = [
+    "steeleagle_protocol/v1/services/driver/ControlService/Kill",
+]
+fields = [
+    "steeleagle_protocol/v1/services/driver/TakeOffRequest/altitude",
+    "steeleagle_protocol/v1/messages/telemetry/PositionInfo/velocity_body/angular_vel",
+    "steeleagle_protocol/v1/messages/telemetry/PositionInfo/velocity_neu/angular_vel",
+    "steeleagle_protocol/v1/messages/telemetry/GimbalInfo/angular_velocity_body",
+    "steeleagle_protocol/v1/messages/telemetry/GimbalInfo/angular_velocity_neu",
+]
+enums = [
+    "steeleagle_protocol/v1/services/control/ReturnToHomeEndBehavior/RETURN_TO_HOME_END_BEHAVIOR_HOVER",
+    "steeleagle_protocol/v1/services/control/HeadingMode/HEADING_MODE_START",
+]
+
+
+
+[[engines]] # Engine variants
+# Name of this variant (must be unique in this section)
+name = "YOLO Detection"
+# Engine type: (detection, classification, guidance, position, generic, filter)
+type = "detection"
+
+[[engines.args]] # Args specific to this engine
+# Name of the argument
+name = "confidence"
+# JSON type: (string, object, boolean, array, number)
+type = "number" 
+# Description of the argument (optional)
+description = "Confidence threshold (0.01-1.0)"
+# Default value (optional)
+default = "192.168.42.1" 
+
+[engines.input]
+# Input type, enforced at dataflow creation
+type = "steeleagle_protocol/v1/messages/frame/RawFrame"
+
+[engines.result]
+# Result type, not type enforced
+type = "steeleagle_protocol/v1/messages/result/DetectionResult"
+
+[[engines.events]]
+# Label event is given, in addition to the engine name
+label = "dropped"
+# Event type, not type enforced
+type = "steeleagle_protocol/v1/messages/result/GenericResult"
+
+# NOTE: the following plugin variant types do not have special fields
+
+[[monitors]] # Monitor variants
+[[monitos.args]]
+
+[[extras]] # Extra variants
+[[extras.args]]

@@ -16,7 +16,6 @@ import "google/protobuf/timestamp.proto";
  * Defines the upper left and lower right corners of a detected object
  * in an image frame. Origin (0,0) is the top left corner of the input image.
  * (image_height, image_width) is the bottom right corner.
- * Also the class and confidence threshold associated with the box.
  */
 message BoundingBox {
   double y_min = 1; // minimum y offset percentage with respect to image size [0.0-1.0]

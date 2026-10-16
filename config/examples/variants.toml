@@ -1,0 +1,19 @@
+[[variants]]
+name = "Parrot Anafi 4K"
+type = "driver"
+cap = "anafi.cap.toml"
+
+[[variants]]
+name = "Parrot Anafi GOV"
+type = "driver"
+cap = "usa.cap.toml"
+
+[[variants]]
+name = "Parrot Anafi Ai"
+type = "driver"
+cap = "ai.cap.toml"
+
+[[variants]]
+name = "Parrot Onboard Tracker"
+type = "engine"
+cap = "tracker.cap.toml"

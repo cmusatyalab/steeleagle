@@ -1,0 +1,6 @@
+[plugin]
+# Display name for the plugin
+name = "YOLO Qualcomm"
+# Description of what the plugin does
+description = "Runs YOLO object detection on Qualcomm hardware"
+

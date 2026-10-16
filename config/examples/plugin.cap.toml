@@ -1,0 +1,15 @@
+[plugin]
+# Display name for the plugin
+name = "Logdy"
+# Description of what the plugin does
+description = "Logs from files over HTTP"
+
+[[args]]
+# Name of the argument
+name = "files"
+# JSON type: (string, object, boolean, array, number)
+type = "array" 
+# Description of the argument (optional)
+description = "Files to log"
+# Default value (optional)
+default = "[]" 
