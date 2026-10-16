@@ -1,5 +1,4 @@
-import hashlib
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator
 
 from google.protobuf.message import Message
 from pydantic import BaseModel
@@ -28,31 +27,14 @@ async def _collect_stream(stream: AsyncIterator[Message]) -> list[VehicleResult]
     return results
 
 
-UPLOAD_CHUNK_SIZE = 256 * 1024
+# The revised swarm protocol (commit 8779b1aa) dropped SwarmUploadMission;
+# its replacement belongs to the backend rework. Until it exists, uploads
+# fail with this message instead of the whole module failing to import.
+UPLOAD_UNAVAILABLE = "mission upload is not available in the revised swarm protocol yet"
 
 
-def _upload_requests(
-    vehicles: list[str], variants: dict[str, bytes]
-) -> Iterator[swarm_pb2.SwarmUploadMissionRequest]:
-    """Header (one MissionHeader per arch), then each variant's chunks."""
-    yield swarm_pb2.SwarmUploadMissionRequest(
-        header=swarm_pb2.SwarmUploadMissionHeader(
-            vehicles=vehicles,
-            variants=[
-                mission_pb2.MissionHeader(
-                    arch=arch, size=len(data), sha256=hashlib.sha256(data).digest()
-                )
-                for arch, data in variants.items()
-            ],
-        )
-    )
-    for arch, data in variants.items():
-        for offset in range(0, len(data), UPLOAD_CHUNK_SIZE):
-            yield swarm_pb2.SwarmUploadMissionRequest(
-                chunk=swarm_pb2.SwarmUploadMissionChunk(
-                    arch=arch, data=data[offset : offset + UPLOAD_CHUNK_SIZE]
-                )
-            )
+class MissionUploadUnavailable(Exception):
+    pass
 
 
 class SwarmClient:
@@ -134,29 +116,8 @@ class SwarmClient:
     async def upload_mission(
         self, vehicles: list[str], variants: dict[str, bytes]
     ) -> AsyncIterator[dict]:
-        """Streams one binary per arch to the swarm controller and yields a
-        progress/result event dict per response, as they arrive. Raises
-        grpc.aio.AioRpcError if the call itself fails."""
-        call = self._stub.SwarmUploadMission(_upload_requests(vehicles, variants))
-        try:
-            async for response in call:
-                if response.HasField("progress"):
-                    yield {
-                        "type": "progress",
-                        "vehicle": response.vehicle,
-                        "sent": response.progress.sent,
-                        "total": response.progress.total,
-                    }
-                else:
-                    yield {
-                        "type": "result",
-                        "vehicle": response.vehicle,
-                        "success": response.code == 0,
-                        "details": response.details,
-                    }
-        finally:
-            # If the consumer closes this generator early (e.g. the HTTP
-            # client disconnects mid-stream), cancel the RPC promptly
-            # instead of leaving it running server-side until it finishes
-            # on its own. A no-op if the call already completed.
-            call.cancel()
+        """Would stream one binary per arch to the swarm controller; see
+        UPLOAD_UNAVAILABLE. Still an async generator so callers iterate it
+        exactly as before and get the failure on first iteration."""
+        raise MissionUploadUnavailable(UPLOAD_UNAVAILABLE)
+        yield  # unreachable; makes this an async generator

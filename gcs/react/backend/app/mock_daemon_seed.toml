@@ -1,0 +1,80 @@
+# Seed config for mock daemons (app/daemon_registry.py). Mirrors the shape of
+# cmd/eagled/defaults/new_config.toml; every mock daemon starts from a copy of
+# this and keeps its edits in memory until the GCS backend restarts.
+hostname = "mock-eagled"
+vehicle-port-base = 9000
+gabriel-port = 9099
+swarm-controller-port = 5003
+headless = true
+auto-run = true
+auto-install = true
+
+[[vehicles]]
+name = "harpy"
+[vehicles.plugin]
+id = "parrot_anafi"
+runtime = "container"
+image = "docker.io/cmusatyalab/parrot-anafi-driver"
+tag = "v4.0"
+[vehicles.plugin.args]
+[vehicles.sim]
+default = false
+lat = 40.413664
+lon = -79.949285
+alt = 0
+[vehicles.args]
+ip = "10.202.0.1"
+
+[[vehicles]]
+name = "kestrel"
+[vehicles.plugin]
+id = "steeleagle_sim_vehicle"
+runtime = "process"
+url = "https://github.com/cmusatyalab/steeleagle-plugins.git"
+tag = "main"
+[vehicles.plugin.args]
+[vehicles.sim]
+default = true
+lat = 40.4136
+lon = -79.9493
+alt = 0
+
+[[engines]]
+name = "detector"
+[engines.plugin]
+id = "yolo_qnn"
+runtime = "container"
+url = "https://github.com/cmusatyalab/steeleagle-engines.git"
+tag = "main"
+[engines.plugin.args]
+model = "yolov8n"
+confidence = 0.5
+
+[[monitors]]
+name = "battery-watch"
+[monitors.plugin]
+id = "battery_monitor"
+runtime = "sandbox"
+url = "https://github.com/cmusatyalab/steeleagle-plugins.git"
+tag = "main"
+[monitors.plugin.args]
+threshold = 20
+
+[[extras]]
+name = "swarm-controller"
+[extras.plugin]
+id = "steeleagle_swarm_controller"
+runtime = "process"
+url = "https://github.com/cmusatyalab/steeleagle.git"
+tag = "v4_backend_rework"
+[extras.plugin.args]
+log-level = "debug"
+
+[[extras]]
+name = "gcs"
+[extras.plugin]
+id = "steeleagle_gcs"
+runtime = "container"
+image = "docker.io/cmusatyalab/steeleagle-gcs"
+tag = "v4.0"
+[extras.plugin.args]

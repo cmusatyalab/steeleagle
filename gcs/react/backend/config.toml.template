@@ -15,3 +15,9 @@ webserver = "http://localhost:8080"
 
 [dslcompiler]
 controller = "localhost:50060"
+
+[eagled]
+# Serve mock daemons for mock:// addresses on the Orchestrate page (and list
+# two of them under "Discovered"), for UI work while the eagled rework is in
+# progress. Leave false in deployments.
+mock_enabled = false
