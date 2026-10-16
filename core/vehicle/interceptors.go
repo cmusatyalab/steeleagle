@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cmusatyalab/steeleagle/core/util"
+	"github.com/cmusatyalab/steeleagle/core/util/listener"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/peer"
@@ -12,10 +12,10 @@ import (
 )
 
 func qualifyCommand(ctx context.Context, fullName string) string {
-	code := util.UnknownCode
+	code := listener.UnknownCode
 	// Extract code from the connection address (packed by listener)
 	if p, ok := peer.FromContext(ctx); ok {
-		if a, ok := p.Addr.(*util.Addr); ok {
+		if a, ok := p.Addr.(*listener.Addr); ok {
 			code = a.Code
 		}
 	}

@@ -25,6 +25,8 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	ControlService_TakeOff_FullMethodName                   = "/steeleagle_protocol.v1.services.driver.ControlService/TakeOff"
 	ControlService_Land_FullMethodName                      = "/steeleagle_protocol.v1.services.driver.ControlService/Land"
+	ControlService_Stand_FullMethodName                     = "/steeleagle_protocol.v1.services.driver.ControlService/Stand"
+	ControlService_Sit_FullMethodName                       = "/steeleagle_protocol.v1.services.driver.ControlService/Sit"
 	ControlService_Hold_FullMethodName                      = "/steeleagle_protocol.v1.services.driver.ControlService/Hold"
 	ControlService_Kill_FullMethodName                      = "/steeleagle_protocol.v1.services.driver.ControlService/Kill"
 	ControlService_ReturnToHome_FullMethodName              = "/steeleagle_protocol.v1.services.driver.ControlService/ReturnToHome"
@@ -57,12 +59,28 @@ type ControlServiceClient interface {
 	// Order the vehicle to take off _(Action)_.
 	//
 	// Causes the vehicle to take off to a specified take off altitude.
-	// Implicitly arms the vehicle.
+	// Implicitly arms the vehicle. UAV only.
 	//
 	// Returns an _Action_ style response with `expected_mode` set to LOITER
 	// and `expected_status` set to `MOTION_STATUS_HOLDING`.
 	TakeOff(ctx context.Context, in *TakeOffRequest, opts ...grpc.CallOption) (*TakeOffResponse, error)
 	Land(ctx context.Context, in *LandRequest, opts ...grpc.CallOption) (*LandResponse, error)
+	// Order the vehicle to stand _(Action)_.
+	//
+	// Causes the vehicle to stand at its current location. Implicitly
+	// arms the vehicle. Pedal only.
+	//
+	// Returns an _Action_ style response with `expected_mode` set to STAND
+	// and `expected_status` set to `MOTION_STATUS_HOLDING`.
+	Stand(ctx context.Context, in *StandRequest, opts ...grpc.CallOption) (*StandResponse, error)
+	// Order the vehicle to sit _(Action)_.
+	//
+	// Causes the vehicle to sit at its current location. Implicitly
+	// disarms the vehicle. Pedal only.
+	//
+	// Returns an _Action_ style response with `expected_mode` set to SIT
+	// and `expected_status` set to `MOTION_STATUS_STOPPED`.
+	Sit(ctx context.Context, in *SitRequest, opts ...grpc.CallOption) (*SitResponse, error)
 	// Order the vehicle to hold/loiter _(Action)_.
 	//
 	// Causes the vehicle to hold at its current location and to
@@ -74,7 +92,7 @@ type ControlServiceClient interface {
 	// Orders an emergency shutdown of the vehicle motors _(Action)_.
 	//
 	// Causes the vehicle to immediately turn off its motors. _This will
-	// result in the vehicle going into freefall, only for emergencies!_
+	// result in a UAV going into freefall, only for emergencies!_
 	//
 	// Returns an _Action_ style response with `expected_mode` set to EMERGENCY
 	// and `expected_status` set to `MOTION_STATUS_STOPPED`.
@@ -192,6 +210,26 @@ func (c *controlServiceClient) Land(ctx context.Context, in *LandRequest, opts .
 	return out, nil
 }
 
+func (c *controlServiceClient) Stand(ctx context.Context, in *StandRequest, opts ...grpc.CallOption) (*StandResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StandResponse)
+	err := c.cc.Invoke(ctx, ControlService_Stand_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *controlServiceClient) Sit(ctx context.Context, in *SitRequest, opts ...grpc.CallOption) (*SitResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SitResponse)
+	err := c.cc.Invoke(ctx, ControlService_Sit_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *controlServiceClient) Hold(ctx context.Context, in *HoldRequest, opts ...grpc.CallOption) (*HoldResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(HoldResponse)
@@ -294,12 +332,28 @@ type ControlServiceServer interface {
 	// Order the vehicle to take off _(Action)_.
 	//
 	// Causes the vehicle to take off to a specified take off altitude.
-	// Implicitly arms the vehicle.
+	// Implicitly arms the vehicle. UAV only.
 	//
 	// Returns an _Action_ style response with `expected_mode` set to LOITER
 	// and `expected_status` set to `MOTION_STATUS_HOLDING`.
 	TakeOff(context.Context, *TakeOffRequest) (*TakeOffResponse, error)
 	Land(context.Context, *LandRequest) (*LandResponse, error)
+	// Order the vehicle to stand _(Action)_.
+	//
+	// Causes the vehicle to stand at its current location. Implicitly
+	// arms the vehicle. Pedal only.
+	//
+	// Returns an _Action_ style response with `expected_mode` set to STAND
+	// and `expected_status` set to `MOTION_STATUS_HOLDING`.
+	Stand(context.Context, *StandRequest) (*StandResponse, error)
+	// Order the vehicle to sit _(Action)_.
+	//
+	// Causes the vehicle to sit at its current location. Implicitly
+	// disarms the vehicle. Pedal only.
+	//
+	// Returns an _Action_ style response with `expected_mode` set to SIT
+	// and `expected_status` set to `MOTION_STATUS_STOPPED`.
+	Sit(context.Context, *SitRequest) (*SitResponse, error)
 	// Order the vehicle to hold/loiter _(Action)_.
 	//
 	// Causes the vehicle to hold at its current location and to
@@ -311,7 +365,7 @@ type ControlServiceServer interface {
 	// Orders an emergency shutdown of the vehicle motors _(Action)_.
 	//
 	// Causes the vehicle to immediately turn off its motors. _This will
-	// result in the vehicle going into freefall, only for emergencies!_
+	// result in a UAV going into freefall, only for emergencies!_
 	//
 	// Returns an _Action_ style response with `expected_mode` set to EMERGENCY
 	// and `expected_status` set to `MOTION_STATUS_STOPPED`.
@@ -415,6 +469,12 @@ func (UnimplementedControlServiceServer) TakeOff(context.Context, *TakeOffReques
 func (UnimplementedControlServiceServer) Land(context.Context, *LandRequest) (*LandResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Land not implemented")
 }
+func (UnimplementedControlServiceServer) Stand(context.Context, *StandRequest) (*StandResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Stand not implemented")
+}
+func (UnimplementedControlServiceServer) Sit(context.Context, *SitRequest) (*SitResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Sit not implemented")
+}
 func (UnimplementedControlServiceServer) Hold(context.Context, *HoldRequest) (*HoldResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Hold not implemented")
 }
@@ -492,6 +552,42 @@ func _ControlService_Land_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ControlServiceServer).Land(ctx, req.(*LandRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ControlService_Stand_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StandRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ControlServiceServer).Stand(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ControlService_Stand_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ControlServiceServer).Stand(ctx, req.(*StandRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ControlService_Sit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ControlServiceServer).Sit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ControlService_Sit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ControlServiceServer).Sit(ctx, req.(*SitRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -654,6 +750,14 @@ var ControlService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Land",
 			Handler:    _ControlService_Land_Handler,
+		},
+		{
+			MethodName: "Stand",
+			Handler:    _ControlService_Stand_Handler,
+		},
+		{
+			MethodName: "Sit",
+			Handler:    _ControlService_Sit_Handler,
 		},
 		{
 			MethodName: "Hold",

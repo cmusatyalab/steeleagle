@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/cmusatyalab/steeleagle/core/util"
+	"github.com/cmusatyalab/steeleagle/core/util/plugin"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 )
@@ -43,7 +43,7 @@ const maxRestartBackoff = 30 * time.Second
 // kills plugin subprocesses too, so an exit observed after ctx is done is
 // treated as expected and not logged.
 func (m *pluginMonitor) start(ctx context.Context) {
-	plugins := make(map[pluginType]util.Plugin)
+	plugins := make(map[pluginType]plugin.Plugin)
 	plugins[driverPlugin] = m.pluginCfg.Driver
 	if m.pluginCfg.Mission != nil {
 		plugins[missionPlugin] = m.pluginCfg.Mission
@@ -69,7 +69,7 @@ func (m *pluginMonitor) start(ctx context.Context) {
 }
 
 // Handle plugin exit based on the configured restart policy.
-func (m *pluginMonitor) handleExit(ctx context.Context, p util.Plugin, pluginType pluginType, err error) {
+func (m *pluginMonitor) handleExit(ctx context.Context, p plugin.Plugin, pluginType pluginType, err error) {
 	m.log.Err(err).Str("plugin", p.Name()).Msg("plugin exited unexpectedly")
 	switch m.restartPolicy {
 	case noRestart:

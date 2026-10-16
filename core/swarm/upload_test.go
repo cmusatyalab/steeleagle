@@ -1,4 +1,4 @@
-package swarm_test
+package swarm
 
 import (
 	"context"
@@ -13,7 +13,6 @@ import (
 
 	missionpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/mission"
 	swarmpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/swarm"
-	"github.com/cmusatyalab/steeleagle/core/swarm"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -185,7 +184,7 @@ func testCtx(t *testing.T) context.Context {
 func TestUpload_RoutesVariantByArch(t *testing.T) {
 	amd := &fakeMissionVehicle{arch: "amd64"}
 	arm := &fakeMissionVehicle{arch: "arm64"}
-	registry := swarm.NewRegistry()
+	registry := NewRegistry()
 	defer registry.Register("amd", startMissionVehicle(t, amd))()
 	defer registry.Register("arm", startMissionVehicle(t, arm))()
 	client := startSwarmServer(t, registry)
@@ -211,7 +210,7 @@ func TestUpload_RoutesVariantByArch(t *testing.T) {
 
 func TestUpload_MissingVariant(t *testing.T) {
 	v := &fakeMissionVehicle{arch: "riscv64"}
-	registry := swarm.NewRegistry()
+	registry := NewRegistry()
 	defer registry.Register("harpy", startMissionVehicle(t, v))()
 	client := startSwarmServer(t, registry)
 
@@ -227,7 +226,7 @@ func TestUpload_MissingVariant(t *testing.T) {
 
 func TestUpload_UnknownVehicleAndOldMissionService(t *testing.T) {
 	old := &fakeMissionVehicle{arch: "amd64", infoErr: status.Error(codes.Unimplemented, "unknown method GetMissionInfo")}
-	registry := swarm.NewRegistry()
+	registry := NewRegistry()
 	defer registry.Register("old", startMissionVehicle(t, old))()
 	client := startSwarmServer(t, registry)
 
@@ -331,7 +330,7 @@ func TestUpload_ValidationFailsBeforeAnyVehicle(t *testing.T) {
 	for name, build := range cases {
 		t.Run(name, func(t *testing.T) {
 			v := &fakeMissionVehicle{arch: "amd64"}
-			registry := swarm.NewRegistry()
+			registry := NewRegistry()
 			defer registry.Register("harpy", startMissionVehicle(t, v))()
 			client := startSwarmServer(t, registry)
 
@@ -351,10 +350,10 @@ func TestUpload_IdleTimeoutAndSlowVehicleIsolation(t *testing.T) {
 	defer close(stall)
 	slow := &fakeMissionVehicle{arch: "amd64", stall: stall}
 	fast := &fakeMissionVehicle{arch: "amd64"}
-	registry := swarm.NewRegistry()
+	registry := NewRegistry()
 	defer registry.Register("slow", startMissionVehicle(t, slow))()
 	defer registry.Register("fast", startMissionVehicle(t, fast))()
-	client := startSwarmServer(t, registry, swarm.WithUploadIdleTimeout(1500*time.Millisecond))
+	client := startSwarmServer(t, registry, WithUploadIdleTimeout(1500*time.Millisecond))
 
 	resps, err := runUpload(t, testCtx(t), client, uploadRequests([]string{"slow", "fast"}, map[string][]byte{"amd64": payload(2<<20, 3)}))
 	if err != nil {
@@ -385,9 +384,9 @@ func TestUpload_IdleTimeoutAndSlowVehicleIsolation(t *testing.T) {
 // SendAndClose must still be reported OK, not DeadlineExceeded.
 func TestUpload_SlowCommitDoesNotTripIdleTimeout(t *testing.T) {
 	v := &fakeMissionVehicle{arch: "amd64", commitDelay: 500 * time.Millisecond}
-	registry := swarm.NewRegistry()
+	registry := NewRegistry()
 	defer registry.Register("harpy", startMissionVehicle(t, v))()
-	client := startSwarmServer(t, registry, swarm.WithUploadIdleTimeout(100*time.Millisecond))
+	client := startSwarmServer(t, registry, WithUploadIdleTimeout(100*time.Millisecond))
 
 	resps, err := runUpload(t, testCtx(t), client, uploadRequests([]string{"harpy"}, map[string][]byte{"amd64": payload(1000, 1)}))
 	if err != nil {
@@ -406,11 +405,11 @@ func TestUpload_SlowCommitDoesNotTripIdleTimeout(t *testing.T) {
 // bare "context deadline exceeded".
 func TestUpload_HardCapExceededReportsDeadlineExceeded(t *testing.T) {
 	v := &fakeMissionVehicle{arch: "amd64", commitDelay: 300 * time.Millisecond}
-	registry := swarm.NewRegistry()
+	registry := NewRegistry()
 	defer registry.Register("harpy", startMissionVehicle(t, v))()
 	client := startSwarmServer(t, registry,
-		swarm.WithUploadMaxDuration(100*time.Millisecond),
-		swarm.WithUploadIdleTimeout(10*time.Second), // must not be what fires
+		WithUploadMaxDuration(100*time.Millisecond),
+		WithUploadIdleTimeout(10*time.Second), // must not be what fires
 	)
 
 	resps, err := runUpload(t, testCtx(t), client, uploadRequests([]string{"harpy"}, map[string][]byte{"amd64": payload(1000, 1)}))
@@ -425,9 +424,9 @@ func TestUpload_HardCapExceededReportsDeadlineExceeded(t *testing.T) {
 
 func TestUpload_ProgressFirstAndLastAlwaysSent(t *testing.T) {
 	v := &fakeMissionVehicle{arch: "amd64"}
-	registry := swarm.NewRegistry()
+	registry := NewRegistry()
 	defer registry.Register("harpy", startMissionVehicle(t, v))()
-	client := startSwarmServer(t, registry, swarm.WithUploadProgressInterval(time.Hour))
+	client := startSwarmServer(t, registry, WithUploadProgressInterval(time.Hour))
 
 	data := payload(1<<20, 5)
 	resps, err := runUpload(t, testCtx(t), client, uploadRequests([]string{"harpy"}, map[string][]byte{"amd64": data}))
@@ -450,7 +449,7 @@ func TestUpload_ProgressFirstAndLastAlwaysSent(t *testing.T) {
 
 func TestUpload_DeduplicatesVehicles(t *testing.T) {
 	v := &fakeMissionVehicle{arch: "amd64"}
-	registry := swarm.NewRegistry()
+	registry := NewRegistry()
 	defer registry.Register("harpy", startMissionVehicle(t, v))()
 	client := startSwarmServer(t, registry)
 
@@ -473,7 +472,7 @@ func TestUpload_ClientCancelAbortsVehicleUploads(t *testing.T) {
 	stall := make(chan struct{})
 	defer close(stall)
 	v := &fakeMissionVehicle{arch: "amd64", stall: stall}
-	registry := swarm.NewRegistry()
+	registry := NewRegistry()
 	defer registry.Register("harpy", startMissionVehicle(t, v))()
 	client := startSwarmServer(t, registry)
 

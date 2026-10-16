@@ -1,4 +1,4 @@
-package vehicle_test
+package vehicle
 
 import (
 	"context"
@@ -10,8 +10,8 @@ import (
 
 	driverpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver"
 	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
-	"github.com/cmusatyalab/steeleagle/core/util"
-	"github.com/cmusatyalab/steeleagle/core/vehicle"
+	"github.com/cmusatyalab/steeleagle/core/util/listener"
+	"github.com/cmusatyalab/steeleagle/core/util/plugin"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -32,23 +32,23 @@ func TestVehicleThirdPartyPlugin(t *testing.T) {
 	// It only needs a listen socket: the vehicle should pick up the returned
 	// listener and serve it alongside the other listeners.
 	lnSockPath := filepath.Join(t.TempDir(), "thirdparty.sock")
-	acl := util.GetACL([]string{}, []int{os.Getpid()})
-	thirdPartyPlugin, err := util.CreateShimPlugin(
+	acl := listener.GetACL([]string{}, []int{os.Getpid()})
+	thirdPartyPlugin, err := plugin.CreateShimPlugin(
 		"",
 		lnSockPath,
-		util.WithAuthCode(util.ExternalCode),
-		util.WithACL(acl),
+		plugin.WithAuthCode(listener.ExternalCode),
+		plugin.WithACL(acl),
 	)
 	if err != nil {
 		t.Fatalf("couldn't create third-party plugin: %v", err)
 	}
 
-	pluginConfig := vehicle.PluginConfig{
+	pluginConfig := PluginConfig{
 		Driver:  driverPlugin,
 		Mission: missionPlugin,
-		Plugins: []util.Plugin{thirdPartyPlugin},
+		Plugins: []plugin.Plugin{thirdPartyPlugin},
 	}
-	v, err := NewVehicle(t, pluginConfig)
+	v, err := newTestVehicle(t, pluginConfig)
 	if err != nil {
 		t.Fatalf("couldn't create vehicle")
 	}

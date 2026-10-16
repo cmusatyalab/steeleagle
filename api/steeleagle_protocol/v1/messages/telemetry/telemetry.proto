@@ -118,7 +118,7 @@ message AlertInfo {
   CompassWarning compass_warning = 5;
 }
 
-// Current flight mode of the vehicle.
+// Current mode of the vehicle.
 enum Mode {
   // the vehicle is not providing mode information
   MODE_UNSPECIFIED = 0;
@@ -126,14 +126,18 @@ enum Mode {
   MODE_TAKEOFF = 1;
   // the vehicle is in land mode
   MODE_LAND = 2;
+  // the vehicle is in standing mode
+  MODE_STAND = 3;
+  // the vehicles is in sitting mode
+  MODE_SIT = 4;
   // the vehicle is in loiter mode
-  MODE_LOITER = 3;
+  MODE_LOITER = 5;
   // the vehicle is in guided mode
-  MODE_GUIDED = 4;
+  MODE_GUIDED = 6;
   // the vehicle is returning to home
-  MODE_RETURN_TO_HOME = 5;
+  MODE_RETURN_TO_HOME = 7;
   // the vehicle is experiencing an emergency
-  MODE_EMERGENCY = 6;
+  MODE_EMERGENCY = 8;
 }
 
 // Motion status of the vehicle.
@@ -168,9 +172,9 @@ message Telemetry {
   GimbalInfo gimbal_info = 5;
   // enumeration of vehicle warnings
   AlertInfo alert_info = 6;
-  // flight mode of the vehicle
+  // mode of the vehicle
   optional Mode mode = 7;
-  // Motion status of the vehicle
+  // motion status of the vehicle
   optional MotionStatus motion_status = 8;
 }
 

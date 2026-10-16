@@ -27,7 +27,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Current flight mode of the vehicle.
+// Current mode of the vehicle.
 type Mode int32
 
 const (
@@ -37,14 +37,18 @@ const (
 	Mode_MODE_TAKEOFF Mode = 1
 	// the vehicle is in land mode
 	Mode_MODE_LAND Mode = 2
+	// the vehicle is in standing mode
+	Mode_MODE_STAND Mode = 3
+	// the vehicles is in sitting mode
+	Mode_MODE_SIT Mode = 4
 	// the vehicle is in loiter mode
-	Mode_MODE_LOITER Mode = 3
+	Mode_MODE_LOITER Mode = 5
 	// the vehicle is in guided mode
-	Mode_MODE_GUIDED Mode = 4
+	Mode_MODE_GUIDED Mode = 6
 	// the vehicle is returning to home
-	Mode_MODE_RETURN_TO_HOME Mode = 5
+	Mode_MODE_RETURN_TO_HOME Mode = 7
 	// the vehicle is experiencing an emergency
-	Mode_MODE_EMERGENCY Mode = 6
+	Mode_MODE_EMERGENCY Mode = 8
 )
 
 // Enum value maps for Mode.
@@ -53,19 +57,23 @@ var (
 		0: "MODE_UNSPECIFIED",
 		1: "MODE_TAKEOFF",
 		2: "MODE_LAND",
-		3: "MODE_LOITER",
-		4: "MODE_GUIDED",
-		5: "MODE_RETURN_TO_HOME",
-		6: "MODE_EMERGENCY",
+		3: "MODE_STAND",
+		4: "MODE_SIT",
+		5: "MODE_LOITER",
+		6: "MODE_GUIDED",
+		7: "MODE_RETURN_TO_HOME",
+		8: "MODE_EMERGENCY",
 	}
 	Mode_value = map[string]int32{
 		"MODE_UNSPECIFIED":    0,
 		"MODE_TAKEOFF":        1,
 		"MODE_LAND":           2,
-		"MODE_LOITER":         3,
-		"MODE_GUIDED":         4,
-		"MODE_RETURN_TO_HOME": 5,
-		"MODE_EMERGENCY":      6,
+		"MODE_STAND":          3,
+		"MODE_SIT":            4,
+		"MODE_LOITER":         5,
+		"MODE_GUIDED":         6,
+		"MODE_RETURN_TO_HOME": 7,
+		"MODE_EMERGENCY":      8,
 	}
 )
 
@@ -1273,9 +1281,9 @@ type Telemetry_builder struct {
 	GimbalInfo *GimbalInfo
 	// enumeration of vehicle warnings
 	AlertInfo *AlertInfo
-	// flight mode of the vehicle
+	// mode of the vehicle
 	Mode *Mode
-	// Motion status of the vehicle
+	// motion status of the vehicle
 	MotionStatus *MotionStatus
 }
 
@@ -1799,15 +1807,18 @@ const file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDesc = "
 	"\vgimbal_info\x18\x04 \x01(\v25.steeleagle_protocol.v1.messages.telemetry.GimbalInfoR\n" +
 	"gimbalInfo\x12\\\n" +
 	"\rposition_info\x18\x05 \x01(\v27.steeleagle_protocol.v1.messages.telemetry.PositionInfoR\fpositionInfo\x12\x1b\n" +
-	"\tcamera_id\x18\x06 \x01(\x04R\bcameraId*\x8c\x01\n" +
+	"\tcamera_id\x18\x06 \x01(\x04R\bcameraId*\xaa\x01\n" +
 	"\x04Mode\x12\x14\n" +
 	"\x10MODE_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fMODE_TAKEOFF\x10\x01\x12\r\n" +
-	"\tMODE_LAND\x10\x02\x12\x0f\n" +
-	"\vMODE_LOITER\x10\x03\x12\x0f\n" +
-	"\vMODE_GUIDED\x10\x04\x12\x17\n" +
-	"\x13MODE_RETURN_TO_HOME\x10\x05\x12\x12\n" +
-	"\x0eMODE_EMERGENCY\x10\x06*\x81\x01\n" +
+	"\tMODE_LAND\x10\x02\x12\x0e\n" +
+	"\n" +
+	"MODE_STAND\x10\x03\x12\f\n" +
+	"\bMODE_SIT\x10\x04\x12\x0f\n" +
+	"\vMODE_LOITER\x10\x05\x12\x0f\n" +
+	"\vMODE_GUIDED\x10\x06\x12\x17\n" +
+	"\x13MODE_RETURN_TO_HOME\x10\a\x12\x12\n" +
+	"\x0eMODE_EMERGENCY\x10\b*\x81\x01\n" +
 	"\fMotionStatus\x12\x1d\n" +
 	"\x19MOTION_STATUS_UNSPECIFIED\x10\x00\x12\x19\n" +
 	"\x15MOTION_STATUS_HOLDING\x10\x01\x12\x1c\n" +

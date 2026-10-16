@@ -1,10 +1,8 @@
-package swarm_test
+package swarm
 
 import (
 	"net/netip"
 	"testing"
-
-	"github.com/cmusatyalab/steeleagle/core/swarm"
 )
 
 func mustAddr(t *testing.T, s string) netip.AddrPort {
@@ -17,14 +15,14 @@ func mustAddr(t *testing.T, s string) netip.AddrPort {
 }
 
 func TestRegistry_ResolveUnknown(t *testing.T) {
-	r := swarm.NewRegistry()
+	r := NewRegistry()
 	if _, ok := r.Resolve("harpy"); ok {
 		t.Error("Resolve on empty registry returned ok=true, want false")
 	}
 }
 
 func TestRegistry_RegisterResolve(t *testing.T) {
-	r := swarm.NewRegistry()
+	r := NewRegistry()
 	addr := mustAddr(t, "127.0.0.1:9000")
 
 	unregister := r.Register("harpy", addr)
@@ -40,7 +38,7 @@ func TestRegistry_RegisterResolve(t *testing.T) {
 }
 
 func TestRegistry_Unregister(t *testing.T) {
-	r := swarm.NewRegistry()
+	r := NewRegistry()
 	unregister := r.Register("harpy", mustAddr(t, "127.0.0.1:9000"))
 
 	unregister()
@@ -55,7 +53,7 @@ func TestRegistry_Unregister(t *testing.T) {
 // before the old connection's Register stream has actually torn down, the old
 // stream's eventual unregister call must not evict the new, live registration.
 func TestRegistry_StaleUnregisterDoesNotClobberNewer(t *testing.T) {
-	r := swarm.NewRegistry()
+	r := NewRegistry()
 
 	oldAddr := mustAddr(t, "127.0.0.1:9000")
 	unregisterOld := r.Register("harpy", oldAddr)
@@ -78,7 +76,7 @@ func TestRegistry_StaleUnregisterDoesNotClobberNewer(t *testing.T) {
 }
 
 func TestRegistry_IndependentVehicles(t *testing.T) {
-	r := swarm.NewRegistry()
+	r := NewRegistry()
 	addrA := mustAddr(t, "127.0.0.1:9000")
 	addrB := mustAddr(t, "127.0.0.1:9001")
 

@@ -1,7 +1,7 @@
 package vehicle
 
 import (
-	"github.com/cmusatyalab/steeleagle/core/util"
+	"github.com/cmusatyalab/steeleagle/core/util/plugin"
 )
 
 type PolicyConfig struct {
@@ -9,9 +9,9 @@ type PolicyConfig struct {
 }
 
 type PluginConfig struct {
-	Driver  util.Plugin
-	Mission util.Plugin
-	Plugins []util.Plugin
+	Driver  plugin.Plugin
+	Mission plugin.Plugin
+	Plugins []plugin.Plugin
 }
 
 // Configuration options for Gabriel client used by the vehicle.

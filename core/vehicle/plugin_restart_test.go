@@ -1,4 +1,4 @@
-package vehicle_test
+package vehicle
 
 import (
 	"context"
@@ -7,22 +7,21 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cmusatyalab/steeleagle/core/util"
-	"github.com/cmusatyalab/steeleagle/core/vehicle"
+	"github.com/cmusatyalab/steeleagle/core/util/plugin"
 	"google.golang.org/grpc"
 )
 
-// crashablePlugin wraps a real util.Plugin so a test can simulate it crashing
+// crashablePlugin wraps a real plugin.Plugin so a test can simulate it crashing
 // on demand. Wait blocks on exitErr instead of the wrapped plugin's own Wait,
 // while Start still delegates to the real plugin and counts how many times
 // it's run.
 type crashablePlugin struct {
-	util.Plugin
+	plugin.Plugin
 	starts  atomic.Int32
 	exitErr chan error
 }
 
-func newCrashablePlugin(p util.Plugin) *crashablePlugin {
+func newCrashablePlugin(p plugin.Plugin) *crashablePlugin {
 	return &crashablePlugin{Plugin: p, exitErr: make(chan error, 1)}
 }
 
@@ -33,7 +32,7 @@ func (p *crashablePlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 
 func (p *crashablePlugin) Wait() error { return <-p.exitErr }
 
-var _ util.Plugin = (*crashablePlugin)(nil)
+var _ plugin.Plugin = (*crashablePlugin)(nil)
 
 // waitForStarts polls until p has been started want times, failing the test if
 // it doesn't happen in time.
@@ -59,7 +58,7 @@ func TestVehicleRestartsDriverPluginOnCrash(t *testing.T) {
 	}
 	driver := newCrashablePlugin(realDriver)
 
-	v, err := NewVehicle(t, vehicle.PluginConfig{Driver: driver})
+	v, err := newTestVehicle(t, PluginConfig{Driver: driver})
 	if err != nil {
 		t.Fatalf("couldn't create vehicle: %v", err)
 	}
@@ -80,7 +79,7 @@ func TestVehicleRestartsMissionPluginOnCrash(t *testing.T) {
 	}
 	mission := newCrashablePlugin(realMission)
 
-	v, err := NewVehicle(t, vehicle.PluginConfig{Driver: realDriver, Mission: mission})
+	v, err := newTestVehicle(t, PluginConfig{Driver: realDriver, Mission: mission})
 	if err != nil {
 		t.Fatalf("couldn't create vehicle: %v", err)
 	}

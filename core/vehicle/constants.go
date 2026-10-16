@@ -4,7 +4,7 @@ import (
 	_ "embed"
 	"time"
 
-	"github.com/cmusatyalab/steeleagle/core/util"
+	"github.com/cmusatyalab/steeleagle/core/util/listener"
 )
 
 // streamRetryDelay is how long startDriverStreaming waits before retrying a
@@ -90,7 +90,7 @@ const ServerListenerName string = "server"
 var ReservedNames = []string{MainListenerName, AdminListenerName, MissionListenerName, ServerListenerName}
 
 // ReservedCodes is a slice of reserved listener codes.
-var ReservedCodes = []util.AuthCode{util.AdminCode, util.MissionCode, util.ServerCode}
+var ReservedCodes = []listener.AuthCode{listener.AdminCode, listener.MissionCode, listener.ServerCode}
 
 //go:embed defaults/laws.toml
 var DefaultLaw []byte // DefaultLaw is the default control law if no user-specified law is provided.

@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n3steeleagle_protocol/v1/services/driver/stream.proto\x12&steeleagle_protocol.v1.services.driver\"\xe0\x01\n\rCameraRequest\x12\x0e\n\x02id\x18\x01 \x01(\tR\x02id\x12\"\n\ntarget_fps\x18\x02 \x01(\rH\x00R\ttargetFps\x88\x01\x01\x12\x64\n\x11target_resolution\x18\x03 \x01(\x0e\x32\x32.steeleagle_protocol.v1.services.driver.ResolutionH\x01R\x10targetResolution\x88\x01\x01\x12\x10\n\x03uri\x18\x04 \x01(\tR\x03uriB\r\n\x0b_target_fpsB\x14\n\x12_target_resolution\"\xc0\x01\n\x14StreamCamerasRequest\x12O\n\x07primary\x18\x01 \x01(\x0b\x32\x35.steeleagle_protocol.v1.services.driver.CameraRequestR\x07primary\x12W\n\x0bsecondaries\x18\x02 \x03(\x0b\x32\x35.steeleagle_protocol.v1.services.driver.CameraRequestR\x0bsecondaries\"\x17\n\x15StreamCamerasResponse\"]\n\x16StreamTelemetryRequest\x12\"\n\ntarget_fps\x18\x01 \x01(\rH\x00R\ttargetFps\x88\x01\x01\x12\x10\n\x03uri\x18\x02 \x01(\tR\x03uriB\r\n\x0b_target_fps\"\x19\n\x17StreamTelemetryResponse*\x90\x01\n\nResolution\x12\x1a\n\x16RESOLUTION_UNSPECIFIED\x10\x00\x12\x13\n\x0fRESOLUTION_360P\x10\x01\x12\x13\n\x0fRESOLUTION_480P\x10\x02\x12\x13\n\x0fRESOLUTION_720P\x10\x03\x12\x14\n\x10RESOLUTION_1080P\x10\x04\x12\x11\n\rRESOLUTION_4K\x10\x05\x32\xb7\x02\n\rStreamService\x12\x8e\x01\n\rStreamCameras\x12<.steeleagle_protocol.v1.services.driver.StreamCamerasRequest\x1a=.steeleagle_protocol.v1.services.driver.StreamCamerasResponse\"\x00\x12\x94\x01\n\x0fStreamTelemetry\x12>.steeleagle_protocol.v1.services.driver.StreamTelemetryRequest\x1a?.steeleagle_protocol.v1.services.driver.StreamTelemetryResponse\"\x00\x42\xc2\x02\n*com.steeleagle_protocol.v1.services.driverB\x0bStreamProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\xa2\x02\x04SVSD\xaa\x02%SteeleagleProtocol.V1.Services.Driver\xca\x02%SteeleagleProtocol\\V1\\Services\\Driver\xe2\x02\x31SteeleagleProtocol\\V1\\Services\\Driver\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Services::Driverb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n3steeleagle_protocol/v1/services/driver/stream.proto\x12&steeleagle_protocol.v1.services.driver\"\xad\x01\n\rCameraRequest\x12\x0e\n\x02id\x18\x01 \x01(\tR\x02id\x12\x64\n\x11target_resolution\x18\x02 \x01(\x0e\x32\x32.steeleagle_protocol.v1.services.driver.ResolutionH\x00R\x10targetResolution\x88\x01\x01\x12\x10\n\x03uri\x18\x03 \x01(\tR\x03uriB\x14\n\x12_target_resolution\"\xc0\x01\n\x14StreamCamerasRequest\x12O\n\x07primary\x18\x01 \x01(\x0b\x32\x35.steeleagle_protocol.v1.services.driver.CameraRequestR\x07primary\x12W\n\x0bsecondaries\x18\x02 \x03(\x0b\x32\x35.steeleagle_protocol.v1.services.driver.CameraRequestR\x0bsecondaries\"\x17\n\x15StreamCamerasResponse\"*\n\x16StreamTelemetryRequest\x12\x10\n\x03uri\x18\x01 \x01(\tR\x03uri\"\x19\n\x17StreamTelemetryResponse*\x90\x01\n\nResolution\x12\x1a\n\x16RESOLUTION_UNSPECIFIED\x10\x00\x12\x13\n\x0fRESOLUTION_360P\x10\x01\x12\x13\n\x0fRESOLUTION_480P\x10\x02\x12\x13\n\x0fRESOLUTION_720P\x10\x03\x12\x14\n\x10RESOLUTION_1080P\x10\x04\x12\x11\n\rRESOLUTION_4K\x10\x05\x32\xb7\x02\n\rStreamService\x12\x8e\x01\n\rStreamCameras\x12<.steeleagle_protocol.v1.services.driver.StreamCamerasRequest\x1a=.steeleagle_protocol.v1.services.driver.StreamCamerasResponse\"\x00\x12\x94\x01\n\x0fStreamTelemetry\x12>.steeleagle_protocol.v1.services.driver.StreamTelemetryRequest\x1a?.steeleagle_protocol.v1.services.driver.StreamTelemetryResponse\"\x00\x42\xc2\x02\n*com.steeleagle_protocol.v1.services.driverB\x0bStreamProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\xa2\x02\x04SVSD\xaa\x02%SteeleagleProtocol.V1.Services.Driver\xca\x02%SteeleagleProtocol\\V1\\Services\\Driver\xe2\x02\x31SteeleagleProtocol\\V1\\Services\\Driver\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Services::Driverb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,18 +32,18 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'steeleagle_protocol.v1.serv
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'\n*com.steeleagle_protocol.v1.services.driverB\013StreamProtoP\001ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\242\002\004SVSD\252\002%SteeleagleProtocol.V1.Services.Driver\312\002%SteeleagleProtocol\\V1\\Services\\Driver\342\0021SteeleagleProtocol\\V1\\Services\\Driver\\GPBMetadata\352\002(SteeleagleProtocol::V1::Services::Driver'
-  _globals['_RESOLUTION']._serialized_start=665
-  _globals['_RESOLUTION']._serialized_end=809
+  _globals['_RESOLUTION']._serialized_start=563
+  _globals['_RESOLUTION']._serialized_end=707
   _globals['_CAMERAREQUEST']._serialized_start=96
-  _globals['_CAMERAREQUEST']._serialized_end=320
-  _globals['_STREAMCAMERASREQUEST']._serialized_start=323
-  _globals['_STREAMCAMERASREQUEST']._serialized_end=515
-  _globals['_STREAMCAMERASRESPONSE']._serialized_start=517
-  _globals['_STREAMCAMERASRESPONSE']._serialized_end=540
-  _globals['_STREAMTELEMETRYREQUEST']._serialized_start=542
-  _globals['_STREAMTELEMETRYREQUEST']._serialized_end=635
-  _globals['_STREAMTELEMETRYRESPONSE']._serialized_start=637
-  _globals['_STREAMTELEMETRYRESPONSE']._serialized_end=662
-  _globals['_STREAMSERVICE']._serialized_start=812
-  _globals['_STREAMSERVICE']._serialized_end=1123
+  _globals['_CAMERAREQUEST']._serialized_end=269
+  _globals['_STREAMCAMERASREQUEST']._serialized_start=272
+  _globals['_STREAMCAMERASREQUEST']._serialized_end=464
+  _globals['_STREAMCAMERASRESPONSE']._serialized_start=466
+  _globals['_STREAMCAMERASRESPONSE']._serialized_end=489
+  _globals['_STREAMTELEMETRYREQUEST']._serialized_start=491
+  _globals['_STREAMTELEMETRYREQUEST']._serialized_end=533
+  _globals['_STREAMTELEMETRYRESPONSE']._serialized_start=535
+  _globals['_STREAMTELEMETRYRESPONSE']._serialized_end=560
+  _globals['_STREAMSERVICE']._serialized_start=710
+  _globals['_STREAMSERVICE']._serialized_end=1021
 # @@protoc_insertion_point(module_scope)

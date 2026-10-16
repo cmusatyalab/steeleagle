@@ -79,6 +79,30 @@ class LandResponse(_message.Message):
     expected_status: _telemetry_pb2.MotionStatus
     def __init__(self, expected_mode: _Optional[_Union[_telemetry_pb2.Mode, str]] = ..., expected_status: _Optional[_Union[_telemetry_pb2.MotionStatus, str]] = ...) -> None: ...
 
+class StandRequest(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class StandResponse(_message.Message):
+    __slots__ = ("expected_mode", "expected_status")
+    EXPECTED_MODE_FIELD_NUMBER: _ClassVar[int]
+    EXPECTED_STATUS_FIELD_NUMBER: _ClassVar[int]
+    expected_mode: _telemetry_pb2.Mode
+    expected_status: _telemetry_pb2.MotionStatus
+    def __init__(self, expected_mode: _Optional[_Union[_telemetry_pb2.Mode, str]] = ..., expected_status: _Optional[_Union[_telemetry_pb2.MotionStatus, str]] = ...) -> None: ...
+
+class SitRequest(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class SitResponse(_message.Message):
+    __slots__ = ("expected_mode", "expected_status")
+    EXPECTED_MODE_FIELD_NUMBER: _ClassVar[int]
+    EXPECTED_STATUS_FIELD_NUMBER: _ClassVar[int]
+    expected_mode: _telemetry_pb2.Mode
+    expected_status: _telemetry_pb2.MotionStatus
+    def __init__(self, expected_mode: _Optional[_Union[_telemetry_pb2.Mode, str]] = ..., expected_status: _Optional[_Union[_telemetry_pb2.MotionStatus, str]] = ...) -> None: ...
+
 class HoldRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...

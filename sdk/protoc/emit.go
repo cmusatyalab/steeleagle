@@ -20,7 +20,7 @@ func emitCommonFieldInterface(g *protogen.GeneratedFile, parentGoName, fieldPath
 }
 
 // emitGetter writes a field's Get<Field>() interface method signature
-// only — no Has, no Setter.
+// only.
 func emitGetter(g *protogen.GeneratedFile, parentGoName string, field *protogen.Field) {
 	getterName := "Get" + field.GoName
 	optional := isOptional(field)

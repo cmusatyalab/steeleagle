@@ -16,7 +16,7 @@ type TakeOff struct {
 
 func (i *TakeOff) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 	options := []opt.Option[opt.TakeOffOption]{}
-	// #exclude-ifndef services/driver/TakeOffRequest/altitude
+	// #exclude-ifndef steeleagle_protocol/v1/services/driver/TakeOffRequest/altitude
 	options = append(options, opt.WithAltitude[opt.TakeOffOption](i.Altitude))
 	_, err := v.TakeOff(options...).Wait()
 	return err
@@ -58,9 +58,9 @@ type ReturnToHome struct {
 func (i *ReturnToHome) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 	options := []opt.Option[opt.ReturnToHomeOption]{}
 	options = append(options, opt.WithEndBehavior[opt.ReturnToHomeOption](i.EndBehavior))
-	// #exclude-ifndef services/driver/ReturnToHomeRequest/min_return_altitude
+	// #exclude-ifndef steeleagle_protocol/v1/services/driver/ReturnToHomeRequest/min_return_altitude
 	options = append(options, opt.WithMinReturnAltitude[opt.ReturnToHomeOption](i.MinReturnAltitude))
-	// #exclude-ifndef services/driver/ReturnToHomeRequest/final_altitude
+	// #exclude-ifndef steeleagle_protocol/v1/services/driver/ReturnToHomeRequest/final_altitude
 	options = append(options, opt.WithFinalAltitude[opt.ReturnToHomeOption](i.FinalAltitude))
 	_, err := v.ReturnToHome(options...).Wait()
 	return err
@@ -86,9 +86,9 @@ func (i *GoToGlobalPosition) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 	options := []opt.Option[opt.SetGlobalPositionTargetOption]{}
 	options = append(options, opt.WithHeadingMode[opt.SetGlobalPositionTargetOption](i.HeadingMode))
 	options = append(options, opt.WithAltitudeMode[opt.SetGlobalPositionTargetOption](i.AltitudeMode))
-	// #exclude-ifndef services/driver/SetGlobalPositionTargetRequest/speed
+	// #exclude-ifndef steeleagle_protocol/v1/services/driver/SetGlobalPositionTargetRequest/speed
 	options = append(options, opt.WithSpeed[opt.SetGlobalPositionTargetOption](i.Speed))
-	// #exclude-ifndef services/driver/SetGlobalPositionTargetRequest/angular_speed
+	// #exclude-ifndef steeleagle_protocol/v1/services/driver/SetGlobalPositionTargetRequest/angular_speed
 	options = append(options, opt.WithAngularSpeed[opt.SetGlobalPositionTargetOption](i.AngularSpeed))
 	_, err := v.SetGlobalPositionTarget(
 		i.Position.Latitude,
@@ -116,9 +116,9 @@ type GoToRelativePosition struct {
 
 func (i *GoToRelativePosition) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 	options := []opt.Option[opt.SetRelativePositionTargetOption]{}
-	// #exclude-ifndef services/driver/SetRelativePositionTargetRequest/speed
+	// #exclude-ifndef steeleagle_protocol/v1/services/driver/SetRelativePositionTargetRequest/speed
 	options = append(options, opt.WithSpeed[opt.SetRelativePositionTargetOption](i.Speed))
-	// #exclude-ifndef services/driver/SetRelativePositionTargetRequest/angular_speed
+	// #exclude-ifndef steeleagle_protocol/v1/services/driver/SetRelativePositionTargetRequest/angular_speed
 	options = append(options, opt.WithAngularSpeed[opt.SetRelativePositionTargetOption](i.AngularSpeed))
 	options = append(options, opt.WithReferenceFrame[opt.SetRelativePositionTargetOption](i.Frame))
 	_, err := v.SetRelativePositionTarget(

@@ -13,6 +13,7 @@ import (
 	gabrielclient "github.com/cmusatyalab/gabriel/go-client"
 	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
 	"github.com/cmusatyalab/steeleagle/core/util"
+	"github.com/cmusatyalab/steeleagle/core/util/listener"
 	"github.com/google/uuid"
 	"github.com/mwitkow/grpc-proxy/proxy"
 	"github.com/rs/zerolog"
@@ -134,7 +135,7 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		return err
 	}
 	v.listeners[MainListenerName] =
-		util.NewCodedListener(ln, util.ExternalCode, nil)
+		listener.NewCodedListener(ln, listener.ExternalCode, nil)
 
 	// Create an admin socket listener with AuthCode AdminCode. The admin
 	// socket is intended for use by this process
@@ -147,10 +148,10 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		return err
 	}
 	v.listeners[AdminListenerName] =
-		util.NewCodedListener(
+		listener.NewCodedListener(
 			ln,
-			util.AdminCode,
-			util.GetACL(nil, []int{os.Getpid()}),
+			listener.AdminCode,
+			listener.GetACL(nil, []int{os.Getpid()}),
 		)
 
 	// Start driver plugin

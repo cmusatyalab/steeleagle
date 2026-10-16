@@ -1,0 +1,51 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - Living Edge Lab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+package steeleagle_protocol.v1.messages.frame;
+
+option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/frame;frame";
+
+import "steeleagle_protocol/v1/messages/telemetry/telemetry.proto";
+import "google/protobuf/timestamp.proto";
+
+// Raw camera frames.
+message RawFrame {
+  // capture timestamp of the frame
+  google.protobuf.Timestamp timestamp = 1;
+  // raw bytes representing the frame
+  bytes data = 2;
+  // horizontal frame resolution in pixels
+  uint64 h_res = 3;
+  // vertical frame resolution in pixels
+  uint64 v_res = 4;
+  // depth resolution in pixels
+  uint64 d_res = 5;
+  // number of channels
+  uint64 channels = 6;
+  // frame ID for future correlation
+  uint64 id = 7;
+  // positional info about the vehicle
+  steeleagle_protocol.v1.messages.telemetry.PositionInfo position_info = 8;
+  // info on the gimbal this frame is attached to, if applicable
+  steeleagle_protocol.v1.messages.telemetry.GimbalInfo gimbal_info = 9;
+  // ID of origin camera
+  uint64 camera_id = 10;
+}
+
+// Compressed camera frames (JPG encoded).
+message EncodedFrame {
+  // capture timestamp of the frame
+  google.protobuf.Timestamp timestamp = 1;
+  // encoded bytes representing the frame
+  bytes encoded_data = 2;
+  // frame ID for future correlation
+  uint64 id = 3;
+  // info on the gimbal this frame is attached to, if applicable
+  steeleagle_protocol.v1.messages.telemetry.GimbalInfo gimbal_info = 4;
+  // positional info about the vehicle
+  steeleagle_protocol.v1.messages.telemetry.PositionInfo position_info = 5;
+  // ID of origin camera
+  uint64 camera_id = 6;
+}

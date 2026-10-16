@@ -385,7 +385,7 @@ func (x *TakeOffResponse) SetExpectedStatus(v telemetry.MotionStatus) {
 type TakeOffResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// flight mode expectation
+	// mode expectation
 	ExpectedMode telemetry.Mode
 	// motion status expectation
 	ExpectedStatus telemetry.MotionStatus
@@ -501,7 +501,7 @@ func (x *LandResponse) SetExpectedStatus(v telemetry.MotionStatus) {
 type LandResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// flight mode expectation
+	// mode expectation
 	ExpectedMode telemetry.Mode
 	// motion status expectation
 	ExpectedStatus telemetry.MotionStatus
@@ -509,6 +509,238 @@ type LandResponse_builder struct {
 
 func (b0 LandResponse_builder) Build() *LandResponse {
 	m0 := &LandResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_ExpectedMode = b.ExpectedMode
+	x.xxx_hidden_ExpectedStatus = b.ExpectedStatus
+	return m0
+}
+
+type StandRequest struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StandRequest) Reset() {
+	*x = StandRequest{}
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StandRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StandRequest) ProtoMessage() {}
+
+func (x *StandRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type StandRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 StandRequest_builder) Build() *StandRequest {
+	m0 := &StandRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
+type StandResponse struct {
+	state                     protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_ExpectedMode   telemetry.Mode         `protobuf:"varint,1,opt,name=expected_mode,json=expectedMode,proto3,enum=steeleagle_protocol.v1.messages.telemetry.Mode"`
+	xxx_hidden_ExpectedStatus telemetry.MotionStatus `protobuf:"varint,2,opt,name=expected_status,json=expectedStatus,proto3,enum=steeleagle_protocol.v1.messages.telemetry.MotionStatus"`
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
+}
+
+func (x *StandResponse) Reset() {
+	*x = StandResponse{}
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StandResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StandResponse) ProtoMessage() {}
+
+func (x *StandResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *StandResponse) GetExpectedMode() telemetry.Mode {
+	if x != nil {
+		return x.xxx_hidden_ExpectedMode
+	}
+	return telemetry.Mode(0)
+}
+
+func (x *StandResponse) GetExpectedStatus() telemetry.MotionStatus {
+	if x != nil {
+		return x.xxx_hidden_ExpectedStatus
+	}
+	return telemetry.MotionStatus(0)
+}
+
+func (x *StandResponse) SetExpectedMode(v telemetry.Mode) {
+	x.xxx_hidden_ExpectedMode = v
+}
+
+func (x *StandResponse) SetExpectedStatus(v telemetry.MotionStatus) {
+	x.xxx_hidden_ExpectedStatus = v
+}
+
+type StandResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// mode expectation
+	ExpectedMode telemetry.Mode
+	// motion status expectation
+	ExpectedStatus telemetry.MotionStatus
+}
+
+func (b0 StandResponse_builder) Build() *StandResponse {
+	m0 := &StandResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_ExpectedMode = b.ExpectedMode
+	x.xxx_hidden_ExpectedStatus = b.ExpectedStatus
+	return m0
+}
+
+type SitRequest struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SitRequest) Reset() {
+	*x = SitRequest{}
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SitRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SitRequest) ProtoMessage() {}
+
+func (x *SitRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type SitRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 SitRequest_builder) Build() *SitRequest {
+	m0 := &SitRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
+type SitResponse struct {
+	state                     protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_ExpectedMode   telemetry.Mode         `protobuf:"varint,1,opt,name=expected_mode,json=expectedMode,proto3,enum=steeleagle_protocol.v1.messages.telemetry.Mode"`
+	xxx_hidden_ExpectedStatus telemetry.MotionStatus `protobuf:"varint,2,opt,name=expected_status,json=expectedStatus,proto3,enum=steeleagle_protocol.v1.messages.telemetry.MotionStatus"`
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
+}
+
+func (x *SitResponse) Reset() {
+	*x = SitResponse{}
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SitResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SitResponse) ProtoMessage() {}
+
+func (x *SitResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SitResponse) GetExpectedMode() telemetry.Mode {
+	if x != nil {
+		return x.xxx_hidden_ExpectedMode
+	}
+	return telemetry.Mode(0)
+}
+
+func (x *SitResponse) GetExpectedStatus() telemetry.MotionStatus {
+	if x != nil {
+		return x.xxx_hidden_ExpectedStatus
+	}
+	return telemetry.MotionStatus(0)
+}
+
+func (x *SitResponse) SetExpectedMode(v telemetry.Mode) {
+	x.xxx_hidden_ExpectedMode = v
+}
+
+func (x *SitResponse) SetExpectedStatus(v telemetry.MotionStatus) {
+	x.xxx_hidden_ExpectedStatus = v
+}
+
+type SitResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// mode expectation
+	ExpectedMode telemetry.Mode
+	// motion status expectation
+	ExpectedStatus telemetry.MotionStatus
+}
+
+func (b0 SitResponse_builder) Build() *SitResponse {
+	m0 := &SitResponse{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_ExpectedMode = b.ExpectedMode
@@ -524,7 +756,7 @@ type HoldRequest struct {
 
 func (x *HoldRequest) Reset() {
 	*x = HoldRequest{}
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[4]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -536,7 +768,7 @@ func (x *HoldRequest) String() string {
 func (*HoldRequest) ProtoMessage() {}
 
 func (x *HoldRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[4]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -569,7 +801,7 @@ type HoldResponse struct {
 
 func (x *HoldResponse) Reset() {
 	*x = HoldResponse{}
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[5]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -581,7 +813,7 @@ func (x *HoldResponse) String() string {
 func (*HoldResponse) ProtoMessage() {}
 
 func (x *HoldResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[5]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -617,7 +849,7 @@ func (x *HoldResponse) SetExpectedStatus(v telemetry.MotionStatus) {
 type HoldResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// flight mode expectation
+	// mode expectation
 	ExpectedMode telemetry.Mode
 	// motion status expectation
 	ExpectedStatus telemetry.MotionStatus
@@ -640,7 +872,7 @@ type KillRequest struct {
 
 func (x *KillRequest) Reset() {
 	*x = KillRequest{}
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[6]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -652,7 +884,7 @@ func (x *KillRequest) String() string {
 func (*KillRequest) ProtoMessage() {}
 
 func (x *KillRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[6]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -685,7 +917,7 @@ type KillResponse struct {
 
 func (x *KillResponse) Reset() {
 	*x = KillResponse{}
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[7]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -697,7 +929,7 @@ func (x *KillResponse) String() string {
 func (*KillResponse) ProtoMessage() {}
 
 func (x *KillResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[7]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -733,7 +965,7 @@ func (x *KillResponse) SetExpectedStatus(v telemetry.MotionStatus) {
 type KillResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// flight mode expectation
+	// mode expectation
 	ExpectedMode telemetry.Mode
 	// motion status expectation
 	ExpectedStatus telemetry.MotionStatus
@@ -759,7 +991,7 @@ type ReturnToHomeRequest struct {
 
 func (x *ReturnToHomeRequest) Reset() {
 	*x = ReturnToHomeRequest{}
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[8]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -771,7 +1003,7 @@ func (x *ReturnToHomeRequest) String() string {
 func (*ReturnToHomeRequest) ProtoMessage() {}
 
 func (x *ReturnToHomeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[8]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -846,7 +1078,7 @@ type ReturnToHomeResponse struct {
 
 func (x *ReturnToHomeResponse) Reset() {
 	*x = ReturnToHomeResponse{}
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[9]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -858,7 +1090,7 @@ func (x *ReturnToHomeResponse) String() string {
 func (*ReturnToHomeResponse) ProtoMessage() {}
 
 func (x *ReturnToHomeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[9]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -894,7 +1126,7 @@ func (x *ReturnToHomeResponse) SetExpectedStatus(v telemetry.MotionStatus) {
 type ReturnToHomeResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// flight mode expectation
+	// mode expectation
 	ExpectedMode telemetry.Mode
 	// motion status expectation
 	ExpectedStatus telemetry.MotionStatus
@@ -924,7 +1156,7 @@ type SetGlobalPositionTargetRequest struct {
 
 func (x *SetGlobalPositionTargetRequest) Reset() {
 	*x = SetGlobalPositionTargetRequest{}
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[10]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -936,7 +1168,7 @@ func (x *SetGlobalPositionTargetRequest) String() string {
 func (*SetGlobalPositionTargetRequest) ProtoMessage() {}
 
 func (x *SetGlobalPositionTargetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[10]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1117,7 +1349,7 @@ type SetGlobalPositionTargetResponse struct {
 
 func (x *SetGlobalPositionTargetResponse) Reset() {
 	*x = SetGlobalPositionTargetResponse{}
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[11]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1129,7 +1361,7 @@ func (x *SetGlobalPositionTargetResponse) String() string {
 func (*SetGlobalPositionTargetResponse) ProtoMessage() {}
 
 func (x *SetGlobalPositionTargetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[11]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1205,7 +1437,7 @@ type SetRelativePositionTargetRequest struct {
 
 func (x *SetRelativePositionTargetRequest) Reset() {
 	*x = SetRelativePositionTargetRequest{}
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[12]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1217,7 +1449,7 @@ func (x *SetRelativePositionTargetRequest) String() string {
 func (*SetRelativePositionTargetRequest) ProtoMessage() {}
 
 func (x *SetRelativePositionTargetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[12]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1367,7 +1599,7 @@ type SetRelativePositionTargetResponse struct {
 
 func (x *SetRelativePositionTargetResponse) Reset() {
 	*x = SetRelativePositionTargetResponse{}
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[13]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1379,7 +1611,7 @@ func (x *SetRelativePositionTargetResponse) String() string {
 func (*SetRelativePositionTargetResponse) ProtoMessage() {}
 
 func (x *SetRelativePositionTargetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[13]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1453,7 +1685,7 @@ type SetVelocityTargetRequest struct {
 
 func (x *SetVelocityTargetRequest) Reset() {
 	*x = SetVelocityTargetRequest{}
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[14]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1465,7 +1697,7 @@ func (x *SetVelocityTargetRequest) String() string {
 func (*SetVelocityTargetRequest) ProtoMessage() {}
 
 func (x *SetVelocityTargetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[14]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1555,7 +1787,7 @@ type SetVelocityTargetResponse struct {
 
 func (x *SetVelocityTargetResponse) Reset() {
 	*x = SetVelocityTargetResponse{}
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[15]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1567,7 +1799,7 @@ func (x *SetVelocityTargetResponse) String() string {
 func (*SetVelocityTargetResponse) ProtoMessage() {}
 
 func (x *SetVelocityTargetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[15]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1642,7 +1874,7 @@ type SetGimbalAngleTargetRequest struct {
 
 func (x *SetGimbalAngleTargetRequest) Reset() {
 	*x = SetGimbalAngleTargetRequest{}
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[16]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1654,7 +1886,7 @@ func (x *SetGimbalAngleTargetRequest) String() string {
 func (*SetGimbalAngleTargetRequest) ProtoMessage() {}
 
 func (x *SetGimbalAngleTargetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[16]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1772,7 +2004,7 @@ type SetGimbalAngleTargetResponse struct {
 
 func (x *SetGimbalAngleTargetResponse) Reset() {
 	*x = SetGimbalAngleTargetResponse{}
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[17]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1784,7 +2016,7 @@ func (x *SetGimbalAngleTargetResponse) String() string {
 func (*SetGimbalAngleTargetResponse) ProtoMessage() {}
 
 func (x *SetGimbalAngleTargetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[17]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1840,7 +2072,7 @@ type SetGimbalVelocityTargetRequest struct {
 
 func (x *SetGimbalVelocityTargetRequest) Reset() {
 	*x = SetGimbalVelocityTargetRequest{}
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[18]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1852,7 +2084,7 @@ func (x *SetGimbalVelocityTargetRequest) String() string {
 func (*SetGimbalVelocityTargetRequest) ProtoMessage() {}
 
 func (x *SetGimbalVelocityTargetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[18]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1908,7 +2140,7 @@ type SetGimbalVelocityTargetResponse struct {
 
 func (x *SetGimbalVelocityTargetResponse) Reset() {
 	*x = SetGimbalVelocityTargetResponse{}
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[19]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1920,7 +2152,7 @@ func (x *SetGimbalVelocityTargetResponse) String() string {
 func (*SetGimbalVelocityTargetResponse) ProtoMessage() {}
 
 func (x *SetGimbalVelocityTargetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[19]
+	mi := &file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1980,6 +2212,15 @@ const file_steeleagle_protocol_v1_services_driver_control_proto_rawDesc = "" +
 	"\x0fexpected_status\x18\x02 \x01(\x0e27.steeleagle_protocol.v1.messages.telemetry.MotionStatusR\x0eexpectedStatus\"\r\n" +
 	"\vLandRequest\"\xc6\x01\n" +
 	"\fLandResponse\x12T\n" +
+	"\rexpected_mode\x18\x01 \x01(\x0e2/.steeleagle_protocol.v1.messages.telemetry.ModeR\fexpectedMode\x12`\n" +
+	"\x0fexpected_status\x18\x02 \x01(\x0e27.steeleagle_protocol.v1.messages.telemetry.MotionStatusR\x0eexpectedStatus\"\x0e\n" +
+	"\fStandRequest\"\xc7\x01\n" +
+	"\rStandResponse\x12T\n" +
+	"\rexpected_mode\x18\x01 \x01(\x0e2/.steeleagle_protocol.v1.messages.telemetry.ModeR\fexpectedMode\x12`\n" +
+	"\x0fexpected_status\x18\x02 \x01(\x0e27.steeleagle_protocol.v1.messages.telemetry.MotionStatusR\x0eexpectedStatus\"\f\n" +
+	"\n" +
+	"SitRequest\"\xc5\x01\n" +
+	"\vSitResponse\x12T\n" +
 	"\rexpected_mode\x18\x01 \x01(\x0e2/.steeleagle_protocol.v1.messages.telemetry.ModeR\fexpectedMode\x12`\n" +
 	"\x0fexpected_status\x18\x02 \x01(\x0e27.steeleagle_protocol.v1.messages.telemetry.MotionStatusR\x0eexpectedStatus\"\r\n" +
 	"\vHoldRequest\"\xc6\x01\n" +
@@ -2060,10 +2301,12 @@ const file_steeleagle_protocol_v1_services_driver_control_proto_rawDesc = "" +
 	"\tAngleMode\x12\x1a\n" +
 	"\x16ANGLE_MODE_UNSPECIFIED\x10\x00\x12\x17\n" +
 	"\x13ANGLE_MODE_ABSOLUTE\x10\x01\x12\x15\n" +
-	"\x11ANGLE_MODE_OFFSET\x10\x022\xd1\v\n" +
+	"\x11ANGLE_MODE_OFFSET\x10\x022\xbb\r\n" +
 	"\x0eControlService\x12|\n" +
 	"\aTakeOff\x126.steeleagle_protocol.v1.services.driver.TakeOffRequest\x1a7.steeleagle_protocol.v1.services.driver.TakeOffResponse\"\x00\x12s\n" +
-	"\x04Land\x123.steeleagle_protocol.v1.services.driver.LandRequest\x1a4.steeleagle_protocol.v1.services.driver.LandResponse\"\x00\x12s\n" +
+	"\x04Land\x123.steeleagle_protocol.v1.services.driver.LandRequest\x1a4.steeleagle_protocol.v1.services.driver.LandResponse\"\x00\x12v\n" +
+	"\x05Stand\x124.steeleagle_protocol.v1.services.driver.StandRequest\x1a5.steeleagle_protocol.v1.services.driver.StandResponse\"\x00\x12p\n" +
+	"\x03Sit\x122.steeleagle_protocol.v1.services.driver.SitRequest\x1a3.steeleagle_protocol.v1.services.driver.SitResponse\"\x00\x12s\n" +
 	"\x04Hold\x123.steeleagle_protocol.v1.services.driver.HoldRequest\x1a4.steeleagle_protocol.v1.services.driver.HoldResponse\"\x00\x12s\n" +
 	"\x04Kill\x123.steeleagle_protocol.v1.services.driver.KillRequest\x1a4.steeleagle_protocol.v1.services.driver.KillResponse\"\x00\x12\x8b\x01\n" +
 	"\fReturnToHome\x12;.steeleagle_protocol.v1.services.driver.ReturnToHomeRequest\x1a<.steeleagle_protocol.v1.services.driver.ReturnToHomeResponse\"\x00\x12\xac\x01\n" +
@@ -2075,7 +2318,7 @@ const file_steeleagle_protocol_v1_services_driver_control_proto_rawDesc = "" +
 	"*com.steeleagle_protocol.v1.services.driverB\fControlProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\xa2\x02\x04SVSD\xaa\x02%SteeleagleProtocol.V1.Services.Driver\xca\x02%SteeleagleProtocol\\V1\\Services\\Driver\xe2\x021SteeleagleProtocol\\V1\\Services\\Driver\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Services::Driverb\x06proto3"
 
 var file_steeleagle_protocol_v1_services_driver_control_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
 var file_steeleagle_protocol_v1_services_driver_control_proto_goTypes = []any{
 	(ReturnToHomeEndBehavior)(0),              // 0: steeleagle_protocol.v1.services.driver.ReturnToHomeEndBehavior
 	(AltitudeMode)(0),                         // 1: steeleagle_protocol.v1.services.driver.AltitudeMode
@@ -2086,86 +2329,98 @@ var file_steeleagle_protocol_v1_services_driver_control_proto_goTypes = []any{
 	(*TakeOffResponse)(nil),                   // 6: steeleagle_protocol.v1.services.driver.TakeOffResponse
 	(*LandRequest)(nil),                       // 7: steeleagle_protocol.v1.services.driver.LandRequest
 	(*LandResponse)(nil),                      // 8: steeleagle_protocol.v1.services.driver.LandResponse
-	(*HoldRequest)(nil),                       // 9: steeleagle_protocol.v1.services.driver.HoldRequest
-	(*HoldResponse)(nil),                      // 10: steeleagle_protocol.v1.services.driver.HoldResponse
-	(*KillRequest)(nil),                       // 11: steeleagle_protocol.v1.services.driver.KillRequest
-	(*KillResponse)(nil),                      // 12: steeleagle_protocol.v1.services.driver.KillResponse
-	(*ReturnToHomeRequest)(nil),               // 13: steeleagle_protocol.v1.services.driver.ReturnToHomeRequest
-	(*ReturnToHomeResponse)(nil),              // 14: steeleagle_protocol.v1.services.driver.ReturnToHomeResponse
-	(*SetGlobalPositionTargetRequest)(nil),    // 15: steeleagle_protocol.v1.services.driver.SetGlobalPositionTargetRequest
-	(*SetGlobalPositionTargetResponse)(nil),   // 16: steeleagle_protocol.v1.services.driver.SetGlobalPositionTargetResponse
-	(*SetRelativePositionTargetRequest)(nil),  // 17: steeleagle_protocol.v1.services.driver.SetRelativePositionTargetRequest
-	(*SetRelativePositionTargetResponse)(nil), // 18: steeleagle_protocol.v1.services.driver.SetRelativePositionTargetResponse
-	(*SetVelocityTargetRequest)(nil),          // 19: steeleagle_protocol.v1.services.driver.SetVelocityTargetRequest
-	(*SetVelocityTargetResponse)(nil),         // 20: steeleagle_protocol.v1.services.driver.SetVelocityTargetResponse
-	(*SetGimbalAngleTargetRequest)(nil),       // 21: steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetRequest
-	(*SetGimbalAngleTargetResponse)(nil),      // 22: steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetResponse
-	(*SetGimbalVelocityTargetRequest)(nil),    // 23: steeleagle_protocol.v1.services.driver.SetGimbalVelocityTargetRequest
-	(*SetGimbalVelocityTargetResponse)(nil),   // 24: steeleagle_protocol.v1.services.driver.SetGimbalVelocityTargetResponse
-	(telemetry.Mode)(0),                       // 25: steeleagle_protocol.v1.messages.telemetry.Mode
-	(telemetry.MotionStatus)(0),               // 26: steeleagle_protocol.v1.messages.telemetry.MotionStatus
-	(*common.GlobalPosition)(nil),             // 27: steeleagle_protocol.v1.common.GlobalPosition
-	(*common.RelativePosition)(nil),           // 28: steeleagle_protocol.v1.common.RelativePosition
-	(*common.Velocity)(nil),                   // 29: steeleagle_protocol.v1.common.Velocity
-	(*common.Pose)(nil),                       // 30: steeleagle_protocol.v1.common.Pose
-	(*common.PoseVelocity)(nil),               // 31: steeleagle_protocol.v1.common.PoseVelocity
+	(*StandRequest)(nil),                      // 9: steeleagle_protocol.v1.services.driver.StandRequest
+	(*StandResponse)(nil),                     // 10: steeleagle_protocol.v1.services.driver.StandResponse
+	(*SitRequest)(nil),                        // 11: steeleagle_protocol.v1.services.driver.SitRequest
+	(*SitResponse)(nil),                       // 12: steeleagle_protocol.v1.services.driver.SitResponse
+	(*HoldRequest)(nil),                       // 13: steeleagle_protocol.v1.services.driver.HoldRequest
+	(*HoldResponse)(nil),                      // 14: steeleagle_protocol.v1.services.driver.HoldResponse
+	(*KillRequest)(nil),                       // 15: steeleagle_protocol.v1.services.driver.KillRequest
+	(*KillResponse)(nil),                      // 16: steeleagle_protocol.v1.services.driver.KillResponse
+	(*ReturnToHomeRequest)(nil),               // 17: steeleagle_protocol.v1.services.driver.ReturnToHomeRequest
+	(*ReturnToHomeResponse)(nil),              // 18: steeleagle_protocol.v1.services.driver.ReturnToHomeResponse
+	(*SetGlobalPositionTargetRequest)(nil),    // 19: steeleagle_protocol.v1.services.driver.SetGlobalPositionTargetRequest
+	(*SetGlobalPositionTargetResponse)(nil),   // 20: steeleagle_protocol.v1.services.driver.SetGlobalPositionTargetResponse
+	(*SetRelativePositionTargetRequest)(nil),  // 21: steeleagle_protocol.v1.services.driver.SetRelativePositionTargetRequest
+	(*SetRelativePositionTargetResponse)(nil), // 22: steeleagle_protocol.v1.services.driver.SetRelativePositionTargetResponse
+	(*SetVelocityTargetRequest)(nil),          // 23: steeleagle_protocol.v1.services.driver.SetVelocityTargetRequest
+	(*SetVelocityTargetResponse)(nil),         // 24: steeleagle_protocol.v1.services.driver.SetVelocityTargetResponse
+	(*SetGimbalAngleTargetRequest)(nil),       // 25: steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetRequest
+	(*SetGimbalAngleTargetResponse)(nil),      // 26: steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetResponse
+	(*SetGimbalVelocityTargetRequest)(nil),    // 27: steeleagle_protocol.v1.services.driver.SetGimbalVelocityTargetRequest
+	(*SetGimbalVelocityTargetResponse)(nil),   // 28: steeleagle_protocol.v1.services.driver.SetGimbalVelocityTargetResponse
+	(telemetry.Mode)(0),                       // 29: steeleagle_protocol.v1.messages.telemetry.Mode
+	(telemetry.MotionStatus)(0),               // 30: steeleagle_protocol.v1.messages.telemetry.MotionStatus
+	(*common.GlobalPosition)(nil),             // 31: steeleagle_protocol.v1.common.GlobalPosition
+	(*common.RelativePosition)(nil),           // 32: steeleagle_protocol.v1.common.RelativePosition
+	(*common.Velocity)(nil),                   // 33: steeleagle_protocol.v1.common.Velocity
+	(*common.Pose)(nil),                       // 34: steeleagle_protocol.v1.common.Pose
+	(*common.PoseVelocity)(nil),               // 35: steeleagle_protocol.v1.common.PoseVelocity
 }
 var file_steeleagle_protocol_v1_services_driver_control_proto_depIdxs = []int32{
-	25, // 0: steeleagle_protocol.v1.services.driver.TakeOffResponse.expected_mode:type_name -> steeleagle_protocol.v1.messages.telemetry.Mode
-	26, // 1: steeleagle_protocol.v1.services.driver.TakeOffResponse.expected_status:type_name -> steeleagle_protocol.v1.messages.telemetry.MotionStatus
-	25, // 2: steeleagle_protocol.v1.services.driver.LandResponse.expected_mode:type_name -> steeleagle_protocol.v1.messages.telemetry.Mode
-	26, // 3: steeleagle_protocol.v1.services.driver.LandResponse.expected_status:type_name -> steeleagle_protocol.v1.messages.telemetry.MotionStatus
-	25, // 4: steeleagle_protocol.v1.services.driver.HoldResponse.expected_mode:type_name -> steeleagle_protocol.v1.messages.telemetry.Mode
-	26, // 5: steeleagle_protocol.v1.services.driver.HoldResponse.expected_status:type_name -> steeleagle_protocol.v1.messages.telemetry.MotionStatus
-	25, // 6: steeleagle_protocol.v1.services.driver.KillResponse.expected_mode:type_name -> steeleagle_protocol.v1.messages.telemetry.Mode
-	26, // 7: steeleagle_protocol.v1.services.driver.KillResponse.expected_status:type_name -> steeleagle_protocol.v1.messages.telemetry.MotionStatus
-	0,  // 8: steeleagle_protocol.v1.services.driver.ReturnToHomeRequest.end_behavior:type_name -> steeleagle_protocol.v1.services.driver.ReturnToHomeEndBehavior
-	25, // 9: steeleagle_protocol.v1.services.driver.ReturnToHomeResponse.expected_mode:type_name -> steeleagle_protocol.v1.messages.telemetry.Mode
-	26, // 10: steeleagle_protocol.v1.services.driver.ReturnToHomeResponse.expected_status:type_name -> steeleagle_protocol.v1.messages.telemetry.MotionStatus
-	27, // 11: steeleagle_protocol.v1.services.driver.SetGlobalPositionTargetRequest.position:type_name -> steeleagle_protocol.v1.common.GlobalPosition
-	2,  // 12: steeleagle_protocol.v1.services.driver.SetGlobalPositionTargetRequest.heading_mode:type_name -> steeleagle_protocol.v1.services.driver.HeadingMode
-	1,  // 13: steeleagle_protocol.v1.services.driver.SetGlobalPositionTargetRequest.altitude_mode:type_name -> steeleagle_protocol.v1.services.driver.AltitudeMode
-	27, // 14: steeleagle_protocol.v1.services.driver.SetGlobalPositionTargetResponse.setpoint:type_name -> steeleagle_protocol.v1.common.GlobalPosition
-	26, // 15: steeleagle_protocol.v1.services.driver.SetGlobalPositionTargetResponse.expected_status:type_name -> steeleagle_protocol.v1.messages.telemetry.MotionStatus
-	28, // 16: steeleagle_protocol.v1.services.driver.SetRelativePositionTargetRequest.position:type_name -> steeleagle_protocol.v1.common.RelativePosition
-	3,  // 17: steeleagle_protocol.v1.services.driver.SetRelativePositionTargetRequest.frame:type_name -> steeleagle_protocol.v1.services.driver.ReferenceFrame
-	28, // 18: steeleagle_protocol.v1.services.driver.SetRelativePositionTargetResponse.setpoint:type_name -> steeleagle_protocol.v1.common.RelativePosition
-	26, // 19: steeleagle_protocol.v1.services.driver.SetRelativePositionTargetResponse.expected_status:type_name -> steeleagle_protocol.v1.messages.telemetry.MotionStatus
-	29, // 20: steeleagle_protocol.v1.services.driver.SetVelocityTargetRequest.velocity:type_name -> steeleagle_protocol.v1.common.Velocity
-	3,  // 21: steeleagle_protocol.v1.services.driver.SetVelocityTargetRequest.frame:type_name -> steeleagle_protocol.v1.services.driver.ReferenceFrame
-	29, // 22: steeleagle_protocol.v1.services.driver.SetVelocityTargetResponse.setpoint:type_name -> steeleagle_protocol.v1.common.Velocity
-	26, // 23: steeleagle_protocol.v1.services.driver.SetVelocityTargetResponse.expected_status:type_name -> steeleagle_protocol.v1.messages.telemetry.MotionStatus
-	30, // 24: steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetRequest.pose:type_name -> steeleagle_protocol.v1.common.Pose
-	4,  // 25: steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetRequest.angle_mode:type_name -> steeleagle_protocol.v1.services.driver.AngleMode
-	3,  // 26: steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetRequest.frame:type_name -> steeleagle_protocol.v1.services.driver.ReferenceFrame
-	30, // 27: steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetResponse.setpoint:type_name -> steeleagle_protocol.v1.common.Pose
-	31, // 28: steeleagle_protocol.v1.services.driver.SetGimbalVelocityTargetRequest.pose_velocity:type_name -> steeleagle_protocol.v1.common.PoseVelocity
-	31, // 29: steeleagle_protocol.v1.services.driver.SetGimbalVelocityTargetResponse.setpoint:type_name -> steeleagle_protocol.v1.common.PoseVelocity
-	5,  // 30: steeleagle_protocol.v1.services.driver.ControlService.TakeOff:input_type -> steeleagle_protocol.v1.services.driver.TakeOffRequest
-	7,  // 31: steeleagle_protocol.v1.services.driver.ControlService.Land:input_type -> steeleagle_protocol.v1.services.driver.LandRequest
-	9,  // 32: steeleagle_protocol.v1.services.driver.ControlService.Hold:input_type -> steeleagle_protocol.v1.services.driver.HoldRequest
-	11, // 33: steeleagle_protocol.v1.services.driver.ControlService.Kill:input_type -> steeleagle_protocol.v1.services.driver.KillRequest
-	13, // 34: steeleagle_protocol.v1.services.driver.ControlService.ReturnToHome:input_type -> steeleagle_protocol.v1.services.driver.ReturnToHomeRequest
-	15, // 35: steeleagle_protocol.v1.services.driver.ControlService.SetGlobalPositionTarget:input_type -> steeleagle_protocol.v1.services.driver.SetGlobalPositionTargetRequest
-	17, // 36: steeleagle_protocol.v1.services.driver.ControlService.SetRelativePositionTarget:input_type -> steeleagle_protocol.v1.services.driver.SetRelativePositionTargetRequest
-	19, // 37: steeleagle_protocol.v1.services.driver.ControlService.SetVelocityTarget:input_type -> steeleagle_protocol.v1.services.driver.SetVelocityTargetRequest
-	21, // 38: steeleagle_protocol.v1.services.driver.ControlService.SetGimbalAngleTarget:input_type -> steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetRequest
-	23, // 39: steeleagle_protocol.v1.services.driver.ControlService.SetGimbalVelocityTarget:input_type -> steeleagle_protocol.v1.services.driver.SetGimbalVelocityTargetRequest
-	6,  // 40: steeleagle_protocol.v1.services.driver.ControlService.TakeOff:output_type -> steeleagle_protocol.v1.services.driver.TakeOffResponse
-	8,  // 41: steeleagle_protocol.v1.services.driver.ControlService.Land:output_type -> steeleagle_protocol.v1.services.driver.LandResponse
-	10, // 42: steeleagle_protocol.v1.services.driver.ControlService.Hold:output_type -> steeleagle_protocol.v1.services.driver.HoldResponse
-	12, // 43: steeleagle_protocol.v1.services.driver.ControlService.Kill:output_type -> steeleagle_protocol.v1.services.driver.KillResponse
-	14, // 44: steeleagle_protocol.v1.services.driver.ControlService.ReturnToHome:output_type -> steeleagle_protocol.v1.services.driver.ReturnToHomeResponse
-	16, // 45: steeleagle_protocol.v1.services.driver.ControlService.SetGlobalPositionTarget:output_type -> steeleagle_protocol.v1.services.driver.SetGlobalPositionTargetResponse
-	18, // 46: steeleagle_protocol.v1.services.driver.ControlService.SetRelativePositionTarget:output_type -> steeleagle_protocol.v1.services.driver.SetRelativePositionTargetResponse
-	20, // 47: steeleagle_protocol.v1.services.driver.ControlService.SetVelocityTarget:output_type -> steeleagle_protocol.v1.services.driver.SetVelocityTargetResponse
-	22, // 48: steeleagle_protocol.v1.services.driver.ControlService.SetGimbalAngleTarget:output_type -> steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetResponse
-	24, // 49: steeleagle_protocol.v1.services.driver.ControlService.SetGimbalVelocityTarget:output_type -> steeleagle_protocol.v1.services.driver.SetGimbalVelocityTargetResponse
-	40, // [40:50] is the sub-list for method output_type
-	30, // [30:40] is the sub-list for method input_type
-	30, // [30:30] is the sub-list for extension type_name
-	30, // [30:30] is the sub-list for extension extendee
-	0,  // [0:30] is the sub-list for field type_name
+	29, // 0: steeleagle_protocol.v1.services.driver.TakeOffResponse.expected_mode:type_name -> steeleagle_protocol.v1.messages.telemetry.Mode
+	30, // 1: steeleagle_protocol.v1.services.driver.TakeOffResponse.expected_status:type_name -> steeleagle_protocol.v1.messages.telemetry.MotionStatus
+	29, // 2: steeleagle_protocol.v1.services.driver.LandResponse.expected_mode:type_name -> steeleagle_protocol.v1.messages.telemetry.Mode
+	30, // 3: steeleagle_protocol.v1.services.driver.LandResponse.expected_status:type_name -> steeleagle_protocol.v1.messages.telemetry.MotionStatus
+	29, // 4: steeleagle_protocol.v1.services.driver.StandResponse.expected_mode:type_name -> steeleagle_protocol.v1.messages.telemetry.Mode
+	30, // 5: steeleagle_protocol.v1.services.driver.StandResponse.expected_status:type_name -> steeleagle_protocol.v1.messages.telemetry.MotionStatus
+	29, // 6: steeleagle_protocol.v1.services.driver.SitResponse.expected_mode:type_name -> steeleagle_protocol.v1.messages.telemetry.Mode
+	30, // 7: steeleagle_protocol.v1.services.driver.SitResponse.expected_status:type_name -> steeleagle_protocol.v1.messages.telemetry.MotionStatus
+	29, // 8: steeleagle_protocol.v1.services.driver.HoldResponse.expected_mode:type_name -> steeleagle_protocol.v1.messages.telemetry.Mode
+	30, // 9: steeleagle_protocol.v1.services.driver.HoldResponse.expected_status:type_name -> steeleagle_protocol.v1.messages.telemetry.MotionStatus
+	29, // 10: steeleagle_protocol.v1.services.driver.KillResponse.expected_mode:type_name -> steeleagle_protocol.v1.messages.telemetry.Mode
+	30, // 11: steeleagle_protocol.v1.services.driver.KillResponse.expected_status:type_name -> steeleagle_protocol.v1.messages.telemetry.MotionStatus
+	0,  // 12: steeleagle_protocol.v1.services.driver.ReturnToHomeRequest.end_behavior:type_name -> steeleagle_protocol.v1.services.driver.ReturnToHomeEndBehavior
+	29, // 13: steeleagle_protocol.v1.services.driver.ReturnToHomeResponse.expected_mode:type_name -> steeleagle_protocol.v1.messages.telemetry.Mode
+	30, // 14: steeleagle_protocol.v1.services.driver.ReturnToHomeResponse.expected_status:type_name -> steeleagle_protocol.v1.messages.telemetry.MotionStatus
+	31, // 15: steeleagle_protocol.v1.services.driver.SetGlobalPositionTargetRequest.position:type_name -> steeleagle_protocol.v1.common.GlobalPosition
+	2,  // 16: steeleagle_protocol.v1.services.driver.SetGlobalPositionTargetRequest.heading_mode:type_name -> steeleagle_protocol.v1.services.driver.HeadingMode
+	1,  // 17: steeleagle_protocol.v1.services.driver.SetGlobalPositionTargetRequest.altitude_mode:type_name -> steeleagle_protocol.v1.services.driver.AltitudeMode
+	31, // 18: steeleagle_protocol.v1.services.driver.SetGlobalPositionTargetResponse.setpoint:type_name -> steeleagle_protocol.v1.common.GlobalPosition
+	30, // 19: steeleagle_protocol.v1.services.driver.SetGlobalPositionTargetResponse.expected_status:type_name -> steeleagle_protocol.v1.messages.telemetry.MotionStatus
+	32, // 20: steeleagle_protocol.v1.services.driver.SetRelativePositionTargetRequest.position:type_name -> steeleagle_protocol.v1.common.RelativePosition
+	3,  // 21: steeleagle_protocol.v1.services.driver.SetRelativePositionTargetRequest.frame:type_name -> steeleagle_protocol.v1.services.driver.ReferenceFrame
+	32, // 22: steeleagle_protocol.v1.services.driver.SetRelativePositionTargetResponse.setpoint:type_name -> steeleagle_protocol.v1.common.RelativePosition
+	30, // 23: steeleagle_protocol.v1.services.driver.SetRelativePositionTargetResponse.expected_status:type_name -> steeleagle_protocol.v1.messages.telemetry.MotionStatus
+	33, // 24: steeleagle_protocol.v1.services.driver.SetVelocityTargetRequest.velocity:type_name -> steeleagle_protocol.v1.common.Velocity
+	3,  // 25: steeleagle_protocol.v1.services.driver.SetVelocityTargetRequest.frame:type_name -> steeleagle_protocol.v1.services.driver.ReferenceFrame
+	33, // 26: steeleagle_protocol.v1.services.driver.SetVelocityTargetResponse.setpoint:type_name -> steeleagle_protocol.v1.common.Velocity
+	30, // 27: steeleagle_protocol.v1.services.driver.SetVelocityTargetResponse.expected_status:type_name -> steeleagle_protocol.v1.messages.telemetry.MotionStatus
+	34, // 28: steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetRequest.pose:type_name -> steeleagle_protocol.v1.common.Pose
+	4,  // 29: steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetRequest.angle_mode:type_name -> steeleagle_protocol.v1.services.driver.AngleMode
+	3,  // 30: steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetRequest.frame:type_name -> steeleagle_protocol.v1.services.driver.ReferenceFrame
+	34, // 31: steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetResponse.setpoint:type_name -> steeleagle_protocol.v1.common.Pose
+	35, // 32: steeleagle_protocol.v1.services.driver.SetGimbalVelocityTargetRequest.pose_velocity:type_name -> steeleagle_protocol.v1.common.PoseVelocity
+	35, // 33: steeleagle_protocol.v1.services.driver.SetGimbalVelocityTargetResponse.setpoint:type_name -> steeleagle_protocol.v1.common.PoseVelocity
+	5,  // 34: steeleagle_protocol.v1.services.driver.ControlService.TakeOff:input_type -> steeleagle_protocol.v1.services.driver.TakeOffRequest
+	7,  // 35: steeleagle_protocol.v1.services.driver.ControlService.Land:input_type -> steeleagle_protocol.v1.services.driver.LandRequest
+	9,  // 36: steeleagle_protocol.v1.services.driver.ControlService.Stand:input_type -> steeleagle_protocol.v1.services.driver.StandRequest
+	11, // 37: steeleagle_protocol.v1.services.driver.ControlService.Sit:input_type -> steeleagle_protocol.v1.services.driver.SitRequest
+	13, // 38: steeleagle_protocol.v1.services.driver.ControlService.Hold:input_type -> steeleagle_protocol.v1.services.driver.HoldRequest
+	15, // 39: steeleagle_protocol.v1.services.driver.ControlService.Kill:input_type -> steeleagle_protocol.v1.services.driver.KillRequest
+	17, // 40: steeleagle_protocol.v1.services.driver.ControlService.ReturnToHome:input_type -> steeleagle_protocol.v1.services.driver.ReturnToHomeRequest
+	19, // 41: steeleagle_protocol.v1.services.driver.ControlService.SetGlobalPositionTarget:input_type -> steeleagle_protocol.v1.services.driver.SetGlobalPositionTargetRequest
+	21, // 42: steeleagle_protocol.v1.services.driver.ControlService.SetRelativePositionTarget:input_type -> steeleagle_protocol.v1.services.driver.SetRelativePositionTargetRequest
+	23, // 43: steeleagle_protocol.v1.services.driver.ControlService.SetVelocityTarget:input_type -> steeleagle_protocol.v1.services.driver.SetVelocityTargetRequest
+	25, // 44: steeleagle_protocol.v1.services.driver.ControlService.SetGimbalAngleTarget:input_type -> steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetRequest
+	27, // 45: steeleagle_protocol.v1.services.driver.ControlService.SetGimbalVelocityTarget:input_type -> steeleagle_protocol.v1.services.driver.SetGimbalVelocityTargetRequest
+	6,  // 46: steeleagle_protocol.v1.services.driver.ControlService.TakeOff:output_type -> steeleagle_protocol.v1.services.driver.TakeOffResponse
+	8,  // 47: steeleagle_protocol.v1.services.driver.ControlService.Land:output_type -> steeleagle_protocol.v1.services.driver.LandResponse
+	10, // 48: steeleagle_protocol.v1.services.driver.ControlService.Stand:output_type -> steeleagle_protocol.v1.services.driver.StandResponse
+	12, // 49: steeleagle_protocol.v1.services.driver.ControlService.Sit:output_type -> steeleagle_protocol.v1.services.driver.SitResponse
+	14, // 50: steeleagle_protocol.v1.services.driver.ControlService.Hold:output_type -> steeleagle_protocol.v1.services.driver.HoldResponse
+	16, // 51: steeleagle_protocol.v1.services.driver.ControlService.Kill:output_type -> steeleagle_protocol.v1.services.driver.KillResponse
+	18, // 52: steeleagle_protocol.v1.services.driver.ControlService.ReturnToHome:output_type -> steeleagle_protocol.v1.services.driver.ReturnToHomeResponse
+	20, // 53: steeleagle_protocol.v1.services.driver.ControlService.SetGlobalPositionTarget:output_type -> steeleagle_protocol.v1.services.driver.SetGlobalPositionTargetResponse
+	22, // 54: steeleagle_protocol.v1.services.driver.ControlService.SetRelativePositionTarget:output_type -> steeleagle_protocol.v1.services.driver.SetRelativePositionTargetResponse
+	24, // 55: steeleagle_protocol.v1.services.driver.ControlService.SetVelocityTarget:output_type -> steeleagle_protocol.v1.services.driver.SetVelocityTargetResponse
+	26, // 56: steeleagle_protocol.v1.services.driver.ControlService.SetGimbalAngleTarget:output_type -> steeleagle_protocol.v1.services.driver.SetGimbalAngleTargetResponse
+	28, // 57: steeleagle_protocol.v1.services.driver.ControlService.SetGimbalVelocityTarget:output_type -> steeleagle_protocol.v1.services.driver.SetGimbalVelocityTargetResponse
+	46, // [46:58] is the sub-list for method output_type
+	34, // [34:46] is the sub-list for method input_type
+	34, // [34:34] is the sub-list for extension type_name
+	34, // [34:34] is the sub-list for extension extendee
+	0,  // [0:34] is the sub-list for field type_name
 }
 
 func init() { file_steeleagle_protocol_v1_services_driver_control_proto_init() }
@@ -2174,17 +2429,17 @@ func file_steeleagle_protocol_v1_services_driver_control_proto_init() {
 		return
 	}
 	file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[0].OneofWrappers = []any{}
-	file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[10].OneofWrappers = []any{}
-	file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[12].OneofWrappers = []any{}
 	file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[14].OneofWrappers = []any{}
 	file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[16].OneofWrappers = []any{}
+	file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[18].OneofWrappers = []any{}
+	file_steeleagle_protocol_v1_services_driver_control_proto_msgTypes[20].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_services_driver_control_proto_rawDesc), len(file_steeleagle_protocol_v1_services_driver_control_proto_rawDesc)),
 			NumEnums:      5,
-			NumMessages:   20,
+			NumMessages:   24,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

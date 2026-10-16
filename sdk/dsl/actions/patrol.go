@@ -52,9 +52,9 @@ func (p *Patrol) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 
 	options := []opt.Option[opt.SetGlobalPositionTargetOption]{}
 	options = append(options, opt.WithAltitudeMode[opt.SetGlobalPositionTargetOption](p.AltitudeMode))
-	// #exclude-ifndef services/driver/SetGlobalPositionTargetRequest/speed
+	// #exclude-ifndef steeleagle_protocol/v1/services/driver/SetGlobalPositionTargetRequest/speed
 	options = append(options, opt.WithSpeed[opt.SetGlobalPositionTargetOption](p.Speed))
-	// #exclude-ifndef services/driver/SetGlobalPositionTargetRequest/angular_speed
+	// #exclude-ifndef steeleagle_protocol/v1/services/driver/SetGlobalPositionTargetRequest/angular_speed
 	options = append(options, opt.WithAngularSpeed[opt.SetGlobalPositionTargetOption](p.AngularSpeed))
 	for i, n := range points {
 		m.Log.Info().Msgf("transiting to waypoint %d / %d", i, len(points))

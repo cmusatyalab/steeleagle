@@ -1,4 +1,4 @@
-package swarm_test
+package swarm
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 
 	driverpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver"
 	swarmpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/swarm"
-	"github.com/cmusatyalab/steeleagle/core/swarm"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -65,12 +64,12 @@ func startFixtureVehicle(t *testing.T, srv driverpb.ControlServiceServer) netip.
 	return addr
 }
 
-// startSwarmServer wires a swarm.SwarmServer with the given options up to a
+// startSwarmServer wires a SwarmServer with the given options up to a
 // real SwarmService listener and returns a client dialed to it.
-func startSwarmServer(t *testing.T, registry *swarm.Registry, opts ...swarm.Option) swarmpb.SwarmServiceClient {
+func startSwarmServer(t *testing.T, registry *Registry, opts ...Option) swarmpb.SwarmServiceClient {
 	t.Helper()
 
-	server := swarm.NewSwarmServer(registry, opts...)
+	server := NewSwarmServer(registry, opts...)
 	t.Cleanup(server.Close)
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
@@ -116,10 +115,10 @@ func TestServer_CallTimeoutIsolatesSlowVehicle(t *testing.T) {
 	defer close(release)
 	addr := startFixtureVehicle(t, &slowVehicle{release: release})
 
-	registry := swarm.NewRegistry()
+	registry := NewRegistry()
 	defer registry.Register("harpy", addr)()
 
-	client := startSwarmServer(t, registry, swarm.WithCallTimeout(200*time.Millisecond))
+	client := startSwarmServer(t, registry, WithCallTimeout(200*time.Millisecond))
 
 	start := time.Now()
 	resp := takeOff(t, client, "harpy")
@@ -136,7 +135,7 @@ func TestServer_CallTimeoutIsolatesSlowVehicle(t *testing.T) {
 func TestServer_PropagatesVehicleRPCError(t *testing.T) {
 	addr := startFixtureVehicle(t, &erroringVehicle{})
 
-	registry := swarm.NewRegistry()
+	registry := NewRegistry()
 	defer registry.Register("harpy", addr)()
 
 	client := startSwarmServer(t, registry)

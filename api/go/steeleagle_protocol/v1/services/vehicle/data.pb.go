@@ -545,8 +545,8 @@ func (b0 GetTelemetryRequest_builder) Build() *GetTelemetryRequest {
 }
 
 type GetTelemetryResponse struct {
-	state                protoimpl.MessageState  `protogen:"opaque.v1"`
-	xxx_hidden_Telemetry *[]*telemetry.Telemetry `protobuf:"bytes,1,rep,name=telemetry,proto3"`
+	state                protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Telemetry *telemetry.Telemetry   `protobuf:"bytes,1,opt,name=telemetry,proto3"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -576,30 +576,39 @@ func (x *GetTelemetryResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *GetTelemetryResponse) GetTelemetry() []*telemetry.Telemetry {
+func (x *GetTelemetryResponse) GetTelemetry() *telemetry.Telemetry {
 	if x != nil {
-		if x.xxx_hidden_Telemetry != nil {
-			return *x.xxx_hidden_Telemetry
-		}
+		return x.xxx_hidden_Telemetry
 	}
 	return nil
 }
 
-func (x *GetTelemetryResponse) SetTelemetry(v []*telemetry.Telemetry) {
-	x.xxx_hidden_Telemetry = &v
+func (x *GetTelemetryResponse) SetTelemetry(v *telemetry.Telemetry) {
+	x.xxx_hidden_Telemetry = v
+}
+
+func (x *GetTelemetryResponse) HasTelemetry() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Telemetry != nil
+}
+
+func (x *GetTelemetryResponse) ClearTelemetry() {
+	x.xxx_hidden_Telemetry = nil
 }
 
 type GetTelemetryResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Telemetry []*telemetry.Telemetry
+	Telemetry *telemetry.Telemetry
 }
 
 func (b0 GetTelemetryResponse_builder) Build() *GetTelemetryResponse {
 	m0 := &GetTelemetryResponse{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_Telemetry = &b.Telemetry
+	x.xxx_hidden_Telemetry = b.Telemetry
 	return m0
 }
 
@@ -817,7 +826,7 @@ const file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDesc = "" +
 	"\v_time_startB\v\n" +
 	"\t_time_end\"j\n" +
 	"\x14GetTelemetryResponse\x12R\n" +
-	"\ttelemetry\x18\x01 \x03(\v24.steeleagle_protocol.v1.messages.telemetry.TelemetryR\ttelemetry\"\x7f\n" +
+	"\ttelemetry\x18\x01 \x01(\v24.steeleagle_protocol.v1.messages.telemetry.TelemetryR\ttelemetry\"\x7f\n" +
 	"\n" +
 	"StreamInfo\x12\x10\n" +
 	"\x03uri\x18\x01 \x01(\tR\x03uri\x12G\n" +

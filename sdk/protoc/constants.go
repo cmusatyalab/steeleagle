@@ -11,6 +11,10 @@ const enumsImportPath protogen.GoImportPath = "github.com/cmusatyalab/steeleagle
 // commonPackage is the package that holds SteelEagle protocol common types.
 const commonPackage = "steeleagle_protocol.v1.common"
 
+// capPathRoot is the root that every capability path emitted in a
+// preprocessor directive is qualified with.
+const capPathRoot = "steeleagle_protocol/v1/"
+
 // fieldNotPresentError is the name of the error returned when a field is not set.
 const fieldNotPresentError = "ErrFieldNotPresent"
 
@@ -29,7 +33,4 @@ var hiddenMessages = []string{
 	"steeleagle_protocol.v1.services.driver.*Request",
 	"steeleagle_protocol.v1.services.driver.Calibrate*",
 	"steeleagle_protocol.v1.services.driver.Stream*",
-	"steeleagle_protocol.v1.services.driver.GetVideo*",
-	"steeleagle_protocol.v1.messages.telemetry.RawFrame",
-	"steeleagle_protocol.v1.messages.telemetry.EncodedFrame",
 }

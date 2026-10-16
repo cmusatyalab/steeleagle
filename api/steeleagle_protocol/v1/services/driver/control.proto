@@ -31,7 +31,7 @@ service ControlService {
    * Order the vehicle to take off _(Action)_.
    *
    * Causes the vehicle to take off to a specified take off altitude.
-   * Implicitly arms the vehicle.
+   * Implicitly arms the vehicle. UAV only.
    *
    * Returns an _Action_ style response with `expected_mode` set to LOITER
    * and `expected_status` set to `MOTION_STATUS_HOLDING`.
@@ -43,7 +43,7 @@ service ControlService {
    * Order the vehicle to land _(Action)_.
    *
    * Causes the vehicle to land at its current location. Implicitly
-   * disarms the vehicle.
+   * disarms the vehicle. UAV only.
    *
    * Returns an _Action_ style response with `expected_mode` set to LAND
    * and `expected_status` set to `MOTION_STATUS_STOPPED`.
@@ -51,6 +51,30 @@ service ControlService {
 
   rpc Land (LandRequest)
 	returns (LandResponse) {}
+
+  /*
+   * Order the vehicle to stand _(Action)_.
+   *
+   * Causes the vehicle to stand at its current location. Implicitly
+   * arms the vehicle. Pedal only.
+   *
+   * Returns an _Action_ style response with `expected_mode` set to STAND
+   * and `expected_status` set to `MOTION_STATUS_HOLDING`.
+   */
+  rpc Stand (StandRequest)
+    returns (StandResponse) {}
+
+  /*
+   * Order the vehicle to sit _(Action)_.
+   *
+   * Causes the vehicle to sit at its current location. Implicitly
+   * disarms the vehicle. Pedal only.
+   *
+   * Returns an _Action_ style response with `expected_mode` set to SIT
+   * and `expected_status` set to `MOTION_STATUS_STOPPED`.
+   */
+  rpc Sit (SitRequest)
+    returns (SitResponse) {}
   
   /*
    * Order the vehicle to hold/loiter _(Action)_.
@@ -68,7 +92,7 @@ service ControlService {
    * Orders an emergency shutdown of the vehicle motors _(Action)_.
    *
    * Causes the vehicle to immediately turn off its motors. _This will
-   * result in the vehicle going into freefall, only for emergencies!_
+   * result in a UAV going into freefall, only for emergencies!_
    *
    * Returns an _Action_ style response with `expected_mode` set to EMERGENCY
    * and `expected_status` set to `MOTION_STATUS_STOPPED`.
@@ -225,7 +249,7 @@ message TakeOffRequest {
 }
 
 message TakeOffResponse {
-  // flight mode expectation
+  // mode expectation
   steeleagle_protocol.v1.messages.telemetry.Mode expected_mode = 1;
   // motion status expectation
   steeleagle_protocol.v1.messages.telemetry.MotionStatus expected_status = 2;
@@ -234,7 +258,25 @@ message TakeOffResponse {
 message LandRequest {}
 
 message LandResponse {
-  // flight mode expectation
+  // mode expectation
+  steeleagle_protocol.v1.messages.telemetry.Mode expected_mode = 1;
+  // motion status expectation
+  steeleagle_protocol.v1.messages.telemetry.MotionStatus expected_status = 2;
+}
+
+message StandRequest {}
+
+message StandResponse {
+  // mode expectation
+  steeleagle_protocol.v1.messages.telemetry.Mode expected_mode = 1;
+  // motion status expectation
+  steeleagle_protocol.v1.messages.telemetry.MotionStatus expected_status = 2;
+}
+
+message SitRequest {}
+
+message SitResponse {
+  // mode expectation
   steeleagle_protocol.v1.messages.telemetry.Mode expected_mode = 1;
   // motion status expectation
   steeleagle_protocol.v1.messages.telemetry.MotionStatus expected_status = 2;
@@ -243,7 +285,7 @@ message LandResponse {
 message HoldRequest {}
 
 message HoldResponse {
-  // flight mode expectation
+  // mode expectation
   steeleagle_protocol.v1.messages.telemetry.Mode expected_mode = 1;
   // motion status expectation
   steeleagle_protocol.v1.messages.telemetry.MotionStatus expected_status = 2;
@@ -252,7 +294,7 @@ message HoldResponse {
 message KillRequest {}
 
 message KillResponse {
-  // flight mode expectation
+  // mode expectation
   steeleagle_protocol.v1.messages.telemetry.Mode expected_mode = 1;
   // motion status expectation
   steeleagle_protocol.v1.messages.telemetry.MotionStatus expected_status = 2;
@@ -268,7 +310,7 @@ message ReturnToHomeRequest {
 }
 
 message ReturnToHomeResponse {
-  // flight mode expectation
+  // mode expectation
   steeleagle_protocol.v1.messages.telemetry.Mode expected_mode = 1;
   // motion status expectation
   steeleagle_protocol.v1.messages.telemetry.MotionStatus expected_status = 2;

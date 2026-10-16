@@ -95,7 +95,7 @@ message GetTelemetryRequest {
 }
 
 message GetTelemetryResponse {
-  repeated steeleagle_protocol.v1.messages.telemetry.Telemetry telemetry = 1; // telemetry query response
+  steeleagle_protocol.v1.messages.telemetry.Telemetry telemetry = 1; // telemetry query response
 }
 
 // Type of the stream.

@@ -1,4 +1,4 @@
-package vehicle_test
+package vehicle
 
 import (
 	"context"
@@ -13,7 +13,6 @@ import (
 	"time"
 
 	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
-	"github.com/cmusatyalab/steeleagle/core/vehicle"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -146,16 +145,16 @@ func testStreaming(t *testing.T, inputFileURL string) {
 	if err != nil {
 		t.Fatalf("couldn't create plugin config: %v", err)
 	}
-	pluginCfg := vehicle.PluginConfig{Driver: driverPlugin}
-	videoCfg := vehicle.VideoStreamConfig{Resolution: vehicle.Res720P}
+	pluginCfg := PluginConfig{Driver: driverPlugin}
+	videoCfg := VideoStreamConfig{Resolution: Res720P}
 	if len(inputFileURL) == 0 {
-		videoCfg.StreamType = vehicle.Frames
+		videoCfg.StreamType = Frames
 	}
 	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}}).With().Timestamp().Logger()
-	v, err := vehicle.NewVehicle(
+	v, err := NewVehicle(
 		pluginCfg,
-		vehicle.WithVideoStreamConfig(videoCfg),
-		vehicle.WithLogger(logger),
+		WithVideoStreamConfig(videoCfg),
+		WithLogger(logger),
 	)
 	if err != nil {
 		t.Fatalf("couldn't create vehicle: %v", err)
@@ -166,7 +165,7 @@ func testStreaming(t *testing.T, inputFileURL string) {
 		t.Fatalf("couldn't start vehicle: %v", err)
 	}
 
-	target := filepath.Join("unix://", v.RunDir, vehicle.MainSocketName)
+	target := filepath.Join("unix://", v.RunDir, MainSocketName)
 	t.Logf("target: %s", target)
 	conn, err := grpc.NewClient(
 		target,

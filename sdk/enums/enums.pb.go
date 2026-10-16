@@ -5,156 +5,160 @@ package enums
 type Mode uint32
 
 const (
-	// #private-ifndef messages/telemetry/Mode/MODE_UNSPECIFIED
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/Mode/MODE_UNSPECIFIED
 	ModeUnspecified Mode = iota
-	// #private-ifndef messages/telemetry/Mode/MODE_TAKEOFF
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/Mode/MODE_TAKEOFF
 	ModeTakeoff
-	// #private-ifndef messages/telemetry/Mode/MODE_LAND
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/Mode/MODE_LAND
 	ModeLand
-	// #private-ifndef messages/telemetry/Mode/MODE_LOITER
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/Mode/MODE_STAND
+	ModeStand
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/Mode/MODE_SIT
+	ModeSit
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/Mode/MODE_LOITER
 	ModeLoiter
-	// #private-ifndef messages/telemetry/Mode/MODE_GUIDED
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/Mode/MODE_GUIDED
 	ModeGuided
-	// #private-ifndef messages/telemetry/Mode/MODE_RETURN_TO_HOME
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/Mode/MODE_RETURN_TO_HOME
 	ModeReturnToHome
-	// #private-ifndef messages/telemetry/Mode/MODE_EMERGENCY
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/Mode/MODE_EMERGENCY
 	ModeEmergency
 )
 
 type MotionStatus uint32
 
 const (
-	// #private-ifndef messages/telemetry/MotionStatus/MOTION_STATUS_UNSPECIFIED
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/MotionStatus/MOTION_STATUS_UNSPECIFIED
 	MotionStatusUnspecified MotionStatus = iota
-	// #private-ifndef messages/telemetry/MotionStatus/MOTION_STATUS_HOLDING
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/MotionStatus/MOTION_STATUS_HOLDING
 	MotionStatusHolding
-	// #private-ifndef messages/telemetry/MotionStatus/MOTION_STATUS_IN_TRANSIT
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/MotionStatus/MOTION_STATUS_IN_TRANSIT
 	MotionStatusInTransit
-	// #private-ifndef messages/telemetry/MotionStatus/MOTION_STATUS_STOPPED
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/MotionStatus/MOTION_STATUS_STOPPED
 	MotionStatusStopped
 )
 
 type AlertInfo_BatteryWarning uint32
 
 const (
-	// #private-ifndef messages/telemetry/AlertInfo_BatteryWarning/BATTERY_WARNING_UNSPECIFIED
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/AlertInfo_BatteryWarning/BATTERY_WARNING_UNSPECIFIED
 	AlertInfo_BatteryWarningUnspecified AlertInfo_BatteryWarning = iota
-	// #private-ifndef messages/telemetry/AlertInfo_BatteryWarning/BATTERY_WARNING_LOW
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/AlertInfo_BatteryWarning/BATTERY_WARNING_LOW
 	AlertInfo_BatteryWarningLow
-	// #private-ifndef messages/telemetry/AlertInfo_BatteryWarning/BATTERY_WARNING_CRITICAL
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/AlertInfo_BatteryWarning/BATTERY_WARNING_CRITICAL
 	AlertInfo_BatteryWarningCritical
 )
 
 type AlertInfo_GpsWarning uint32
 
 const (
-	// #private-ifndef messages/telemetry/AlertInfo_GpsWarning/GPS_WARNING_UNSPECIFIED
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/AlertInfo_GpsWarning/GPS_WARNING_UNSPECIFIED
 	AlertInfo_GpsWarningUnspecified AlertInfo_GpsWarning = iota
-	// #private-ifndef messages/telemetry/AlertInfo_GpsWarning/GPS_WARNING_WEAK_SIGNAL
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/AlertInfo_GpsWarning/GPS_WARNING_WEAK_SIGNAL
 	AlertInfo_GpsWarningWeakSignal
-	// #private-ifndef messages/telemetry/AlertInfo_GpsWarning/GPS_WARNING_NO_FIX
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/AlertInfo_GpsWarning/GPS_WARNING_NO_FIX
 	AlertInfo_GpsWarningNoFix
 )
 
 type AlertInfo_MagnetometerWarning uint32
 
 const (
-	// #private-ifndef messages/telemetry/AlertInfo_MagnetometerWarning/MAGNETOMETER_WARNING_UNSPECIFIED
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/AlertInfo_MagnetometerWarning/MAGNETOMETER_WARNING_UNSPECIFIED
 	AlertInfo_MagnetometerWarningUnspecified AlertInfo_MagnetometerWarning = iota
-	// #private-ifndef messages/telemetry/AlertInfo_MagnetometerWarning/MAGNETOMETER_WARNING_PERTURBATIONS
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/AlertInfo_MagnetometerWarning/MAGNETOMETER_WARNING_PERTURBATIONS
 	AlertInfo_MagnetometerWarningPerturbations
 )
 
 type AlertInfo_ConnectionWarning uint32
 
 const (
-	// #private-ifndef messages/telemetry/AlertInfo_ConnectionWarning/CONNECTION_WARNING_UNSPECIFIED
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/AlertInfo_ConnectionWarning/CONNECTION_WARNING_UNSPECIFIED
 	AlertInfo_ConnectionWarningUnspecified AlertInfo_ConnectionWarning = iota
-	// #private-ifndef messages/telemetry/AlertInfo_ConnectionWarning/CONNECTION_WARNING_DISCONNECTED
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/AlertInfo_ConnectionWarning/CONNECTION_WARNING_DISCONNECTED
 	AlertInfo_ConnectionWarningDisconnected
-	// #private-ifndef messages/telemetry/AlertInfo_ConnectionWarning/CONNECTION_WARNING_WEAK_CONNECTION
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/AlertInfo_ConnectionWarning/CONNECTION_WARNING_WEAK_CONNECTION
 	AlertInfo_ConnectionWarningWeakConnection
 )
 
 type AlertInfo_CompassWarning uint32
 
 const (
-	// #private-ifndef messages/telemetry/AlertInfo_CompassWarning/COMPASS_WARNING_UNSPECIFIED
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/AlertInfo_CompassWarning/COMPASS_WARNING_UNSPECIFIED
 	AlertInfo_CompassWarningUnspecified AlertInfo_CompassWarning = iota
-	// #private-ifndef messages/telemetry/AlertInfo_CompassWarning/COMPASS_WARNING_WEAK_LOCK
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/AlertInfo_CompassWarning/COMPASS_WARNING_WEAK_LOCK
 	AlertInfo_CompassWarningWeakLock
-	// #private-ifndef messages/telemetry/AlertInfo_CompassWarning/COMPASS_WARNING_NO_LOCK
+	// #private-ifndef steeleagle_protocol/v1/messages/telemetry/AlertInfo_CompassWarning/COMPASS_WARNING_NO_LOCK
 	AlertInfo_CompassWarningNoLock
 )
 
 type ReturnToHomeEndBehavior uint32
 
 const (
-	// #private-ifndef services/control/ReturnToHomeEndBehavior/RETURN_TO_HOME_END_BEHAVIOR_UNSPECIFIED
+	// #private-ifndef steeleagle_protocol/v1/services/control/ReturnToHomeEndBehavior/RETURN_TO_HOME_END_BEHAVIOR_UNSPECIFIED
 	ReturnToHomeEndBehaviorUnspecified ReturnToHomeEndBehavior = iota
-	// #private-ifndef services/control/ReturnToHomeEndBehavior/RETURN_TO_HOME_END_BEHAVIOR_HOVER
+	// #private-ifndef steeleagle_protocol/v1/services/control/ReturnToHomeEndBehavior/RETURN_TO_HOME_END_BEHAVIOR_HOVER
 	ReturnToHomeEndBehaviorHover
-	// #private-ifndef services/control/ReturnToHomeEndBehavior/RETURN_TO_HOME_END_BEHAVIOR_LAND
+	// #private-ifndef steeleagle_protocol/v1/services/control/ReturnToHomeEndBehavior/RETURN_TO_HOME_END_BEHAVIOR_LAND
 	ReturnToHomeEndBehaviorLand
 )
 
 type AltitudeMode uint32
 
 const (
-	// #private-ifndef services/control/AltitudeMode/ALTITUDE_MODE_UNSPECIFIED
+	// #private-ifndef steeleagle_protocol/v1/services/control/AltitudeMode/ALTITUDE_MODE_UNSPECIFIED
 	AltitudeModeUnspecified AltitudeMode = iota
-	// #private-ifndef services/control/AltitudeMode/ALTITUDE_MODE_RELATIVE
+	// #private-ifndef steeleagle_protocol/v1/services/control/AltitudeMode/ALTITUDE_MODE_RELATIVE
 	AltitudeModeRelative
-	// #private-ifndef services/control/AltitudeMode/ALTITUDE_MODE_ABSOLUTE
+	// #private-ifndef steeleagle_protocol/v1/services/control/AltitudeMode/ALTITUDE_MODE_ABSOLUTE
 	AltitudeModeAbsolute
 )
 
 type HeadingMode uint32
 
 const (
-	// #private-ifndef services/control/HeadingMode/HEADING_MODE_UNSPECIFIED
+	// #private-ifndef steeleagle_protocol/v1/services/control/HeadingMode/HEADING_MODE_UNSPECIFIED
 	HeadingModeUnspecified HeadingMode = iota
-	// #private-ifndef services/control/HeadingMode/HEADING_MODE_TO_TARGET
+	// #private-ifndef steeleagle_protocol/v1/services/control/HeadingMode/HEADING_MODE_TO_TARGET
 	HeadingModeToTarget
-	// #private-ifndef services/control/HeadingMode/HEADING_MODE_START
+	// #private-ifndef steeleagle_protocol/v1/services/control/HeadingMode/HEADING_MODE_START
 	HeadingModeStart
 )
 
 type ReferenceFrame uint32
 
 const (
-	// #private-ifndef services/control/ReferenceFrame/REFERENCE_FRAME_UNSPECIFIED
+	// #private-ifndef steeleagle_protocol/v1/services/control/ReferenceFrame/REFERENCE_FRAME_UNSPECIFIED
 	ReferenceFrameUnspecified ReferenceFrame = iota
-	// #private-ifndef services/control/ReferenceFrame/REFERENCE_FRAME_BODY
+	// #private-ifndef steeleagle_protocol/v1/services/control/ReferenceFrame/REFERENCE_FRAME_BODY
 	ReferenceFrameBody
-	// #private-ifndef services/control/ReferenceFrame/REFERENCE_FRAME_NEU
+	// #private-ifndef steeleagle_protocol/v1/services/control/ReferenceFrame/REFERENCE_FRAME_NEU
 	ReferenceFrameNeu
 )
 
 type AngleMode uint32
 
 const (
-	// #private-ifndef services/control/AngleMode/ANGLE_MODE_UNSPECIFIED
+	// #private-ifndef steeleagle_protocol/v1/services/control/AngleMode/ANGLE_MODE_UNSPECIFIED
 	AngleModeUnspecified AngleMode = iota
-	// #private-ifndef services/control/AngleMode/ANGLE_MODE_ABSOLUTE
+	// #private-ifndef steeleagle_protocol/v1/services/control/AngleMode/ANGLE_MODE_ABSOLUTE
 	AngleModeAbsolute
-	// #private-ifndef services/control/AngleMode/ANGLE_MODE_OFFSET
+	// #private-ifndef steeleagle_protocol/v1/services/control/AngleMode/ANGLE_MODE_OFFSET
 	AngleModeOffset
 )
 
 type Resolution uint32
 
 const (
-	// #private-ifndef services/stream/Resolution/RESOLUTION_UNSPECIFIED
+	// #private-ifndef steeleagle_protocol/v1/services/stream/Resolution/RESOLUTION_UNSPECIFIED
 	ResolutionUnspecified Resolution = iota
-	// #private-ifndef services/stream/Resolution/RESOLUTION_360P
+	// #private-ifndef steeleagle_protocol/v1/services/stream/Resolution/RESOLUTION_360P
 	Resolution360p
-	// #private-ifndef services/stream/Resolution/RESOLUTION_480P
+	// #private-ifndef steeleagle_protocol/v1/services/stream/Resolution/RESOLUTION_480P
 	Resolution480p
-	// #private-ifndef services/stream/Resolution/RESOLUTION_720P
+	// #private-ifndef steeleagle_protocol/v1/services/stream/Resolution/RESOLUTION_720P
 	Resolution720p
-	// #private-ifndef services/stream/Resolution/RESOLUTION_1080P
+	// #private-ifndef steeleagle_protocol/v1/services/stream/Resolution/RESOLUTION_1080P
 	Resolution1080p
-	// #private-ifndef services/stream/Resolution/RESOLUTION_4K
+	// #private-ifndef steeleagle_protocol/v1/services/stream/Resolution/RESOLUTION_4K
 	Resolution4k
 )

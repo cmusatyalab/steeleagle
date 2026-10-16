@@ -1,4 +1,4 @@
-package vehicle_test
+package vehicle
 
 import (
 	"context"
@@ -13,8 +13,8 @@ import (
 	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
 	driverpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver"
 	missionpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/mission"
-	"github.com/cmusatyalab/steeleagle/core/util"
-	"github.com/cmusatyalab/steeleagle/core/vehicle"
+	"github.com/cmusatyalab/steeleagle/core/util/listener"
+	"github.com/cmusatyalab/steeleagle/core/util/plugin"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -135,7 +135,7 @@ func (m *MissionService) StopMission(ctx context.Context, req *missionpb.StopMis
 // Can provide a stream url that the StreamService will respond with as well.
 // Returns the driver plugin, mission plugin, a client for the mission gRPC
 // service, and a communication channel.
-func setupPlugins(t *testing.T, url string) (util.Plugin, util.Plugin, *grpc.ClientConn, chan string, error) {
+func setupPlugins(t *testing.T, url string) (plugin.Plugin, plugin.Plugin, *grpc.ClientConn, chan string, error) {
 	t.Helper()
 
 	// Create command channel
@@ -169,18 +169,18 @@ func setupPlugins(t *testing.T, url string) (util.Plugin, util.Plugin, *grpc.Cli
 
 	// Create shim plugins that attach to the pre-created listeners
 	driverAddr := filepath.Join(tempDir, DriverServerSocket)
-	driverPlugin, err := util.CreateShimPlugin(driverAddr, "")
+	driverPlugin, err := plugin.CreateShimPlugin(driverAddr, "")
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
 	missionAddr := filepath.Join(tempDir, MissionServerSocket)
 	missionListener := filepath.Join(tempDir, MissionListenSocket)
-	acl := util.GetACL([]string{}, []int{os.Getpid()})
-	missionPlugin, err := util.CreateShimPlugin(
+	acl := listener.GetACL([]string{}, []int{os.Getpid()})
+	missionPlugin, err := plugin.CreateShimPlugin(
 		missionAddr,
 		missionListener,
-		util.WithACL(acl),
-		util.WithAuthCode(util.MissionCode),
+		plugin.WithACL(acl),
+		plugin.WithAuthCode(listener.MissionCode),
 	)
 	if err != nil {
 		return nil, nil, nil, nil, err
@@ -208,11 +208,11 @@ func (l testLogger) Write(p []byte) (n int, err error) {
 
 var _ io.Writer = (*testLogger)(nil)
 
-// NewVehicle shadows vehicle.NewVehicle to add a logger that writes to testLogger.
-func NewVehicle(t *testing.T, cfg vehicle.PluginConfig, options ...vehicle.VehicleOption) (*vehicle.Vehicle, error) {
+// newTestVehicle wraps NewVehicle to add a logger that writes to testLogger.
+func newTestVehicle(t *testing.T, cfg PluginConfig, options ...VehicleOption) (*Vehicle, error) {
 	t.Helper()
 	out := testLogger{t}
 	logger := zerolog.New(zerolog.ConsoleWriter{Out: out}).With().Timestamp().Logger()
-	options = append(options, vehicle.WithLogger(logger))
-	return vehicle.NewVehicle(cfg, options...)
+	options = append(options, WithLogger(logger))
+	return NewVehicle(cfg, options...)
 }

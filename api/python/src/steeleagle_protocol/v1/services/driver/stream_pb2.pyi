@@ -23,16 +23,14 @@ RESOLUTION_1080P: Resolution
 RESOLUTION_4K: Resolution
 
 class CameraRequest(_message.Message):
-    __slots__ = ("id", "target_fps", "target_resolution", "uri")
+    __slots__ = ("id", "target_resolution", "uri")
     ID_FIELD_NUMBER: _ClassVar[int]
-    TARGET_FPS_FIELD_NUMBER: _ClassVar[int]
     TARGET_RESOLUTION_FIELD_NUMBER: _ClassVar[int]
     URI_FIELD_NUMBER: _ClassVar[int]
     id: str
-    target_fps: int
     target_resolution: Resolution
     uri: str
-    def __init__(self, id: _Optional[str] = ..., target_fps: _Optional[int] = ..., target_resolution: _Optional[_Union[Resolution, str]] = ..., uri: _Optional[str] = ...) -> None: ...
+    def __init__(self, id: _Optional[str] = ..., target_resolution: _Optional[_Union[Resolution, str]] = ..., uri: _Optional[str] = ...) -> None: ...
 
 class StreamCamerasRequest(_message.Message):
     __slots__ = ("primary", "secondaries")
@@ -47,12 +45,10 @@ class StreamCamerasResponse(_message.Message):
     def __init__(self) -> None: ...
 
 class StreamTelemetryRequest(_message.Message):
-    __slots__ = ("target_fps", "uri")
-    TARGET_FPS_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("uri",)
     URI_FIELD_NUMBER: _ClassVar[int]
-    target_fps: int
     uri: str
-    def __init__(self, target_fps: _Optional[int] = ..., uri: _Optional[str] = ...) -> None: ...
+    def __init__(self, uri: _Optional[str] = ...) -> None: ...
 
 class StreamTelemetryResponse(_message.Message):
     __slots__ = ()

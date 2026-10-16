@@ -48,9 +48,8 @@ enum Resolution {
 // Request for a single camera stream.
 message CameraRequest {
   string id = 1;                             // camera ID
-  optional uint32 target_fps = 2;            // target fps to stream at, (default: chosen by driver)
-  optional Resolution target_resolution = 3; // resolution to stream at, (default: chosen by driver)
-  string uri = 4;                            // stream URI to publish at
+  optional Resolution target_resolution = 2; // resolution to stream at, (default: chosen by driver)
+  string uri = 3;                            // stream URI to publish at
 }
 
 message StreamCamerasRequest {
@@ -61,8 +60,7 @@ message StreamCamerasRequest {
 message StreamCamerasResponse {}
 
 message StreamTelemetryRequest {
-  optional uint32 target_fps = 1; // target fps to stream at, (default: chosen by driver)
-  string uri = 2;                 // stream URI to publish at
+  string uri = 1; // stream URI to publish at
 }
 
 message StreamTelemetryResponse {}

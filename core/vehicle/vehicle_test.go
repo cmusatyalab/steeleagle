@@ -1,4 +1,4 @@
-package vehicle_test
+package vehicle
 
 import (
 	"context"
@@ -11,7 +11,6 @@ import (
 
 	driverpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver"
 	missionpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/mission"
-	"github.com/cmusatyalab/steeleagle/core/vehicle"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -22,8 +21,8 @@ func TestStartStop(t *testing.T) {
 		t.Fatalf("couldn't create plugin config: %v", err)
 	}
 
-	pluginConfig := vehicle.PluginConfig{Driver: driverPlugin, Mission: missionPlugin}
-	vehicle, err := NewVehicle(t, pluginConfig)
+	pluginConfig := PluginConfig{Driver: driverPlugin, Mission: missionPlugin}
+	vehicle, err := newTestVehicle(t, pluginConfig)
 	if err != nil {
 		t.Fatalf("couldn't create vehicle")
 	}
@@ -48,8 +47,8 @@ func TestWaitNotRunning(t *testing.T) {
 		t.Fatalf("couldn't create plugin config: %v", err)
 	}
 
-	pluginConfig := vehicle.PluginConfig{Driver: driverPlugin, Mission: missionPlugin}
-	vehicle, err := NewVehicle(t, pluginConfig)
+	pluginConfig := PluginConfig{Driver: driverPlugin, Mission: missionPlugin}
+	vehicle, err := newTestVehicle(t, pluginConfig)
 	if err != nil {
 		t.Fatalf("couldn't create vehicle")
 	}
@@ -84,8 +83,8 @@ func TestCommandAccessPolicy(t *testing.T) {
 	}
 	defer sClient.Close()
 
-	pluginConfig := vehicle.PluginConfig{Driver: driverPlugin, Mission: missionPlugin}
-	vehicle, err := NewVehicle(t, pluginConfig, vehicle.WithServerListener(serverLn, nil))
+	pluginConfig := PluginConfig{Driver: driverPlugin, Mission: missionPlugin}
+	vehicle, err := newTestVehicle(t, pluginConfig, WithServerListener(serverLn, nil))
 	if err != nil {
 		t.Fatalf("couldn't create vehicle")
 	}

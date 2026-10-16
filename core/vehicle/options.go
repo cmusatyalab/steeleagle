@@ -3,7 +3,7 @@ package vehicle
 import (
 	"net"
 
-	"github.com/cmusatyalab/steeleagle/core/util"
+	"github.com/cmusatyalab/steeleagle/core/util/listener"
 	"github.com/rs/zerolog"
 )
 
@@ -49,9 +49,9 @@ func WithDialer(dialer Dialer) VehicleOption {
 	}
 }
 
-func WithServerListener(ln net.Listener, acl *util.ACL) VehicleOption {
+func WithServerListener(ln net.Listener, acl *listener.ACL) VehicleOption {
 	return func(v *Vehicle) {
-		codedLn := util.NewCodedListener(ln, util.ServerCode, acl)
+		codedLn := listener.NewCodedListener(ln, listener.ServerCode, acl)
 		v.listeners[ServerListenerName] = codedLn
 	}
 }

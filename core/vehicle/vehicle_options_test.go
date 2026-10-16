@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/cmusatyalab/steeleagle/core/util"
+	"github.com/cmusatyalab/steeleagle/core/util/listener"
 	"github.com/rs/zerolog"
 )
 
@@ -67,7 +67,7 @@ func TestWithServerListener(t *testing.T) {
 	}
 	defer ln.Close()
 
-	acl := util.GetACL(nil, nil)
+	acl := listener.GetACL(nil, nil)
 	WithServerListener(ln, acl)(v)
 
 	codedLn, ok := v.listeners[ServerListenerName]

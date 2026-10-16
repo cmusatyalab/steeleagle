@@ -8,447 +8,511 @@ import (
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
-type BoundingBox interface {
-	// #exclude-ifndef messages/result/BoundingBox/y_min
-	GetYMin() float64
-	// #exclude-ifndef messages/result/BoundingBox/x_min
-	GetXMin() float64
-	// #exclude-ifndef messages/result/BoundingBox/y_max
-	GetYMax() float64
-	// #exclude-ifndef messages/result/BoundingBox/x_max
-	GetXMax() float64
-}
-
-type Detection interface {
-	// #exclude-ifndef messages/result/Detection/class_name
-	GetClassName() string
-	// #exclude-ifndef messages/result/Detection/score
-	GetScore() float64
-	// #exclude-ifndef messages/result/Detection/bbox
-	GetBbox() (BoundingBox, error)
-	// #exclude-ifndef messages/result/Detection/bbox
-	hasBbox() bool
-}
-
-type DetectionResult interface {
-	// #exclude-ifndef messages/result/DetectionResult/detections
-	GetDetections() []Detection
-}
-
-type ClassificationResult interface {
-	// #exclude-ifndef messages/result/ClassificationResult/score
-	GetScore() float64
-}
-
-type GuidanceResult_Trajectory interface {
-	// #exclude-ifndef messages/result/GuidanceResult/trajectory/x_vel
-	GetXVel() (float32, error)
-	// #exclude-ifndef messages/result/GuidanceResult/trajectory/y_vel
-	GetYVel() (float32, error)
-	// #exclude-ifndef messages/result/GuidanceResult/trajectory/z_vel
-	GetZVel() (float32, error)
-	// #exclude-ifndef messages/result/GuidanceResult/trajectory/angular_vel
-	GetAngularVel() (float32, error)
-}
-
-type GuidanceResult interface {
-	// #exclude-ifndef messages/result/GuidanceResult/trajectory
-	GetTrajectory() (GuidanceResult_Trajectory, error)
-	// #exclude-ifndef messages/result/GuidanceResult/trajectory
-	hasTrajectory() bool
-}
-
-type PositionResult_RelativePosition interface {
-	// #exclude-ifndef messages/result/PositionResult/relative_position/x
-	GetX() (float32, error)
-	// #exclude-ifndef messages/result/PositionResult/relative_position/y
-	GetY() (float32, error)
-	// #exclude-ifndef messages/result/PositionResult/relative_position/z
-	GetZ() (float32, error)
-	// #exclude-ifndef messages/result/PositionResult/relative_position/angle
-	GetAngle() (float32, error)
-}
-
-type PositionResult_GlobalPosition interface {
-	// #exclude-ifndef messages/result/PositionResult/global_position/latitude
-	GetLatitude() (float64, error)
-	// #exclude-ifndef messages/result/PositionResult/global_position/longitude
-	GetLongitude() (float64, error)
-	// #exclude-ifndef messages/result/PositionResult/global_position/altitude
-	GetAltitude() (float32, error)
-	// #exclude-ifndef messages/result/PositionResult/global_position/heading
-	GetHeading() (float32, error)
-}
-
-type PositionResult interface {
-	// #exclude-ifndef messages/result/PositionResult/relative_position
-	GetRelativePosition() (PositionResult_RelativePosition, error)
-	// #exclude-ifndef messages/result/PositionResult/relative_position
-	hasRelativePosition() bool
-	// #exclude-ifndef messages/result/PositionResult/global_position
-	GetGlobalPosition() (PositionResult_GlobalPosition, error)
-	// #exclude-ifndef messages/result/PositionResult/global_position
-	hasGlobalPosition() bool
-}
-
-type GenericResult interface {
-	// #exclude-ifndef messages/result/GenericResult/payload
-	GetPayload() []byte
-}
-
-type ComputeResult interface {
-	// #exclude-ifndef messages/result/ComputeResult/timestamp
-	GetTimestamp() (*timestamppb.Timestamp, error)
-	// #exclude-ifndef messages/result/ComputeResult/timestamp
-	hasTimestamp() bool
-	// #exclude-ifndef messages/result/ComputeResult/detection_result
-	GetDetectionResult() (DetectionResult, error)
-	// #exclude-ifndef messages/result/ComputeResult/detection_result
-	hasDetectionResult() bool
-	// #exclude-ifndef messages/result/ComputeResult/classification_result
-	GetClassificationResult() (ClassificationResult, error)
-	// #exclude-ifndef messages/result/ComputeResult/classification_result
-	hasClassificationResult() bool
-	// #exclude-ifndef messages/result/ComputeResult/guidance_result
-	GetGuidanceResult() (GuidanceResult, error)
-	// #exclude-ifndef messages/result/ComputeResult/guidance_result
-	hasGuidanceResult() bool
-	// #exclude-ifndef messages/result/ComputeResult/position_result
-	GetPositionResult() (PositionResult, error)
-	// #exclude-ifndef messages/result/ComputeResult/position_result
-	hasPositionResult() bool
-	// #exclude-ifndef messages/result/ComputeResult/generic_result
-	GetGenericResult() (GenericResult, error)
-	// #exclude-ifndef messages/result/ComputeResult/generic_result
-	hasGenericResult() bool
-}
-
 type BatteryInfo interface {
-	// #exclude-ifndef messages/telemetry/BatteryInfo/percentage
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/BatteryInfo/percentage
 	GetPercentage() (uint32, error)
-	// #exclude-ifndef messages/telemetry/BatteryInfo/percentage
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/BatteryInfo/percentage
 	hasPercentage() bool
 }
 
 type GpsInfo interface {
-	// #exclude-ifndef messages/telemetry/GpsInfo/satellites
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/GpsInfo/satellites
 	GetSatellites() (uint32, error)
-	// #exclude-ifndef messages/telemetry/GpsInfo/satellites
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/GpsInfo/satellites
 	hasSatellites() bool
 }
 
 type PositionInfo_Home interface {
-	// #exclude-ifndef messages/telemetry/PositionInfo/home/latitude
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/home/latitude
 	GetLatitude() (float64, error)
-	// #exclude-ifndef messages/telemetry/PositionInfo/home/longitude
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/home/longitude
 	GetLongitude() (float64, error)
-	// #exclude-ifndef messages/telemetry/PositionInfo/home/altitude
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/home/altitude
 	GetAltitude() (float32, error)
-	// #exclude-ifndef messages/telemetry/PositionInfo/home/heading
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/home/heading
 	GetHeading() (float32, error)
 }
 
 type PositionInfo_GlobalPosition interface {
-	// #exclude-ifndef messages/telemetry/PositionInfo/global_position/latitude
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/global_position/latitude
 	GetLatitude() (float64, error)
-	// #exclude-ifndef messages/telemetry/PositionInfo/global_position/longitude
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/global_position/longitude
 	GetLongitude() (float64, error)
-	// #exclude-ifndef messages/telemetry/PositionInfo/global_position/altitude
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/global_position/altitude
 	GetAltitude() (float32, error)
-	// #exclude-ifndef messages/telemetry/PositionInfo/global_position/heading
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/global_position/heading
 	GetHeading() (float32, error)
 }
 
 type PositionInfo_RelativePosition interface {
-	// #exclude-ifndef messages/telemetry/PositionInfo/relative_position/x
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/relative_position/x
 	GetX() (float32, error)
-	// #exclude-ifndef messages/telemetry/PositionInfo/relative_position/y
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/relative_position/y
 	GetY() (float32, error)
-	// #exclude-ifndef messages/telemetry/PositionInfo/relative_position/z
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/relative_position/z
 	GetZ() (float32, error)
-	// #exclude-ifndef messages/telemetry/PositionInfo/relative_position/angle
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/relative_position/angle
 	GetAngle() (float32, error)
 }
 
 type PositionInfo_VelocityBody interface {
-	// #exclude-ifndef messages/telemetry/PositionInfo/velocity_body/x_vel
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/velocity_body/x_vel
 	GetXVel() (float32, error)
-	// #exclude-ifndef messages/telemetry/PositionInfo/velocity_body/y_vel
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/velocity_body/y_vel
 	GetYVel() (float32, error)
-	// #exclude-ifndef messages/telemetry/PositionInfo/velocity_body/z_vel
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/velocity_body/z_vel
 	GetZVel() (float32, error)
-	// #exclude-ifndef messages/telemetry/PositionInfo/velocity_body/angular_vel
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/velocity_body/angular_vel
 	GetAngularVel() (float32, error)
 }
 
 type PositionInfo_VelocityNeu interface {
-	// #exclude-ifndef messages/telemetry/PositionInfo/velocity_neu/x_vel
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/velocity_neu/x_vel
 	GetXVel() (float32, error)
-	// #exclude-ifndef messages/telemetry/PositionInfo/velocity_neu/y_vel
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/velocity_neu/y_vel
 	GetYVel() (float32, error)
-	// #exclude-ifndef messages/telemetry/PositionInfo/velocity_neu/z_vel
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/velocity_neu/z_vel
 	GetZVel() (float32, error)
-	// #exclude-ifndef messages/telemetry/PositionInfo/velocity_neu/angular_vel
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/velocity_neu/angular_vel
 	GetAngularVel() (float32, error)
 }
 
 type PositionInfo interface {
-	// #exclude-ifndef messages/telemetry/PositionInfo/home
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/home
 	GetHome() (PositionInfo_Home, error)
-	// #exclude-ifndef messages/telemetry/PositionInfo/home
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/home
 	hasHome() bool
-	// #exclude-ifndef messages/telemetry/PositionInfo/global_position
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/global_position
 	GetGlobalPosition() (PositionInfo_GlobalPosition, error)
-	// #exclude-ifndef messages/telemetry/PositionInfo/global_position
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/global_position
 	hasGlobalPosition() bool
-	// #exclude-ifndef messages/telemetry/PositionInfo/relative_position
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/relative_position
 	GetRelativePosition() (PositionInfo_RelativePosition, error)
-	// #exclude-ifndef messages/telemetry/PositionInfo/relative_position
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/relative_position
 	hasRelativePosition() bool
-	// #exclude-ifndef messages/telemetry/PositionInfo/velocity_body
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/velocity_body
 	GetVelocityBody() (PositionInfo_VelocityBody, error)
-	// #exclude-ifndef messages/telemetry/PositionInfo/velocity_body
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/velocity_body
 	hasVelocityBody() bool
-	// #exclude-ifndef messages/telemetry/PositionInfo/velocity_neu
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/velocity_neu
 	GetVelocityNeu() (PositionInfo_VelocityNeu, error)
-	// #exclude-ifndef messages/telemetry/PositionInfo/velocity_neu
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/velocity_neu
 	hasVelocityNeu() bool
-	// #exclude-ifndef messages/telemetry/PositionInfo/setpoint
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/setpoint
 	GetSetpoint() (*anypb.Any, error)
-	// #exclude-ifndef messages/telemetry/PositionInfo/setpoint
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/setpoint
 	hasSetpoint() bool
 }
 
 type GimbalInfo_PoseBody interface {
-	// #exclude-ifndef messages/telemetry/GimbalInfo/pose_body/pitch
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/GimbalInfo/pose_body/pitch
 	GetPitch() (float32, error)
-	// #exclude-ifndef messages/telemetry/GimbalInfo/pose_body/roll
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/GimbalInfo/pose_body/roll
 	GetRoll() (float32, error)
-	// #exclude-ifndef messages/telemetry/GimbalInfo/pose_body/yaw
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/GimbalInfo/pose_body/yaw
 	GetYaw() (float32, error)
 }
 
 type GimbalInfo_PoseNeu interface {
-	// #exclude-ifndef messages/telemetry/GimbalInfo/pose_neu/pitch
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/GimbalInfo/pose_neu/pitch
 	GetPitch() (float32, error)
-	// #exclude-ifndef messages/telemetry/GimbalInfo/pose_neu/roll
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/GimbalInfo/pose_neu/roll
 	GetRoll() (float32, error)
-	// #exclude-ifndef messages/telemetry/GimbalInfo/pose_neu/yaw
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/GimbalInfo/pose_neu/yaw
 	GetYaw() (float32, error)
 }
 
 type GimbalInfo_AngularVelocityBody interface {
-	// #exclude-ifndef messages/telemetry/GimbalInfo/angular_velocity_body/pitch_vel
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/GimbalInfo/angular_velocity_body/pitch_vel
 	GetPitchVel() (float32, error)
-	// #exclude-ifndef messages/telemetry/GimbalInfo/angular_velocity_body/roll_vel
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/GimbalInfo/angular_velocity_body/roll_vel
 	GetRollVel() (float32, error)
-	// #exclude-ifndef messages/telemetry/GimbalInfo/angular_velocity_body/yaw_vel
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/GimbalInfo/angular_velocity_body/yaw_vel
 	GetYawVel() (float32, error)
 }
 
 type GimbalInfo_AngularVelocityNeu interface {
-	// #exclude-ifndef messages/telemetry/GimbalInfo/angular_velocity_neu/pitch_vel
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/GimbalInfo/angular_velocity_neu/pitch_vel
 	GetPitchVel() (float32, error)
-	// #exclude-ifndef messages/telemetry/GimbalInfo/angular_velocity_neu/roll_vel
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/GimbalInfo/angular_velocity_neu/roll_vel
 	GetRollVel() (float32, error)
-	// #exclude-ifndef messages/telemetry/GimbalInfo/angular_velocity_neu/yaw_vel
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/GimbalInfo/angular_velocity_neu/yaw_vel
 	GetYawVel() (float32, error)
 }
 
 type GimbalInfo interface {
-	// #exclude-ifndef messages/telemetry/GimbalInfo/pose_body
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/GimbalInfo/pose_body
 	GetPoseBody() (GimbalInfo_PoseBody, error)
-	// #exclude-ifndef messages/telemetry/GimbalInfo/pose_body
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/GimbalInfo/pose_body
 	hasPoseBody() bool
-	// #exclude-ifndef messages/telemetry/GimbalInfo/pose_neu
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/GimbalInfo/pose_neu
 	GetPoseNeu() (GimbalInfo_PoseNeu, error)
-	// #exclude-ifndef messages/telemetry/GimbalInfo/pose_neu
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/GimbalInfo/pose_neu
 	hasPoseNeu() bool
-	// #exclude-ifndef messages/telemetry/GimbalInfo/angular_velocity_body
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/GimbalInfo/angular_velocity_body
 	GetAngularVelocityBody() (GimbalInfo_AngularVelocityBody, error)
-	// #exclude-ifndef messages/telemetry/GimbalInfo/angular_velocity_body
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/GimbalInfo/angular_velocity_body
 	hasAngularVelocityBody() bool
-	// #exclude-ifndef messages/telemetry/GimbalInfo/angular_velocity_neu
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/GimbalInfo/angular_velocity_neu
 	GetAngularVelocityNeu() (GimbalInfo_AngularVelocityNeu, error)
-	// #exclude-ifndef messages/telemetry/GimbalInfo/angular_velocity_neu
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/GimbalInfo/angular_velocity_neu
 	hasAngularVelocityNeu() bool
-	// #exclude-ifndef messages/telemetry/GimbalInfo/gimbal_setpoint
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/GimbalInfo/gimbal_setpoint
 	GetGimbalSetpoint() (*anypb.Any, error)
-	// #exclude-ifndef messages/telemetry/GimbalInfo/gimbal_setpoint
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/GimbalInfo/gimbal_setpoint
 	hasGimbalSetpoint() bool
 }
 
 type AlertInfo interface {
-	// #exclude-ifndef messages/telemetry/AlertInfo/battery_warning
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/AlertInfo/battery_warning
 	GetBatteryWarning() enums.AlertInfo_BatteryWarning
-	// #exclude-ifndef messages/telemetry/AlertInfo/gps_warning
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/AlertInfo/gps_warning
 	GetGpsWarning() enums.AlertInfo_GpsWarning
-	// #exclude-ifndef messages/telemetry/AlertInfo/magnetometer_warning
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/AlertInfo/magnetometer_warning
 	GetMagnetometerWarning() enums.AlertInfo_MagnetometerWarning
-	// #exclude-ifndef messages/telemetry/AlertInfo/connection_warning
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/AlertInfo/connection_warning
 	GetConnectionWarning() enums.AlertInfo_ConnectionWarning
-	// #exclude-ifndef messages/telemetry/AlertInfo/compass_warning
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/AlertInfo/compass_warning
 	GetCompassWarning() enums.AlertInfo_CompassWarning
 }
 
 type Telemetry interface {
-	// #exclude-ifndef messages/telemetry/Telemetry/timestamp
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/Telemetry/timestamp
 	GetTimestamp() (*timestamppb.Timestamp, error)
-	// #exclude-ifndef messages/telemetry/Telemetry/timestamp
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/Telemetry/timestamp
 	hasTimestamp() bool
-	// #exclude-ifndef messages/telemetry/Telemetry/battery_info
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/Telemetry/battery_info
 	GetBatteryInfo() (BatteryInfo, error)
-	// #exclude-ifndef messages/telemetry/Telemetry/battery_info
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/Telemetry/battery_info
 	hasBatteryInfo() bool
-	// #exclude-ifndef messages/telemetry/Telemetry/gps_info
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/Telemetry/gps_info
 	GetGpsInfo() (GpsInfo, error)
-	// #exclude-ifndef messages/telemetry/Telemetry/gps_info
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/Telemetry/gps_info
 	hasGpsInfo() bool
-	// #exclude-ifndef messages/telemetry/Telemetry/position_info
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/Telemetry/position_info
 	GetPositionInfo() (PositionInfo, error)
-	// #exclude-ifndef messages/telemetry/Telemetry/position_info
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/Telemetry/position_info
 	hasPositionInfo() bool
-	// #exclude-ifndef messages/telemetry/Telemetry/gimbal_info
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/Telemetry/gimbal_info
 	GetGimbalInfo() (GimbalInfo, error)
-	// #exclude-ifndef messages/telemetry/Telemetry/gimbal_info
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/Telemetry/gimbal_info
 	hasGimbalInfo() bool
-	// #exclude-ifndef messages/telemetry/Telemetry/alert_info
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/Telemetry/alert_info
 	GetAlertInfo() (AlertInfo, error)
-	// #exclude-ifndef messages/telemetry/Telemetry/alert_info
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/Telemetry/alert_info
 	hasAlertInfo() bool
-	// #exclude-ifndef messages/telemetry/Telemetry/mode
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/Telemetry/mode
 	GetMode() (enums.Mode, error)
-	// #exclude-ifndef messages/telemetry/Telemetry/mode
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/Telemetry/mode
 	hasMode() bool
-	// #exclude-ifndef messages/telemetry/Telemetry/motion_status
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/Telemetry/motion_status
 	GetMotionStatus() (enums.MotionStatus, error)
-	// #exclude-ifndef messages/telemetry/Telemetry/motion_status
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/Telemetry/motion_status
 	hasMotionStatus() bool
 }
 
+type RawFrame interface {
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/RawFrame/timestamp
+	GetTimestamp() (*timestamppb.Timestamp, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/RawFrame/timestamp
+	hasTimestamp() bool
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/RawFrame/data
+	GetData() []byte
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/RawFrame/h_res
+	GetHRes() uint64
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/RawFrame/v_res
+	GetVRes() uint64
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/RawFrame/d_res
+	GetDRes() uint64
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/RawFrame/channels
+	GetChannels() uint64
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/RawFrame/id
+	GetId() uint64
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/RawFrame/position_info
+	GetPositionInfo() (PositionInfo, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/RawFrame/position_info
+	hasPositionInfo() bool
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/RawFrame/gimbal_info
+	GetGimbalInfo() (GimbalInfo, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/RawFrame/gimbal_info
+	hasGimbalInfo() bool
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/RawFrame/camera_id
+	GetCameraId() uint64
+}
+
+type EncodedFrame interface {
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/EncodedFrame/timestamp
+	GetTimestamp() (*timestamppb.Timestamp, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/EncodedFrame/timestamp
+	hasTimestamp() bool
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/EncodedFrame/encoded_data
+	GetEncodedData() []byte
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/EncodedFrame/id
+	GetId() uint64
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/EncodedFrame/gimbal_info
+	GetGimbalInfo() (GimbalInfo, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/EncodedFrame/gimbal_info
+	hasGimbalInfo() bool
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/EncodedFrame/position_info
+	GetPositionInfo() (PositionInfo, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/EncodedFrame/position_info
+	hasPositionInfo() bool
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/EncodedFrame/camera_id
+	GetCameraId() uint64
+}
+
+type BoundingBox interface {
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/BoundingBox/y_min
+	GetYMin() float64
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/BoundingBox/x_min
+	GetXMin() float64
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/BoundingBox/y_max
+	GetYMax() float64
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/BoundingBox/x_max
+	GetXMax() float64
+}
+
+type Detection interface {
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/Detection/class_name
+	GetClassName() string
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/Detection/score
+	GetScore() float64
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/Detection/bbox
+	GetBbox() (BoundingBox, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/Detection/bbox
+	hasBbox() bool
+}
+
+type DetectionResult interface {
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/DetectionResult/detections
+	GetDetections() []Detection
+}
+
+type ClassificationResult interface {
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ClassificationResult/score
+	GetScore() float64
+}
+
+type GuidanceResult_Trajectory interface {
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/GuidanceResult/trajectory/x_vel
+	GetXVel() (float32, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/GuidanceResult/trajectory/y_vel
+	GetYVel() (float32, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/GuidanceResult/trajectory/z_vel
+	GetZVel() (float32, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/GuidanceResult/trajectory/angular_vel
+	GetAngularVel() (float32, error)
+}
+
+type GuidanceResult interface {
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/GuidanceResult/trajectory
+	GetTrajectory() (GuidanceResult_Trajectory, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/GuidanceResult/trajectory
+	hasTrajectory() bool
+}
+
+type PositionResult_RelativePosition interface {
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/PositionResult/relative_position/x
+	GetX() (float32, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/PositionResult/relative_position/y
+	GetY() (float32, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/PositionResult/relative_position/z
+	GetZ() (float32, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/PositionResult/relative_position/angle
+	GetAngle() (float32, error)
+}
+
+type PositionResult_GlobalPosition interface {
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/PositionResult/global_position/latitude
+	GetLatitude() (float64, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/PositionResult/global_position/longitude
+	GetLongitude() (float64, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/PositionResult/global_position/altitude
+	GetAltitude() (float32, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/PositionResult/global_position/heading
+	GetHeading() (float32, error)
+}
+
+type PositionResult interface {
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/PositionResult/relative_position
+	GetRelativePosition() (PositionResult_RelativePosition, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/PositionResult/relative_position
+	hasRelativePosition() bool
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/PositionResult/global_position
+	GetGlobalPosition() (PositionResult_GlobalPosition, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/PositionResult/global_position
+	hasGlobalPosition() bool
+}
+
+type GenericResult interface {
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/GenericResult/payload
+	GetPayload() []byte
+}
+
+type ComputeResult interface {
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/timestamp
+	GetTimestamp() (*timestamppb.Timestamp, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/timestamp
+	hasTimestamp() bool
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/detection_result
+	GetDetectionResult() (DetectionResult, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/detection_result
+	hasDetectionResult() bool
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/classification_result
+	GetClassificationResult() (ClassificationResult, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/classification_result
+	hasClassificationResult() bool
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/guidance_result
+	GetGuidanceResult() (GuidanceResult, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/guidance_result
+	hasGuidanceResult() bool
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/position_result
+	GetPositionResult() (PositionResult, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/position_result
+	hasPositionResult() bool
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/generic_result
+	GetGenericResult() (GenericResult, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/generic_result
+	hasGenericResult() bool
+}
+
 type TakeOffResponse interface {
-	// #exclude-ifndef services/control/TakeOffResponse/expected_mode
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/TakeOffResponse/expected_mode
 	GetExpectedMode() enums.Mode
-	// #exclude-ifndef services/control/TakeOffResponse/expected_status
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/TakeOffResponse/expected_status
 	GetExpectedStatus() enums.MotionStatus
 }
 
 type LandResponse interface {
-	// #exclude-ifndef services/control/LandResponse/expected_mode
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/LandResponse/expected_mode
 	GetExpectedMode() enums.Mode
-	// #exclude-ifndef services/control/LandResponse/expected_status
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/LandResponse/expected_status
+	GetExpectedStatus() enums.MotionStatus
+}
+
+type StandResponse interface {
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/StandResponse/expected_mode
+	GetExpectedMode() enums.Mode
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/StandResponse/expected_status
+	GetExpectedStatus() enums.MotionStatus
+}
+
+type SitResponse interface {
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SitResponse/expected_mode
+	GetExpectedMode() enums.Mode
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SitResponse/expected_status
 	GetExpectedStatus() enums.MotionStatus
 }
 
 type HoldResponse interface {
-	// #exclude-ifndef services/control/HoldResponse/expected_mode
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/HoldResponse/expected_mode
 	GetExpectedMode() enums.Mode
-	// #exclude-ifndef services/control/HoldResponse/expected_status
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/HoldResponse/expected_status
 	GetExpectedStatus() enums.MotionStatus
 }
 
 type KillResponse interface {
-	// #exclude-ifndef services/control/KillResponse/expected_mode
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/KillResponse/expected_mode
 	GetExpectedMode() enums.Mode
-	// #exclude-ifndef services/control/KillResponse/expected_status
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/KillResponse/expected_status
 	GetExpectedStatus() enums.MotionStatus
 }
 
 type ReturnToHomeResponse interface {
-	// #exclude-ifndef services/control/ReturnToHomeResponse/expected_mode
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/ReturnToHomeResponse/expected_mode
 	GetExpectedMode() enums.Mode
-	// #exclude-ifndef services/control/ReturnToHomeResponse/expected_status
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/ReturnToHomeResponse/expected_status
 	GetExpectedStatus() enums.MotionStatus
 }
 
 type SetGlobalPositionTargetResponse_Setpoint interface {
-	// #exclude-ifndef services/control/SetGlobalPositionTargetResponse/setpoint/latitude
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetGlobalPositionTargetResponse/setpoint/latitude
 	GetLatitude() (float64, error)
-	// #exclude-ifndef services/control/SetGlobalPositionTargetResponse/setpoint/longitude
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetGlobalPositionTargetResponse/setpoint/longitude
 	GetLongitude() (float64, error)
-	// #exclude-ifndef services/control/SetGlobalPositionTargetResponse/setpoint/altitude
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetGlobalPositionTargetResponse/setpoint/altitude
 	GetAltitude() (float32, error)
-	// #exclude-ifndef services/control/SetGlobalPositionTargetResponse/setpoint/heading
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetGlobalPositionTargetResponse/setpoint/heading
 	GetHeading() (float32, error)
 }
 
 type SetGlobalPositionTargetResponse interface {
-	// #exclude-ifndef services/control/SetGlobalPositionTargetResponse/setpoint
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetGlobalPositionTargetResponse/setpoint
 	GetSetpoint() (SetGlobalPositionTargetResponse_Setpoint, error)
-	// #exclude-ifndef services/control/SetGlobalPositionTargetResponse/setpoint
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetGlobalPositionTargetResponse/setpoint
 	hasSetpoint() bool
-	// #exclude-ifndef services/control/SetGlobalPositionTargetResponse/expected_status
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetGlobalPositionTargetResponse/expected_status
 	GetExpectedStatus() enums.MotionStatus
 }
 
 type SetRelativePositionTargetResponse_Setpoint interface {
-	// #exclude-ifndef services/control/SetRelativePositionTargetResponse/setpoint/x
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetRelativePositionTargetResponse/setpoint/x
 	GetX() (float32, error)
-	// #exclude-ifndef services/control/SetRelativePositionTargetResponse/setpoint/y
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetRelativePositionTargetResponse/setpoint/y
 	GetY() (float32, error)
-	// #exclude-ifndef services/control/SetRelativePositionTargetResponse/setpoint/z
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetRelativePositionTargetResponse/setpoint/z
 	GetZ() (float32, error)
-	// #exclude-ifndef services/control/SetRelativePositionTargetResponse/setpoint/angle
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetRelativePositionTargetResponse/setpoint/angle
 	GetAngle() (float32, error)
 }
 
 type SetRelativePositionTargetResponse interface {
-	// #exclude-ifndef services/control/SetRelativePositionTargetResponse/setpoint
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetRelativePositionTargetResponse/setpoint
 	GetSetpoint() (SetRelativePositionTargetResponse_Setpoint, error)
-	// #exclude-ifndef services/control/SetRelativePositionTargetResponse/setpoint
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetRelativePositionTargetResponse/setpoint
 	hasSetpoint() bool
-	// #exclude-ifndef services/control/SetRelativePositionTargetResponse/expected_status
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetRelativePositionTargetResponse/expected_status
 	GetExpectedStatus() enums.MotionStatus
 }
 
 type SetVelocityTargetResponse_Setpoint interface {
-	// #exclude-ifndef services/control/SetVelocityTargetResponse/setpoint/x_vel
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetVelocityTargetResponse/setpoint/x_vel
 	GetXVel() (float32, error)
-	// #exclude-ifndef services/control/SetVelocityTargetResponse/setpoint/y_vel
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetVelocityTargetResponse/setpoint/y_vel
 	GetYVel() (float32, error)
-	// #exclude-ifndef services/control/SetVelocityTargetResponse/setpoint/z_vel
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetVelocityTargetResponse/setpoint/z_vel
 	GetZVel() (float32, error)
-	// #exclude-ifndef services/control/SetVelocityTargetResponse/setpoint/angular_vel
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetVelocityTargetResponse/setpoint/angular_vel
 	GetAngularVel() (float32, error)
 }
 
 type SetVelocityTargetResponse interface {
-	// #exclude-ifndef services/control/SetVelocityTargetResponse/setpoint
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetVelocityTargetResponse/setpoint
 	GetSetpoint() (SetVelocityTargetResponse_Setpoint, error)
-	// #exclude-ifndef services/control/SetVelocityTargetResponse/setpoint
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetVelocityTargetResponse/setpoint
 	hasSetpoint() bool
-	// #exclude-ifndef services/control/SetVelocityTargetResponse/expected_status
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetVelocityTargetResponse/expected_status
 	GetExpectedStatus() enums.MotionStatus
 }
 
 type SetGimbalAngleTargetResponse_Setpoint interface {
-	// #exclude-ifndef services/control/SetGimbalAngleTargetResponse/setpoint/pitch
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetGimbalAngleTargetResponse/setpoint/pitch
 	GetPitch() (float32, error)
-	// #exclude-ifndef services/control/SetGimbalAngleTargetResponse/setpoint/roll
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetGimbalAngleTargetResponse/setpoint/roll
 	GetRoll() (float32, error)
-	// #exclude-ifndef services/control/SetGimbalAngleTargetResponse/setpoint/yaw
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetGimbalAngleTargetResponse/setpoint/yaw
 	GetYaw() (float32, error)
 }
 
 type SetGimbalAngleTargetResponse interface {
-	// #exclude-ifndef services/control/SetGimbalAngleTargetResponse/setpoint
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetGimbalAngleTargetResponse/setpoint
 	GetSetpoint() (SetGimbalAngleTargetResponse_Setpoint, error)
-	// #exclude-ifndef services/control/SetGimbalAngleTargetResponse/setpoint
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetGimbalAngleTargetResponse/setpoint
 	hasSetpoint() bool
 }
 
 type SetGimbalVelocityTargetResponse_Setpoint interface {
-	// #exclude-ifndef services/control/SetGimbalVelocityTargetResponse/setpoint/pitch_vel
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetGimbalVelocityTargetResponse/setpoint/pitch_vel
 	GetPitchVel() (float32, error)
-	// #exclude-ifndef services/control/SetGimbalVelocityTargetResponse/setpoint/roll_vel
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetGimbalVelocityTargetResponse/setpoint/roll_vel
 	GetRollVel() (float32, error)
-	// #exclude-ifndef services/control/SetGimbalVelocityTargetResponse/setpoint/yaw_vel
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetGimbalVelocityTargetResponse/setpoint/yaw_vel
 	GetYawVel() (float32, error)
 }
 
 type SetGimbalVelocityTargetResponse interface {
-	// #exclude-ifndef services/control/SetGimbalVelocityTargetResponse/setpoint
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetGimbalVelocityTargetResponse/setpoint
 	GetSetpoint() (SetGimbalVelocityTargetResponse_Setpoint, error)
-	// #exclude-ifndef services/control/SetGimbalVelocityTargetResponse/setpoint
+	// #exclude-ifndef steeleagle_protocol/v1/services/control/SetGimbalVelocityTargetResponse/setpoint
 	hasSetpoint() bool
 }

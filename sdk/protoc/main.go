@@ -86,7 +86,7 @@ func generateEnumsRecursive(g *protogen.GeneratedFile, msg *protogen.Message, fi
 // generateIface defines a new protobuf type interface. These will be
 // overlaid during compilation if a vehicle does not satisfy the full
 // capability set. msgPath is msg's own capability path (see
-// capFilePrefix) - e.g. "services/control/TakeOffRequest".
+// capFilePrefix) - e.g. "steeleagle_protocol/v1/services/control/TakeOffRequest".
 func generateIface(g *protogen.GeneratedFile, msg *protogen.Message, msgPath string) {
 	parentGoName := msg.GoIdent.GoName
 

@@ -39,6 +39,16 @@ class ControlServiceStub:
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.LandRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.LandResponse.FromString,
                 _registered_method=True)
+        self.Stand = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.driver.ControlService/Stand',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.StandRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.StandResponse.FromString,
+                _registered_method=True)
+        self.Sit = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.driver.ControlService/Sit',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SitRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SitResponse.FromString,
+                _registered_method=True)
         self.Hold = channel.unary_unary(
                 '/steeleagle_protocol.v1.services.driver.ControlService/Hold',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.HoldRequest.SerializeToString,
@@ -104,7 +114,7 @@ class ControlServiceServicer:
         Order the vehicle to take off _(Action)_.
 
         Causes the vehicle to take off to a specified take off altitude.
-        Implicitly arms the vehicle.
+        Implicitly arms the vehicle. UAV only.
 
         Returns an _Action_ style response with `expected_mode` set to LOITER
         and `expected_status` set to `MOTION_STATUS_HOLDING`.
@@ -118,11 +128,39 @@ class ControlServiceServicer:
         Order the vehicle to land _(Action)_.
 
         Causes the vehicle to land at its current location. Implicitly
-        disarms the vehicle.
+        disarms the vehicle. UAV only.
 
         Returns an _Action_ style response with `expected_mode` set to LAND
         and `expected_status` set to `MOTION_STATUS_STOPPED`.
 
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Stand(self, request, context):
+        """
+        Order the vehicle to stand _(Action)_.
+
+        Causes the vehicle to stand at its current location. Implicitly
+        arms the vehicle. Pedal only.
+
+        Returns an _Action_ style response with `expected_mode` set to STAND
+        and `expected_status` set to `MOTION_STATUS_HOLDING`.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Sit(self, request, context):
+        """
+        Order the vehicle to sit _(Action)_.
+
+        Causes the vehicle to sit at its current location. Implicitly
+        disarms the vehicle. Pedal only.
+
+        Returns an _Action_ style response with `expected_mode` set to SIT
+        and `expected_status` set to `MOTION_STATUS_STOPPED`.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -147,7 +185,7 @@ class ControlServiceServicer:
         Orders an emergency shutdown of the vehicle motors _(Action)_.
 
         Causes the vehicle to immediately turn off its motors. _This will
-        result in the vehicle going into freefall, only for emergencies!_
+        result in a UAV going into freefall, only for emergencies!_
 
         Returns an _Action_ style response with `expected_mode` set to EMERGENCY
         and `expected_status` set to `MOTION_STATUS_STOPPED`.
@@ -288,6 +326,16 @@ def add_ControlServiceServicer_to_server(servicer, server):
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.LandRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.LandResponse.SerializeToString,
             ),
+            'Stand': grpc.unary_unary_rpc_method_handler(
+                    servicer.Stand,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.StandRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.StandResponse.SerializeToString,
+            ),
+            'Sit': grpc.unary_unary_rpc_method_handler(
+                    servicer.Sit,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SitRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SitResponse.SerializeToString,
+            ),
             'Hold': grpc.unary_unary_rpc_method_handler(
                     servicer.Hold,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.HoldRequest.FromString,
@@ -398,6 +446,60 @@ class ControlService:
             '/steeleagle_protocol.v1.services.driver.ControlService/Land',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.LandRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.LandResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Stand(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/steeleagle_protocol.v1.services.driver.ControlService/Stand',
+            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.StandRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.StandResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Sit(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/steeleagle_protocol.v1.services.driver.ControlService/Sit',
+            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SitRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_control__pb2.SitResponse.FromString,
             options,
             channel_credentials,
             insecure,

@@ -8,14 +8,15 @@ import (
 	"google.golang.org/protobuf/compiler/protogen"
 )
 
-// capFilePrefix returns the "<category>/<file-basename>" prefix used to
-// identify file in the vehicle capability file's path convention e.g.
-// "services/control" for .../steeleagle_protocol/v1/services/driver/control.proto.
+// capFilePrefix returns the "steeleagle_protocol/v1/<category>/<file-basename>"
+// prefix used to identify file in the vehicle capability file's path convention
+// e.g. "steeleagle_protocol/v1/services/control" for
+// .../steeleagle_protocol/v1/services/driver/control.proto.
 func capFilePrefix(file *protogen.File) string {
-	p := strings.TrimPrefix(string(file.Desc.Path()), "steeleagle_protocol/v1/")
+	p := strings.TrimPrefix(string(file.Desc.Path()), capPathRoot)
 	category, _, _ := strings.Cut(p, "/")
 	base := strings.TrimSuffix(path.Base(p), ".proto")
-	return category + "/" + base
+	return capPathRoot + category + "/" + base
 }
 
 // screamingSnake converts a CamelCase identifier (e.g. "HeadingMode") into

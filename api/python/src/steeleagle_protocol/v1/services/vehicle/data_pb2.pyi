@@ -75,8 +75,8 @@ class GetTelemetryRequest(_message.Message):
 class GetTelemetryResponse(_message.Message):
     __slots__ = ("telemetry",)
     TELEMETRY_FIELD_NUMBER: _ClassVar[int]
-    telemetry: _containers.RepeatedCompositeFieldContainer[_telemetry_pb2.Telemetry]
-    def __init__(self, telemetry: _Optional[_Iterable[_Union[_telemetry_pb2.Telemetry, _Mapping]]] = ...) -> None: ...
+    telemetry: _telemetry_pb2.Telemetry
+    def __init__(self, telemetry: _Optional[_Union[_telemetry_pb2.Telemetry, _Mapping]] = ...) -> None: ...
 
 class StreamInfo(_message.Message):
     __slots__ = ("uri", "type", "active")

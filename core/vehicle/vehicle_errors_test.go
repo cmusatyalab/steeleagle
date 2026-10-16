@@ -1,4 +1,4 @@
-package vehicle_test
+package vehicle
 
 import (
 	"context"
@@ -6,16 +6,16 @@ import (
 	"net"
 	"testing"
 
-	"github.com/cmusatyalab/steeleagle/core/util"
-	"github.com/cmusatyalab/steeleagle/core/vehicle"
+	"github.com/cmusatyalab/steeleagle/core/util/listener"
+	"github.com/cmusatyalab/steeleagle/core/util/plugin"
 	"google.golang.org/grpc"
 )
 
-// failingPlugin is a util.Plugin whose Start always returns an error, used to
+// failingPlugin is a plugin.Plugin whose Start always returns an error, used to
 // exercise the vehicle's plugin start error handling paths.
 type failingPlugin struct {
 	name string
-	code util.AuthCode
+	code listener.AuthCode
 }
 
 func (p *failingPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
@@ -28,23 +28,23 @@ func (p *failingPlugin) Wait() error { return nil }
 
 func (p *failingPlugin) Name() string { return p.name }
 
-func (p *failingPlugin) Code() util.AuthCode { return p.code }
+func (p *failingPlugin) Code() listener.AuthCode { return p.code }
 
-var _ util.Plugin = (*failingPlugin)(nil)
+var _ plugin.Plugin = (*failingPlugin)(nil)
 
 func TestVehicleNoDriverPlugin(t *testing.T) {
-	pluginConfig := vehicle.PluginConfig{}
-	_, err := NewVehicle(t, pluginConfig)
+	pluginConfig := PluginConfig{}
+	_, err := newTestVehicle(t, pluginConfig)
 	if err == nil {
 		t.Fatal("expected error creating vehicle with no driver, got nil")
 	}
 }
 
 func TestVehicleDriverPluginStartError(t *testing.T) {
-	pluginConfig := vehicle.PluginConfig{
+	pluginConfig := PluginConfig{
 		Driver: &failingPlugin{name: "driver"},
 	}
-	v, err := NewVehicle(t, pluginConfig)
+	v, err := newTestVehicle(t, pluginConfig)
 	if err != nil {
 		t.Fatalf("couldn't create vehicle: %v", err)
 	}
@@ -59,11 +59,11 @@ func TestVehicleMissionPluginStartError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't create plugin config: %v", err)
 	}
-	pluginConfig := vehicle.PluginConfig{
+	pluginConfig := PluginConfig{
 		Driver:  driverPlugin,
 		Mission: &failingPlugin{name: "mission"},
 	}
-	v, err := NewVehicle(t, pluginConfig)
+	v, err := newTestVehicle(t, pluginConfig)
 	if err != nil {
 		t.Fatalf("couldn't create vehicle: %v", err)
 	}
@@ -78,12 +78,12 @@ func TestVehicleThirdPartyPluginStartError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't create plugin config: %v", err)
 	}
-	pluginConfig := vehicle.PluginConfig{
+	pluginConfig := PluginConfig{
 		Driver:  driverPlugin,
 		Mission: missionPlugin,
-		Plugins: []util.Plugin{&failingPlugin{name: "thirdparty"}},
+		Plugins: []plugin.Plugin{&failingPlugin{name: "thirdparty"}},
 	}
-	v, err := NewVehicle(t, pluginConfig)
+	v, err := newTestVehicle(t, pluginConfig)
 	if err != nil {
 		t.Fatalf("couldn't create vehicle: %v", err)
 	}
@@ -98,8 +98,8 @@ func TestVehicleAlreadyStarted(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't create plugin config: %v", err)
 	}
-	pluginConfig := vehicle.PluginConfig{Driver: driverPlugin, Mission: missionPlugin}
-	v, err := NewVehicle(t, pluginConfig)
+	pluginConfig := PluginConfig{Driver: driverPlugin, Mission: missionPlugin}
+	v, err := newTestVehicle(t, pluginConfig)
 	if err != nil {
 		t.Fatalf("couldn't create vehicle: %v", err)
 	}
@@ -116,8 +116,8 @@ func TestVehicleControlState(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't create plugin config: %v", err)
 	}
-	pluginConfig := vehicle.PluginConfig{Driver: driverPlugin, Mission: missionPlugin}
-	v, err := NewVehicle(t, pluginConfig)
+	pluginConfig := PluginConfig{Driver: driverPlugin, Mission: missionPlugin}
+	v, err := newTestVehicle(t, pluginConfig)
 	if err != nil {
 		t.Fatalf("couldn't create vehicle: %v", err)
 	}

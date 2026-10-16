@@ -1,4 +1,4 @@
-package vehicle_test
+package vehicle
 
 import (
 	"errors"

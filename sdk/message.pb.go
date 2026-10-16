@@ -260,190 +260,6 @@ func (w *vehicleInfoWrapper) GetModel() string {
 	return w.inner.GetModel()
 }
 
-type boundingBoxWrapper struct {
-	inner *result.BoundingBox // generated concrete type
-}
-
-func (w *boundingBoxWrapper) GetYMin() float64 {
-	return w.inner.GetYMin()
-}
-
-func (w *boundingBoxWrapper) GetXMin() float64 {
-	return w.inner.GetXMin()
-}
-
-func (w *boundingBoxWrapper) GetYMax() float64 {
-	return w.inner.GetYMax()
-}
-
-func (w *boundingBoxWrapper) GetXMax() float64 {
-	return w.inner.GetXMax()
-}
-
-type detectionWrapper struct {
-	inner *result.Detection // generated concrete type
-}
-
-func (w *detectionWrapper) GetClassName() string {
-	return w.inner.GetClassName()
-}
-
-func (w *detectionWrapper) GetScore() float64 {
-	return w.inner.GetScore()
-}
-
-func (w *detectionWrapper) GetBbox() (BoundingBox, error) {
-	if !w.hasBbox() {
-		return nil, ErrFieldNotPresent
-	}
-	return &boundingBoxWrapper{inner: w.inner.GetBbox()}, nil
-}
-
-func (w *detectionWrapper) hasBbox() bool {
-	return w.inner.HasBbox()
-}
-
-type detectionResultWrapper struct {
-	inner *result.DetectionResult // generated concrete type
-}
-
-func (w *detectionResultWrapper) GetDetections() []Detection {
-	src := w.inner.GetDetections()
-	out := make([]Detection, len(src))
-	for i, v := range src {
-		out[i] = &detectionWrapper{inner: v}
-	}
-	return out
-}
-
-type classificationResultWrapper struct {
-	inner *result.ClassificationResult // generated concrete type
-}
-
-func (w *classificationResultWrapper) GetScore() float64 {
-	return w.inner.GetScore()
-}
-
-type guidanceResultWrapper struct {
-	inner *result.GuidanceResult // generated concrete type
-}
-
-func (w *guidanceResultWrapper) GetTrajectory() (GuidanceResult_Trajectory, error) {
-	if !w.hasTrajectory() {
-		return nil, ErrFieldNotPresent
-	}
-	return &velocityWrapper{inner: w.inner.GetTrajectory()}, nil
-}
-
-func (w *guidanceResultWrapper) hasTrajectory() bool {
-	return w.inner.HasTrajectory()
-}
-
-type positionResultWrapper struct {
-	inner *result.PositionResult // generated concrete type
-}
-
-func (w *positionResultWrapper) GetRelativePosition() (PositionResult_RelativePosition, error) {
-	if !w.hasRelativePosition() {
-		return nil, ErrFieldNotPresent
-	}
-	return &relativePositionWrapper{inner: w.inner.GetRelativePosition()}, nil
-}
-
-func (w *positionResultWrapper) hasRelativePosition() bool {
-	return w.inner.HasRelativePosition()
-}
-
-func (w *positionResultWrapper) GetGlobalPosition() (PositionResult_GlobalPosition, error) {
-	if !w.hasGlobalPosition() {
-		return nil, ErrFieldNotPresent
-	}
-	return &globalPositionWrapper{inner: w.inner.GetGlobalPosition()}, nil
-}
-
-func (w *positionResultWrapper) hasGlobalPosition() bool {
-	return w.inner.HasGlobalPosition()
-}
-
-type genericResultWrapper struct {
-	inner *result.GenericResult // generated concrete type
-}
-
-func (w *genericResultWrapper) GetPayload() []byte {
-	return w.inner.GetPayload()
-}
-
-type computeResultWrapper struct {
-	inner *result.ComputeResult // generated concrete type
-}
-
-func (w *computeResultWrapper) GetTimestamp() (*timestamppb.Timestamp, error) {
-	if !w.hasTimestamp() {
-		var zero *timestamppb.Timestamp
-		return zero, ErrFieldNotPresent
-	}
-	return w.inner.GetTimestamp(), nil
-}
-
-func (w *computeResultWrapper) hasTimestamp() bool {
-	return w.inner.HasTimestamp()
-}
-
-func (w *computeResultWrapper) GetDetectionResult() (DetectionResult, error) {
-	if !w.hasDetectionResult() {
-		return nil, ErrFieldNotPresent
-	}
-	return &detectionResultWrapper{inner: w.inner.GetDetectionResult()}, nil
-}
-
-func (w *computeResultWrapper) hasDetectionResult() bool {
-	return w.inner.HasDetectionResult()
-}
-
-func (w *computeResultWrapper) GetClassificationResult() (ClassificationResult, error) {
-	if !w.hasClassificationResult() {
-		return nil, ErrFieldNotPresent
-	}
-	return &classificationResultWrapper{inner: w.inner.GetClassificationResult()}, nil
-}
-
-func (w *computeResultWrapper) hasClassificationResult() bool {
-	return w.inner.HasClassificationResult()
-}
-
-func (w *computeResultWrapper) GetGuidanceResult() (GuidanceResult, error) {
-	if !w.hasGuidanceResult() {
-		return nil, ErrFieldNotPresent
-	}
-	return &guidanceResultWrapper{inner: w.inner.GetGuidanceResult()}, nil
-}
-
-func (w *computeResultWrapper) hasGuidanceResult() bool {
-	return w.inner.HasGuidanceResult()
-}
-
-func (w *computeResultWrapper) GetPositionResult() (PositionResult, error) {
-	if !w.hasPositionResult() {
-		return nil, ErrFieldNotPresent
-	}
-	return &positionResultWrapper{inner: w.inner.GetPositionResult()}, nil
-}
-
-func (w *computeResultWrapper) hasPositionResult() bool {
-	return w.inner.HasPositionResult()
-}
-
-func (w *computeResultWrapper) GetGenericResult() (GenericResult, error) {
-	if !w.hasGenericResult() {
-		return nil, ErrFieldNotPresent
-	}
-	return &genericResultWrapper{inner: w.inner.GetGenericResult()}, nil
-}
-
-func (w *computeResultWrapper) hasGenericResult() bool {
-	return w.inner.HasGenericResult()
-}
-
 type batteryInfoWrapper struct {
 	inner *telemetry.BatteryInfo // generated concrete type
 }
@@ -726,6 +542,306 @@ func (w *telemetryWrapper) hasMotionStatus() bool {
 	return w.inner.HasMotionStatus()
 }
 
+type rawFrameWrapper struct {
+	inner *telemetry.RawFrame // generated concrete type
+}
+
+func (w *rawFrameWrapper) GetTimestamp() (*timestamppb.Timestamp, error) {
+	if !w.hasTimestamp() {
+		var zero *timestamppb.Timestamp
+		return zero, ErrFieldNotPresent
+	}
+	return w.inner.GetTimestamp(), nil
+}
+
+func (w *rawFrameWrapper) hasTimestamp() bool {
+	return w.inner.HasTimestamp()
+}
+
+func (w *rawFrameWrapper) GetData() []byte {
+	return w.inner.GetData()
+}
+
+func (w *rawFrameWrapper) GetHRes() uint64 {
+	return w.inner.GetHRes()
+}
+
+func (w *rawFrameWrapper) GetVRes() uint64 {
+	return w.inner.GetVRes()
+}
+
+func (w *rawFrameWrapper) GetDRes() uint64 {
+	return w.inner.GetDRes()
+}
+
+func (w *rawFrameWrapper) GetChannels() uint64 {
+	return w.inner.GetChannels()
+}
+
+func (w *rawFrameWrapper) GetId() uint64 {
+	return w.inner.GetId()
+}
+
+func (w *rawFrameWrapper) GetPositionInfo() (PositionInfo, error) {
+	if !w.hasPositionInfo() {
+		return nil, ErrFieldNotPresent
+	}
+	return &positionInfoWrapper{inner: w.inner.GetPositionInfo()}, nil
+}
+
+func (w *rawFrameWrapper) hasPositionInfo() bool {
+	return w.inner.HasPositionInfo()
+}
+
+func (w *rawFrameWrapper) GetGimbalInfo() (GimbalInfo, error) {
+	if !w.hasGimbalInfo() {
+		return nil, ErrFieldNotPresent
+	}
+	return &gimbalInfoWrapper{inner: w.inner.GetGimbalInfo()}, nil
+}
+
+func (w *rawFrameWrapper) hasGimbalInfo() bool {
+	return w.inner.HasGimbalInfo()
+}
+
+func (w *rawFrameWrapper) GetCameraId() uint64 {
+	return w.inner.GetCameraId()
+}
+
+type encodedFrameWrapper struct {
+	inner *telemetry.EncodedFrame // generated concrete type
+}
+
+func (w *encodedFrameWrapper) GetTimestamp() (*timestamppb.Timestamp, error) {
+	if !w.hasTimestamp() {
+		var zero *timestamppb.Timestamp
+		return zero, ErrFieldNotPresent
+	}
+	return w.inner.GetTimestamp(), nil
+}
+
+func (w *encodedFrameWrapper) hasTimestamp() bool {
+	return w.inner.HasTimestamp()
+}
+
+func (w *encodedFrameWrapper) GetEncodedData() []byte {
+	return w.inner.GetEncodedData()
+}
+
+func (w *encodedFrameWrapper) GetId() uint64 {
+	return w.inner.GetId()
+}
+
+func (w *encodedFrameWrapper) GetGimbalInfo() (GimbalInfo, error) {
+	if !w.hasGimbalInfo() {
+		return nil, ErrFieldNotPresent
+	}
+	return &gimbalInfoWrapper{inner: w.inner.GetGimbalInfo()}, nil
+}
+
+func (w *encodedFrameWrapper) hasGimbalInfo() bool {
+	return w.inner.HasGimbalInfo()
+}
+
+func (w *encodedFrameWrapper) GetPositionInfo() (PositionInfo, error) {
+	if !w.hasPositionInfo() {
+		return nil, ErrFieldNotPresent
+	}
+	return &positionInfoWrapper{inner: w.inner.GetPositionInfo()}, nil
+}
+
+func (w *encodedFrameWrapper) hasPositionInfo() bool {
+	return w.inner.HasPositionInfo()
+}
+
+func (w *encodedFrameWrapper) GetCameraId() uint64 {
+	return w.inner.GetCameraId()
+}
+
+type boundingBoxWrapper struct {
+	inner *result.BoundingBox // generated concrete type
+}
+
+func (w *boundingBoxWrapper) GetYMin() float64 {
+	return w.inner.GetYMin()
+}
+
+func (w *boundingBoxWrapper) GetXMin() float64 {
+	return w.inner.GetXMin()
+}
+
+func (w *boundingBoxWrapper) GetYMax() float64 {
+	return w.inner.GetYMax()
+}
+
+func (w *boundingBoxWrapper) GetXMax() float64 {
+	return w.inner.GetXMax()
+}
+
+type detectionWrapper struct {
+	inner *result.Detection // generated concrete type
+}
+
+func (w *detectionWrapper) GetClassName() string {
+	return w.inner.GetClassName()
+}
+
+func (w *detectionWrapper) GetScore() float64 {
+	return w.inner.GetScore()
+}
+
+func (w *detectionWrapper) GetBbox() (BoundingBox, error) {
+	if !w.hasBbox() {
+		return nil, ErrFieldNotPresent
+	}
+	return &boundingBoxWrapper{inner: w.inner.GetBbox()}, nil
+}
+
+func (w *detectionWrapper) hasBbox() bool {
+	return w.inner.HasBbox()
+}
+
+type detectionResultWrapper struct {
+	inner *result.DetectionResult // generated concrete type
+}
+
+func (w *detectionResultWrapper) GetDetections() []Detection {
+	src := w.inner.GetDetections()
+	out := make([]Detection, len(src))
+	for i, v := range src {
+		out[i] = &detectionWrapper{inner: v}
+	}
+	return out
+}
+
+type classificationResultWrapper struct {
+	inner *result.ClassificationResult // generated concrete type
+}
+
+func (w *classificationResultWrapper) GetScore() float64 {
+	return w.inner.GetScore()
+}
+
+type guidanceResultWrapper struct {
+	inner *result.GuidanceResult // generated concrete type
+}
+
+func (w *guidanceResultWrapper) GetTrajectory() (GuidanceResult_Trajectory, error) {
+	if !w.hasTrajectory() {
+		return nil, ErrFieldNotPresent
+	}
+	return &velocityWrapper{inner: w.inner.GetTrajectory()}, nil
+}
+
+func (w *guidanceResultWrapper) hasTrajectory() bool {
+	return w.inner.HasTrajectory()
+}
+
+type positionResultWrapper struct {
+	inner *result.PositionResult // generated concrete type
+}
+
+func (w *positionResultWrapper) GetRelativePosition() (PositionResult_RelativePosition, error) {
+	if !w.hasRelativePosition() {
+		return nil, ErrFieldNotPresent
+	}
+	return &relativePositionWrapper{inner: w.inner.GetRelativePosition()}, nil
+}
+
+func (w *positionResultWrapper) hasRelativePosition() bool {
+	return w.inner.HasRelativePosition()
+}
+
+func (w *positionResultWrapper) GetGlobalPosition() (PositionResult_GlobalPosition, error) {
+	if !w.hasGlobalPosition() {
+		return nil, ErrFieldNotPresent
+	}
+	return &globalPositionWrapper{inner: w.inner.GetGlobalPosition()}, nil
+}
+
+func (w *positionResultWrapper) hasGlobalPosition() bool {
+	return w.inner.HasGlobalPosition()
+}
+
+type genericResultWrapper struct {
+	inner *result.GenericResult // generated concrete type
+}
+
+func (w *genericResultWrapper) GetPayload() []byte {
+	return w.inner.GetPayload()
+}
+
+type computeResultWrapper struct {
+	inner *result.ComputeResult // generated concrete type
+}
+
+func (w *computeResultWrapper) GetTimestamp() (*timestamppb.Timestamp, error) {
+	if !w.hasTimestamp() {
+		var zero *timestamppb.Timestamp
+		return zero, ErrFieldNotPresent
+	}
+	return w.inner.GetTimestamp(), nil
+}
+
+func (w *computeResultWrapper) hasTimestamp() bool {
+	return w.inner.HasTimestamp()
+}
+
+func (w *computeResultWrapper) GetDetectionResult() (DetectionResult, error) {
+	if !w.hasDetectionResult() {
+		return nil, ErrFieldNotPresent
+	}
+	return &detectionResultWrapper{inner: w.inner.GetDetectionResult()}, nil
+}
+
+func (w *computeResultWrapper) hasDetectionResult() bool {
+	return w.inner.HasDetectionResult()
+}
+
+func (w *computeResultWrapper) GetClassificationResult() (ClassificationResult, error) {
+	if !w.hasClassificationResult() {
+		return nil, ErrFieldNotPresent
+	}
+	return &classificationResultWrapper{inner: w.inner.GetClassificationResult()}, nil
+}
+
+func (w *computeResultWrapper) hasClassificationResult() bool {
+	return w.inner.HasClassificationResult()
+}
+
+func (w *computeResultWrapper) GetGuidanceResult() (GuidanceResult, error) {
+	if !w.hasGuidanceResult() {
+		return nil, ErrFieldNotPresent
+	}
+	return &guidanceResultWrapper{inner: w.inner.GetGuidanceResult()}, nil
+}
+
+func (w *computeResultWrapper) hasGuidanceResult() bool {
+	return w.inner.HasGuidanceResult()
+}
+
+func (w *computeResultWrapper) GetPositionResult() (PositionResult, error) {
+	if !w.hasPositionResult() {
+		return nil, ErrFieldNotPresent
+	}
+	return &positionResultWrapper{inner: w.inner.GetPositionResult()}, nil
+}
+
+func (w *computeResultWrapper) hasPositionResult() bool {
+	return w.inner.HasPositionResult()
+}
+
+func (w *computeResultWrapper) GetGenericResult() (GenericResult, error) {
+	if !w.hasGenericResult() {
+		return nil, ErrFieldNotPresent
+	}
+	return &genericResultWrapper{inner: w.inner.GetGenericResult()}, nil
+}
+
+func (w *computeResultWrapper) hasGenericResult() bool {
+	return w.inner.HasGenericResult()
+}
+
 type takeOffResponseWrapper struct {
 	inner *driver.TakeOffResponse // generated concrete type
 }
@@ -747,6 +863,30 @@ func (w *landResponseWrapper) GetExpectedMode() enums.Mode {
 }
 
 func (w *landResponseWrapper) GetExpectedStatus() enums.MotionStatus {
+	return enums.MotionStatus(w.inner.GetExpectedStatus())
+}
+
+type standResponseWrapper struct {
+	inner *driver.StandResponse // generated concrete type
+}
+
+func (w *standResponseWrapper) GetExpectedMode() enums.Mode {
+	return enums.Mode(w.inner.GetExpectedMode())
+}
+
+func (w *standResponseWrapper) GetExpectedStatus() enums.MotionStatus {
+	return enums.MotionStatus(w.inner.GetExpectedStatus())
+}
+
+type sitResponseWrapper struct {
+	inner *driver.SitResponse // generated concrete type
+}
+
+func (w *sitResponseWrapper) GetExpectedMode() enums.Mode {
+	return enums.Mode(w.inner.GetExpectedMode())
+}
+
+func (w *sitResponseWrapper) GetExpectedStatus() enums.MotionStatus {
 	return enums.MotionStatus(w.inner.GetExpectedStatus())
 }
 

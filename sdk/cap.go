@@ -3,9 +3,13 @@ package sdk
 import (
 	"bytes"
 	"os"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 )
+
+// servicesRoot is the capability path prefix under which all services live.
+const servicesRoot = "steeleagle_protocol/v1/services/"
 
 // Device holds information about the vehicle.
 type Device struct {
@@ -40,6 +44,14 @@ type Camera struct {
 	Primary bool `toml:"primary"`
 }
 
+// Supported holds the SDK services this vehicle implements. Services are
+// opt-in: a service, and every method under it, is unsupported unless
+// listed here.
+type Supported struct {
+	// Services that are supported
+	Services []string `toml:"services"`
+}
+
 // Unsupported holds all the unsupported SDK types for this vehicle.
 type Unsupported struct {
 	// Methods that are unsupported
@@ -55,14 +67,36 @@ type Unsupported struct {
 // Can be used to scrub the SDK and create a compiler overlay that omits
 // unsupported types.
 type CapFile struct {
+	// Name of the plugin that serves this vehicle ("driver" e.g.)
+	Plugin string `toml:"plugin"`
 	// Device information
 	Device Device `toml:"device"`
 	// Camera information
 	Cameras []Camera `toml:"cameras"`
+	// Supported service information
+	Supported Supported `toml:"supported"`
 	// Unsupported type information
 	Unsupported Unsupported `toml:"unsupported"`
+	// Set of all supported services, used for fast queries
+	supportedServices map[string]struct{}
 	// Merged set of all unsupported types, used for fast queries
 	unsupportedSet map[string]struct{}
+}
+
+// serviceOf returns the service capability path that name belongs to (e.g.
+// "steeleagle_protocol/v1/services/driver/ControlService" for
+// "steeleagle_protocol/v1/services/driver/ControlService/Kill"), or false if
+// name is not a service or a member of one.
+func serviceOf(name string) (string, bool) {
+	rest, ok := strings.CutPrefix(name, servicesRoot)
+	if !ok {
+		return "", false
+	}
+	parts := strings.SplitN(rest, "/", 3)
+	if len(parts) < 2 || !strings.HasSuffix(parts[1], "Service") {
+		return "", false
+	}
+	return servicesRoot + parts[0] + "/" + parts[1], true
 }
 
 // ParseCapFromBytes parses a cap file from a TOML byte slice.
@@ -84,6 +118,10 @@ func ParseCapFromBytes(content []byte) (*CapFile, error) {
 	c.unsupportedSet = make(map[string]struct{}, len(merged))
 	for _, m := range merged {
 		c.unsupportedSet[m] = struct{}{}
+	}
+	c.supportedServices = make(map[string]struct{}, len(c.Supported.Services))
+	for _, s := range c.Supported.Services {
+		c.supportedServices[s] = struct{}{}
 	}
 	return c, nil
 }
@@ -107,8 +145,15 @@ func WriteCapToBytes(capFile *CapFile) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// Supports checks if a cap file supports a type name.
+// Supports checks if a cap file supports a type name. A service, or a method
+// under one, is only supported if the service is listed in supported/services.
+// Everything else is supported unless it is listed as unsupported.
 func (c *CapFile) Supports(name string) bool {
+	if service, ok := serviceOf(name); ok {
+		if _, ok := c.supportedServices[service]; !ok {
+			return false
+		}
+	}
 	if _, ok := c.unsupportedSet[name]; ok {
 		return false
 	}

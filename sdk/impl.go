@@ -41,6 +41,30 @@ func (v *vehicleContext) Land() *Waiter[LandResponse] {
 	)
 }
 
+// Stand implements Vehicle.Stand for a vehicleContext.
+func (v *vehicleContext) Stand() *Waiter[StandResponse] {
+	req := &driverpb.StandRequest{}
+	resp, err := v.control.Stand(v.ctx, req)
+
+	return newWaiter[StandResponse](
+		&standResponseWrapper{inner: resp},
+		grpcToSentinel(err),
+		actionPoller(v, resp),
+	)
+}
+
+// Sit implements Vehicle.Sit for a vehicleContext.
+func (v *vehicleContext) Sit() *Waiter[SitResponse] {
+	req := &driverpb.SitRequest{}
+	resp, err := v.control.Sit(v.ctx, req)
+
+	return newWaiter[SitResponse](
+		&sitResponseWrapper{inner: resp},
+		grpcToSentinel(err),
+		actionPoller(v, resp),
+	)
+}
+
 // Hold implements Vehicle.Hold for a vehicleContext.
 func (v *vehicleContext) Hold() *Waiter[HoldResponse] {
 	req := &driverpb.HoldRequest{}
