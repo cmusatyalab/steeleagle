@@ -29,7 +29,7 @@ from rich.logging import RichHandler
 from steeleagle_protocol.v1.services.swarm import swarm_pb2_grpc
 
 from app import (
-    daemon_backends,
+    daemon_registry,
     dslcompiler_routes,
     mission_upload_routes,
     presence_routes,
@@ -246,7 +246,7 @@ async def lifespan(app: FastAPI):
 
     dslcompiler_routes.setup(cfg.get("dslcompiler"))
     mission_upload_routes.setup(lambda: _current_connection().swarm_client)
-    daemon_backends.setup(cfg.get("eagled"))
+    daemon_registry.setup(cfg.get("eagled"))
 
     yield
     # Cleanup

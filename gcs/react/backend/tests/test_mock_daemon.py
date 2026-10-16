@@ -1,10 +1,10 @@
 import pytest
 
-from app import daemon_backends, daemon_config
+from app import daemon_registry, daemon_config
 from app.daemon_backend import DaemonError, DaemonUnreachable, ServiceRef
 from app.mock_daemon import MockDaemonBackend
 
-SEED = daemon_backends.SEED_PATH.read_text()
+SEED = daemon_registry.SEED_PATH.read_text()
 HARPY = ServiceRef("harpy", "vehicle")
 
 
@@ -102,7 +102,7 @@ async def test_open_backend_reuses_one_mock_per_address(mock_daemons):
 
 
 async def test_open_backend_refuses_mocks_when_disabled():
-    daemon_backends.setup(None)
+    daemon_registry.setup(None)
     with pytest.raises(DaemonUnreachable, match="disabled"):
-        async with daemon_backends.open_backend("mock://lab-a"):
+        async with daemon_registry.open_backend("mock://lab-a"):
             pass

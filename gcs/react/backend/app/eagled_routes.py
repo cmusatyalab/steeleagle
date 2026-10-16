@@ -1,7 +1,7 @@
 """FastAPI routes for the Orchestrate page's daemon view -- see
 docs/superpowers/specs/2026-10-15-gcs-generic-plugins-design.md.
 
-Routes reach a daemon through app/daemon_backends.open_backend: a mock for
+Routes reach a daemon through app/daemon_registry.open_backend: a mock for
 `mock://` addresses, the revised eagled gRPC API otherwise. Every route
 returns HTTP 200; `reachable` tells an unreachable daemon (an ordinary
 state for this UI) from a failed operation (`ok: false` + `error`). Only
@@ -29,7 +29,7 @@ from app.daemon_backend import (
     DaemonUnreachable,
     ServiceRef,
 )
-from app.daemon_backends import MOCK_DISCOVERED, mock_enabled, open_backend
+from app.daemon_registry import MOCK_DISCOVERED, mock_enabled, open_backend
 
 router = APIRouter(prefix="/api/daemons", tags=["daemons"])
 

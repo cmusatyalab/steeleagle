@@ -6,14 +6,14 @@ gRPC server) is registered here so test modules don't import it."""
 
 import pytest
 
-from app import daemon_backends
+from app import daemon_registry
 from tests.fake_eagled import daemon_server_factory  # noqa: F401 -- fixture
 
 
 @pytest.fixture
 def mock_daemons(monkeypatch):
-    monkeypatch.setattr(daemon_backends, "MOCK_CONFIGURE_DELAY", 0)
-    monkeypatch.setattr(daemon_backends, "MOCK_FOLLOW_INTERVAL", 0.01)
-    daemon_backends.setup({"mock_enabled": True})
-    yield daemon_backends
-    daemon_backends.setup(None)
+    monkeypatch.setattr(daemon_registry, "MOCK_CONFIGURE_DELAY", 0)
+    monkeypatch.setattr(daemon_registry, "MOCK_FOLLOW_INTERVAL", 0.01)
+    daemon_registry.setup({"mock_enabled": True})
+    yield daemon_registry
+    daemon_registry.setup(None)

@@ -19,7 +19,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, NonNegativeInt
 
 from app.daemon_backend import BackendFailure, DaemonUnreachable, LogRecord
-from app.daemon_backends import open_backend
+from app.daemon_registry import open_backend
 
 router = APIRouter(prefix="/api/daemons", tags=["daemons"])
 

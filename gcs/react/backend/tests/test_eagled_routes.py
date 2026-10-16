@@ -3,7 +3,7 @@ import pytest
 from fastapi import FastAPI
 from steeleagle_protocol.v1.services.eagled import eagled_pb2
 
-from app import daemon_backends, daemon_config, eagled_routes
+from app import daemon_registry, daemon_config, eagled_routes
 from app.eagled_routes import (
     DaemonAddressBody,
     PutConfigBody,
@@ -19,7 +19,7 @@ from app.eagled_routes import (
 )
 
 MOCK = "mock://lab-a"
-SEED = daemon_backends.SEED_PATH.read_text()
+SEED = daemon_registry.SEED_PATH.read_text()
 
 
 def asgi_client() -> httpx.AsyncClient:
@@ -30,8 +30,8 @@ def asgi_client() -> httpx.AsyncClient:
     )
 
 
-def mock() -> "daemon_backends.MockDaemonBackend":
-    return daemon_backends._mock_for(MOCK)
+def mock() -> "daemon_registry.MockDaemonBackend":
+    return daemon_registry._mock_for(MOCK)
 
 
 async def loaded():
