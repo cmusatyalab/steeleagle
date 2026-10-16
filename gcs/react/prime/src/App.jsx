@@ -461,7 +461,11 @@ function App() {
       }}>
         <Menubar model={items} start={menuBarStart} end={menuBarEnd} />
         <Divider />
-        {selectedMenu == "Orchestration" && <OrchestrationPage toast={toast} />}
+        {/* Kept mounted (like Plan) so the selected daemon, tab, and log
+            stream survive switching pages. */}
+        <div style={{ display: selectedMenu === 'Orchestration' ? '' : 'none' }}>
+          <OrchestrationPage toast={toast} />
+        </div>
         <div style={{ display: selectedMenu === 'Plan' ? '' : 'none' }}>
           {planMounted && <PlanPage vehicles={vehicles} squadList={squadList} theme={theme}
             uploadState={missionUploadState} setUploadState={setMissionUploadState} />}

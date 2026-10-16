@@ -385,3 +385,20 @@ async def test_deploy_route_requires_vehicles(monkeypatch):
         )
 
     assert exc.value.status_code == 400
+
+
+async def test_upload_events_with_real_client_is_unavailable_error_line():
+    from app.swarm_client import UPLOAD_UNAVAILABLE, SwarmClient
+
+    events = [
+        e
+        async for e in routes.upload_events(
+            SwarmClient(stub=None), ["d1"], {"amd64": b"x"}
+        )
+    ]
+
+    assert events[0] == {"type": "stage", "stage": "uploading"}
+    assert events[-1] == {
+        "type": "error",
+        "detail": f"Upload failed: {UPLOAD_UNAVAILABLE}",
+    }

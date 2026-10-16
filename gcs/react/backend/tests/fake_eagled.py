@@ -1,89 +1,65 @@
-"""A fake DaemonService gRPC server for testing EagledClient and
-eagled_routes' reachability handling against real (fake) network
+"""A fake revised-proto DaemonService gRPC server, for testing
+GrpcDaemonBackend and the routes' gRPC path against real (fake) network
 behavior -- mirrors tests/test_swarm_client.py's FakeSwarmServicer
-pattern. Unlike swarm's streaming RPCs, every DaemonService RPC in scope
-is unary_unary, so _run just returns a single message instead of
-yielding a stream."""
-
-import asyncio
+pattern."""
 
 import grpc
 import pytest
-from steeleagle_protocol.v1.services.eagled import eagled_pb2, eagled_pb2_grpc
+from steeleagle_protocol.v1.services.eagled import eagled_pb2_grpc
+
+
+async def _maybe_abort(outcome, context) -> None:
+    if isinstance(outcome, Exception):
+        await context.abort(grpc.StatusCode.UNAVAILABLE, str(outcome))
+    if (
+        isinstance(outcome, tuple)
+        and outcome
+        and isinstance(outcome[0], grpc.StatusCode)
+    ):
+        await context.abort(outcome[0], outcome[1])
 
 
 class FakeDaemonServicer(eagled_pb2_grpc.DaemonServiceServicer):
-    """`script[rpc_name]` is either a response message to return, or an
-    Exception instance whose message aborts the call with UNAVAILABLE.
-    Every request received is recorded in self.received[rpc_name] so
-    tests can assert on what was actually sent."""
+    """`script[rpc_name]` is a response message, an Exception (abort UNAVAILABLE), or a
+    (grpc.StatusCode, details) tuple (abort with that code). Every request
+    is recorded in self.received[rpc_name]."""
 
     def __init__(self, script: dict):
         self._script = script
         self.received: dict[str, list] = {}
         self.time_remaining: dict[str, float | None] = {}
-        self.stream_finished = asyncio.Event()
-        self.stream_time_remaining: float | None = None
 
     async def _run(self, rpc_name, request, context):
         self.received.setdefault(rpc_name, []).append(request)
         self.time_remaining[rpc_name] = context.time_remaining()
         outcome = self._script[rpc_name]
-        if isinstance(outcome, Exception):
-            await context.abort(grpc.StatusCode.UNAVAILABLE, str(outcome))
+        await _maybe_abort(outcome, context)
         return outcome
 
-    async def GetStatus(self, request, context):
-        return await self._run("GetStatus", request, context)
+    async def Configure(self, request, context):
+        return await self._run("Configure", request, context)
 
-    async def StopVehicles(self, request, context):
-        return await self._run("StopVehicles", request, context)
+    async def GetConfiguration(self, request, context):
+        return await self._run("GetConfiguration", request, context)
 
-    async def RestartVehicles(self, request, context):
-        return await self._run("RestartVehicles", request, context)
+    async def ResetConfiguration(self, request, context):
+        return await self._run("ResetConfiguration", request, context)
 
-    async def ForgetVehicles(self, request, context):
-        return await self._run("ForgetVehicles", request, context)
+    async def RestartServices(self, request, context):
+        return await self._run("RestartServices", request, context)
 
     async def InstallPlugin(self, request, context):
         return await self._run("InstallPlugin", request, context)
 
-    async def GetInstalledPlugins(self, request, context):
-        return await self._run("GetInstalledPlugins", request, context)
-
-    async def RestartDaemon(self, request, context):
-        return await self._run("RestartDaemon", request, context)
-
-    async def ResetConfig(self, request, context):
-        return await self._run("ResetConfig", request, context)
-
-    async def ListLogSources(self, request, context):
-        return await self._run("ListLogSources", request, context)
-
-    async def StreamLogs(self, request, context):
-        """`script["StreamLogs"]` is a list of LogRecords to yield, or an
-        Exception to abort with UNAVAILABLE. With request.follow it then
-        stays open until the client cancels."""
-        self.received.setdefault("StreamLogs", []).append(request)
-        self.stream_time_remaining = context.time_remaining()
-        outcome = self._script["StreamLogs"]
-        try:
-            if isinstance(outcome, Exception):
-                await context.abort(grpc.StatusCode.UNAVAILABLE, str(outcome))
-            for record in outcome:
-                yield record
-            if request.follow:
-                await asyncio.Event().wait()
-        finally:
-            self.stream_finished.set()
+    async def RemovePlugin(self, request, context):
+        return await self._run("RemovePlugin", request, context)
 
 
 @pytest.fixture
 async def daemon_server_factory():
-    """Yields an async factory `_make(script) -> (FakeDaemonServicer,
-    address)` that starts a real grpc.aio server on a random loopback
-    port for each call. All servers started this way are stopped when
-    the test finishes."""
+    """Yields `_make(script) -> (FakeDaemonServicer, address)`; each call
+    starts a real grpc.aio server on a random loopback port, all stopped
+    when the test finishes."""
     servers = []
 
     async def _make(script: dict):
@@ -99,66 +75,3 @@ async def daemon_server_factory():
 
     for server in servers:
         await server.stop(None)
-
-
-class FakeEagledClient:
-    """Duck-types EagledClient's public methods for testing
-    eagled_routes' response-shaping functions without a live gRPC
-    server -- mirrors tests/fake_dslcompiler.py's FakeDslCompilerClient
-    pattern. Construct with canned return values for whichever methods a
-    test exercises; calling a method with no canned value raises
-    AssertionError so an unexpected call fails loudly."""
-
-    def __init__(
-        self,
-        status: eagled_pb2.GetStatusResponse | None = None,
-        stop_vehicles: eagled_pb2.StopVehiclesResponse | None = None,
-        restart_vehicles: eagled_pb2.RestartVehiclesResponse | None = None,
-        forget_vehicles: eagled_pb2.ForgetVehiclesResponse | None = None,
-        installed_plugins: eagled_pb2.GetInstalledPluginsResponse | None = None,
-    ) -> None:
-        self._status = status
-        self._stop_vehicles = stop_vehicles
-        self._restart_vehicles = restart_vehicles
-        self._forget_vehicles = forget_vehicles
-        self._installed_plugins = installed_plugins
-        self.stop_vehicles_calls: list[list[str]] = []
-        self.restart_vehicles_calls: list[list[str]] = []
-        self.forget_vehicles_calls: list[list[str]] = []
-
-    async def get_status(self):
-        assert self._status is not None, "FakeEagledClient: no status configured"
-        return self._status
-
-    async def stop_vehicles(self, names: list[str]):
-        assert self._stop_vehicles is not None, (
-            "FakeEagledClient: no stop_vehicles configured"
-        )
-        self.stop_vehicles_calls.append(names)
-        return self._stop_vehicles
-
-    async def restart_vehicles(self, names: list[str]):
-        assert self._restart_vehicles is not None, (
-            "FakeEagledClient: no restart_vehicles configured"
-        )
-        self.restart_vehicles_calls.append(names)
-        return self._restart_vehicles
-
-    async def forget_vehicles(self, names: list[str]):
-        assert self._forget_vehicles is not None, (
-            "FakeEagledClient: no forget_vehicles configured"
-        )
-        self.forget_vehicles_calls.append(names)
-        return self._forget_vehicles
-
-    async def get_installed_plugins(self):
-        assert self._installed_plugins is not None, (
-            "FakeEagledClient: no installed_plugins configured"
-        )
-        return self._installed_plugins
-
-    async def restart_daemon(self):
-        return eagled_pb2.RestartDaemonResponse()
-
-    async def reset_config(self):
-        return eagled_pb2.ResetConfigResponse()

@@ -28,7 +28,12 @@ from pydantic_extra_types.coordinate import Latitude, Longitude
 from rich.logging import RichHandler
 from steeleagle_protocol.v1.services.swarm import swarm_pb2_grpc
 
-from app import dslcompiler_routes, mission_upload_routes, presence_routes
+from app import (
+    daemon_backends,
+    dslcompiler_routes,
+    mission_upload_routes,
+    presence_routes,
+)
 from app.eagled_log_routes import router as eagled_log_router
 from app.eagled_routes import router as eagled_router
 from app.swarm_client import SwarmClient, VehicleResult
@@ -241,6 +246,7 @@ async def lifespan(app: FastAPI):
 
     dslcompiler_routes.setup(cfg.get("dslcompiler"))
     mission_upload_routes.setup(lambda: _current_connection().swarm_client)
+    daemon_backends.setup(cfg.get("eagled"))
 
     yield
     # Cleanup

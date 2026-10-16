@@ -23,5 +23,13 @@ if __name__ == "__main__":
     args, _ = parser.parse_known_args()
 
     uvicorn.run(
-        "app.api:app", host=args.host, port=args.port, reload=True, log_level="critical"
+        "app.api:app",
+        host=args.host,
+        port=args.port,
+        reload=True,
+        log_level="critical",
+        # Open log streams (/api/daemons/logs/stream) never finish on their
+        # own, so a graceful shutdown would wait on them forever; cancel
+        # whatever is still running after this many seconds.
+        timeout_graceful_shutdown=2,
     )

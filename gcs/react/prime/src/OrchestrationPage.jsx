@@ -3,13 +3,12 @@ import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { Dialog } from 'primereact/dialog';
 import { TabView, TabPanel } from 'primereact/tabview';
-import { DataTable } from 'primereact/datatable';
-import { Column } from 'primereact/column';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import { getApiUrl } from './urls.js';
 import { postToApi } from './apiUtils.js';
 import LogViewer from './LogViewer.jsx';
-import InstallPluginDialog from './InstallPluginDialog.jsx';
+import PluginsTab from './PluginsTab.jsx';
+import ConfigureDialog from './ConfigureDialog.jsx';
 import React from 'react';
 
 // Persisted independently of whether a daemon is actually reachable -- the
@@ -58,46 +57,44 @@ function generateId() {
     return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-// Mirrors eagle CLI's real subcommands 1:1 (cmd/eagle/main.go) so this
-// accurately reflects the command surface rather than inventing placeholder
-// names. Configure is the only one not wired to a daemon yet -- it just
-// surfaces a toast.
+// Daemon-wide commands, shown on the Info tab. Configure edits the daemon's
+// whole config (eagled replaces it whole and restarts); the Services tab
+// lists what it runs.
+const LOGS_TAB = 2;
+
 const DAEMON_COMMANDS = [
-    { label: 'Configure', icon: 'pi pi-upload' },
-    { label: 'Install Plugin', icon: 'pi pi-plus-circle' },
-    { label: 'List Plugins', icon: 'pi pi-list' },
-    { label: 'Restart Daemon', icon: 'pi pi-refresh' },
+    { label: 'Configure', icon: 'pi pi-cog' },
     { label: 'Reset Config', icon: 'pi pi-exclamation-triangle', danger: true },
 ];
 
-// Daemon-wide config (as opposed to per-vehicle state, which lives on the
-// Vehicles tab) -- field set, order, and conditionals mirror eagle CLI's
-// own `status` output (cmd/eagle/main.go printStatus) so this is a direct
-// GUI reflection of the same source of truth, not a reinvented one.
-function DaemonConfigPanel({ status }) {
+// Read-only daemon-wide settings: the top-level keys of the daemon's
+// config.toml. They are edited with the Configure command.
+const SETTING_ROWS = [
+    ['hostname', 'Hostname'],
+    ['vehicle_port_base', 'Vehicle Port Base'],
+    ['gabriel_port', 'Gabriel Port'],
+    ['swarm_controller_port', 'Swarm Controller Port'],
+    ['headless', 'Headless'],
+    ['auto_run', 'Auto-run'],
+    ['auto_install', 'Auto-install'],
+];
+
+function DaemonInfoPanel({ status }) {
     if (status === undefined) {
         return <div className="text-color-secondary p-2">Checking daemon status...</div>;
     }
     if (!status.reachable) {
         return <div className="text-color-secondary p-2">Daemon is unreachable.</div>;
     }
-    // Platform describes the running binary, not the applied config, so it's
-    // reported (and shown) even before the daemon's first Configure. A daemon
-    // built before it was added reports neither, so the row is just omitted.
-    const rows = [];
-    if (status.os || status.arch) rows.push(['Platform', `${status.os}/${status.arch}`]);
-    const cfg = status.config;
-    if (status.configured && cfg) {
-        rows.push(
-            ['Daemon', cfg.daemon_name],
-            ['Port Base', cfg.port_base],
-            ['Plugin Dir', cfg.plugin_dir],
-            ['Swarm Controller', cfg.swarm_controller_address],
-        );
-        if (cfg.gabriel_server_endpoint) rows.push(['Gabriel', cfg.gabriel_server_endpoint]);
-        rows.push(['VPN', `${cfg.vpn} (vehicles: ${cfg.vehicle_vpn})`]);
-        if (cfg.vpn) rows.push(['Tailscale Auth Key Env', `$${cfg.tailscale_authkey_env}`]);
+    if (!status.ok) {
+        return <div className="text-color-secondary p-2">{status.error}</div>;
     }
+    if (!status.configured) {
+        return <div className="text-color-secondary p-2">Daemon is not configured yet.</div>;
+    }
+    const rows = SETTING_ROWS
+        .filter(([key]) => status.settings[key] !== undefined)
+        .map(([key, label]) => [label, String(status.settings[key])]);
     return (
         <div className="p-2">
             {rows.map(([label, value]) => (
@@ -106,7 +103,6 @@ function DaemonConfigPanel({ status }) {
                     <span style={{ fontFamily: 'monospace' }}>{value}</span>
                 </div>
             ))}
-            {!status.configured && <div className="text-color-secondary pt-2">Daemon is not configured yet.</div>}
         </div>
     );
 }
@@ -117,7 +113,13 @@ function OrchestrationPage({ toast }) {
     const [newName, setNewName] = useState('');
     const [newAddress, setNewAddress] = useState('');
     const [addDialogVisible, setAddDialogVisible] = useState(false);
-    const [installDialogVisible, setInstallDialogVisible] = useState(false);
+    const [configureDialogVisible, setConfigureDialogVisible] = useState(false);
+    // The service the Configure dialog opens on ({ category, name }), or null.
+    const [configureFocus, setConfigureFocus] = useState(null);
+    const [activeTab, setActiveTab] = useState(0);
+    // The Services tab's logs button: the sources to preselect, and a counter
+    // that remounts LogViewer so the preselection applies each time.
+    const [logFilter, setLogFilter] = useState({ daemonId: null, sources: [], seq: 0 });
 
     useEffect(() => {
         localStorage.setItem(DAEMONS_STORAGE_KEY, JSON.stringify(daemons));
@@ -126,20 +128,20 @@ function OrchestrationPage({ toast }) {
     const [daemonStatus, setDaemonStatus] = useState({});
 
     const pollOneStatus = useCallback(async (address) => {
+        const unreachable = { reachable: false, ok: false, configured: false, settings: {}, error: null };
         try {
             const response = await fetch(getApiUrl(`/api/daemons/status?address=${encodeURIComponent(address)}`));
-            if (!response.ok) return { reachable: false, vehicles: [], configured: false, config: null, os: '', arch: '' };
+            if (!response.ok) return unreachable;
             const result = await response.json();
             return {
                 reachable: result.reachable,
-                vehicles: result.vehicles ?? [],
+                ok: result.ok ?? false,
                 configured: result.configured ?? false,
-                config: result.config ?? null,
-                os: result.os ?? '',
-                arch: result.arch ?? '',
+                settings: result.settings ?? {},
+                error: result.error ?? null,
             };
         } catch {
-            return { reachable: false, vehicles: [], configured: false, config: null, os: '', arch: '' };
+            return unreachable;
         }
     }, []);
 
@@ -201,13 +203,6 @@ function OrchestrationPage({ toast }) {
 
     const selectedDaemon = useMemo(() => daemons.find((d) => d.id === selectedDaemonId) ?? null, [daemons, selectedDaemonId]);
 
-    // Installed-plugins listing is persistent (unlike the toast-based
-    // pass/fail commands) since it's a dataset worth browsing, not a
-    // one-shot outcome. Keyed by daemon id (like daemonStatus above) so
-    // switching daemons naturally shows that daemon's own last result
-    // instead of a stale one, with no separate reset-on-switch effect.
-    const [pluginsResults, setPluginsResults] = useState({});
-
     const onAddDaemon = useCallback(() => {
         const name = newName.trim();
         const address = newAddress.trim();
@@ -225,106 +220,10 @@ function OrchestrationPage({ toast }) {
         setSelectedDaemonId((prev) => (prev === id ? null : prev));
     }, []);
 
-    const notWiredUp = useCallback((label) => {
-        toast.current.show({ severity: 'info', summary: 'Not Wired Up', detail: `"${label}" isn't connected to a daemon yet.` });
-    }, [toast]);
-
     const refreshDaemonStatus = useCallback(async (daemonId, address) => {
         const status = await pollOneStatus(address);
         setDaemonStatus((prev) => ({ ...prev, [daemonId]: status }));
     }, [pollOneStatus]);
-
-    const onStopVehicles = useCallback(async (address, names) => {
-        const result = await postToApi('/api/daemons/stop-vehicles', { address, names }, toast, 'Stop Vehicle Error');
-        if (result === null) return;
-        if (!result.reachable) {
-            toast.current.show({ severity: 'error', summary: 'Stop Vehicle', detail: result.error ?? 'Daemon unreachable' });
-            return;
-        }
-        const failed = (result.results ?? []).filter((r) => !r.ok);
-        if (failed.length > 0) {
-            toast.current.show({ severity: 'error', summary: 'Stop Vehicle', detail: failed.map((r) => `${r.name}: ${r.error || 'failed'}`).join('; ') });
-            return;
-        }
-        toast.current.show({ severity: 'success', summary: 'Stop Vehicle', detail: `Sent to ${names.join(', ')}` });
-    }, [toast]);
-
-    const onRestartVehicles = useCallback(async (address, names) => {
-        const result = await postToApi('/api/daemons/restart-vehicles', { address, names }, toast, 'Restart Vehicle Error');
-        if (result === null) return;
-        if (!result.reachable) {
-            toast.current.show({ severity: 'error', summary: 'Restart Vehicle', detail: result.error ?? 'Daemon unreachable' });
-            return;
-        }
-        const failed = (result.results ?? []).filter((r) => !r.ok);
-        if (failed.length > 0) {
-            toast.current.show({ severity: 'error', summary: 'Restart Vehicle', detail: failed.map((r) => `${r.name}: ${r.error || 'failed'}`).join('; ') });
-            return;
-        }
-        toast.current.show({ severity: 'success', summary: 'Restart Vehicle', detail: `Sent to ${names.join(', ')}` });
-    }, [toast]);
-
-    const onForgetVehicles = useCallback(async (daemonId, address, names) => {
-        const result = await postToApi('/api/daemons/forget-vehicles', { address, names }, toast, 'Forget Vehicle Error');
-        if (result === null) return;
-        if (!result.reachable) {
-            toast.current.show({ severity: 'error', summary: 'Forget Vehicle', detail: result.error ?? 'Daemon unreachable' });
-            return;
-        }
-        const failed = (result.results ?? []).filter((r) => !r.ok);
-        if (failed.length > 0) {
-            toast.current.show({ severity: 'error', summary: 'Forget Vehicle', detail: failed.map((r) => `${r.name}: ${r.error || 'failed'}`).join('; ') });
-        } else {
-            toast.current.show({ severity: 'success', summary: 'Forget Vehicle', detail: `Forgot ${names.join(', ')}` });
-        }
-        refreshDaemonStatus(daemonId, address);
-    }, [toast, refreshDaemonStatus]);
-
-    const confirmForgetVehicle = useCallback((address, name) => {
-        confirmDialog({
-            message: `Permanently forget "${name}" on this daemon? This cannot be undone.`,
-            header: 'Forget Vehicle',
-            icon: 'pi pi-exclamation-triangle',
-            acceptClassName: 'p-button-danger',
-            accept: () => onForgetVehicles(selectedDaemon.id, address, [name]),
-        });
-    }, [onForgetVehicles, selectedDaemon]);
-
-    const onListPlugins = useCallback(async (daemonId, address) => {
-        setPluginsResults((prev) => ({ ...prev, [daemonId]: { status: 'loading' } }));
-        let response = null;
-        try {
-            response = await fetch(getApiUrl(`/api/daemons/plugins?address=${encodeURIComponent(address)}`));
-        } catch (err) {
-            setPluginsResults((prev) => ({ ...prev, [daemonId]: null }));
-            toast.current.show({ severity: 'error', summary: 'List Plugins', detail: `request failed: ${err.message}` });
-            return;
-        }
-        let result = null;
-        try {
-            result = await response.json();
-        } catch {
-            setPluginsResults((prev) => ({ ...prev, [daemonId]: null }));
-            toast.current.show({ severity: 'error', summary: 'List Plugins', detail: `server returned a non-JSON response (status ${response.status})` });
-            return;
-        }
-        if (!result.reachable) {
-            setPluginsResults((prev) => ({ ...prev, [daemonId]: null }));
-            toast.current.show({ severity: 'error', summary: 'List Plugins', detail: result.error ?? 'Daemon unreachable' });
-            return;
-        }
-        setPluginsResults((prev) => ({ ...prev, [daemonId]: { status: 'loaded', plugins: result.plugins } }));
-    }, [toast]);
-
-    const onRestartDaemon = useCallback(async (daemon) => {
-        const result = await postToApi('/api/daemons/restart-daemon', { address: daemon.address }, toast, 'Restart Daemon Error');
-        if (result === null) return;
-        toast.current.show(
-            result.reachable
-                ? { severity: 'success', summary: 'Restart Daemon', detail: `Restart sent to ${daemon.name}` }
-                : { severity: 'error', summary: 'Restart Daemon', detail: result.error ?? 'Daemon unreachable' }
-        );
-    }, [toast]);
 
     const onResetConfig = useCallback(async (daemon) => {
         const result = await postToApi('/api/daemons/reset-config', { address: daemon.address }, toast, 'Reset Config Error');
@@ -339,49 +238,33 @@ function OrchestrationPage({ toast }) {
 
     const onDaemonCommand = useCallback((label, daemon) => {
         if (label === 'Configure') {
-            notWiredUp(label);
-            return;
-        }
-        if (label === 'Install Plugin') {
-            setInstallDialogVisible(true);
-            return;
-        }
-        if (label === 'List Plugins') {
-            onListPlugins(daemon.id, daemon.address);
-            return;
-        }
-        if (label === 'Restart Daemon') {
-            confirmDialog({
-                message: `Restart the eagled process on "${daemon.name}"? Vehicle processes it supervises will be interrupted.`,
-                header: 'Restart Daemon',
-                icon: 'pi pi-exclamation-triangle',
-                acceptClassName: 'p-button-danger',
-                accept: () => onRestartDaemon(daemon),
-            });
+            setConfigureFocus(null);
+            setConfigureDialogVisible(true);
             return;
         }
         if (label === 'Reset Config') {
             confirmDialog({
-                message: `Permanently wipe all configuration and vehicles on "${daemon.name}"? This cannot be undone.`,
+                message: `Permanently wipe all configuration and services on "${daemon.name}"? This cannot be undone.`,
                 header: 'Reset Config',
                 icon: 'pi pi-exclamation-triangle',
                 acceptClassName: 'p-button-danger',
                 accept: () => onResetConfig(daemon),
             });
         }
-    }, [notWiredUp, onListPlugins, onRestartDaemon, onResetConfig]);
+    }, [onResetConfig]);
 
     return (
         <div className="p-2 flex gap-2" style={{ minHeight: '70vh' }}>
             <ConfirmDialog />
-            {installDialogVisible && selectedDaemon && (
-                <InstallPluginDialog
+            {configureDialogVisible && selectedDaemon && (
+                <ConfigureDialog
                     daemon={selectedDaemon}
-                    onHide={() => setInstallDialogVisible(false)}
-                    onInstalled={(name) => {
-                        setInstallDialogVisible(false);
-                        toast.current.show({ severity: 'success', summary: 'Install Plugin', detail: `Installed ${name} on ${selectedDaemon.name}` });
-                        onListPlugins(selectedDaemon.id, selectedDaemon.address);
+                    focus={configureFocus}
+                    onHide={() => setConfigureDialogVisible(false)}
+                    onDone={() => {
+                        setConfigureDialogVisible(false);
+                        toast.current.show({ severity: 'success', summary: 'Configure', detail: `Config applied to ${selectedDaemon.name}; the daemon is restarting` });
+                        refreshDaemonStatus(selectedDaemon.id, selectedDaemon.address);
                     }}
                 />
             )}
@@ -500,7 +383,7 @@ function OrchestrationPage({ toast }) {
             <div className="flex-1 border-round p-2" style={{ backgroundColor: 'var(--surface-card)', border: '1px solid var(--surface-border)', minWidth: 0 }}>
                 {!selectedDaemon ? (
                     <div className="text-color-secondary flex align-items-center justify-content-center h-full">
-                        {daemons.length === 0 ? 'Add a daemon to get started.' : 'Select a daemon on the left to view its vehicles, issue commands, or view logs.'}
+                        {daemons.length === 0 ? 'Add a daemon to get started.' : 'Select a daemon on the left to view its services, issue commands, or view logs.'}
                     </div>
                 ) : (
                     <>
@@ -508,65 +391,8 @@ function OrchestrationPage({ toast }) {
                             <span className="font-bold text-lg">{selectedDaemon.name}</span>
                             <span className="text-color-secondary ml-2">{selectedDaemon.address}</span>
                         </div>
-                        <TabView>
-                            <TabPanel header="Config">
-                                <DaemonConfigPanel status={daemonStatus[selectedDaemon.id]} />
-                            </TabPanel>
-                            <TabPanel header="Vehicles">
-                                <DataTable
-                                    value={daemonStatus[selectedDaemon.id]?.vehicles ?? []}
-                                    emptyMessage={
-                                        daemonStatus[selectedDaemon.id] === undefined ? 'Checking daemon status...'
-                                            : daemonStatus[selectedDaemon.id].reachable === false ? 'Daemon is unreachable.'
-                                            : 'No vehicles configured on this daemon.'
-                                    }
-                                    size="small"
-                                >
-                                    <Column field="name" header="Name" sortable />
-                                    <Column field="driver" header="Driver" sortable />
-                                    <Column field="running" header="Running" body={(v) => (v.running ? 'Yes' : 'No')} sortable />
-                                    <Column field="port" header="Port" />
-                                    <Column
-                                        header="Actions"
-                                        body={(v) => (
-                                            <div className="flex gap-1">
-                                                <Button
-                                                    icon="pi pi-stop-circle"
-                                                    size="small"
-                                                    text
-                                                    rounded
-                                                    tooltip="Stop"
-                                                    tooltipOptions={{ position: 'top' }}
-                                                    aria-label={`Stop ${v.name}`}
-                                                    onClick={() => onStopVehicles(selectedDaemon.address, [v.name])}
-                                                />
-                                                <Button
-                                                    icon="pi pi-refresh"
-                                                    size="small"
-                                                    text
-                                                    rounded
-                                                    tooltip="Restart"
-                                                    tooltipOptions={{ position: 'top' }}
-                                                    aria-label={`Restart ${v.name}`}
-                                                    onClick={() => onRestartVehicles(selectedDaemon.address, [v.name])}
-                                                />
-                                                <Button
-                                                    icon="pi pi-trash"
-                                                    size="small"
-                                                    text
-                                                    rounded
-                                                    severity="danger"
-                                                    tooltip="Forget"
-                                                    tooltipOptions={{ position: 'top' }}
-                                                    aria-label={`Forget ${v.name}`}
-                                                    onClick={() => confirmForgetVehicle(selectedDaemon.address, v.name)}
-                                                />
-                                            </div>
-                                        )}
-                                    />
-                                </DataTable>
-                            </TabPanel>
-                            <TabPanel header="Commands">
+                        <TabView activeIndex={activeTab} onTabChange={(e) => setActiveTab(e.index)}>
+                            <TabPanel header="Info">
                                 <div className="flex flex-wrap gap-2 p-2">
                                     {DAEMON_COMMANDS.map((cmd) => (
                                         <Button
@@ -580,25 +406,25 @@ function OrchestrationPage({ toast }) {
                                         />
                                     ))}
                                 </div>
-                                {pluginsResults[selectedDaemon.id] && (
-                                    <div className="px-2 pb-2">
-                                        <div className="font-bold text-sm mb-1">Installed Plugins</div>
-                                        {pluginsResults[selectedDaemon.id].status === 'loading' ? (
-                                            <div className="text-color-secondary text-sm">Loading installed plugins...</div>
-                                        ) : pluginsResults[selectedDaemon.id].plugins.length === 0 ? (
-                                            <div className="text-color-secondary text-sm">No plugins installed.</div>
-                                        ) : (
-                                            <DataTable value={pluginsResults[selectedDaemon.id].plugins} size="small">
-                                                <Column field="name" header="Name" sortable />
-                                                <Column field="category" header="Category" body={(p) => p.category.toLowerCase()} sortable />
-                                                <Column field="ref" header="Ref" />
-                                            </DataTable>
-                                        )}
-                                    </div>
-                                )}
+                                <DaemonInfoPanel status={daemonStatus[selectedDaemon.id]} />
+                            </TabPanel>
+                            <TabPanel header="Services">
+                                <PluginsTab
+                                    key={selectedDaemon.id}
+                                    daemon={selectedDaemon}
+                                    toast={toast}
+                                    onEditConfig={(inst) => {
+                                        setConfigureFocus({ category: inst.category, name: inst.name });
+                                        setConfigureDialogVisible(true);
+                                    }}
+                                    onShowLogs={(sources) => {
+                                        setLogFilter((f) => ({ daemonId: selectedDaemon.id, sources, seq: f.seq + 1 }));
+                                        setActiveTab(LOGS_TAB);
+                                    }}
+                                />
                             </TabPanel>
                             <TabPanel header="Logs">
-                                <LogViewer key={selectedDaemon.id} daemon={selectedDaemon} />
+                                <LogViewer key={`${selectedDaemon.id}-${logFilter.seq}`} daemon={selectedDaemon} initialSources={logFilter.daemonId === selectedDaemon.id ? logFilter.sources : []} />
                             </TabPanel>
                         </TabView>
                     </>
