@@ -14,8 +14,8 @@ import (
 	"time"
 
 	eagledpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/eagled"
-	"github.com/cmusatyalab/steeleagle/cmd/eagled/logstore"
-	"github.com/cmusatyalab/steeleagle/core/util"
+	"github.com/cmusatyalab/steeleagle/v4/cmd/eagled/logstore"
+	"github.com/cmusatyalab/steeleagle/v4/core/util"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"

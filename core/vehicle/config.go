@@ -1,7 +1,7 @@
 package vehicle
 
 import (
-	"github.com/cmusatyalab/steeleagle/core/util/plugin"
+	"github.com/cmusatyalab/steeleagle/v4/core/util/plugin"
 )
 
 type PolicyConfig struct {

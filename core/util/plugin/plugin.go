@@ -15,8 +15,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/cmusatyalab/steeleagle/core/util"
-	"github.com/cmusatyalab/steeleagle/core/util/listener"
+	"github.com/cmusatyalab/steeleagle/v4/core/util"
+	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/cmusatyalab/steeleagle/core/util/listener"
+	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
 	"github.com/rs/zerolog"
 )
 

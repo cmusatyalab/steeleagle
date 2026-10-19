@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cmusatyalab/steeleagle/core/util"
+	"github.com/cmusatyalab/steeleagle/v4/core/util"
 	"tailscale.com/ipn/store/mem"
 	"tailscale.com/tsnet"
 )

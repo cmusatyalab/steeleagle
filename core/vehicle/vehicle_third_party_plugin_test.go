@@ -10,8 +10,8 @@ import (
 
 	driverpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver"
 	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
-	"github.com/cmusatyalab/steeleagle/core/util/listener"
-	"github.com/cmusatyalab/steeleagle/core/util/plugin"
+	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
+	"github.com/cmusatyalab/steeleagle/v4/core/util/plugin"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"

@@ -4,7 +4,7 @@ import (
 	_ "embed"
 	"time"
 
-	"github.com/cmusatyalab/steeleagle/core/util/listener"
+	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
 )
 
 // streamRetryDelay is how long startDriverStreaming waits before retrying a

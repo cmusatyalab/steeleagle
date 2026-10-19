@@ -12,8 +12,8 @@ import (
 
 	gabrielclient "github.com/cmusatyalab/gabriel/go-client"
 	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
-	"github.com/cmusatyalab/steeleagle/core/util"
-	"github.com/cmusatyalab/steeleagle/core/util/listener"
+	"github.com/cmusatyalab/steeleagle/v4/core/util"
+	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
 	"github.com/google/uuid"
 	"github.com/mwitkow/grpc-proxy/proxy"
 	"github.com/rs/zerolog"

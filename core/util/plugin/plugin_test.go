@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cmusatyalab/steeleagle/core/util"
-	"github.com/cmusatyalab/steeleagle/core/util/listener"
+	"github.com/cmusatyalab/steeleagle/v4/core/util"
+	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
 )
 
 func TestPlugin(t *testing.T) {

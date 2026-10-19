@@ -10,7 +10,7 @@ import (
 	"syscall"
 
 	"github.com/BurntSushi/toml"
-	"github.com/cmusatyalab/steeleagle/cmd/eagled/logstore"
+	"github.com/cmusatyalab/steeleagle/v4/cmd/eagled/logstore"
 	"github.com/rs/zerolog/log"
 )
 

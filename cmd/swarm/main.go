@@ -12,8 +12,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 	swarmpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/swarm"
-	"github.com/cmusatyalab/steeleagle/core/swarm"
-	"github.com/cmusatyalab/steeleagle/internal/tailscale"
+	"github.com/cmusatyalab/steeleagle/v4/core/swarm"
+	"github.com/cmusatyalab/steeleagle/v4/internal/tailscale"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 )

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cmusatyalab/steeleagle/core/util/plugin"
+	"github.com/cmusatyalab/steeleagle/v4/core/util/plugin"
 	"google.golang.org/grpc"
 )
 

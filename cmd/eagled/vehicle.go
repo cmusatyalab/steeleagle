@@ -11,10 +11,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cmusatyalab/steeleagle/cmd/eagled/logstore"
-	"github.com/cmusatyalab/steeleagle/core/util"
-	"github.com/cmusatyalab/steeleagle/core/vehicle"
-	"github.com/cmusatyalab/steeleagle/internal/tailscale"
+	"github.com/cmusatyalab/steeleagle/v4/cmd/eagled/logstore"
+	"github.com/cmusatyalab/steeleagle/v4/core/util"
+	"github.com/cmusatyalab/steeleagle/v4/core/vehicle"
+	"github.com/cmusatyalab/steeleagle/v4/internal/tailscale"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )

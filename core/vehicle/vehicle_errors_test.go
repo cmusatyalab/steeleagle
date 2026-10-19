@@ -6,8 +6,8 @@ import (
 	"net"
 	"testing"
 
-	"github.com/cmusatyalab/steeleagle/core/util/listener"
-	"github.com/cmusatyalab/steeleagle/core/util/plugin"
+	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
+	"github.com/cmusatyalab/steeleagle/v4/core/util/plugin"
 	"google.golang.org/grpc"
 )
 
