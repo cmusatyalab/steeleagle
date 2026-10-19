@@ -40,6 +40,11 @@ jobs:
       - name: Allow unprivileged user namespaces (required by bubblewrap)
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
+      # go.work is gitignored; build modules against each other's local
+      # sources, the same as a developer checkout.
+      - name: Set up Go workspace
+        run: go work init . ./api/go ./sdk ./config
+
       - name: Check formatting (gofmt)
         run: |
           unformatted=$(gofmt -l .)

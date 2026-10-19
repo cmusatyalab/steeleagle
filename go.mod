@@ -8,7 +8,7 @@ require (
 	github.com/alecthomas/participle/v2 v2.1.4
 	github.com/cmusatyalab/gabriel/go-client v0.5.0
 	github.com/cmusatyalab/gabriel/protocol/go v0.3.0
-	github.com/cmusatyalab/steeleagle/api/go v0.1.0
+	github.com/cmusatyalab/steeleagle/api/go v0.3.0
 	github.com/go-git/go-git/v5 v5.19.2
 	github.com/google/uuid v1.6.0
 	github.com/looplab/fsm v1.0.3
@@ -132,5 +132,3 @@ require (
 	gvisor.dev/gvisor v0.0.0-20260224225140-573d5e7127a8 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
-
-replace github.com/cmusatyalab/steeleagle/api/go => ./api/go

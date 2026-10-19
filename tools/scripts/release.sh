@@ -26,9 +26,11 @@ on HEAD. Prerelease stages continue an existing series for the same version
 (alpha.1 -> alpha.2 -> beta.1 -> prod); going back from beta to alpha is
 refused.
 
-If a module points at another one through a local replace directive (e.g.
-the root go.mod's `replace .../api/go => ./api/go`), its require line is
-bumped to the new version and committed before tagging.
+Modules are built against each other locally through a gitignored go.work,
+so each go.mod only requires published versions and replace directives are
+refused. To move one module onto a new release of another (e.g. sdk onto a
+new api/go), release the dependency, push it, then `go get` it in the
+dependent module, commit, and release that.
 
 options:
   --only <mods>    comma-separated modules to release: root, api/go, sdk, ...
@@ -119,6 +121,14 @@ while IFS= read -r f; do
 	[[ $d == vendor/* || $d == */vendor/* ]] && continue
 	dirs+=("$d")
 done < <(git ls-files -- go.mod '*/go.mod')
+
+# Consumers ignore replace directives (and go install refuses them), so a
+# tagged go.mod must not depend on one; use go.work for local development.
+for d in "${dirs[@]}"; do
+	if grep -Eq '^[[:space:]]*replace([[:space:]]|\()' "$d/go.mod"; then
+		die "$d/go.mod has a replace directive; drop it and use go.work instead"
+	fi
+done
 
 name_of() { [[ $1 == . ]] && echo root || echo "$1"; }
 prefix_of() { [[ $1 == . ]] && echo "" || echo "$1/"; }
@@ -267,26 +277,19 @@ done
 
 # --- internal require lines ---------------------------------------------------
 
-# Modules that use a local replace for a module being released get their
-# require line bumped so the tagged go.mod names the version it was built with.
-edits=()   # "dir|dep_path|new_ver"
+# Point out modules that will still require an older version of a module being
+# released; moving them forward is a separate go get + release.
 warnings=()
 for dir in "${dirs[@]}"; do
-	gomod="$dir/go.mod"
 	for dep in "${selected[@]}"; do
 		[[ $dep == "$dir" ]] && continue
 		dep_path=${mod_path[$dep]}
-		re=${dep_path//./\\.}
-		required=$(sed -nE "s#^[[:space:]]*(require[[:space:]]+)?$re[[:space:]]+(v[^[:space:]]+).*#\2#p" "$gomod" | head -1)
+		required=$(sed -nE "s#^[[:space:]]*(require[[:space:]]+)?${dep_path//./\\.}[[:space:]]+(v[^[:space:]]+).*#\2#p" "$dir/go.mod" | head -1)
 		[[ -n $required ]] || continue
-		if grep -Eq "^[[:space:]]*(replace[[:space:]]+)?$re([[:space:]]+v[^[:space:]]+)?[[:space:]]*=>[[:space:]]*\.\.?/" "$gomod"; then
-			# Only ever move a require forward, e.g. not back to a patch of an
-			# older line while a newer prerelease is already required.
-			have=$(version_key "$required")
-			want=$(version_key "${next_ver[$dep]}")
-			[[ -n $have && ! $want > $have ]] || edits+=("$dir|$dep_path|${next_ver[$dep]}")
-		else
-			warnings+=("$(name_of "$dir") requires $dep_path $required from the proxy (releasing ${next_ver[$dep]}); bump it separately if it needs the new version")
+		have=$(version_key "$required")
+		want=$(version_key "${next_ver[$dep]}")
+		if [[ -z $have || $want > $have ]]; then
+			warnings+=("$(name_of "$dir") requires $dep_path $required (releasing ${next_ver[$dep]})")
 		fi
 	done
 done
@@ -301,15 +304,10 @@ for dir in "${selected[@]}"; do
 	echo "$line"
 done
 echo
-for e in "${edits[@]}"; do
-	IFS='|' read -r dir dep_path ver <<<"$e"
-	gomod=$dir/go.mod
-	echo "  ${gomod#./}: require $dep_path $ver"
-done
 for w in "${warnings[@]}"; do
 	echo "  note: $w"
 done
-((${#edits[@]} + ${#warnings[@]})) && echo
+((${#warnings[@]})) && echo
 
 if $dry_run; then
 	echo "dry run: nothing changed"
@@ -330,21 +328,6 @@ for dir in "${selected[@]}"; do
 	tags+=("${next_tag[$dir]}")
 done
 
-if ((${#edits[@]})); then
-	changed=()
-	for e in "${edits[@]}"; do
-		IFS='|' read -r dir dep_path ver <<<"$e"
-		go mod edit -require="$dep_path@$ver" "$dir/go.mod"
-		changed+=("$dir/go.mod")
-	done
-	git add -- "${changed[@]}"
-	git commit --quiet -m "Release $(
-		IFS=,
-		echo "${tags[*]}" | sed 's/,/, /g'
-	)" -- "${changed[@]}"
-	echo "committed go.mod updates as $(git rev-parse --short HEAD)"
-fi
-
 for dir in "${selected[@]}"; do
 	git tag -a "${next_tag[$dir]}" -m "${mod_path[$dir]} ${next_ver[$dir]}"
 	echo "tagged ${next_tag[$dir]}"
@@ -356,7 +339,6 @@ if ! $push; then
 	echo "  git push --atomic $remote ${branch:-HEAD} ${tags[*]}"
 	echo "to undo:"
 	echo "  git tag -d ${tags[*]}"
-	((${#edits[@]})) && echo "  git reset --soft HEAD~1"
 	exit 0
 fi
 

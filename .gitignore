@@ -135,3 +135,7 @@ gcs/cli/drones.toml
 cmd/eagle/eagle
 cmd/eagled/eagled
 sdk/cmd/eaglec/eaglec
+
+# Go workspace (local cross-module development; see tools/scripts/release.sh)
+go.work
+go.work.sum
