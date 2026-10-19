@@ -103,9 +103,10 @@ enum ServiceCategory {
   SERVICE_CATEGORY_VEHICLE = 1;     // vehicle service
   SERVICE_CATEGORY_ENGINE = 2;      // engine service
   SERVICE_CATEGORY_MONITOR = 3;     // monitor service
-  SERVICE_CATEGORY_GCS = 4;         // gcs service
-  SERVICE_CATEGORY_SIM = 5;         // simulator service
-  SERVICE_CATEGORY_DB = 6;          // database service
+  SERVICE_CATEGORY_COMMANDER = 4;   // commander service
+  SERVICE_CATEGORY_SIMULATOR = 5;   // simulator service
+  SERVICE_CATEGORY_DATABASE = 6;    // database service
+  SERVICE_CATEGORY_EXTRA = 7;       // extra service
 }
 
 // An active service in the system.

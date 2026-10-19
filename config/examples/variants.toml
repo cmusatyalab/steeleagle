@@ -1,19 +1,12 @@
 [[variants]]
+# Name of the variant
 name = "Parrot Anafi 4K"
+# Type of the variant: (driver, engine, monitor, commander, simulator, database, extra)
 type = "driver"
-cap = "anafi.cap.toml"
+# Plugin toml path from root of plugin
+cap = "anafi.plugin.toml"
 
 [[variants]]
 name = "Parrot Anafi GOV"
 type = "driver"
-cap = "usa.cap.toml"
-
-[[variants]]
-name = "Parrot Anafi Ai"
-type = "driver"
-cap = "ai.cap.toml"
-
-[[variants]]
-name = "Parrot Onboard Tracker"
-type = "engine"
-cap = "tracker.cap.toml"
+cap = "usa.plugin.toml"
