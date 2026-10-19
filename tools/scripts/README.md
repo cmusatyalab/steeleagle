@@ -1,0 +1,144 @@
+# Scripts
+
+## `release.sh`: tagging Go module releases
+
+The repo holds several Go modules, and each one is versioned and tagged
+separately:
+
+| Module | Directory | Tag format |
+|---|---|---|
+| `github.com/cmusatyalab/steeleagle/v4` | `.` (root) | `v4.1.0` |
+| `github.com/cmusatyalab/steeleagle/api/go` | `api/go` | `api/go/v0.4.0` |
+| `github.com/cmusatyalab/steeleagle/sdk` | `sdk` | `sdk/v0.2.0` |
+| `github.com/cmusatyalab/steeleagle/config` | `config` | `config/v0.1.0` |
+
+Go finds a nested module's versions through tags prefixed with that module's
+directory. `release.sh` works out the next version of every module, creates
+those tags, and pushes them. It discovers modules from the `go.mod` files
+tracked in git, so a new module is included automatically.
+
+### Setup (once per clone)
+
+```sh
+git config alias.release '!tools/scripts/release.sh'
+go work init . ./api/go ./sdk ./config
+```
+
+The `go.work` file is gitignored. It makes local builds use the other modules'
+working-tree sources. No `go.mod` may contain a `replace` directive, and the
+script refuses to run if one does.
+
+### Usage
+
+```sh
+git release <patch|minor|major> [alpha|beta|prod] [options]
+```
+
+| Option | Effect |
+|---|---|
+| `--only root,api/go,...` | Release only these modules (`root` is the root module) |
+| `--push` | Push the branch and tags, then ask proxy.golang.org to cache the new versions |
+| `--no-sync` | Don't move modules onto new versions of other repo modules (see below) |
+| `--remote <name>` | Remote to fetch from and push to (default `origin`) |
+| `--no-fetch` | Don't fetch tags from the remote first |
+| `-n`, `--dry-run` | Print the plan and change nothing |
+| `-y`, `--yes` | Skip the confirmation prompt |
+
+Without `--push` the script tags locally and prints the push and undo
+commands. It refuses to run if the working tree has uncommitted changes.
+Always start with `-n` to see the plan.
+
+### How versions are chosen
+
+Each module is bumped from its newest release, meaning its newest tag
+without an alpha or beta suffix:
+
+- **`patch` / `minor` / `major`** bump the version as usual.
+- **Stages:** `alpha` and `beta` produce prereleases (`v4.2.0-alpha.1`). If
+  you omit the stage, or pass `prod`, you get a normal release. A new run
+  continues the prerelease series already open for the same version:
+
+  ```
+  git release minor alpha   # v4.2.0-alpha.1
+  git release minor alpha   # v4.2.0-alpha.2
+  git release minor beta    # v4.2.0-beta.1
+  git release minor         # v4.2.0
+  ```
+
+  Going back from beta to alpha is refused.
+- **First release:** a module with no tags starts at `v0.0.0` plus the bump
+  (`minor` gives `v0.1.0`). A module whose path ends in `/vN` starts at
+  `vN.0.0`, whatever bump level you give.
+- **Major versions:** Go requires every module at v2 or above to end its path
+  in `/vN`. For `major` on the root (currently `/v4`), first change its module
+  path and imports to `/v5`. The script refuses until you do, and then the
+  release is `v5.0.0`. Taking a nested module from v1 to v2 needs the same
+  path change.
+- **Tag format:** only tags of the form `vX.Y.Z`, `vX.Y.Z-alpha.N` or
+  `vX.Y.Z-beta.N` are recognised. Don't create tags like `v4.0` or `v4.0.0-rc1`
+  by hand. Go ignores the first, and the script ignores both.
+
+The plan flags any module with no changes since its last tag.
+
+### Moving modules onto each other's new versions
+
+When a module being released requires another repo module, the script moves
+it onto that module's newest version: the one tagged in the same run, or
+else its newest existing tag. The new version has to be published before
+`go get` can record it with its `go.sum` hashes. So the script releases in
+rounds, in dependency order:
+
+```
+round 1:  tag api/go/v0.4.0-alpha.1, config/v0.1.0-alpha.1      → push
+round 2:  root: go get .../api/go@v0.4.0-alpha.1
+          sdk:  go get .../api/go@v0.4.0-alpha.1                → commit "Require api/go@v0.4.0-alpha.1"
+          tag v4.0.0-alpha.1, sdk/v0.1.0-alpha.1                → push
+```
+
+- **`--push` is required for more than one round**, because later rounds need
+  the earlier ones published. Without it, the script stops before changing
+  anything.
+- **`go get` fetches repo modules straight from GitHub** (via `GOPRIVATE`)
+  rather than through the proxy and checksum database, which may not have
+  seen a tag pushed seconds earlier.
+- **Each round's push is atomic:** the branch and that round's tags land
+  together or not at all.
+- **`--no-sync` skips all of this.** The plan then lists the modules left on
+  older versions.
+
+**If a round fails**, the rounds before it stay published. The script prints
+which tags were pushed, which local tags to delete, and the exact command to
+finish, for example:
+
+```
+release: once fixed, finish with: git release minor alpha --only root,sdk --push
+```
+
+The rerun computes the same versions and moves `root` and `sdk` onto the
+`api/go` tag that was already pushed.
+
+### Retractions and old tags
+
+The repo's tags from before it used Go are kept out of Go's version
+resolution:
+
+- **Root:** the root module's path is `/v4`. `v1.2.0`, `v1.3.0` and
+  `v2.2.1+incompatible` are retracted under the old unsuffixed path by
+  `v1.3.1`, whose `go.mod` contains the `retract` lines.
+- **`api/go`:** `v0.1.0`–`v0.3.0` (the pre-v4 protocol) are retracted in
+  `api/go/go.mod`.
+
+Rules:
+
+- **Go only reads retractions from the latest release's `go.mod`**, and it
+  skips prereleases when choosing that release. So a retraction takes effect
+  at the next release without an alpha or beta suffix, not at an alpha.
+- **Keep the `retract` lines in every later version.** If a newer version
+  drops them, the old versions are no longer retracted.
+- **Never delete `v1.3.1`.** It carries the old path's retractions.
+- **Never reuse a deleted tag name for a different commit.** The checksum
+  database records each Go module version permanently, and anyone fetching
+  the reused version gets a checksum `SECURITY ERROR`.
+- **Delete a retracted `api/go` tag only after nothing requires that version
+  any more.** proxy.golang.org keeps serving cached copies, but anything
+  fetching directly from GitHub breaks, including this script.
