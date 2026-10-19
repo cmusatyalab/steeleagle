@@ -216,3 +216,12 @@ async def test_wrongly_shaped_plugin_file_degrades_only_that_service(
     assert engines["detector"].typed is True
     assert vehicles["harpy"].typed is False and "cameras" in vehicles["harpy"].problem
     assert vehicles["kestrel"].typed is True
+
+
+async def test_lab_b_has_a_vehicle_of_its_own(mock_daemons):
+    lab_a = {v.name for v in (await get_catalog("mock://lab-a")).vehicles}
+    lab_b = by_name((await get_catalog("mock://lab-b")).vehicles)
+
+    assert "condor" not in lab_a
+    assert set(lab_b) == {"harpy", "kestrel", "condor"}
+    assert (lab_b["condor"].typed, lab_b["condor"].problem) == (True, None)

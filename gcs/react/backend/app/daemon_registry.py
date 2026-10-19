@@ -36,11 +36,19 @@ def mock_enabled() -> bool:
     return _mock_enabled
 
 
+def _seed_for(address: str) -> str:
+    """The shared seed plus mock_daemon_seed_<name>.toml when that exists,
+    so a mock daemon can have services the others lack."""
+    name = address.removeprefix(MOCK_PREFIX)
+    extra = SEED_PATH.with_name(f"{SEED_PATH.stem}_{name}.toml")
+    return SEED_PATH.read_text() + (extra.read_text() if extra.exists() else "")
+
+
 def _mock_for(address: str) -> MockDaemonBackend:
     if address not in _mocks:
         _mocks[address] = MockDaemonBackend(
             address,
-            SEED_PATH.read_text(),
+            _seed_for(address),
             configure_delay=MOCK_CONFIGURE_DELAY,
             follow_interval=MOCK_FOLLOW_INTERVAL,
             plugin_dir=MOCK_PLUGINS_DIR,

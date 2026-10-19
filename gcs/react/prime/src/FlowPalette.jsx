@@ -1,5 +1,5 @@
 import { Button } from 'primereact/button';
-import { engineLocation, vehicleLabel } from './flowCatalog.js';
+import { engineLocation, vehicleLabel, vehicleOptions } from './flowCatalog.js';
 import { availableStreams, isEnginePlaced } from './flowModel.js';
 import { FLOW_DRAG_TYPE, paletteTitle } from './flowView.js';
 
@@ -53,7 +53,7 @@ function FlowPalette({ flow, catalog, loading, onRefresh }) {
                 <Item payload={{ kind: 'vehicle' }} disabled={free.length === 0}
                     title={free.length ? `Drop to add a producer (${free.join(', ')})` : 'Every stream is already on the canvas'}>
                     <i className="pi pi-send" style={{ fontSize: 11 }} />
-                    <span>{vehicleLabel(flow.vehicle)}</span>
+                    <span>{vehicleLabel(flow.vehicle, vehicleOptions(catalog ?? [], flow.vehicle))}</span>
                 </Item>
             )}
 
