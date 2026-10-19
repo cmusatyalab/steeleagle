@@ -93,9 +93,8 @@ message ConfigureResponse {}
 message GetConfigurationRequest {}
 
 message GetConfigurationResponse {
-  bytes config_toml = 1;          // eagled config.toml
-  map<string, bytes> caps = 2;    // cap file mapping (service name -> cap toml bytes)
-  map<string, bytes> plugins = 3; // plugin file mapping (service name -> plugin toml bytes)
+  bytes config_toml = 1;               // eagled config.toml
+  map<string, bytes> plugin_tomls = 2; // plugin toml mapping (service name -> plugin toml bytes)
 }
 
 // Types of daemon services.
@@ -114,8 +113,7 @@ message ActiveService {
   string name = 1;                     // name of the service
   ServiceCategory category = 2;        // service category
   bool running = 3;                    // whether or not the service is running
-  optional bytes cap = 4;              // cap toml if applicable 
-  google.protobuf.Duration uptime = 5; // service uptime
+  google.protobuf.Duration uptime = 4; // service uptime
 }
 
 message ListServicesRequest {}
