@@ -1,0 +1,92 @@
+package config
+
+import (
+	"bytes"
+	"os"
+
+	"github.com/BurntSushi/toml"
+)
+
+type DaemonRoot struct {
+	// Daemon port
+	Port int `toml:"port"`
+	// Gabriel port
+	Gabriel int `toml:"port-gabriel"`
+	// Hostname for this daemon (defaults to "eagled")
+	Hostname string `toml:"hostname"`
+	// Orchestrator daemon hostname or IP, accepts DNS entries if applicable
+	Orchestrator string `toml:"orchestrator,omitempty"`
+}
+
+type PluginField struct {
+	// Plugin name
+	Plugin string `toml:"plugin"`
+	// Package url
+	Package string `toml:"package"`
+	// Tag or commit hash to pull from
+	Tag string `toml:"tag,omitempty"`
+	// Arguments for the plugin
+	Args map[string]interface{} `toml:"args,omitempty"`
+}
+
+type VehicleField struct {
+	// Name of the vehicle (must be unique within vehicle services)
+	Name string `toml:"name"`
+	// Whether or not to simulate the vehicle
+	Simulate bool `toml:"simulate,omitempty"`
+	// Origin point within the simulator
+	Origin []float64 `toml:"origin,omitempty"`
+	// Plugin details
+	Plugin PluginField `toml:"plugin"`
+}
+
+type ServiceField struct {
+	// Name of the service (must be unique within this service list)
+	Name string `toml:"name"`
+	// Plugin details
+	Plugin PluginField `toml:"plugin"`
+}
+
+type DaemonConfig struct {
+	// Daemon details
+	Daemon DaemonRoot `toml:"daemon"`
+	// List of daemon vehicles
+	Vehicles []VehicleField `toml:"vehicles,omitempty"`
+	// List of daemon engines
+	Engines []ServiceField `toml:"engines,omitempty"`
+	// List of daemon commanders
+	Commanders []ServiceField `toml:"commanders,omitempty"`
+	// List of daemon monitors
+	Monitors []ServiceField `toml:"monitors,omitempty"`
+	// List of extra daemon services
+	Extras []ServiceField `toml:"extras,omitempty"`
+	// Daemon simulator service
+	Simulator ServiceField `toml:"simulator,omitempty"`
+}
+
+// ParseDaemonConfigFromFilepath parses a config.toml from a filepath.
+func ParseDaemonConfigFromFilepath(filepath string) (*DaemonConfig, error) {
+	content, err := os.ReadFile(filepath)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDaemonConfigFromBytes(content)
+}
+
+// ParseDaemonConfigFromBytes parses a config.toml from bytes.
+func ParseDaemonConfigFromBytes(config []byte) (*DaemonConfig, error) {
+	d := &DaemonConfig{}
+	if err := toml.Unmarshal(config, d); err != nil {
+		return nil, err
+	}
+	return d, nil
+}
+
+// ToBytes writes a DaemonConfig to TOML bytes.
+func (d *DaemonConfig) ToBytes() ([]byte, error) {
+	var buf bytes.Buffer
+	if err := toml.NewEncoder(&buf).Encode(d); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}

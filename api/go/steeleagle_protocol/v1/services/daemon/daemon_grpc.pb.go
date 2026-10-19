@@ -23,13 +23,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	DaemonService_Configure_FullMethodName          = "/steeleagle_protocol.v1.services.daemon.DaemonService/Configure"
-	DaemonService_GetConfiguration_FullMethodName   = "/steeleagle_protocol.v1.services.daemon.DaemonService/GetConfiguration"
-	DaemonService_ResetConfiguration_FullMethodName = "/steeleagle_protocol.v1.services.daemon.DaemonService/ResetConfiguration"
-	DaemonService_ListServices_FullMethodName       = "/steeleagle_protocol.v1.services.daemon.DaemonService/ListServices"
-	DaemonService_RestartServices_FullMethodName    = "/steeleagle_protocol.v1.services.daemon.DaemonService/RestartServices"
-	DaemonService_InstallPlugin_FullMethodName      = "/steeleagle_protocol.v1.services.daemon.DaemonService/InstallPlugin"
-	DaemonService_RemovePlugin_FullMethodName       = "/steeleagle_protocol.v1.services.daemon.DaemonService/RemovePlugin"
+	DaemonService_RegisterOrchestrator_FullMethodName = "/steeleagle_protocol.v1.services.daemon.DaemonService/RegisterOrchestrator"
+	DaemonService_Configure_FullMethodName            = "/steeleagle_protocol.v1.services.daemon.DaemonService/Configure"
+	DaemonService_GetConfiguration_FullMethodName     = "/steeleagle_protocol.v1.services.daemon.DaemonService/GetConfiguration"
+	DaemonService_ResetConfiguration_FullMethodName   = "/steeleagle_protocol.v1.services.daemon.DaemonService/ResetConfiguration"
+	DaemonService_ListServices_FullMethodName         = "/steeleagle_protocol.v1.services.daemon.DaemonService/ListServices"
+	DaemonService_RestartServices_FullMethodName      = "/steeleagle_protocol.v1.services.daemon.DaemonService/RestartServices"
+	DaemonService_InstallPackage_FullMethodName       = "/steeleagle_protocol.v1.services.daemon.DaemonService/InstallPackage"
+	DaemonService_RemovePackage_FullMethodName        = "/steeleagle_protocol.v1.services.daemon.DaemonService/RemovePackage"
 )
 
 // DaemonServiceClient is the client API for DaemonService service.
@@ -42,12 +43,16 @@ const (
 // with the global state of the daemon. This includes the starting/stopping of
 // plugins and vehicles.
 type DaemonServiceClient interface {
+	// Register this daemon as an orchestrator.
+	//
+	// RegisterOrchestrator is called by other daemons that have set this daemon as
+	// their orchestrator. The vehicles on other daemons will be addressable through
+	// the daemon gRPC proxy.
+	RegisterOrchestrator(ctx context.Context, in *RegisterOrchestratorRequest, opts ...grpc.CallOption) (*RegisterOrchestratorResponse, error)
 	// Load a TOML config.
 	//
 	// Configures the daemon with a TOML config according to eagled specification.
-	// Automatically triggers a daemon restart, and will run all services. If
-	// `auto_install` is set to `true`, any unknown plugins will be installed on
-	// their latest branch version.
+	// Automatically triggers a daemon restart, and will run all services.
 	Configure(ctx context.Context, in *ConfigureRequest, opts ...grpc.CallOption) (*ConfigureResponse, error)
 	// Gets the current TOML config.
 	//
@@ -69,17 +74,15 @@ type DaemonServiceClient interface {
 	// engines. Restarts of other services, like GCS or simulator, must be done
 	// through a `Configure` call and will return an error if included.
 	RestartServices(ctx context.Context, in *RestartServicesRequest, opts ...grpc.CallOption) (*RestartServicesResponse, error)
-	// Install a plugin.
+	// Install a package.
 	//
-	// Installs a new plugin for a given service locally. Upon success, this
-	// plugin is available for service. Future `Configure` calls can refer to
-	// this plugin by `url` or by an optionally provided `nickname` which must
-	// be locally unique.
-	InstallPlugin(ctx context.Context, in *InstallPluginRequest, opts ...grpc.CallOption) (*InstallPluginResponse, error)
-	// Remove a plugin.
+	// Installs a new package locally. A package can host several plugins which
+	// are indexed and available for future `Configure` calls.
+	InstallPackage(ctx context.Context, in *InstallPackageRequest, opts ...grpc.CallOption) (*InstallPackageResponse, error)
+	// Remove a package.
 	//
-	// Removes a plugin identified by its `url`.
-	RemovePlugin(ctx context.Context, in *RemovePluginRequest, opts ...grpc.CallOption) (*RemovePluginResponse, error)
+	// Removes a package identified by its `url`.
+	RemovePackage(ctx context.Context, in *RemovePackageRequest, opts ...grpc.CallOption) (*RemovePackageResponse, error)
 }
 
 type daemonServiceClient struct {
@@ -88,6 +91,16 @@ type daemonServiceClient struct {
 
 func NewDaemonServiceClient(cc grpc.ClientConnInterface) DaemonServiceClient {
 	return &daemonServiceClient{cc}
+}
+
+func (c *daemonServiceClient) RegisterOrchestrator(ctx context.Context, in *RegisterOrchestratorRequest, opts ...grpc.CallOption) (*RegisterOrchestratorResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RegisterOrchestratorResponse)
+	err := c.cc.Invoke(ctx, DaemonService_RegisterOrchestrator_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *daemonServiceClient) Configure(ctx context.Context, in *ConfigureRequest, opts ...grpc.CallOption) (*ConfigureResponse, error) {
@@ -140,20 +153,20 @@ func (c *daemonServiceClient) RestartServices(ctx context.Context, in *RestartSe
 	return out, nil
 }
 
-func (c *daemonServiceClient) InstallPlugin(ctx context.Context, in *InstallPluginRequest, opts ...grpc.CallOption) (*InstallPluginResponse, error) {
+func (c *daemonServiceClient) InstallPackage(ctx context.Context, in *InstallPackageRequest, opts ...grpc.CallOption) (*InstallPackageResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(InstallPluginResponse)
-	err := c.cc.Invoke(ctx, DaemonService_InstallPlugin_FullMethodName, in, out, cOpts...)
+	out := new(InstallPackageResponse)
+	err := c.cc.Invoke(ctx, DaemonService_InstallPackage_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *daemonServiceClient) RemovePlugin(ctx context.Context, in *RemovePluginRequest, opts ...grpc.CallOption) (*RemovePluginResponse, error) {
+func (c *daemonServiceClient) RemovePackage(ctx context.Context, in *RemovePackageRequest, opts ...grpc.CallOption) (*RemovePackageResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(RemovePluginResponse)
-	err := c.cc.Invoke(ctx, DaemonService_RemovePlugin_FullMethodName, in, out, cOpts...)
+	out := new(RemovePackageResponse)
+	err := c.cc.Invoke(ctx, DaemonService_RemovePackage_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -170,12 +183,16 @@ func (c *daemonServiceClient) RemovePlugin(ctx context.Context, in *RemovePlugin
 // with the global state of the daemon. This includes the starting/stopping of
 // plugins and vehicles.
 type DaemonServiceServer interface {
+	// Register this daemon as an orchestrator.
+	//
+	// RegisterOrchestrator is called by other daemons that have set this daemon as
+	// their orchestrator. The vehicles on other daemons will be addressable through
+	// the daemon gRPC proxy.
+	RegisterOrchestrator(context.Context, *RegisterOrchestratorRequest) (*RegisterOrchestratorResponse, error)
 	// Load a TOML config.
 	//
 	// Configures the daemon with a TOML config according to eagled specification.
-	// Automatically triggers a daemon restart, and will run all services. If
-	// `auto_install` is set to `true`, any unknown plugins will be installed on
-	// their latest branch version.
+	// Automatically triggers a daemon restart, and will run all services.
 	Configure(context.Context, *ConfigureRequest) (*ConfigureResponse, error)
 	// Gets the current TOML config.
 	//
@@ -197,17 +214,15 @@ type DaemonServiceServer interface {
 	// engines. Restarts of other services, like GCS or simulator, must be done
 	// through a `Configure` call and will return an error if included.
 	RestartServices(context.Context, *RestartServicesRequest) (*RestartServicesResponse, error)
-	// Install a plugin.
+	// Install a package.
 	//
-	// Installs a new plugin for a given service locally. Upon success, this
-	// plugin is available for service. Future `Configure` calls can refer to
-	// this plugin by `url` or by an optionally provided `nickname` which must
-	// be locally unique.
-	InstallPlugin(context.Context, *InstallPluginRequest) (*InstallPluginResponse, error)
-	// Remove a plugin.
+	// Installs a new package locally. A package can host several plugins which
+	// are indexed and available for future `Configure` calls.
+	InstallPackage(context.Context, *InstallPackageRequest) (*InstallPackageResponse, error)
+	// Remove a package.
 	//
-	// Removes a plugin identified by its `url`.
-	RemovePlugin(context.Context, *RemovePluginRequest) (*RemovePluginResponse, error)
+	// Removes a package identified by its `url`.
+	RemovePackage(context.Context, *RemovePackageRequest) (*RemovePackageResponse, error)
 	mustEmbedUnimplementedDaemonServiceServer()
 }
 
@@ -218,6 +233,9 @@ type DaemonServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedDaemonServiceServer struct{}
 
+func (UnimplementedDaemonServiceServer) RegisterOrchestrator(context.Context, *RegisterOrchestratorRequest) (*RegisterOrchestratorResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RegisterOrchestrator not implemented")
+}
 func (UnimplementedDaemonServiceServer) Configure(context.Context, *ConfigureRequest) (*ConfigureResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Configure not implemented")
 }
@@ -233,11 +251,11 @@ func (UnimplementedDaemonServiceServer) ListServices(context.Context, *ListServi
 func (UnimplementedDaemonServiceServer) RestartServices(context.Context, *RestartServicesRequest) (*RestartServicesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RestartServices not implemented")
 }
-func (UnimplementedDaemonServiceServer) InstallPlugin(context.Context, *InstallPluginRequest) (*InstallPluginResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method InstallPlugin not implemented")
+func (UnimplementedDaemonServiceServer) InstallPackage(context.Context, *InstallPackageRequest) (*InstallPackageResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method InstallPackage not implemented")
 }
-func (UnimplementedDaemonServiceServer) RemovePlugin(context.Context, *RemovePluginRequest) (*RemovePluginResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method RemovePlugin not implemented")
+func (UnimplementedDaemonServiceServer) RemovePackage(context.Context, *RemovePackageRequest) (*RemovePackageResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RemovePackage not implemented")
 }
 func (UnimplementedDaemonServiceServer) mustEmbedUnimplementedDaemonServiceServer() {}
 func (UnimplementedDaemonServiceServer) testEmbeddedByValue()                       {}
@@ -258,6 +276,24 @@ func RegisterDaemonServiceServer(s grpc.ServiceRegistrar, srv DaemonServiceServe
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&DaemonService_ServiceDesc, srv)
+}
+
+func _DaemonService_RegisterOrchestrator_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterOrchestratorRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DaemonServiceServer).RegisterOrchestrator(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DaemonService_RegisterOrchestrator_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DaemonServiceServer).RegisterOrchestrator(ctx, req.(*RegisterOrchestratorRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _DaemonService_Configure_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -350,38 +386,38 @@ func _DaemonService_RestartServices_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DaemonService_InstallPlugin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(InstallPluginRequest)
+func _DaemonService_InstallPackage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InstallPackageRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DaemonServiceServer).InstallPlugin(ctx, in)
+		return srv.(DaemonServiceServer).InstallPackage(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: DaemonService_InstallPlugin_FullMethodName,
+		FullMethod: DaemonService_InstallPackage_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DaemonServiceServer).InstallPlugin(ctx, req.(*InstallPluginRequest))
+		return srv.(DaemonServiceServer).InstallPackage(ctx, req.(*InstallPackageRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DaemonService_RemovePlugin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RemovePluginRequest)
+func _DaemonService_RemovePackage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemovePackageRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DaemonServiceServer).RemovePlugin(ctx, in)
+		return srv.(DaemonServiceServer).RemovePackage(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: DaemonService_RemovePlugin_FullMethodName,
+		FullMethod: DaemonService_RemovePackage_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DaemonServiceServer).RemovePlugin(ctx, req.(*RemovePluginRequest))
+		return srv.(DaemonServiceServer).RemovePackage(ctx, req.(*RemovePackageRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -393,6 +429,10 @@ var DaemonService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "steeleagle_protocol.v1.services.daemon.DaemonService",
 	HandlerType: (*DaemonServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "RegisterOrchestrator",
+			Handler:    _DaemonService_RegisterOrchestrator_Handler,
+		},
 		{
 			MethodName: "Configure",
 			Handler:    _DaemonService_Configure_Handler,
@@ -414,12 +454,12 @@ var DaemonService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _DaemonService_RestartServices_Handler,
 		},
 		{
-			MethodName: "InstallPlugin",
-			Handler:    _DaemonService_InstallPlugin_Handler,
+			MethodName: "InstallPackage",
+			Handler:    _DaemonService_InstallPackage_Handler,
 		},
 		{
-			MethodName: "RemovePlugin",
-			Handler:    _DaemonService_RemovePlugin_Handler,
+			MethodName: "RemovePackage",
+			Handler:    _DaemonService_RemovePackage_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

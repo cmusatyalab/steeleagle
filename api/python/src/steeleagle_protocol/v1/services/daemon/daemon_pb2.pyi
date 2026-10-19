@@ -18,7 +18,6 @@ class ServiceCategory(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     SERVICE_CATEGORY_MONITOR: _ClassVar[ServiceCategory]
     SERVICE_CATEGORY_COMMANDER: _ClassVar[ServiceCategory]
     SERVICE_CATEGORY_SIMULATOR: _ClassVar[ServiceCategory]
-    SERVICE_CATEGORY_DATABASE: _ClassVar[ServiceCategory]
     SERVICE_CATEGORY_EXTRA: _ClassVar[ServiceCategory]
 SERVICE_CATEGORY_UNSPECIFIED: ServiceCategory
 SERVICE_CATEGORY_VEHICLE: ServiceCategory
@@ -26,8 +25,17 @@ SERVICE_CATEGORY_ENGINE: ServiceCategory
 SERVICE_CATEGORY_MONITOR: ServiceCategory
 SERVICE_CATEGORY_COMMANDER: ServiceCategory
 SERVICE_CATEGORY_SIMULATOR: ServiceCategory
-SERVICE_CATEGORY_DATABASE: ServiceCategory
 SERVICE_CATEGORY_EXTRA: ServiceCategory
+
+class RegisterOrchestratorRequest(_message.Message):
+    __slots__ = ("vehicles",)
+    VEHICLES_FIELD_NUMBER: _ClassVar[int]
+    vehicles: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, vehicles: _Optional[_Iterable[str]] = ...) -> None: ...
+
+class RegisterOrchestratorResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
 
 class ConfigureRequest(_message.Message):
     __slots__ = ("config_toml",)
@@ -98,29 +106,25 @@ class RestartServicesResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
-class InstallPluginRequest(_message.Message):
-    __slots__ = ("url", "tag", "category")
+class InstallPackageRequest(_message.Message):
+    __slots__ = ("url", "tag")
     URL_FIELD_NUMBER: _ClassVar[int]
     TAG_FIELD_NUMBER: _ClassVar[int]
-    CATEGORY_FIELD_NUMBER: _ClassVar[int]
     url: str
     tag: str
-    category: ServiceCategory
-    def __init__(self, url: _Optional[str] = ..., tag: _Optional[str] = ..., category: _Optional[_Union[ServiceCategory, str]] = ...) -> None: ...
+    def __init__(self, url: _Optional[str] = ..., tag: _Optional[str] = ...) -> None: ...
 
-class InstallPluginResponse(_message.Message):
+class InstallPackageResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
-class RemovePluginRequest(_message.Message):
-    __slots__ = ("url", "category")
+class RemovePackageRequest(_message.Message):
+    __slots__ = ("url",)
     URL_FIELD_NUMBER: _ClassVar[int]
-    CATEGORY_FIELD_NUMBER: _ClassVar[int]
     url: str
-    category: ServiceCategory
-    def __init__(self, url: _Optional[str] = ..., category: _Optional[_Union[ServiceCategory, str]] = ...) -> None: ...
+    def __init__(self, url: _Optional[str] = ...) -> None: ...
 
-class RemovePluginResponse(_message.Message):
+class RemovePackageResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 

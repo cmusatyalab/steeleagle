@@ -1,0 +1,66 @@
+[daemon]
+# Daemon default port
+port = 8998
+# Gabriel server default port
+port-gabriel = 8999
+# Hostname is optional, but determines how the daemon presents itself if using a
+# DNS-enabled VPN like Tailscale
+hostname = "eagled"
+# Orchestrator is the DNS name or IP address of another daemon in the network
+# which is the orchestrator daemon: orchestrator daemons aggregate data and
+# vehicles from other daemons to create a centralized control hub (optional)
+orchestrator = "homebase"
+
+[[vehicles]] # List of vehicles (optional)
+# Name of the vehicle
+name = "harpy"
+# If set to true, will spawn the vehicle in the simulated world instead of running
+# the driver (optional)
+simulate = false
+# Origin point, only used when simulate is true (optional)
+origin = [40.413664, -79.949285]
+[vehicles.plugin] # Driver plugin for this vehicle
+# Plugin to use
+plugin = "parrot_anafi"
+# Package to search in (optional, for when plugin name is ambiguous)
+package = "github.com/cmusatyalab/steeleagle_plugins/drivers/parrot"
+# Tag to use (or commit hash), defaults to latest (optional)
+tag = "afec80"
+[vehicles.plugin.args] # Args for this plugin (optional)
+ip = "10.202.0.1"
+
+[[engines]] # List of engines (optional)
+# Name of the engine
+name = "yolo"
+[engines.plugin] # Plugin for this engine
+# Plugin to use
+plugin = "yolo_qnn"
+# Package to search in (optional, for when plugin name is ambiguous)
+package = "github.com/cmusatyalab/steeleagle_plugins/engines/yolo"
+# Tag to use (or commit hash), defaults to latest (optional)
+tag = "efcd8e"
+[engines.plugin.args] # Args for this plugin (optional)
+confidence = 0.0
+
+[[commanders]] # List of commanders (optional)
+# Name of the commander
+name = "gcs"
+[commanders.plugin] # Plugin for this commander
+# Plugin to use
+plugin = "gcs"
+# Package to search in (optional, for when plugin name is ambiguous)
+package = "github.com/cmusatyalab/steeleagle_plugins/commanders/gcs"
+# Tag to use (or commit hash), defaults to latest (optional)
+tag = "abcefd"
+[commanders.plugin.args] # Args for this plugin (optional)
+
+# [[monitors]] and [[extras]] follow the same format as [[engines]] and [[commanders]] (optional)
+
+[simulator] # Simulator for this daemon (optional)
+# Name of the simulator
+name = "aviary"
+[simulator.plugin] # Plugin for the simulator
+# Plugin to use
+plugin = "aviary"
+# Package to search in (optional, for when plugin name is ambiguous)
+package = "github.com/cmusatyalab/steeleagle_plugins/simulators/aviary"

@@ -20,6 +20,11 @@ class DaemonServiceStub:
         Args:
             channel: A grpc.Channel.
         """
+        self.RegisterOrchestrator = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.daemon.DaemonService/RegisterOrchestrator',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RegisterOrchestratorRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RegisterOrchestratorResponse.FromString,
+                _registered_method=True)
         self.Configure = channel.unary_unary(
                 '/steeleagle_protocol.v1.services.daemon.DaemonService/Configure',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.ConfigureRequest.SerializeToString,
@@ -45,15 +50,15 @@ class DaemonServiceStub:
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServicesRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServicesResponse.FromString,
                 _registered_method=True)
-        self.InstallPlugin = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.daemon.DaemonService/InstallPlugin',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.InstallPluginRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.InstallPluginResponse.FromString,
+        self.InstallPackage = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.daemon.DaemonService/InstallPackage',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.InstallPackageRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.InstallPackageResponse.FromString,
                 _registered_method=True)
-        self.RemovePlugin = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.daemon.DaemonService/RemovePlugin',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RemovePluginRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RemovePluginResponse.FromString,
+        self.RemovePackage = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.daemon.DaemonService/RemovePackage',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RemovePackageRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RemovePackageResponse.FromString,
                 _registered_method=True)
 
 
@@ -66,14 +71,24 @@ class DaemonServiceServicer:
     plugins and vehicles.
     """
 
+    def RegisterOrchestrator(self, request, context):
+        """
+        Register this daemon as an orchestrator.
+
+        RegisterOrchestrator is called by other daemons that have set this daemon as
+        their orchestrator. The vehicles on other daemons will be addressable through
+        the daemon gRPC proxy.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def Configure(self, request, context):
         """
         Load a TOML config.
 
         Configures the daemon with a TOML config according to eagled specification.
-        Automatically triggers a daemon restart, and will run all services. If 
-        `auto_install` is set to `true`, any unknown plugins will be installed on
-        their latest branch version.
+        Automatically triggers a daemon restart, and will run all services.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -123,24 +138,22 @@ class DaemonServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def InstallPlugin(self, request, context):
+    def InstallPackage(self, request, context):
         """
-        Install a plugin.
+        Install a package.
 
-        Installs a new plugin for a given service locally. Upon success, this
-        plugin is available for service. Future `Configure` calls can refer to
-        this plugin by `url` or by an optionally provided `nickname` which must
-        be locally unique.
+        Installs a new package locally. A package can host several plugins which
+        are indexed and available for future `Configure` calls.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def RemovePlugin(self, request, context):
+    def RemovePackage(self, request, context):
         """
-        Remove a plugin.
+        Remove a package.
 
-        Removes a plugin identified by its `url`.
+        Removes a package identified by its `url`.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -149,6 +162,11 @@ class DaemonServiceServicer:
 
 def add_DaemonServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'RegisterOrchestrator': grpc.unary_unary_rpc_method_handler(
+                    servicer.RegisterOrchestrator,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RegisterOrchestratorRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RegisterOrchestratorResponse.SerializeToString,
+            ),
             'Configure': grpc.unary_unary_rpc_method_handler(
                     servicer.Configure,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.ConfigureRequest.FromString,
@@ -174,15 +192,15 @@ def add_DaemonServiceServicer_to_server(servicer, server):
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServicesRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServicesResponse.SerializeToString,
             ),
-            'InstallPlugin': grpc.unary_unary_rpc_method_handler(
-                    servicer.InstallPlugin,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.InstallPluginRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.InstallPluginResponse.SerializeToString,
+            'InstallPackage': grpc.unary_unary_rpc_method_handler(
+                    servicer.InstallPackage,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.InstallPackageRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.InstallPackageResponse.SerializeToString,
             ),
-            'RemovePlugin': grpc.unary_unary_rpc_method_handler(
-                    servicer.RemovePlugin,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RemovePluginRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RemovePluginResponse.SerializeToString,
+            'RemovePackage': grpc.unary_unary_rpc_method_handler(
+                    servicer.RemovePackage,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RemovePackageRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RemovePackageResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -200,6 +218,33 @@ class DaemonService:
     with the global state of the daemon. This includes the starting/stopping of
     plugins and vehicles.
     """
+
+    @staticmethod
+    def RegisterOrchestrator(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/steeleagle_protocol.v1.services.daemon.DaemonService/RegisterOrchestrator',
+            steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RegisterOrchestratorRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RegisterOrchestratorResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def Configure(request,
@@ -337,7 +382,7 @@ class DaemonService:
             _registered_method=True)
 
     @staticmethod
-    def InstallPlugin(request,
+    def InstallPackage(request,
             target,
             options=(),
             channel_credentials=None,
@@ -350,9 +395,9 @@ class DaemonService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.daemon.DaemonService/InstallPlugin',
-            steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.InstallPluginRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.InstallPluginResponse.FromString,
+            '/steeleagle_protocol.v1.services.daemon.DaemonService/InstallPackage',
+            steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.InstallPackageRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.InstallPackageResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -364,7 +409,7 @@ class DaemonService:
             _registered_method=True)
 
     @staticmethod
-    def RemovePlugin(request,
+    def RemovePackage(request,
             target,
             options=(),
             channel_credentials=None,
@@ -377,9 +422,9 @@ class DaemonService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.daemon.DaemonService/RemovePlugin',
-            steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RemovePluginRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RemovePluginResponse.FromString,
+            '/steeleagle_protocol.v1.services.daemon.DaemonService/RemovePackage',
+            steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RemovePackageRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RemovePackageResponse.FromString,
             options,
             channel_credentials,
             insecure,

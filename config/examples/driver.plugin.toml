@@ -1,18 +1,24 @@
-[[args]]
+[plugin]
+# Name of the plugin
+name = "Parrot Anafi 4K"
+# Description of the plugin (optional)
+description = "Parrot Anafi 4K quadcopter driver"
+
+[[args]] # Plugin arguments (optional)
 # Name of the argument
 name = "ip"
 # JSON type: (string, object, boolean, array, number)
 type = "string" 
 # Description of the argument (optional)
 description = "IP the driver connects to"
-# Default value (optional, should always be in quotes)
+# Default value (optional)
 default = "192.168.42.1" 
 
 [driver]
 # Driver type: (copter, legged, wheeled, boat)
 type = "copter"
 
-[[driver.cameras]]
+[[driver.cameras]] # Driver cameras (optional)
 # Name of the camera
 name = "rgb"
 # Type of input it creates
@@ -35,7 +41,7 @@ gimbal = true
 primary = true
 
 [driver.supported]
-# Services hosted by this driver
+# Services hosted by this driver (optional)
 services = [
     "steeleagle_protocol/v1/services/driver/ControlService",
     "steeleagle_protocol/v1/services/driver/StreamService",
@@ -43,7 +49,7 @@ services = [
 ]
 
 [driver.unsupported]
-# Unsupported types, methods, and enums by this driver
+# Unsupported types, methods, and enums by this driver (optional)
 methods = [
     "steeleagle_protocol/v1/services/driver/ControlService/Kill",
 ]

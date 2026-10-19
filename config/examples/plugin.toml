@@ -1,0 +1,17 @@
+[plugin]
+# Name of the plugin
+name = "Logdy"
+# Description of the plugin (optional)
+description = "Runs the Logdy logging service"
+# Extra dependencies not covered by Pixi (optional)
+dependencies = ["logdy"]
+
+[[args]] # Plugin arguments (optional)
+# Name of the argument
+name = "timeout"
+# JSON type: (string, object, boolean, array, number)
+type = "number"
+# Description of the argument (optional)
+description = "Timeout for disconnection"
+# Default value (optional)
+default = 1.0

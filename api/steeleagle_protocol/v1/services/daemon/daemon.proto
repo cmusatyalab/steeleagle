@@ -18,12 +18,20 @@ import "google/protobuf/duration.proto";
  */
 service DaemonService {
   /*
+   * Register this daemon as an orchestrator.
+   *
+   * RegisterOrchestrator is called by other daemons that have set this daemon as
+   * their orchestrator. The vehicles on other daemons will be addressable through
+   * the daemon gRPC proxy.
+   */
+  rpc RegisterOrchestrator (RegisterOrchestratorRequest)
+    returns (RegisterOrchestratorResponse) {}
+
+  /*
    * Load a TOML config.
    *
    * Configures the daemon with a TOML config according to eagled specification.
-   * Automatically triggers a daemon restart, and will run all services. If 
-   * `auto_install` is set to `true`, any unknown plugins will be installed on
-   * their latest branch version.
+   * Automatically triggers a daemon restart, and will run all services.
    */
   rpc Configure (ConfigureRequest)
     returns (ConfigureResponse) {}
@@ -65,24 +73,28 @@ service DaemonService {
     returns (RestartServicesResponse) {}
 
   /*
-   * Install a plugin.
+   * Install a package.
    *
-   * Installs a new plugin for a given service locally. Upon success, this
-   * plugin is available for service. Future `Configure` calls can refer to
-   * this plugin by `url` or by an optionally provided `nickname` which must
-   * be locally unique.
+   * Installs a new package locally. A package can host several plugins which
+   * are indexed and available for future `Configure` calls.
    */
-  rpc InstallPlugin (InstallPluginRequest)
-    returns (InstallPluginResponse) {}
+  rpc InstallPackage (InstallPackageRequest)
+    returns (InstallPackageResponse) {}
 
   /*
-   * Remove a plugin.
+   * Remove a package.
    *
-   * Removes a plugin identified by its `url`.
+   * Removes a package identified by its `url`.
    */
-  rpc RemovePlugin (RemovePluginRequest)
-    returns (RemovePluginResponse) {}
+  rpc RemovePackage (RemovePackageRequest)
+    returns (RemovePackageResponse) {}
 }
+
+message RegisterOrchestratorRequest {
+  repeated string vehicles = 1; // vehicle names
+}
+
+message RegisterOrchestratorResponse {}
 
 message ConfigureRequest {
   string config_toml = 1; // eagled config.toml
@@ -105,8 +117,7 @@ enum ServiceCategory {
   SERVICE_CATEGORY_MONITOR = 3;     // monitor service
   SERVICE_CATEGORY_COMMANDER = 4;   // commander service
   SERVICE_CATEGORY_SIMULATOR = 5;   // simulator service
-  SERVICE_CATEGORY_DATABASE = 6;    // database service
-  SERVICE_CATEGORY_EXTRA = 7;       // extra service
+  SERVICE_CATEGORY_EXTRA = 6;       // extra service
 }
 
 // An active service in the system.
@@ -135,20 +146,18 @@ message RestartServicesRequest {
 
 message RestartServicesResponse {}
 
-message InstallPluginRequest {
-  string url = 2;               // url to pull the plugin from 
-  optional string tag = 3;      // branch or commit tag
-  ServiceCategory category = 4; // service category
+message InstallPackageRequest {
+  string url = 1;               // package url 
+  optional string tag = 2;      // branch or commit tag
 }
 
-message InstallPluginResponse {}
+message InstallPackageResponse {}
 
-message RemovePluginRequest {
-  string url = 1;               // plugin url
-  ServiceCategory category = 2; // service category
+message RemovePackageRequest {
+  string url = 1;               // package url
 }
 
-message RemovePluginResponse {}
+message RemovePackageResponse {}
 
 message RestartRequest {}
 
