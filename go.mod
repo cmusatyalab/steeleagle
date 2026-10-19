@@ -1,4 +1,10 @@
+// Deprecated: use github.com/cmusatyalab/steeleagle/v4
 module github.com/cmusatyalab/steeleagle
+
+// Pre-module releases; v1.3.1 retracts itself.
+retract [v0.0.0, v1.3.1]
+
+retract v2.2.1+incompatible
 
 go 1.26.5
 
