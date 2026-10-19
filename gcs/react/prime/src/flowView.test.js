@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-    CALLBACK_COLOR, ERROR_COLOR, NODE_COLOR, OUTPUT_COLOR, WARNING_COLOR,
+    CALLBACK_COLOR, CALLBACK_SPACING, ERROR_COLOR, NODE_COLOR, OUTPUT_COLOR, WARNING_COLOR,
     applyFlowEdgeChanges, applyFlowNodeChanges, connectionKind, legendEntries, mergeNodes, nodeBorderColor, paletteTitle, statusText, toReactFlow,
 } from './flowView.js';
 import { addEdge, validateFlow } from './flowModel.js';
@@ -50,6 +50,17 @@ describe('toReactFlow', () => {
         });
         const toEngine = toReactFlow(addEdge(flowB(), catalog, 'e1', 'e2', 'callback'), catalog, clean, null).edges[3];
         expect(toEngine.targetHandle).toBe('in');
+    });
+
+    it('spreads callbacks between the same two nodes apart', () => {
+        const once = addEdge(flowB(), catalog, 'e1', 'p2', 'callback');
+        const twice = addEdge(once, catalog, 'e1', 'p2', 'callback');
+        const shifts = (flow) => toReactFlow(flow, catalog, clean, null).edges
+            .filter((e) => e.type === 'callback').map((e) => [e.data.edge.event, e.data.shift]);
+        expect(shifts(once)).toEqual([['result', 0]]);
+        expect(shifts(twice)).toEqual([['result', -CALLBACK_SPACING / 2], ['dropped', CALLBACK_SPACING / 2]]);
+        const outputs = toReactFlow(twice, catalog, clean, null).edges.filter((e) => e.type !== 'callback');
+        expect(outputs.every((e) => e.data.shift === undefined)).toBe(true);
     });
 
     it('attaches validation issues to nodes and edges', () => {

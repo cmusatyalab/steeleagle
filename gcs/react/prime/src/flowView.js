@@ -12,6 +12,9 @@ export const WARNING_COLOR = '#e8c87a';
 export const NODE_COLOR = '#2a9d8f';
 export const OUTPUT_COLOR = NODE_COLOR;
 export const CALLBACK_COLOR = '#c47aff';
+// Pixels between callbacks that share a source and target, so each event's
+// edge and label stay visible instead of drawing over one another.
+export const CALLBACK_SPACING = 16;
 export const SELECTED_COLOR = '#7ecfff';
 
 // dataTransfer type for palette items dragged onto the canvas; the payload
@@ -63,6 +66,17 @@ export function toReactFlow(flow, catalog, validation, selection, handlers = {})
         };
     });
 
+    const siblings = new Map();
+    for (const edge of flow.edges) {
+        if (edge.kind !== 'callback') continue;
+        const key = `${edge.source}->${edge.target}`;
+        siblings.set(key, [...(siblings.get(key) ?? []), edge.id]);
+    }
+    const shiftOf = (edge) => {
+        const ids = siblings.get(`${edge.source}->${edge.target}`);
+        return (ids.indexOf(edge.id) - (ids.length - 1) / 2) * CALLBACK_SPACING;
+    };
+
     const edges = flow.edges.map((edge) => {
         const errors = edgeErrors.get(edge.id) ?? [];
         const common = {
@@ -75,6 +89,7 @@ export function toReactFlow(flow, catalog, validation, selection, handlers = {})
         if (edge.kind === 'callback') {
             return {
                 ...common,
+                data: { ...common.data, shift: shiftOf(edge) },
                 type: 'callback',
                 sourceHandle: 'cb',
                 targetHandle: byId.get(edge.target)?.kind === 'producer' ? 'cb-in' : 'in',
