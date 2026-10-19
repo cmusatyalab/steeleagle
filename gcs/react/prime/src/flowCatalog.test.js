@@ -132,9 +132,15 @@ describe('vehicles', () => {
 
     it('offers every vehicle on reachable daemons', () => {
         const options = vehicleOptions(catalog, null);
-        expect(options.map(vehicleLabel)).toEqual([
+        expect(options.map((o) => vehicleLabel(o, options))).toEqual([
             'harpy @ lab-a (mock)', 'kestrel @ lab-a (mock)', 'harpy @ lab-b (mock)', 'kestrel @ lab-b (mock)',
         ]);
+    });
+
+    it('names a vehicle by its daemon only when another daemon has one of the same name', () => {
+        const options = vehicleOptions([catalog[0]], null);
+        expect(options.map((o) => vehicleLabel(o, options))).toEqual(['harpy', 'kestrel']);
+        expect(vehicleLabel(flowB().vehicle)).toBe('harpy');
     });
 
     it('keeps the current binding as an option even when its daemon is unreachable', () => {

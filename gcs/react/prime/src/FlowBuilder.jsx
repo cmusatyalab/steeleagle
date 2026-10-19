@@ -183,7 +183,7 @@ function FlowBuilderInner({ theme, toast, active = true }) {
         confirmDialog({
             group: 'flow',
             header: 'Change vehicle',
-            message: `Switch to ${vehicleLabel(vehicle)}? This removes the ${producers} producer node(s) for ${flow.vehicle.name} and their edges.`,
+            message: `Switch to ${vehicleLabel(vehicle, options)}? This removes the ${producers} producer node(s) for ${flow.vehicle.name} and their edges.`,
             icon: 'pi pi-exclamation-triangle',
             accept: () => { setFlow((f) => setVehicle(f, vehicle)); setSelection(null); },
         });
@@ -252,7 +252,7 @@ function FlowBuilderInner({ theme, toast, active = true }) {
                     placeholder="Flow name" className="p-inputtext-sm" style={{ width: 180 }} />
                 <Dropdown
                     value={flow.vehicle ? vehicleKey(flow.vehicle) : null}
-                    options={options.map((o) => ({ label: vehicleLabel(o), value: vehicleKey(o) }))}
+                    options={options.map((o) => ({ label: vehicleLabel(o, options), value: vehicleKey(o) }))}
                     onChange={(e) => onPickVehicle(e.value)}
                     placeholder={catalog ? 'Select vehicle' : 'Loading vehicles…'}
                     className="p-inputtext-sm"

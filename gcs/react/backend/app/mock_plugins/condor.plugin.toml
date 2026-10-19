@@ -1,0 +1,13 @@
+# Mock plugin file for lab-b's condor vehicle (mock_daemon_seed_lab-b.toml).
+
+[driver]
+type = "fixed-wing"
+
+[[driver.cameras]]
+name = "nadir"
+type = "steeleagle_protocol/v1/messages/frame/RawFrame"
+description = "Downward mapping camera"
+hres = 1920
+vres = 1080
+fps = 15
+primary = true

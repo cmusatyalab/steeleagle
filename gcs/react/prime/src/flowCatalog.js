@@ -114,8 +114,11 @@ export function vehicleKey(vehicle) {
     return `${vehicle.name}@${vehicle.daemon.address}`;
 }
 
-export function vehicleLabel(vehicle) {
-    return `${vehicle.name} @ ${vehicle.daemon.name}`;
+// A vehicle's name, plus its daemon only when another vehicle in `among`
+// has the same name on a different daemon.
+export function vehicleLabel(vehicle, among = []) {
+    const clash = among.some((o) => o.name === vehicle.name && o.daemon.address !== vehicle.daemon.address);
+    return clash ? `${vehicle.name} @ ${vehicle.daemon.name}` : vehicle.name;
 }
 
 // Every vehicle on a reachable daemon, plus the current binding even if its
