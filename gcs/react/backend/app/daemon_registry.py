@@ -17,6 +17,7 @@ from app.mock_daemon import MockDaemonBackend
 MOCK_PREFIX = "mock://"
 MOCK_DISCOVERED = [("lab-a (mock)", "mock://lab-a"), ("lab-b (mock)", "mock://lab-b")]
 SEED_PATH = Path(__file__).with_name("mock_daemon_seed.toml")
+MOCK_PLUGINS_DIR = Path(__file__).with_name("mock_plugins")
 MOCK_CONFIGURE_DELAY = 1.5
 MOCK_FOLLOW_INTERVAL = 2.0
 
@@ -42,6 +43,7 @@ def _mock_for(address: str) -> MockDaemonBackend:
             SEED_PATH.read_text(),
             configure_delay=MOCK_CONFIGURE_DELAY,
             follow_interval=MOCK_FOLLOW_INTERVAL,
+            plugin_dir=MOCK_PLUGINS_DIR,
         )
     return _mocks[address]
 

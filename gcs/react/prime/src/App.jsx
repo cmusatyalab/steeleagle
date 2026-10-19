@@ -467,7 +467,7 @@ function App() {
           <OrchestrationPage toast={toast} />
         </div>
         <div style={{ display: selectedMenu === 'Plan' ? '' : 'none' }}>
-          {planMounted && <PlanPage vehicles={vehicles} squadList={squadList} theme={theme}
+          {planMounted && <PlanPage vehicles={vehicles} squadList={squadList} theme={theme} visible={selectedMenu === 'Plan'}
             uploadState={missionUploadState} setUploadState={setMissionUploadState} />}
         </div>
         {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} setSelectedVehicle={setSelectedVehicle}

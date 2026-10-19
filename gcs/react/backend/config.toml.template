@@ -13,8 +13,14 @@ redis_username = "steeleagle"
 redis_password = ""
 webserver = "http://localhost:8080"
 
-[dslcompiler]
-controller = "localhost:50060"
+# [compiler] is optional. By default the GCS rebuilds (at every startup) and
+# uses the in-repo eaglec (sdk/cmd/eaglec) and compiles missions against this checkout's SDK.
+# [compiler]
+# eaglec = "/usr/local/bin/eaglec"   # use this eaglec as-is instead of building one
+# sdk_version = "v4.0-beta"          # fetch the SDK at this version instead of using the checkout
+# timeout_s = 300                    # limit for each eaglec run
+# imports = [{ path = "example.com/plugins/actions", alias = "xa" }]   # added to the default imports
+# modules = [{ path = "example.com/plugins", version = "v1.2.0" }]     # added alongside the SDK module
 
 [eagled]
 # Serve mock daemons for mock:// addresses on the Orchestrate page (and list

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Dialog } from 'primereact/dialog';
 import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';
@@ -45,6 +45,7 @@ function ConfigureDialog({ daemon, focus, onHide, onDone }) {
     const [baseRaw, setBaseRaw] = useState('');
     const [expanded, setExpanded] = useState(() => new Set());
     const [tab, setTab] = useState(0);
+    const tabsRef = useRef(null);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState(null);
     const [conflict, setConflict] = useState(false);
@@ -85,6 +86,13 @@ function ConfigureDialog({ daemon, focus, onHide, onDone }) {
         setExpanded(open);
         setLoading(false);
     }, [daemon.address, focus]);
+
+    // The tab strip scrolls, and doesn't follow a tab chosen in code (opening
+    // on a focused service's category), so bring the active tab into view.
+    useEffect(() => {
+        tabsRef.current?.querySelector('.p-tabview-nav li.p-highlight')
+            ?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }, [tab, mode, loading]);
 
     // Loading the config from the daemon is the effect's whole job; the
     // setState calls inside load() are the intended sync, not a cascade.
@@ -284,7 +292,8 @@ function ConfigureDialog({ daemon, focus, onHide, onDone }) {
                     {notice && <Message severity="warn" text={notice} className="w-full" />}
                     <SelectButton value={mode} options={MODES} onChange={(e) => switchMode(e.value)} disabled={busy} allowEmpty={false} />
                     {mode === 'form' && state ? (
-                        <TabView activeIndex={tab} onTabChange={(e) => setTab(e.index)}>
+                        <div ref={tabsRef}>
+                        <TabView scrollable activeIndex={tab} onTabChange={(e) => setTab(e.index)}>
                             <TabPanel header={`Daemon${Object.keys(shownErrors.settings).length ? ' ⚠' : ''}`}>
                                 <div className="flex flex-column gap-3">
                                     <small className="text-color-secondary">Daemon-wide settings only take effect the first time a daemon is configured.</small>
@@ -293,6 +302,7 @@ function ConfigureDialog({ daemon, focus, onHide, onDone }) {
                             </TabPanel>
                             {CATEGORIES.map(categoryPanel)}
                         </TabView>
+                        </div>
                     ) : (
                         <InputTextarea
                             value={raw}

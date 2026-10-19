@@ -11,8 +11,16 @@
 
 import { fromRows, toRows } from './kvArgs.js';
 
-export const CATEGORIES = ['vehicle', 'engine', 'monitor', 'extra'];
-export const CATEGORY_LABELS = { vehicle: 'Vehicles', engine: 'Engines', monitor: 'Monitors', extra: 'Extras' };
+export const CATEGORIES = ['vehicle', 'engine', 'monitor', 'commander', 'simulator', 'database', 'extra'];
+export const CATEGORY_LABELS = {
+    vehicle: 'Vehicles',
+    engine: 'Engines',
+    monitor: 'Monitors',
+    commander: 'Commander',
+    simulator: 'Simulator',
+    database: 'Database',
+    extra: 'Extras',
+};
 export const RUNTIMES = ['process', 'sandbox', 'container'];
 
 // Daemon-wide settings, in config.toml order. `key` is the API name.

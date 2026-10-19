@@ -1,15 +1,23 @@
 import grpc
 import pytest
-from steeleagle_protocol.v1.services.eagled import eagled_pb2
+from steeleagle_protocol.v1.services.daemon import daemon_pb2
 
-from app.daemon_backend import DaemonError, DaemonUnreachable, NotSupported, ServiceRef
+from google.protobuf.duration_pb2 import Duration
+
+from app.daemon_backend import (
+    DaemonError,
+    DaemonUnreachable,
+    NotSupported,
+    ServiceRef,
+    ServiceState,
+)
 from app.grpc_daemon_backend import GrpcDaemonBackend
 
 
 async def test_get_configuration_decodes_the_toml_bytes(daemon_server_factory):
     _servicer, address = await daemon_server_factory(
         {
-            "GetConfiguration": eagled_pb2.GetConfigurationResponse(
+            "GetConfiguration": daemon_pb2.GetConfigurationResponse(
                 config_toml='hostname = "é"\n'.encode()
             )
         }
@@ -23,7 +31,7 @@ async def test_get_configuration_that_is_not_utf8_is_a_daemon_error(
     daemon_server_factory,
 ):
     _servicer, address = await daemon_server_factory(
-        {"GetConfiguration": eagled_pb2.GetConfigurationResponse(config_toml=b"\xff")}
+        {"GetConfiguration": daemon_pb2.GetConfigurationResponse(config_toml=b"\xff")}
     )
 
     async with GrpcDaemonBackend(address) as backend:
@@ -34,9 +42,9 @@ async def test_get_configuration_that_is_not_utf8_is_a_daemon_error(
 async def test_configure_reset_and_restart_send_requests(daemon_server_factory):
     servicer, address = await daemon_server_factory(
         {
-            "Configure": eagled_pb2.ConfigureResponse(),
-            "ResetConfiguration": eagled_pb2.ResetConfigurationResponse(),
-            "RestartServices": eagled_pb2.RestartServicesResponse(),
+            "Configure": daemon_pb2.ConfigureResponse(),
+            "ResetConfiguration": daemon_pb2.ResetConfigurationResponse(),
+            "RestartServices": daemon_pb2.RestartServicesResponse(),
         }
     )
 
@@ -54,8 +62,8 @@ async def test_configure_reset_and_restart_send_requests(daemon_server_factory):
         (s.name, s.category) for s in servicer.received["RestartServices"][0].services
     ]
     assert restarted == [
-        ("harpy", eagled_pb2.SERVICE_CATEGORY_VEHICLE),
-        ("detector", eagled_pb2.SERVICE_CATEGORY_ENGINE),
+        ("harpy", daemon_pb2.SERVICE_CATEGORY_VEHICLE),
+        ("detector", daemon_pb2.SERVICE_CATEGORY_ENGINE),
     ]
     assert servicer.time_remaining["RestartServices"] > 30
 
@@ -97,3 +105,64 @@ async def test_logs_are_not_supported_without_a_call():
             await backend.list_log_sources()
         with pytest.raises(NotSupported, match="StreamLogs"):
             [r async for r in backend.stream_logs([], 5, False, {})]
+
+
+async def test_get_plugin_tomls_returns_the_map(daemon_server_factory):
+    _servicer, address = await daemon_server_factory(
+        {
+            "GetConfiguration": daemon_pb2.GetConfigurationResponse(
+                config_toml=b"",
+                plugin_tomls={"harpy": b"[driver]\n", "bad": b"\xff"},
+            )
+        }
+    )
+
+    async with GrpcDaemonBackend(address) as backend:
+        assert await backend.get_plugin_tomls() == {
+            "harpy": b"[driver]\n",
+            "bad": b"\xff",
+        }
+
+
+async def test_list_services_maps_category_run_state_and_uptime(
+    daemon_server_factory,
+):
+    _servicer, address = await daemon_server_factory(
+        {
+            "ListServices": daemon_pb2.ListServicesResponse(
+                services=[
+                    daemon_pb2.ActiveService(
+                        name="harpy",
+                        category=daemon_pb2.SERVICE_CATEGORY_VEHICLE,
+                        running=True,
+                        uptime=Duration(seconds=90, nanos=500_000_000),
+                    ),
+                    daemon_pb2.ActiveService(
+                        name="detector",
+                        category=daemon_pb2.SERVICE_CATEGORY_ENGINE,
+                        running=False,
+                    ),
+                    daemon_pb2.ActiveService(
+                        name="gcs",
+                        category=daemon_pb2.SERVICE_CATEGORY_COMMANDER,
+                        running=True,
+                    ),
+                    daemon_pb2.ActiveService(
+                        name="db",
+                        category=daemon_pb2.SERVICE_CATEGORY_DATABASE,
+                        running=True,
+                    ),
+                    # A category this GCS doesn't know is left out.
+                    daemon_pb2.ActiveService(name="odd", running=True),
+                ]
+            )
+        }
+    )
+
+    async with GrpcDaemonBackend(address) as backend:
+        assert await backend.list_services() == [
+            ServiceState("harpy", "vehicle", running=True, uptime_s=90.5),
+            ServiceState("detector", "engine", running=False, uptime_s=None),
+            ServiceState("gcs", "commander", running=True, uptime_s=None),
+            ServiceState("db", "database", running=True, uptime_s=None),
+        ]

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+    CATEGORIES,
+    CATEGORY_LABELS,
     duplicateInstance,
     formToState,
     hasErrors,
@@ -28,7 +30,7 @@ const DETECTOR = {
 };
 const FORM = {
     settings: { hostname: 'eagled', vehicle_port_base: 9000, headless: true },
-    instances: { vehicle: [HARPY], engine: [DETECTOR], monitor: [], extra: [] },
+    instances: { vehicle: [HARPY], engine: [DETECTOR], monitor: [], commander: [], simulator: [], database: [], extra: [] },
 };
 
 const SETTINGS_OUT = {
@@ -40,6 +42,18 @@ const SETTINGS_OUT = {
     auto_run: null,
     auto_install: null,
 };
+
+describe('categories', () => {
+    it('covers every daemon service category, each with a label', () => {
+        expect(CATEGORIES).toEqual(['vehicle', 'engine', 'monitor', 'commander', 'simulator', 'database', 'extra']);
+        expect(CATEGORIES.map((c) => CATEGORY_LABELS[c])).toEqual(
+            ['Vehicles', 'Engines', 'Monitors', 'Commander', 'Simulator', 'Database', 'Extras']);
+    });
+
+    it('gives a form without a category an empty list for it', () => {
+        expect(formToState({ settings: {}, instances: { vehicle: [] } }).instances.commander).toEqual([]);
+    });
+});
 
 describe('formToState / stateToForm', () => {
     it('round-trips a form unchanged, including fields the editor does not show', () => {
@@ -101,7 +115,7 @@ describe('formToState / stateToForm', () => {
 describe('newInstance / duplicateInstance', () => {
     it('starts a vehicle with a sim table and nothing else', () => {
         const inst = { ...newInstance('vehicle'), name: 'osprey', pluginId: 'anafi' };
-        const state = { settings: {}, instances: { vehicle: [inst], engine: [], monitor: [], extra: [] } };
+        const state = { settings: {}, instances: { ...formToState({}).instances, vehicle: [inst] } };
         expect(stateToForm(state).form.instances.vehicle[0]).toEqual({
             name: 'osprey',
             plugin: { id: 'anafi', runtime: 'process', source: null, args: {}, extra: {} },

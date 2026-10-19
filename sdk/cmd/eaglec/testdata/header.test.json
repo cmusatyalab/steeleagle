@@ -1,0 +1,10 @@
+{
+  "Modules": {"Modules": [{"Path": "github.com/cmusatyalab/steeleagle/sdk", "Override": "../.."}]},
+  "Imports": {"Imports": [
+    {"Path": "github.com/cmusatyalab/steeleagle/sdk/dsl/actions"},
+    {"Path": "github.com/cmusatyalab/steeleagle/sdk/dsl/events"},
+    {"Path": "github.com/cmusatyalab/steeleagle/sdk/dsl/datatypes"},
+    {"Path": "github.com/cmusatyalab/steeleagle/sdk/params"},
+    {"Path": "github.com/cmusatyalab/steeleagle/sdk/enums"}
+  ]}
+}

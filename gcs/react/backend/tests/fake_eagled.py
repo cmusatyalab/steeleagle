@@ -5,7 +5,7 @@ pattern."""
 
 import grpc
 import pytest
-from steeleagle_protocol.v1.services.eagled import eagled_pb2_grpc
+from steeleagle_protocol.v1.services.daemon import daemon_pb2_grpc
 
 
 async def _maybe_abort(outcome, context) -> None:
@@ -19,7 +19,7 @@ async def _maybe_abort(outcome, context) -> None:
         await context.abort(outcome[0], outcome[1])
 
 
-class FakeDaemonServicer(eagled_pb2_grpc.DaemonServiceServicer):
+class FakeDaemonServicer(daemon_pb2_grpc.DaemonServiceServicer):
     """`script[rpc_name]` is a response message, an Exception (abort UNAVAILABLE), or a
     (grpc.StatusCode, details) tuple (abort with that code). Every request
     is recorded in self.received[rpc_name]."""
@@ -45,6 +45,9 @@ class FakeDaemonServicer(eagled_pb2_grpc.DaemonServiceServicer):
     async def ResetConfiguration(self, request, context):
         return await self._run("ResetConfiguration", request, context)
 
+    async def ListServices(self, request, context):
+        return await self._run("ListServices", request, context)
+
     async def RestartServices(self, request, context):
         return await self._run("RestartServices", request, context)
 
@@ -65,7 +68,7 @@ async def daemon_server_factory():
     async def _make(script: dict):
         servicer = FakeDaemonServicer(script)
         server = grpc.aio.server()
-        eagled_pb2_grpc.add_DaemonServiceServicer_to_server(servicer, server)
+        daemon_pb2_grpc.add_DaemonServiceServicer_to_server(servicer, server)
         port = server.add_insecure_port("127.0.0.1:0")
         await server.start()
         servers.append(server)

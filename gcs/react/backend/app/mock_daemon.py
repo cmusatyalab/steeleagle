@@ -8,11 +8,20 @@ serves logs, which the real protocol no longer carries (they are moving to
 logdy). Nothing persists across GCS backend restarts."""
 
 import asyncio
-from collections.abc import AsyncIterator
+import time
+from collections.abc import AsyncIterator, Callable
 from datetime import datetime, timezone
+from pathlib import Path
 
 from app import daemon_config
-from app.daemon_backend import DaemonError, LogRecord, LogSource, ServiceRef
+from app.daemon_backend import (
+    DaemonError,
+    LogRecord,
+    LogSource,
+    RESTARTABLE_CATEGORIES,
+    ServiceRef,
+    ServiceState,
+)
 
 _BACKLOG_LINES = 5
 
@@ -25,11 +34,20 @@ class MockDaemonBackend:
         *,
         configure_delay: float = 1.5,
         follow_interval: float = 2.0,
+        plugin_dir: Path | None = None,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self.address = address
         self._config = config_toml
         self._configure_delay = configure_delay
         self._follow_interval = follow_interval
+        # Where <service name>.plugin.toml files live (daemon_registry's
+        # MOCK_PLUGINS_DIR); None serves no plugin files.
+        self._plugin_dir = plugin_dir
+        self._clock = clock
+        # When each service last (re)started; configuring restarts them all.
+        self._started_all = clock()
+        self._started: dict[ServiceRef, float] = {}
         self._log_seq: dict[str, int] = {}
         # What the daemon was asked to do, for tests: "configure", "reset",
         # or ("restart", [ServiceRef, ...]).
@@ -67,6 +85,7 @@ class MockDaemonBackend:
         # Configure restarts the daemon and everything it runs.
         await asyncio.sleep(self._configure_delay)
         self._config = config_toml
+        self._started_all, self._started = self._clock(), {}
         self.events.append("configure")
 
     async def reset_configuration(self) -> None:
@@ -76,9 +95,38 @@ class MockDaemonBackend:
     async def restart_services(self, refs: list[ServiceRef]) -> None:
         known = set(self._refs())
         for ref in refs:
+            if ref.category not in RESTARTABLE_CATEGORIES:
+                raise DaemonError(
+                    f"{ref.category} {ref.name} restarts through Configure"
+                )
             if ref not in known:
                 raise DaemonError(f"no {ref.category} named {ref.name!r}")
+        now = self._clock()
+        self._started.update((ref, now) for ref in refs)
         self.events.append(("restart", list(refs)))
+
+    async def list_services(self) -> list[ServiceState]:
+        # The mock runs everything its config lists.
+        now = self._clock()
+        return [
+            ServiceState(
+                ref.name,
+                ref.category,
+                running=True,
+                uptime_s=now - self._started.get(ref, self._started_all),
+            )
+            for ref in self._refs()
+        ]
+
+    async def get_plugin_tomls(self) -> dict[str, bytes]:
+        if self._plugin_dir is None:
+            return {}
+        tomls = {}
+        for ref in self._refs():
+            path = self._plugin_dir / f"{ref.name}.plugin.toml"
+            if path.is_file():
+                tomls[ref.name] = path.read_bytes()
+        return tomls
 
     async def list_log_sources(self) -> list[LogSource]:
         # Named as eagled names them: a vehicle logs its driver and mission

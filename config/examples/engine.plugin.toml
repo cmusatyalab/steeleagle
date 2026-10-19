@@ -2,7 +2,7 @@
 # Name of the argument
 name = "confidence"
 # JSON type: (string, object, boolean, array, number)
-type = "number" 
+type = "number"
 # Description of the argument (optional)
 description = "Confidence threshold (0.01-1.0)"
 # Default value (optional, should always be in quotes)
@@ -16,11 +16,11 @@ type = "detection"
 # Input type, enforced at dataflow creation
 type = "steeleagle_protocol/v1/messages/frame/RawFrame"
 
-[engines.result]
+[engine.result]
 # Result type, not type enforced
 type = "steeleagle_protocol/v1/messages/result/DetectionResult"
 
-[[engines.events]]
+[[engine.events]]
 # Label event is given, in addition to the engine name
 label = "dropped"
 # Event type, not type enforced

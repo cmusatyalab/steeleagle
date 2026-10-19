@@ -29,8 +29,9 @@ from rich.logging import RichHandler
 from steeleagle_protocol.v1.services.swarm import swarm_pb2_grpc
 
 from app import (
+    compiler_routes,
     daemon_registry,
-    dslcompiler_routes,
+    flow_routes,
     mission_upload_routes,
     presence_routes,
 )
@@ -244,7 +245,7 @@ async def lifespan(app: FastAPI):
     else:
         logger.info(f"Using default backend '{list(backend_connections.keys())[0]}'")
 
-    dslcompiler_routes.setup(cfg.get("dslcompiler"))
+    compiler_routes.start(cfg.get("compiler"))
     mission_upload_routes.setup(lambda: _current_connection().swarm_client)
     daemon_registry.setup(cfg.get("eagled"))
 
@@ -253,15 +254,16 @@ async def lifespan(app: FastAPI):
     for _name, conn in backend_connections.items():
         await conn.grpc_channel.close()
         conn.redis_connection.close()
-    await dslcompiler_routes.teardown()
+    await compiler_routes.stop()
 
 
 app = FastAPI(lifespan=lifespan)
-app.include_router(dslcompiler_routes.router)
+app.include_router(compiler_routes.router)
 app.include_router(eagled_router)
 app.include_router(eagled_log_router)
 app.include_router(mission_upload_routes.router)
 app.include_router(presence_routes.router)
+app.include_router(flow_routes.router)
 
 
 app.add_middleware(

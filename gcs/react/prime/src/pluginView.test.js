@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { configGroups, formatValue, logSourcesFor, runtimeLabel, sourceIcon, sourceLabel } from './pluginView.js';
+import { configGroups, formatUptime, formatValue, hasRunState, logSourcesFor, runStatus, runtimeLabel, sourceIcon, sourceLabel } from './pluginView.js';
 
 describe('pluginView', () => {
     it('labels runtimes, including unknown ones verbatim', () => {
@@ -16,6 +16,25 @@ describe('pluginView', () => {
     it('maps a service to its log sources', () => {
         expect(logSourcesFor({ name: 'harpy', category: 'vehicle' })).toEqual(['harpy-driver', 'harpy-mission']);
         expect(logSourcesFor({ name: 'detector', category: 'engine' })).toEqual(['detector']);
+    });
+
+    it('formats uptime to its two largest units', () => {
+        expect([formatUptime(null), formatUptime(0), formatUptime(45.9), formatUptime(60), formatUptime(754)])
+            .toEqual(['—', '0s', '45s', '1m', '12m 34s']);
+        expect([formatUptime(3600 * 3 + 60 * 4 + 5), formatUptime(86400 * 2 + 3600 * 5 + 99)]).toEqual(['3h 4m', '2d 5h']);
+    });
+
+    it('describes run state, unknown when the daemon cannot report it', () => {
+        expect(runStatus({ running: true })).toEqual({ label: 'Running', severity: 'success' });
+        expect(runStatus({ running: false })).toEqual({ label: 'Stopped', severity: 'danger' });
+        expect(runStatus({ running: null })).toBeNull();
+        expect(runStatus({})).toBeNull();
+    });
+
+    it('knows whether a daemon reported any run state', () => {
+        expect(hasRunState([{ running: null }, {}])).toBe(false);
+        expect(hasRunState([{ running: null }, { running: false }])).toBe(true);
+        expect(hasRunState([])).toBe(false);
     });
 
     it('formats values', () => {

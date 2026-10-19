@@ -1,5 +1,5 @@
 """DaemonBackend over eagled's revised DaemonService gRPC API
-(api/steeleagle_protocol/v1/services/eagled/eagled.proto, commit b54f5c7f).
+(api/steeleagle_protocol/v1/services/daemon/daemon.proto, commit cddca5ff).
 
 This owns a short-lived channel per use (eagled addresses are added and
 removed at runtime by the frontend, so there is no fixed address to connect
@@ -9,7 +9,7 @@ so the log methods raise NotSupported without making a call."""
 from collections.abc import AsyncIterator
 
 import grpc
-from steeleagle_protocol.v1.services.eagled import eagled_pb2, eagled_pb2_grpc
+from steeleagle_protocol.v1.services.daemon import daemon_pb2, daemon_pb2_grpc
 
 from app.daemon_backend import (
     BackendFailure,
@@ -19,6 +19,7 @@ from app.daemon_backend import (
     LogSource,
     NotSupported,
     ServiceRef,
+    ServiceState,
 )
 
 DEFAULT_TIMEOUT = 5.0
@@ -29,11 +30,16 @@ CONFIGURE_TIMEOUT = 600.0
 RESTART_TIMEOUT = 35.0
 
 _CATEGORY_TO_PROTO = {
-    "vehicle": eagled_pb2.SERVICE_CATEGORY_VEHICLE,
-    "engine": eagled_pb2.SERVICE_CATEGORY_ENGINE,
-    "monitor": eagled_pb2.SERVICE_CATEGORY_MONITOR,
-    "extra": eagled_pb2.SERVICE_CATEGORY_EXTRA,
+    "vehicle": daemon_pb2.SERVICE_CATEGORY_VEHICLE,
+    "engine": daemon_pb2.SERVICE_CATEGORY_ENGINE,
+    "monitor": daemon_pb2.SERVICE_CATEGORY_MONITOR,
+    "commander": daemon_pb2.SERVICE_CATEGORY_COMMANDER,
+    "simulator": daemon_pb2.SERVICE_CATEGORY_SIMULATOR,
+    "database": daemon_pb2.SERVICE_CATEGORY_DATABASE,
+    "extra": daemon_pb2.SERVICE_CATEGORY_EXTRA,
 }
+
+_CATEGORY_FROM_PROTO = {v: k for k, v in _CATEGORY_TO_PROTO.items()}
 
 
 def _translate(rpc: str, e: grpc.aio.AioRpcError) -> BackendFailure:
@@ -59,11 +65,11 @@ class GrpcDaemonBackend:
         self._configure_timeout = configure_timeout
         self._restart_timeout = restart_timeout
         self._channel: grpc.aio.Channel | None = None
-        self._stub: eagled_pb2_grpc.DaemonServiceStub | None = None
+        self._stub: daemon_pb2_grpc.DaemonServiceStub | None = None
 
     async def __aenter__(self) -> "GrpcDaemonBackend":
         self._channel = grpc.aio.insecure_channel(self._address)
-        self._stub = eagled_pb2_grpc.DaemonServiceStub(self._channel)
+        self._stub = daemon_pb2_grpc.DaemonServiceStub(self._channel)
         return self
 
     async def __aexit__(self, *exc) -> None:
@@ -77,7 +83,7 @@ class GrpcDaemonBackend:
 
     async def get_configuration(self) -> str:
         resp = await self._unary(
-            "GetConfiguration", eagled_pb2.GetConfigurationRequest(), self._timeout
+            "GetConfiguration", daemon_pb2.GetConfigurationRequest(), self._timeout
         )
         try:
             return resp.config_toml.decode("utf-8")
@@ -87,27 +93,54 @@ class GrpcDaemonBackend:
     async def configure(self, config_toml: str) -> None:
         await self._unary(
             "Configure",
-            eagled_pb2.ConfigureRequest(config_toml=config_toml),
+            daemon_pb2.ConfigureRequest(config_toml=config_toml),
             self._configure_timeout,
         )
 
     async def reset_configuration(self) -> None:
         await self._unary(
             "ResetConfiguration",
-            eagled_pb2.ResetConfigurationRequest(),
+            daemon_pb2.ResetConfigurationRequest(),
             self._configure_timeout,
         )
 
     async def restart_services(self, refs: list[ServiceRef]) -> None:
-        request = eagled_pb2.RestartServicesRequest(
+        request = daemon_pb2.RestartServicesRequest(
             services=[
-                eagled_pb2.ServiceRequest(
+                daemon_pb2.ServiceRequest(
                     name=ref.name, category=_CATEGORY_TO_PROTO[ref.category]
                 )
                 for ref in refs
             ]
         )
         await self._unary("RestartServices", request, self._restart_timeout)
+
+    async def list_services(self) -> list[ServiceState]:
+        resp = await self._unary(
+            "ListServices", daemon_pb2.ListServicesRequest(), self._timeout
+        )
+        # A category this GCS doesn't know (or UNSPECIFIED) has nowhere to
+        # show on the Services tab, so it is left out.
+        return [
+            ServiceState(
+                name=s.name,
+                category=_CATEGORY_FROM_PROTO[s.category],
+                running=s.running,
+                uptime_s=s.uptime.ToTimedelta().total_seconds()
+                if s.HasField("uptime")
+                else None,
+            )
+            for s in resp.services
+            if s.category in _CATEGORY_FROM_PROTO
+        ]
+
+    async def get_plugin_tomls(self) -> dict[str, bytes]:
+        # Raw bytes: the catalog decodes each one, so a bad file is that
+        # service's problem rather than the whole call's.
+        resp = await self._unary(
+            "GetConfiguration", daemon_pb2.GetConfigurationRequest(), self._timeout
+        )
+        return dict(resp.plugin_tomls)
 
     async def list_log_sources(self) -> list[LogSource]:
         raise NotSupported("ListLogSources")

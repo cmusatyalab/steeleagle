@@ -26,6 +26,36 @@ export function logSourcesFor(inst) {
     return inst.category === 'vehicle' ? [`${inst.name}-driver`, `${inst.name}-mission`] : [inst.name];
 }
 
+// A service's run state from the daemon's ListServices, as a Tag's label and
+// severity; null when the daemon can't report it (running is null).
+export function runStatus(inst) {
+    if (inst.running === true) return { label: 'Running', severity: 'success' };
+    if (inst.running === false) return { label: 'Stopped', severity: 'danger' };
+    return null;
+}
+
+// Whether a daemon reported run state for any of its services; a daemon
+// without ListServices reports none, and the Services tab hides the columns.
+export function hasRunState(instances) {
+    return instances.some((i) => typeof i.running === 'boolean');
+}
+
+const UPTIME_UNITS = [['d', 86400], ['h', 3600], ['m', 60], ['s', 1]];
+
+// Seconds as the two largest non-zero units ("12m 34s", "2d 5h").
+export function formatUptime(seconds) {
+    if (seconds === null || seconds === undefined) return '—';
+    let rest = Math.floor(seconds);
+    const parts = [];
+    for (const [unit, size] of UPTIME_UNITS) {
+        const n = Math.floor(rest / size);
+        rest -= n * size;
+        if (n > 0 || parts.length > 0) parts.push([n, unit]);
+    }
+    const shown = parts.slice(0, 2).filter(([n], i) => i === 0 || n > 0);
+    return shown.length ? shown.map(([n, unit]) => `${n}${unit}`).join(' ') : '0s';
+}
+
 // One config value as display text: strings as-is, everything else (numbers,
 // booleans, arrays, tables) as JSON.
 export function formatValue(value) {

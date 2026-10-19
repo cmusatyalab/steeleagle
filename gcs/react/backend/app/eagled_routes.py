@@ -27,7 +27,10 @@ from app.daemon_backend import (
     BackendFailure,
     DaemonError,
     DaemonUnreachable,
+    RESTARTABLE_CATEGORIES,
+    NotSupported,
     ServiceRef,
+    ServiceState,
 )
 from app.daemon_registry import MOCK_DISCOVERED, mock_enabled, open_backend
 
@@ -52,7 +55,11 @@ NAME_MAX_LENGTH = 64
 RESERVED_INSTANCE_KEYS = {"name", "plugin"}
 MANAGED_PLUGIN_KEYS = {"id", "plugin", "runtime", "url", "image", "tag", "args"}
 
-Category = Literal["vehicle", "engine", "monitor", "extra"]
+Category = Literal[
+    "vehicle", "engine", "monitor", "commander", "simulator", "database", "extra"
+]
+# What RestartServices accepts (RESTARTABLE_CATEGORIES).
+RestartableCategory = Literal["vehicle", "engine", "monitor"]
 
 
 # --- models ----------------------------------------------------------------
@@ -80,6 +87,12 @@ class InstanceModel(BaseModel):
     # The whole config entry (the form model's section shape), for the
     # Services tab's read-only config view.
     section: dict[str, Any]
+    # From the daemon's ListServices; None when it can't say (an older
+    # daemon without the RPC, or the call failed).
+    running: bool | None = None
+    uptime_s: float | None = None
+    # Whether RestartServices takes it; the rest restart through Configure.
+    restartable: bool = False
 
 
 class PluginsResponse(BaseModel):
@@ -91,7 +104,7 @@ class PluginsResponse(BaseModel):
 
 class InstanceRef(BaseModel):
     name: str = Field(max_length=NAME_MAX_LENGTH, pattern=NAME_PATTERN)
-    category: Category
+    category: RestartableCategory
 
 
 class RestartBody(BaseModel):
@@ -374,27 +387,45 @@ async def get_status(address: str) -> StatusResponse:
 
 @router.get("/plugins")
 async def get_plugins(address: str) -> PluginsResponse:
-    """The daemon's services, as listed in its config. eagled keeps trying
-    to run everything its config lists, so there is no separate run state
-    to report."""
+    """The daemon's services, as listed in its config, with each one's run
+    state from ListServices. The config is the list; a run state that can't
+    be read leaves the list intact and says why."""
+    states: dict[tuple[str, str], ServiceState] | None = None
+    state_error: str | None = None
     try:
         async with open_backend(address) as backend:
             text = await backend.get_configuration()
+            try:
+                states = {
+                    (s.name, s.category): s for s in await backend.list_services()
+                }
+            except NotSupported:
+                pass
+            except BackendFailure as e:
+                state_error = f"Service status unavailable: {e}"
         doc = _daemon_doc(text)
     except BackendFailure as e:
         return _failure(PluginsResponse, e)
-    instances = [
-        InstanceModel(
-            name=section["name"],
-            category=category,
-            plugin_id=section["plugin"]["id"],
-            runtime=section["plugin"]["runtime"],
-            source=section["plugin"]["source"],
-            section=section,
+    instances = []
+    for category, section in daemon_config.list_sections(doc):
+        state = None if states is None else states.get((section["name"], category))
+        instances.append(
+            InstanceModel(
+                name=section["name"],
+                category=category,
+                plugin_id=section["plugin"]["id"],
+                runtime=section["plugin"]["runtime"],
+                source=section["plugin"]["source"],
+                section=section,
+                # Configured but not reported: the daemon isn't running it.
+                running=None if states is None else bool(state and state.running),
+                uptime_s=state.uptime_s if state else None,
+                restartable=category in RESTARTABLE_CATEGORIES,
+            )
         )
-        for category, section in daemon_config.list_sections(doc)
-    ]
-    return PluginsResponse(reachable=True, instances=instances)
+    return PluginsResponse(
+        reachable=True, ok=state_error is None, error=state_error, instances=instances
+    )
 
 
 @router.get("/config")

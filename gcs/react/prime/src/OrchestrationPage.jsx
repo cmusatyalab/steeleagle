@@ -9,13 +9,8 @@ import { postToApi } from './apiUtils.js';
 import LogViewer from './LogViewer.jsx';
 import PluginsTab from './PluginsTab.jsx';
 import ConfigureDialog from './ConfigureDialog.jsx';
+import { loadDaemons, saveDaemons } from './daemonRoster.js';
 import React from 'react';
-
-// Persisted independently of whether a daemon is actually reachable -- the
-// roster of daemons you've told the GCS about is useful on its own (e.g.
-// "server1:9090 is configured but currently unreachable"), so it isn't
-// tied to live connectivity state the way vehicle status is.
-const DAEMONS_STORAGE_KEY = 'steeleagle-daemons';
 
 // Admin status, not live telemetry (contrast App.jsx's 500ms vehicle
 // poll, which drives map markers) -- 5s keeps the roster's connectivity
@@ -28,16 +23,6 @@ const POLL_INTERVAL_MS = 5000;
 // reachability does -- a new daemon joining the tailnet, not a vehicle
 // starting/stopping -- so this polls much slower than POLL_INTERVAL_MS.
 const DISCOVERY_POLL_MS = 15000;
-
-function loadDaemons() {
-    try {
-        const raw = localStorage.getItem(DAEMONS_STORAGE_KEY);
-        const parsed = raw ? JSON.parse(raw) : [];
-        return Array.isArray(parsed) ? parsed : [];
-    } catch {
-        return [];
-    }
-}
 
 // crypto.randomUUID() is spec-gated to secure contexts (HTTPS or
 // localhost), so it throws on GCS instances reached over plain HTTP on
@@ -122,7 +107,7 @@ function OrchestrationPage({ toast }) {
     const [logFilter, setLogFilter] = useState({ daemonId: null, sources: [], seq: 0 });
 
     useEffect(() => {
-        localStorage.setItem(DAEMONS_STORAGE_KEY, JSON.stringify(daemons));
+        saveDaemons(daemons);
     }, [daemons]);
 
     const [daemonStatus, setDaemonStatus] = useState({});

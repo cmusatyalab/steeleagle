@@ -8,14 +8,15 @@ files) are ordinary HTTP 400s instead."""
 
 import json
 import logging
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
 
 import grpc
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 
-from app import dslcompiler_routes
-from app.dslcompiler_routes import CompileRequest
+from app import compiler_routes
+from app.compiler_routes import CompileFailed, MissionGraph
+from app.eaglec_client import EaglecFailure
 from app.mission_binary import MAX_MISSION_SIZE, elf_arch
 from app.swarm_client import SwarmClient
 
@@ -93,55 +94,41 @@ async def upload_events(
         yield {"type": "error", "detail": f"Upload failed: {e}"}
 
 
+# Every arch a vehicle may run; the swarm controller picks each vehicle's.
+DEPLOY_ARCHS = ("amd64", "arm64")
+
+
 async def deploy_events(
-    dsl_client,
+    build: Callable[[], Awaitable[dict[str, bytes]]],
     swarm_client: SwarmClient,
-    mission,
-    geojson: bytes,
     vehicles: list[str],
 ) -> AsyncIterator[dict]:
-    """Builds every arch, then uploads them all; any arch's compile errors
-    end the stream before the swarm controller is contacted."""
+    """Runs build (every arch's binary, as {arch: bytes}), then uploads them
+    all; compile errors end the stream before the swarm controller is
+    contacted."""
     yield {"type": "stage", "stage": "building"}
-    buffers: dict[str, bytearray] = {}
-    failed_archs: list[str] = []
-    errors: list[dict] = []
     try:
-        async for chunk in dsl_client.build(mission, geojson=geojson):
-            if chunk.errors:
-                failed_archs.append(chunk.arch)
-                errors.extend(
-                    {
-                        "node_id": e.node_id if e.HasField("node_id") else None,
-                        "event_id": e.event_id if e.HasField("event_id") else None,
-                        "message": e.message,
-                    }
-                    for e in chunk.errors
-                )
-                continue
-            buffers.setdefault(chunk.arch, bytearray()).extend(chunk.data)
-    except grpc.aio.AioRpcError as e:
+        variants = await build()
+    except CompileFailed as e:
         yield {
             "type": "error",
-            "detail": f"Build failed: {e.code().name} - {e.details()}",
+            "detail": "Build failed: " + "; ".join(err["message"] for err in e.errors),
+            "errors": e.errors,
+        }
+        return
+    except EaglecFailure as e:
+        yield {
+            "type": "error",
+            "detail": f"Build failed: {compiler_routes.describe(e)}",
         }
         return
     except Exception as e:
         logger.exception("Unexpected error while building mission")
         yield {"type": "error", "detail": f"Build failed: {e}"}
         return
-    if errors:
-        yield {
-            "type": "error",
-            "detail": f"Build failed for {', '.join(failed_archs)}: "
-            + "; ".join(e["message"] for e in errors),
-            "errors": errors,
-        }
-        return
-    if not buffers:
+    if not variants:
         yield {"type": "error", "detail": "Build produced no binaries"}
         return
-    variants = {arch: bytes(data) for arch, data in buffers.items()}
     async for event in upload_events(swarm_client, vehicles, variants):
         yield event
 
@@ -172,8 +159,7 @@ async def upload_route(
     return _ndjson_response(upload_events(_current_swarm_client(), vehicles, variants))
 
 
-class DeployRequest(CompileRequest):
-    geojson: str = ""  # the Map tab's drawn features; "" means no map
+class DeployRequest(MissionGraph):
     vehicles: list[str]
 
 
@@ -181,23 +167,11 @@ class DeployRequest(CompileRequest):
 async def deploy_route(request: DeployRequest):
     _require_vehicles(request.vehicles)
     swarm_client = _current_swarm_client()
-    dsl_client = dslcompiler_routes._current_dslcompiler_client()
-    try:
-        schema = await dsl_client.get_schema()
-    except grpc.aio.AioRpcError as e:
-        raise HTTPException(
-            status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
-        ) from e
-    try:
-        mission = dslcompiler_routes._mission_graph_from_request(request, schema)
-    except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e)) from e
+    state = await compiler_routes.ready()
     return _ndjson_response(
         deploy_events(
-            dsl_client,
+            lambda: compiler_routes.compile_graph(state, request, DEPLOY_ARCHS),
             swarm_client,
-            mission,
-            request.geojson.encode("utf-8"),
             request.vehicles,
         )
     )

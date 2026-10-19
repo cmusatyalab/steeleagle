@@ -50,6 +50,24 @@ tag = "main"
 model = "yolov8n"
 confidence = 0.5
 
+[[engines]]
+name = "yolo"
+[engines.plugin]
+id = "yolo_qnn"
+runtime = "process"
+url = "https://github.com/cmusatyalab/steeleagle-engines.git"
+tag = "main"
+[engines.plugin.args]
+
+[[engines]]
+name = "telemetry"
+[engines.plugin]
+id = "telemetry_engine"
+runtime = "process"
+url = "https://github.com/cmusatyalab/steeleagle-engines.git"
+tag = "main"
+[engines.plugin.args]
+
 [[monitors]]
 name = "battery-watch"
 [monitors.plugin]
@@ -70,11 +88,11 @@ tag = "v4_backend_rework"
 [extras.plugin.args]
 log-level = "debug"
 
-[[extras]]
+[[commander]]
 name = "gcs"
-[extras.plugin]
+[commander.plugin]
 id = "steeleagle_gcs"
 runtime = "container"
 image = "docker.io/cmusatyalab/steeleagle-gcs"
 tag = "v4.0"
-[extras.plugin.args]
+[commander.plugin.args]

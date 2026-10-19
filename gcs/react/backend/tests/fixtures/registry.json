@@ -1,0 +1,855 @@
+{
+    "actions": {
+        "actions.GoToGlobalPosition": {
+            "comment": "GoToGlobalPosition orders the vehicle to transit to a global\nposition.",
+            "fields": [
+                {
+                    "name": "Position",
+                    "type": "datatypes.GlobalPosition"
+                }
+            ],
+            "optFields": [
+                {
+                    "name": "HeadingMode",
+                    "type": "enums.HeadingMode"
+                },
+                {
+                    "name": "AltitudeMode",
+                    "type": "enums.AltitudeMode"
+                },
+                {
+                    "name": "Speed",
+                    "type": "float32"
+                },
+                {
+                    "name": "AngularSpeed",
+                    "type": "float32"
+                }
+            ],
+            "type": "actions.GoToGlobalPosition"
+        },
+        "actions.GoToRelativePosition": {
+            "comment": "GoToRelativePosition orders the vehicle to transit to a relative\nposition.",
+            "fields": [
+                {
+                    "name": "Position",
+                    "type": "datatypes.RelativePosition"
+                }
+            ],
+            "optFields": [
+                {
+                    "name": "Speed",
+                    "type": "float32"
+                },
+                {
+                    "name": "AngularSpeed",
+                    "type": "float32"
+                },
+                {
+                    "name": "Frame",
+                    "type": "enums.ReferenceFrame"
+                }
+            ],
+            "type": "actions.GoToRelativePosition"
+        },
+        "actions.Hold": {
+            "comment": "Hold orders the vehicle to hold/loiter at its current position,\ncancelling any ongoing movement command.",
+            "fields": [],
+            "type": "actions.Hold"
+        },
+        "actions.Land": {
+            "comment": "Land orders the vehicle to land at its current position.",
+            "fields": [],
+            "type": "actions.Land"
+        },
+        "actions.Patrol": {
+            "comment": "Patrol orders the vehicle to fly the waypoints of a patrol pattern over\nArea at Altitude: a corridor scan around its exterior (the default), or a\nsurvey over its interior.",
+            "fields": [
+                {
+                    "comment": "polygon to patrol around",
+                    "name": "Area",
+                    "type": "params.Polygon"
+                },
+                {
+                    "comment": "altitude for each point in patrol",
+                    "name": "Altitude",
+                    "type": "float32"
+                }
+            ],
+            "optFields": [
+                {
+                    "comment": "how to interpret altitude, MSL or above take off",
+                    "name": "AltitudeMode",
+                    "type": "enums.AltitudeMode"
+                },
+                {
+                    "comment": "mode for patrol, either survey or corridor (corridor by default)",
+                    "name": "Pattern",
+                    "type": "actions.PatrolMode"
+                },
+                {
+                    "comment": "survey spacing (default to 10.0m, only used in survey mode)",
+                    "name": "SurveySpacing",
+                    "type": "float32",
+                    "value": "10.0"
+                },
+                {
+                    "comment": "survey heading (default to 0.0deg, only used in survey mode)",
+                    "name": "SurveyHeading",
+                    "type": "float32"
+                },
+                {
+                    "name": "Speed",
+                    "type": "float32",
+                    "value": "3.0"
+                },
+                {
+                    "name": "AngularSpeed",
+                    "type": "float32",
+                    "value": "120.0"
+                }
+            ],
+            "type": "actions.Patrol"
+        },
+        "actions.ReturnToHome": {
+            "comment": "ReturnToHome orders the vehicle to return to its start position.",
+            "fields": [],
+            "optFields": [
+                {
+                    "name": "EndBehavior",
+                    "type": "enums.ReturnToHomeEndBehavior"
+                },
+                {
+                    "name": "MinReturnAltitude",
+                    "type": "float32"
+                },
+                {
+                    "name": "FinalAltitude",
+                    "type": "float32"
+                }
+            ],
+            "type": "actions.ReturnToHome"
+        },
+        "actions.SetGimbalPose": {
+            "comment": "SetGimbalPose orders the vehicle to set the pose of its primary\ngimbal.",
+            "fields": [
+                {
+                    "name": "Pose",
+                    "type": "datatypes.Pose"
+                }
+            ],
+            "optFields": [
+                {
+                    "name": "AngleMode",
+                    "type": "enums.AngleMode"
+                },
+                {
+                    "name": "Frame",
+                    "type": "enums.ReferenceFrame"
+                }
+            ],
+            "type": "actions.SetGimbalPose"
+        },
+        "actions.SetGimbalVelocity": {
+            "comment": "SetGimbalVelocity orders the vehicle to actuate its primary gimbal at\na target angular velocity.",
+            "fields": [
+                {
+                    "name": "PoseVelocity",
+                    "type": "datatypes.PoseVelocity"
+                }
+            ],
+            "type": "actions.SetGimbalVelocity"
+        },
+        "actions.SetVelocity": {
+            "comment": "SetVelocity orders the vehicle to accelerate towards a target velocity.",
+            "fields": [
+                {
+                    "name": "Velocity",
+                    "type": "datatypes.Velocity"
+                }
+            ],
+            "optFields": [
+                {
+                    "name": "Frame",
+                    "type": "enums.ReferenceFrame"
+                }
+            ],
+            "type": "actions.SetVelocity"
+        },
+        "actions.TakeOff": {
+            "comment": "TakeOff orders the vehicle to take off at its current position.",
+            "fields": [],
+            "optFields": [
+                {
+                    "name": "Altitude",
+                    "type": "float32"
+                }
+            ],
+            "type": "actions.TakeOff"
+        },
+        "actions.Wait": {
+            "comment": "Wait orders the vehicle to hold at its current position for Duration\nseconds.",
+            "fields": [
+                {
+                    "comment": "seconds to wait",
+                    "name": "Duration",
+                    "type": "float32"
+                }
+            ],
+            "type": "actions.Wait"
+        }
+    },
+    "datatypes": {
+        "datatypes.GlobalPosition": {
+            "comment": "GlobalPosition is the DSL version of an SDK GlobalPosition.",
+            "fields": [
+                {
+                    "name": "Latitude",
+                    "type": "float64"
+                },
+                {
+                    "name": "Longitude",
+                    "type": "float64"
+                },
+                {
+                    "name": "Altitude",
+                    "type": "float32"
+                },
+                {
+                    "name": "Heading",
+                    "type": "float32"
+                }
+            ],
+            "type": "datatypes.GlobalPosition"
+        },
+        "datatypes.Pose": {
+            "comment": "Pose is the DSL version of an SDK Pose.",
+            "fields": [
+                {
+                    "name": "Pitch",
+                    "type": "float32"
+                },
+                {
+                    "name": "Roll",
+                    "type": "float32"
+                },
+                {
+                    "name": "Yaw",
+                    "type": "float32"
+                }
+            ],
+            "type": "datatypes.Pose"
+        },
+        "datatypes.PoseVelocity": {
+            "comment": "PoseVelocity is the DSL version of an SDK PoseVelocity.",
+            "fields": [
+                {
+                    "name": "PitchVel",
+                    "type": "float32"
+                },
+                {
+                    "name": "RollVel",
+                    "type": "float32"
+                },
+                {
+                    "name": "YawVel",
+                    "type": "float32"
+                }
+            ],
+            "type": "datatypes.PoseVelocity"
+        },
+        "datatypes.RelativePosition": {
+            "comment": "RelativePosition is the DSL version of an SDK RelativePosition.",
+            "fields": [
+                {
+                    "name": "X",
+                    "type": "float32"
+                },
+                {
+                    "name": "Y",
+                    "type": "float32"
+                },
+                {
+                    "name": "Z",
+                    "type": "float32"
+                },
+                {
+                    "name": "Angle",
+                    "type": "float32"
+                }
+            ],
+            "type": "datatypes.RelativePosition"
+        },
+        "datatypes.Velocity": {
+            "comment": "Velocity is the DSL version of an SDK Velocity.",
+            "fields": [
+                {
+                    "name": "XVel",
+                    "type": "float32"
+                },
+                {
+                    "name": "YVel",
+                    "type": "float32"
+                },
+                {
+                    "name": "ZVel",
+                    "type": "float32"
+                },
+                {
+                    "name": "AngularVel",
+                    "type": "float32"
+                }
+            ],
+            "type": "datatypes.Velocity"
+        }
+    },
+    "enums": {
+        "actions.PatrolMode": {
+            "comment": "PatrolMode represents the types of patrol patterns that can be\nexecuted.",
+            "fields": [
+                {
+                    "comment": "corridor scan around the exterior",
+                    "name": "PatrolModeCorridor",
+                    "type": "actions.PatrolMode",
+                    "value": "PatrolModeCorridor"
+                },
+                {
+                    "comment": "survey over the interior",
+                    "name": "PatrolModeSurvey",
+                    "type": "actions.PatrolMode",
+                    "value": "PatrolModeSurvey"
+                }
+            ],
+            "type": "actions.PatrolMode"
+        },
+        "enums.AlertInfo_BatteryWarning": {
+            "fields": [
+                {
+                    "name": "AlertInfo_BatteryWarningCritical",
+                    "type": "enums.AlertInfo_BatteryWarning",
+                    "value": "AlertInfo_BatteryWarningCritical"
+                },
+                {
+                    "name": "AlertInfo_BatteryWarningLow",
+                    "type": "enums.AlertInfo_BatteryWarning",
+                    "value": "AlertInfo_BatteryWarningLow"
+                },
+                {
+                    "name": "AlertInfo_BatteryWarningUnspecified",
+                    "type": "enums.AlertInfo_BatteryWarning",
+                    "value": "AlertInfo_BatteryWarningUnspecified"
+                }
+            ],
+            "type": "enums.AlertInfo_BatteryWarning"
+        },
+        "enums.AlertInfo_CompassWarning": {
+            "fields": [
+                {
+                    "name": "AlertInfo_CompassWarningNoLock",
+                    "type": "enums.AlertInfo_CompassWarning",
+                    "value": "AlertInfo_CompassWarningNoLock"
+                },
+                {
+                    "name": "AlertInfo_CompassWarningUnspecified",
+                    "type": "enums.AlertInfo_CompassWarning",
+                    "value": "AlertInfo_CompassWarningUnspecified"
+                },
+                {
+                    "name": "AlertInfo_CompassWarningWeakLock",
+                    "type": "enums.AlertInfo_CompassWarning",
+                    "value": "AlertInfo_CompassWarningWeakLock"
+                }
+            ],
+            "type": "enums.AlertInfo_CompassWarning"
+        },
+        "enums.AlertInfo_ConnectionWarning": {
+            "fields": [
+                {
+                    "name": "AlertInfo_ConnectionWarningDisconnected",
+                    "type": "enums.AlertInfo_ConnectionWarning",
+                    "value": "AlertInfo_ConnectionWarningDisconnected"
+                },
+                {
+                    "name": "AlertInfo_ConnectionWarningUnspecified",
+                    "type": "enums.AlertInfo_ConnectionWarning",
+                    "value": "AlertInfo_ConnectionWarningUnspecified"
+                },
+                {
+                    "name": "AlertInfo_ConnectionWarningWeakConnection",
+                    "type": "enums.AlertInfo_ConnectionWarning",
+                    "value": "AlertInfo_ConnectionWarningWeakConnection"
+                }
+            ],
+            "type": "enums.AlertInfo_ConnectionWarning"
+        },
+        "enums.AlertInfo_GpsWarning": {
+            "fields": [
+                {
+                    "name": "AlertInfo_GpsWarningNoFix",
+                    "type": "enums.AlertInfo_GpsWarning",
+                    "value": "AlertInfo_GpsWarningNoFix"
+                },
+                {
+                    "name": "AlertInfo_GpsWarningUnspecified",
+                    "type": "enums.AlertInfo_GpsWarning",
+                    "value": "AlertInfo_GpsWarningUnspecified"
+                },
+                {
+                    "name": "AlertInfo_GpsWarningWeakSignal",
+                    "type": "enums.AlertInfo_GpsWarning",
+                    "value": "AlertInfo_GpsWarningWeakSignal"
+                }
+            ],
+            "type": "enums.AlertInfo_GpsWarning"
+        },
+        "enums.AlertInfo_MagnetometerWarning": {
+            "fields": [
+                {
+                    "name": "AlertInfo_MagnetometerWarningPerturbations",
+                    "type": "enums.AlertInfo_MagnetometerWarning",
+                    "value": "AlertInfo_MagnetometerWarningPerturbations"
+                },
+                {
+                    "name": "AlertInfo_MagnetometerWarningUnspecified",
+                    "type": "enums.AlertInfo_MagnetometerWarning",
+                    "value": "AlertInfo_MagnetometerWarningUnspecified"
+                }
+            ],
+            "type": "enums.AlertInfo_MagnetometerWarning"
+        },
+        "enums.AltitudeMode": {
+            "fields": [
+                {
+                    "name": "AltitudeModeAbsolute",
+                    "type": "enums.AltitudeMode",
+                    "value": "AltitudeModeAbsolute"
+                },
+                {
+                    "name": "AltitudeModeRelative",
+                    "type": "enums.AltitudeMode",
+                    "value": "AltitudeModeRelative"
+                },
+                {
+                    "name": "AltitudeModeUnspecified",
+                    "type": "enums.AltitudeMode",
+                    "value": "AltitudeModeUnspecified"
+                }
+            ],
+            "type": "enums.AltitudeMode"
+        },
+        "enums.AngleMode": {
+            "fields": [
+                {
+                    "name": "AngleModeAbsolute",
+                    "type": "enums.AngleMode",
+                    "value": "AngleModeAbsolute"
+                },
+                {
+                    "name": "AngleModeOffset",
+                    "type": "enums.AngleMode",
+                    "value": "AngleModeOffset"
+                },
+                {
+                    "name": "AngleModeUnspecified",
+                    "type": "enums.AngleMode",
+                    "value": "AngleModeUnspecified"
+                }
+            ],
+            "type": "enums.AngleMode"
+        },
+        "enums.HeadingMode": {
+            "fields": [
+                {
+                    "name": "HeadingModeStart",
+                    "type": "enums.HeadingMode",
+                    "value": "HeadingModeStart"
+                },
+                {
+                    "name": "HeadingModeToTarget",
+                    "type": "enums.HeadingMode",
+                    "value": "HeadingModeToTarget"
+                },
+                {
+                    "name": "HeadingModeUnspecified",
+                    "type": "enums.HeadingMode",
+                    "value": "HeadingModeUnspecified"
+                }
+            ],
+            "type": "enums.HeadingMode"
+        },
+        "enums.Mode": {
+            "fields": [
+                {
+                    "name": "ModeEmergency",
+                    "type": "enums.Mode",
+                    "value": "ModeEmergency"
+                },
+                {
+                    "name": "ModeGuided",
+                    "type": "enums.Mode",
+                    "value": "ModeGuided"
+                },
+                {
+                    "name": "ModeLand",
+                    "type": "enums.Mode",
+                    "value": "ModeLand"
+                },
+                {
+                    "name": "ModeLoiter",
+                    "type": "enums.Mode",
+                    "value": "ModeLoiter"
+                },
+                {
+                    "name": "ModeReturnToHome",
+                    "type": "enums.Mode",
+                    "value": "ModeReturnToHome"
+                },
+                {
+                    "name": "ModeTakeoff",
+                    "type": "enums.Mode",
+                    "value": "ModeTakeoff"
+                },
+                {
+                    "name": "ModeUnspecified",
+                    "type": "enums.Mode",
+                    "value": "ModeUnspecified"
+                }
+            ],
+            "type": "enums.Mode"
+        },
+        "enums.MotionStatus": {
+            "fields": [
+                {
+                    "name": "MotionStatusHolding",
+                    "type": "enums.MotionStatus",
+                    "value": "MotionStatusHolding"
+                },
+                {
+                    "name": "MotionStatusInTransit",
+                    "type": "enums.MotionStatus",
+                    "value": "MotionStatusInTransit"
+                },
+                {
+                    "name": "MotionStatusStopped",
+                    "type": "enums.MotionStatus",
+                    "value": "MotionStatusStopped"
+                },
+                {
+                    "name": "MotionStatusUnspecified",
+                    "type": "enums.MotionStatus",
+                    "value": "MotionStatusUnspecified"
+                }
+            ],
+            "type": "enums.MotionStatus"
+        },
+        "enums.ReferenceFrame": {
+            "fields": [
+                {
+                    "name": "ReferenceFrameBody",
+                    "type": "enums.ReferenceFrame",
+                    "value": "ReferenceFrameBody"
+                },
+                {
+                    "name": "ReferenceFrameNeu",
+                    "type": "enums.ReferenceFrame",
+                    "value": "ReferenceFrameNeu"
+                },
+                {
+                    "name": "ReferenceFrameUnspecified",
+                    "type": "enums.ReferenceFrame",
+                    "value": "ReferenceFrameUnspecified"
+                }
+            ],
+            "type": "enums.ReferenceFrame"
+        },
+        "enums.Resolution": {
+            "fields": [
+                {
+                    "name": "Resolution1080p",
+                    "type": "enums.Resolution",
+                    "value": "Resolution1080p"
+                },
+                {
+                    "name": "Resolution360p",
+                    "type": "enums.Resolution",
+                    "value": "Resolution360p"
+                },
+                {
+                    "name": "Resolution480p",
+                    "type": "enums.Resolution",
+                    "value": "Resolution480p"
+                },
+                {
+                    "name": "Resolution4k",
+                    "type": "enums.Resolution",
+                    "value": "Resolution4k"
+                },
+                {
+                    "name": "Resolution720p",
+                    "type": "enums.Resolution",
+                    "value": "Resolution720p"
+                },
+                {
+                    "name": "ResolutionUnspecified",
+                    "type": "enums.Resolution",
+                    "value": "ResolutionUnspecified"
+                }
+            ],
+            "type": "enums.Resolution"
+        },
+        "enums.ReturnToHomeEndBehavior": {
+            "fields": [
+                {
+                    "name": "ReturnToHomeEndBehaviorHover",
+                    "type": "enums.ReturnToHomeEndBehavior",
+                    "value": "ReturnToHomeEndBehaviorHover"
+                },
+                {
+                    "name": "ReturnToHomeEndBehaviorLand",
+                    "type": "enums.ReturnToHomeEndBehavior",
+                    "value": "ReturnToHomeEndBehaviorLand"
+                },
+                {
+                    "name": "ReturnToHomeEndBehaviorUnspecified",
+                    "type": "enums.ReturnToHomeEndBehavior",
+                    "value": "ReturnToHomeEndBehaviorUnspecified"
+                }
+            ],
+            "type": "enums.ReturnToHomeEndBehavior"
+        },
+        "events.Comparator": {
+            "comment": "Comparator selects how a threshold-style event compares the current\ntelemetry value against its configured Threshold.",
+            "fields": [
+                {
+                    "comment": "fires once the value rises to or above Threshold",
+                    "name": "GreaterOrEqual",
+                    "type": "events.Comparator",
+                    "value": "GreaterOrEqual"
+                },
+                {
+                    "comment": "fires once the value drops to or below Threshold",
+                    "name": "LessOrEqual",
+                    "type": "events.Comparator",
+                    "value": "LessOrEqual"
+                }
+            ],
+            "type": "events.Comparator"
+        },
+        "params.ClassificationResult": {
+            "comment": "ClassificationResult is generated to hold all the classification-returning\ncognitive flows that can be accessed at runtime.",
+            "fields": [],
+            "type": "params.ClassificationResult"
+        },
+        "params.DetectionResult": {
+            "comment": "DetectionResult is generated to hold all the detection-returning cognitive\nflows that can be accessed at runtime.",
+            "fields": [],
+            "type": "params.DetectionResult"
+        },
+        "params.GenericResult": {
+            "comment": "GenericResult is generated to hold all generic byte-returning cognitive\nflows that can be accessed at runtime.",
+            "fields": [],
+            "type": "params.GenericResult"
+        },
+        "params.GuidanceResult": {
+            "comment": "GuidanceResult is generated to hold all guidance-returning cognitive\nflows that can be accessed at runtime.",
+            "fields": [],
+            "type": "params.GuidanceResult"
+        },
+        "params.LineString": {
+            "comment": "LineString is generated to hold all the possible line string features that\ncan be accessed at runtime.",
+            "fields": [],
+            "type": "params.LineString"
+        },
+        "params.MultiLineString": {
+            "comment": "MultiLineString is generated to hold all the possible multi line string features\nthat can be accessed at runtime.",
+            "fields": [],
+            "type": "params.MultiLineString"
+        },
+        "params.Point": {
+            "comment": "Point is generated to hold all the possible point features that can be\naccessed at runtime.",
+            "fields": [],
+            "type": "params.Point"
+        },
+        "params.Polygon": {
+            "comment": "Polygon is generated to hold all the possible polygon features that can be\naccessed at runtime.",
+            "fields": [],
+            "type": "params.Polygon"
+        },
+        "params.PositionResult": {
+            "comment": "PositionResult is generated to hold all position-returning cognitive flows\nthat can be accessed at runtime.",
+            "fields": [],
+            "type": "params.PositionResult"
+        },
+        "params.Role": {
+            "comment": "Role is generated to hold all the possible mission roles that can be\naccessed at runtime.",
+            "fields": [],
+            "type": "params.Role"
+        },
+        "params.Squawk": {
+            "comment": "Squawk is generated to hold all the possible mission squawks that can be\nbroadcast at runtime.",
+            "fields": [],
+            "type": "params.Squawk"
+        }
+    },
+    "events": {
+        "events.AltitudeReached": {
+            "comment": "AltitudeReached fires once the vehicle's altitude is within Tolerance of\nAltitude. AltitudeMode selects which telemetry altitude to compare\nagainst: AltitudeModeAbsolute reads global (MSL) altitude,\nAltitudeModeRelative reads altitude relative to takeoff.",
+            "fields": [
+                {
+                    "name": "Altitude",
+                    "type": "float32"
+                },
+                {
+                    "name": "AltitudeMode",
+                    "type": "enums.AltitudeMode"
+                }
+            ],
+            "optFields": [
+                {
+                    "name": "Tolerance",
+                    "type": "float32",
+                    "value": "0.5"
+                }
+            ],
+            "type": "events.AltitudeReached"
+        },
+        "events.Battery": {
+            "comment": "Battery fires once the vehicle's battery percentage satisfies Comparator\nagainst Threshold (e.g. LessOrEqual for a low-battery warning,\nGreaterOrEqual to detect a full charge).",
+            "fields": [
+                {
+                    "name": "Comparator",
+                    "type": "events.Comparator"
+                }
+            ],
+            "optFields": [
+                {
+                    "comment": "battery percentage",
+                    "name": "Threshold",
+                    "type": "uint32",
+                    "value": "20"
+                }
+            ],
+            "type": "events.Battery"
+        },
+        "events.GimbalPoseReached": {
+            "comment": "GimbalPoseReached fires once the vehicle's primary gimbal pose is\nwithin Tolerance of Target on every axis. Frame selects which\ntelemetry pose to compare against.",
+            "fields": [
+                {
+                    "name": "Target",
+                    "type": "datatypes.Pose"
+                },
+                {
+                    "name": "Frame",
+                    "type": "enums.ReferenceFrame"
+                }
+            ],
+            "optFields": [
+                {
+                    "name": "Tolerance",
+                    "type": "float32",
+                    "value": "3.0"
+                }
+            ],
+            "type": "events.GimbalPoseReached"
+        },
+        "events.GlobalPositionReached": {
+            "comment": "GlobalPositionReached fires once the vehicle's global position is\nwithin tolerance of Target: Tolerance is a great-circle distance\n[meters] for latitude/longitude, AltitudeTolerance [meters] for\naltitude, and HeadingTolerance [degrees] for heading.",
+            "fields": [
+                {
+                    "name": "Target",
+                    "type": "datatypes.GlobalPosition"
+                }
+            ],
+            "optFields": [
+                {
+                    "name": "Tolerance",
+                    "type": "float32",
+                    "value": "0.5"
+                },
+                {
+                    "name": "AltitudeTolerance",
+                    "type": "float32",
+                    "value": "0.5"
+                },
+                {
+                    "name": "HeadingTolerance",
+                    "type": "float32",
+                    "value": "3.0"
+                }
+            ],
+            "type": "events.GlobalPositionReached"
+        },
+        "events.RelativePositionReached": {
+            "comment": "RelativePositionReached fires once the vehicle's relative position is\nwithin tolerance of Target on every axis: Tolerance for X/Y/Z\n[meters], AngleTolerance for Angle [degrees].",
+            "fields": [
+                {
+                    "name": "Target",
+                    "type": "datatypes.RelativePosition"
+                }
+            ],
+            "optFields": [
+                {
+                    "name": "Tolerance",
+                    "type": "float32",
+                    "value": "0.20"
+                },
+                {
+                    "name": "AngleTolerance",
+                    "type": "float32",
+                    "value": "0"
+                }
+            ],
+            "type": "events.RelativePositionReached"
+        },
+        "events.Satellites": {
+            "comment": "Satellites fires once the vehicle's GPS satellite count satisfies\nComparator against Threshold (e.g. GreaterOrEqual to detect a GPS lock).",
+            "fields": [
+                {
+                    "name": "Comparator",
+                    "type": "events.Comparator"
+                }
+            ],
+            "optFields": [
+                {
+                    "comment": "GPS satellite count",
+                    "name": "Threshold",
+                    "type": "uint32",
+                    "value": "6"
+                }
+            ],
+            "type": "events.Satellites"
+        },
+        "events.TimeElapsed": {
+            "comment": "TimeElapsed fires once Duration seconds have passed since the state\nhosting this event was entered.",
+            "fields": [
+                {
+                    "comment": "seconds to wait before firing",
+                    "name": "Duration",
+                    "type": "float32"
+                }
+            ],
+            "type": "events.TimeElapsed"
+        },
+        "events.VelocityReached": {
+            "comment": "VelocityReached fires once the vehicle's velocity is within Tolerance\nof Target on every axis. Frame selects which telemetry velocity to\ncompare against.",
+            "fields": [
+                {
+                    "name": "Target",
+                    "type": "datatypes.Velocity"
+                },
+                {
+                    "name": "Frame",
+                    "type": "enums.ReferenceFrame"
+                }
+            ],
+            "optFields": [
+                {
+                    "name": "Tolerance",
+                    "type": "float32",
+                    "value": "0"
+                }
+            ],
+            "type": "events.VelocityReached"
+        }
+    }
+}

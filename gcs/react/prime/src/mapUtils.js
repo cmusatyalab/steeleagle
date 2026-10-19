@@ -4,6 +4,17 @@ import ColorHash from 'color-hash';
 
 const colorHash = new ColorHash();
 
+// defaultFeatureName names a newly drawn feature "<Type>_<n>" (e.g.
+// Polygon_1): the compiler turns each feature name into a Go constant
+// (params.Polygon_<name>), so names must not contain spaces. n starts after
+// the features of that type already drawn and skips any name in use.
+export function defaultFeatureName(type, features) {
+    const used = new Set(features.map(f => f.properties?.name).filter(Boolean));
+    let n = features.filter(f => f.geometry?.type === type).length + 1;
+    while (used.has(`${type}_${n}`)) n++;
+    return `${type}_${n}`;
+}
+
 export function vehicleColor(name) {
     return colorHash.hex(name);
 }

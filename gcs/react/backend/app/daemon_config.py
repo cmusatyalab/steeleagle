@@ -35,10 +35,15 @@ import tomlkit
 from tomlkit.exceptions import ParseError
 from tomlkit.toml_document import TOMLDocument
 
+# The commander, simulator and database table names are assumed: eagled's
+# examples don't show them yet. Renaming one is a change here only.
 CATEGORY_TABLES = {
     "vehicle": "vehicles",
     "engine": "engines",
     "monitor": "monitors",
+    "commander": "commander",
+    "simulator": "simulator",
+    "database": "database",
     "extra": "extras",
 }
 CATEGORIES = list(CATEGORY_TABLES)

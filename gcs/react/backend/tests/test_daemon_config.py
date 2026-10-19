@@ -89,7 +89,15 @@ def test_to_form_has_settings_and_every_category():
         "vehicle_port_base": 9000,
         "headless": True,
     }
-    assert set(form["instances"]) == {"vehicle", "engine", "monitor", "extra"}
+    assert set(form["instances"]) == {
+        "vehicle",
+        "engine",
+        "monitor",
+        "commander",
+        "simulator",
+        "database",
+        "extra",
+    }
     assert _harpy(form) == HARPY
     assert form["instances"]["engine"][0]["plugin"]["source"] == {
         "kind": "image",
@@ -185,6 +193,26 @@ def test_instances_are_added_removed_and_renamed():
     assert got["instances"]["engine"] == []
     assert [s["name"] for s in got["instances"]["vehicle"]] == ["eagle"]
     assert "[[engines]]" not in out
+
+
+def test_commander_simulator_and_database_use_singular_tables():
+    # Assumed names: eagled's examples don't show these tables yet, and only
+    # CATEGORY_TABLES knows them.
+    doc = dc.parse(
+        '[[commander]]\nname = "gcs"\n[commander.plugin]\nid = "steeleagle_gcs"\n'
+        '[[simulator]]\nname = "sim"\n[simulator.plugin]\nid = "aerial_sim"\n'
+        '[[database]]\nname = "db"\n[database.plugin]\nid = "redis"\n'
+    )
+
+    form = dc.to_form(doc)
+
+    assert [s["name"] for s in form["instances"]["commander"]] == ["gcs"]
+    assert [s["name"] for s in form["instances"]["simulator"]] == ["sim"]
+    assert [s["name"] for s in form["instances"]["database"]] == ["db"]
+    form["instances"]["database"][0]["name"] = "store"
+    out = _apply(doc, form)
+    assert "[[database]]" in out and 'name = "store"' in out
+    assert "[[databases]]" not in out
 
 
 def test_nameless_entries_survive_when_their_category_is_emptied():

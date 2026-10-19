@@ -1,0 +1,15 @@
+# Mock plugin file for the seed's detector engine (shape of
+# config/examples/engine.plugin.toml).
+
+[engine]
+type = "detection"
+
+[engine.input]
+type = "steeleagle_protocol/v1/messages/frame/RawFrame"
+
+[engine.result]
+type = "steeleagle_protocol/v1/messages/result/DetectionResult"
+
+[[engine.events]]
+label = "dropped"
+type = "steeleagle_protocol/v1/messages/result/GenericResult"

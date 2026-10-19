@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from google.protobuf import duration_pb2 as google_dot_protobuf_dot_duration__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n3steeleagle_protocol/v1/services/daemon/daemon.proto\x12&steeleagle_protocol.v1.services.daemon\x1a\x1egoogle/protobuf/duration.proto\"3\n\x10\x43onfigureRequest\x12\x1f\n\x0b\x63onfig_toml\x18\x01 \x01(\tR\nconfigToml\"\x13\n\x11\x43onfigureResponse\"\x19\n\x17GetConfigurationRequest\"\xf9\x02\n\x18GetConfigurationResponse\x12\x1f\n\x0b\x63onfig_toml\x18\x01 \x01(\x0cR\nconfigToml\x12^\n\x04\x63\x61ps\x18\x02 \x03(\x0b\x32J.steeleagle_protocol.v1.services.daemon.GetConfigurationResponse.CapsEntryR\x04\x63\x61ps\x12g\n\x07plugins\x18\x03 \x03(\x0b\x32M.steeleagle_protocol.v1.services.daemon.GetConfigurationResponse.PluginsEntryR\x07plugins\x1a\x37\n\tCapsEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\x0cR\x05value:\x02\x38\x01\x1a:\n\x0cPluginsEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\x0cR\x05value:\x02\x38\x01\"\xe4\x01\n\rActiveService\x12\x12\n\x04name\x18\x01 \x01(\tR\x04name\x12S\n\x08\x63\x61tegory\x18\x02 \x01(\x0e\x32\x37.steeleagle_protocol.v1.services.daemon.ServiceCategoryR\x08\x63\x61tegory\x12\x18\n\x07running\x18\x03 \x01(\x08R\x07running\x12\x15\n\x03\x63\x61p\x18\x04 \x01(\x0cH\x00R\x03\x63\x61p\x88\x01\x01\x12\x31\n\x06uptime\x18\x05 \x01(\x0b\x32\x19.google.protobuf.DurationR\x06uptimeB\x06\n\x04_cap\"\x15\n\x13ListServicesRequest\"i\n\x14ListServicesResponse\x12Q\n\x08services\x18\x01 \x03(\x0b\x32\x35.steeleagle_protocol.v1.services.daemon.ActiveServiceR\x08services\"y\n\x0eServiceRequest\x12\x12\n\x04name\x18\x01 \x01(\tR\x04name\x12S\n\x08\x63\x61tegory\x18\x02 \x01(\x0e\x32\x37.steeleagle_protocol.v1.services.daemon.ServiceCategoryR\x08\x63\x61tegory\"l\n\x16RestartServicesRequest\x12R\n\x08services\x18\x01 \x03(\x0b\x32\x36.steeleagle_protocol.v1.services.daemon.ServiceRequestR\x08services\"\x19\n\x17RestartServicesResponse\"\x9c\x01\n\x14InstallPluginRequest\x12\x10\n\x03url\x18\x02 \x01(\tR\x03url\x12\x15\n\x03tag\x18\x03 \x01(\tH\x00R\x03tag\x88\x01\x01\x12S\n\x08\x63\x61tegory\x18\x04 \x01(\x0e\x32\x37.steeleagle_protocol.v1.services.daemon.ServiceCategoryR\x08\x63\x61tegoryB\x06\n\x04_tag\"\x17\n\x15InstallPluginResponse\"|\n\x13RemovePluginRequest\x12\x10\n\x03url\x18\x01 \x01(\tR\x03url\x12S\n\x08\x63\x61tegory\x18\x02 \x01(\x0e\x32\x37.steeleagle_protocol.v1.services.daemon.ServiceCategoryR\x08\x63\x61tegory\"\x16\n\x14RemovePluginResponse\"\x10\n\x0eRestartRequest\"\x11\n\x0fRestartResponse\"\x1b\n\x19ResetConfigurationRequest\"\x1c\n\x1aResetConfigurationResponse*\xd9\x01\n\x0fServiceCategory\x12 \n\x1cSERVICE_CATEGORY_UNSPECIFIED\x10\x00\x12\x1c\n\x18SERVICE_CATEGORY_VEHICLE\x10\x01\x12\x1b\n\x17SERVICE_CATEGORY_ENGINE\x10\x02\x12\x1c\n\x18SERVICE_CATEGORY_MONITOR\x10\x03\x12\x18\n\x14SERVICE_CATEGORY_GCS\x10\x04\x12\x18\n\x14SERVICE_CATEGORY_SIM\x10\x05\x12\x17\n\x13SERVICE_CATEGORY_DB\x10\x06\x32\x92\x08\n\rDaemonService\x12\x82\x01\n\tConfigure\x12\x38.steeleagle_protocol.v1.services.daemon.ConfigureRequest\x1a\x39.steeleagle_protocol.v1.services.daemon.ConfigureResponse\"\x00\x12\x97\x01\n\x10GetConfiguration\x12?.steeleagle_protocol.v1.services.daemon.GetConfigurationRequest\x1a@.steeleagle_protocol.v1.services.daemon.GetConfigurationResponse\"\x00\x12\x9d\x01\n\x12ResetConfiguration\x12\x41.steeleagle_protocol.v1.services.daemon.ResetConfigurationRequest\x1a\x42.steeleagle_protocol.v1.services.daemon.ResetConfigurationResponse\"\x00\x12\x8b\x01\n\x0cListServices\x12;.steeleagle_protocol.v1.services.daemon.ListServicesRequest\x1a<.steeleagle_protocol.v1.services.daemon.ListServicesResponse\"\x00\x12\x94\x01\n\x0fRestartServices\x12>.steeleagle_protocol.v1.services.daemon.RestartServicesRequest\x1a?.steeleagle_protocol.v1.services.daemon.RestartServicesResponse\"\x00\x12\x8e\x01\n\rInstallPlugin\x12<.steeleagle_protocol.v1.services.daemon.InstallPluginRequest\x1a=.steeleagle_protocol.v1.services.daemon.InstallPluginResponse\"\x00\x12\x8b\x01\n\x0cRemovePlugin\x12;.steeleagle_protocol.v1.services.daemon.RemovePluginRequest\x1a<.steeleagle_protocol.v1.services.daemon.RemovePluginResponse\"\x00\x42\xc2\x02\n*com.steeleagle_protocol.v1.services.daemonB\x0b\x44\x61\x65monProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon\xa2\x02\x04SVSD\xaa\x02%SteeleagleProtocol.V1.Services.Daemon\xca\x02%SteeleagleProtocol\\V1\\Services\\Daemon\xe2\x02\x31SteeleagleProtocol\\V1\\Services\\Daemon\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Services::Daemonb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n3steeleagle_protocol/v1/services/daemon/daemon.proto\x12&steeleagle_protocol.v1.services.daemon\x1a\x1egoogle/protobuf/duration.proto\"3\n\x10\x43onfigureRequest\x12\x1f\n\x0b\x63onfig_toml\x18\x01 \x01(\tR\nconfigToml\"\x13\n\x11\x43onfigureResponse\"\x19\n\x17GetConfigurationRequest\"\xf1\x01\n\x18GetConfigurationResponse\x12\x1f\n\x0b\x63onfig_toml\x18\x01 \x01(\x0cR\nconfigToml\x12t\n\x0cplugin_tomls\x18\x02 \x03(\x0b\x32Q.steeleagle_protocol.v1.services.daemon.GetConfigurationResponse.PluginTomlsEntryR\x0bpluginTomls\x1a>\n\x10PluginTomlsEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\x0cR\x05value:\x02\x38\x01\"\xc5\x01\n\rActiveService\x12\x12\n\x04name\x18\x01 \x01(\tR\x04name\x12S\n\x08\x63\x61tegory\x18\x02 \x01(\x0e\x32\x37.steeleagle_protocol.v1.services.daemon.ServiceCategoryR\x08\x63\x61tegory\x12\x18\n\x07running\x18\x03 \x01(\x08R\x07running\x12\x31\n\x06uptime\x18\x04 \x01(\x0b\x32\x19.google.protobuf.DurationR\x06uptime\"\x15\n\x13ListServicesRequest\"i\n\x14ListServicesResponse\x12Q\n\x08services\x18\x01 \x03(\x0b\x32\x35.steeleagle_protocol.v1.services.daemon.ActiveServiceR\x08services\"y\n\x0eServiceRequest\x12\x12\n\x04name\x18\x01 \x01(\tR\x04name\x12S\n\x08\x63\x61tegory\x18\x02 \x01(\x0e\x32\x37.steeleagle_protocol.v1.services.daemon.ServiceCategoryR\x08\x63\x61tegory\"l\n\x16RestartServicesRequest\x12R\n\x08services\x18\x01 \x03(\x0b\x32\x36.steeleagle_protocol.v1.services.daemon.ServiceRequestR\x08services\"\x19\n\x17RestartServicesResponse\"\x9c\x01\n\x14InstallPluginRequest\x12\x10\n\x03url\x18\x02 \x01(\tR\x03url\x12\x15\n\x03tag\x18\x03 \x01(\tH\x00R\x03tag\x88\x01\x01\x12S\n\x08\x63\x61tegory\x18\x04 \x01(\x0e\x32\x37.steeleagle_protocol.v1.services.daemon.ServiceCategoryR\x08\x63\x61tegoryB\x06\n\x04_tag\"\x17\n\x15InstallPluginResponse\"|\n\x13RemovePluginRequest\x12\x10\n\x03url\x18\x01 \x01(\tR\x03url\x12S\n\x08\x63\x61tegory\x18\x02 \x01(\x0e\x32\x37.steeleagle_protocol.v1.services.daemon.ServiceCategoryR\x08\x63\x61tegory\"\x16\n\x14RemovePluginResponse\"\x10\n\x0eRestartRequest\"\x11\n\x0fRestartResponse\"\x1b\n\x19ResetConfigurationRequest\"\x1c\n\x1aResetConfigurationResponse*\x87\x02\n\x0fServiceCategory\x12 \n\x1cSERVICE_CATEGORY_UNSPECIFIED\x10\x00\x12\x1c\n\x18SERVICE_CATEGORY_VEHICLE\x10\x01\x12\x1b\n\x17SERVICE_CATEGORY_ENGINE\x10\x02\x12\x1c\n\x18SERVICE_CATEGORY_MONITOR\x10\x03\x12\x1e\n\x1aSERVICE_CATEGORY_COMMANDER\x10\x04\x12\x1e\n\x1aSERVICE_CATEGORY_SIMULATOR\x10\x05\x12\x1d\n\x19SERVICE_CATEGORY_DATABASE\x10\x06\x12\x1a\n\x16SERVICE_CATEGORY_EXTRA\x10\x07\x32\x92\x08\n\rDaemonService\x12\x82\x01\n\tConfigure\x12\x38.steeleagle_protocol.v1.services.daemon.ConfigureRequest\x1a\x39.steeleagle_protocol.v1.services.daemon.ConfigureResponse\"\x00\x12\x97\x01\n\x10GetConfiguration\x12?.steeleagle_protocol.v1.services.daemon.GetConfigurationRequest\x1a@.steeleagle_protocol.v1.services.daemon.GetConfigurationResponse\"\x00\x12\x9d\x01\n\x12ResetConfiguration\x12\x41.steeleagle_protocol.v1.services.daemon.ResetConfigurationRequest\x1a\x42.steeleagle_protocol.v1.services.daemon.ResetConfigurationResponse\"\x00\x12\x8b\x01\n\x0cListServices\x12;.steeleagle_protocol.v1.services.daemon.ListServicesRequest\x1a<.steeleagle_protocol.v1.services.daemon.ListServicesResponse\"\x00\x12\x94\x01\n\x0fRestartServices\x12>.steeleagle_protocol.v1.services.daemon.RestartServicesRequest\x1a?.steeleagle_protocol.v1.services.daemon.RestartServicesResponse\"\x00\x12\x8e\x01\n\rInstallPlugin\x12<.steeleagle_protocol.v1.services.daemon.InstallPluginRequest\x1a=.steeleagle_protocol.v1.services.daemon.InstallPluginResponse\"\x00\x12\x8b\x01\n\x0cRemovePlugin\x12;.steeleagle_protocol.v1.services.daemon.RemovePluginRequest\x1a<.steeleagle_protocol.v1.services.daemon.RemovePluginResponse\"\x00\x42\xc2\x02\n*com.steeleagle_protocol.v1.services.daemonB\x0b\x44\x61\x65monProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon\xa2\x02\x04SVSD\xaa\x02%SteeleagleProtocol.V1.Services.Daemon\xca\x02%SteeleagleProtocol\\V1\\Services\\Daemon\xe2\x02\x31SteeleagleProtocol\\V1\\Services\\Daemon\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Services::Daemonb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,12 +33,10 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'steeleagle_protocol.v1.serv
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'\n*com.steeleagle_protocol.v1.services.daemonB\013DaemonProtoP\001ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon\242\002\004SVSD\252\002%SteeleagleProtocol.V1.Services.Daemon\312\002%SteeleagleProtocol\\V1\\Services\\Daemon\342\0021SteeleagleProtocol\\V1\\Services\\Daemon\\GPBMetadata\352\002(SteeleagleProtocol::V1::Services::Daemon'
-  _globals['_GETCONFIGURATIONRESPONSE_CAPSENTRY']._loaded_options = None
-  _globals['_GETCONFIGURATIONRESPONSE_CAPSENTRY']._serialized_options = b'8\001'
-  _globals['_GETCONFIGURATIONRESPONSE_PLUGINSENTRY']._loaded_options = None
-  _globals['_GETCONFIGURATIONRESPONSE_PLUGINSENTRY']._serialized_options = b'8\001'
-  _globals['_SERVICECATEGORY']._serialized_start=1660
-  _globals['_SERVICECATEGORY']._serialized_end=1877
+  _globals['_GETCONFIGURATIONRESPONSE_PLUGINTOMLSENTRY']._loaded_options = None
+  _globals['_GETCONFIGURATIONRESPONSE_PLUGINTOMLSENTRY']._serialized_options = b'8\001'
+  _globals['_SERVICECATEGORY']._serialized_start=1493
+  _globals['_SERVICECATEGORY']._serialized_end=1756
   _globals['_CONFIGUREREQUEST']._serialized_start=127
   _globals['_CONFIGUREREQUEST']._serialized_end=178
   _globals['_CONFIGURERESPONSE']._serialized_start=180
@@ -46,39 +44,37 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_GETCONFIGURATIONREQUEST']._serialized_start=201
   _globals['_GETCONFIGURATIONREQUEST']._serialized_end=226
   _globals['_GETCONFIGURATIONRESPONSE']._serialized_start=229
-  _globals['_GETCONFIGURATIONRESPONSE']._serialized_end=606
-  _globals['_GETCONFIGURATIONRESPONSE_CAPSENTRY']._serialized_start=491
-  _globals['_GETCONFIGURATIONRESPONSE_CAPSENTRY']._serialized_end=546
-  _globals['_GETCONFIGURATIONRESPONSE_PLUGINSENTRY']._serialized_start=548
-  _globals['_GETCONFIGURATIONRESPONSE_PLUGINSENTRY']._serialized_end=606
-  _globals['_ACTIVESERVICE']._serialized_start=609
-  _globals['_ACTIVESERVICE']._serialized_end=837
-  _globals['_LISTSERVICESREQUEST']._serialized_start=839
-  _globals['_LISTSERVICESREQUEST']._serialized_end=860
-  _globals['_LISTSERVICESRESPONSE']._serialized_start=862
-  _globals['_LISTSERVICESRESPONSE']._serialized_end=967
-  _globals['_SERVICEREQUEST']._serialized_start=969
-  _globals['_SERVICEREQUEST']._serialized_end=1090
-  _globals['_RESTARTSERVICESREQUEST']._serialized_start=1092
-  _globals['_RESTARTSERVICESREQUEST']._serialized_end=1200
-  _globals['_RESTARTSERVICESRESPONSE']._serialized_start=1202
-  _globals['_RESTARTSERVICESRESPONSE']._serialized_end=1227
-  _globals['_INSTALLPLUGINREQUEST']._serialized_start=1230
-  _globals['_INSTALLPLUGINREQUEST']._serialized_end=1386
-  _globals['_INSTALLPLUGINRESPONSE']._serialized_start=1388
-  _globals['_INSTALLPLUGINRESPONSE']._serialized_end=1411
-  _globals['_REMOVEPLUGINREQUEST']._serialized_start=1413
-  _globals['_REMOVEPLUGINREQUEST']._serialized_end=1537
-  _globals['_REMOVEPLUGINRESPONSE']._serialized_start=1539
-  _globals['_REMOVEPLUGINRESPONSE']._serialized_end=1561
-  _globals['_RESTARTREQUEST']._serialized_start=1563
-  _globals['_RESTARTREQUEST']._serialized_end=1579
-  _globals['_RESTARTRESPONSE']._serialized_start=1581
-  _globals['_RESTARTRESPONSE']._serialized_end=1598
-  _globals['_RESETCONFIGURATIONREQUEST']._serialized_start=1600
-  _globals['_RESETCONFIGURATIONREQUEST']._serialized_end=1627
-  _globals['_RESETCONFIGURATIONRESPONSE']._serialized_start=1629
-  _globals['_RESETCONFIGURATIONRESPONSE']._serialized_end=1657
-  _globals['_DAEMONSERVICE']._serialized_start=1880
-  _globals['_DAEMONSERVICE']._serialized_end=2922
+  _globals['_GETCONFIGURATIONRESPONSE']._serialized_end=470
+  _globals['_GETCONFIGURATIONRESPONSE_PLUGINTOMLSENTRY']._serialized_start=408
+  _globals['_GETCONFIGURATIONRESPONSE_PLUGINTOMLSENTRY']._serialized_end=470
+  _globals['_ACTIVESERVICE']._serialized_start=473
+  _globals['_ACTIVESERVICE']._serialized_end=670
+  _globals['_LISTSERVICESREQUEST']._serialized_start=672
+  _globals['_LISTSERVICESREQUEST']._serialized_end=693
+  _globals['_LISTSERVICESRESPONSE']._serialized_start=695
+  _globals['_LISTSERVICESRESPONSE']._serialized_end=800
+  _globals['_SERVICEREQUEST']._serialized_start=802
+  _globals['_SERVICEREQUEST']._serialized_end=923
+  _globals['_RESTARTSERVICESREQUEST']._serialized_start=925
+  _globals['_RESTARTSERVICESREQUEST']._serialized_end=1033
+  _globals['_RESTARTSERVICESRESPONSE']._serialized_start=1035
+  _globals['_RESTARTSERVICESRESPONSE']._serialized_end=1060
+  _globals['_INSTALLPLUGINREQUEST']._serialized_start=1063
+  _globals['_INSTALLPLUGINREQUEST']._serialized_end=1219
+  _globals['_INSTALLPLUGINRESPONSE']._serialized_start=1221
+  _globals['_INSTALLPLUGINRESPONSE']._serialized_end=1244
+  _globals['_REMOVEPLUGINREQUEST']._serialized_start=1246
+  _globals['_REMOVEPLUGINREQUEST']._serialized_end=1370
+  _globals['_REMOVEPLUGINRESPONSE']._serialized_start=1372
+  _globals['_REMOVEPLUGINRESPONSE']._serialized_end=1394
+  _globals['_RESTARTREQUEST']._serialized_start=1396
+  _globals['_RESTARTREQUEST']._serialized_end=1412
+  _globals['_RESTARTRESPONSE']._serialized_start=1414
+  _globals['_RESTARTRESPONSE']._serialized_end=1431
+  _globals['_RESETCONFIGURATIONREQUEST']._serialized_start=1433
+  _globals['_RESETCONFIGURATIONREQUEST']._serialized_end=1460
+  _globals['_RESETCONFIGURATIONRESPONSE']._serialized_start=1462
+  _globals['_RESETCONFIGURATIONRESPONSE']._serialized_end=1490
+  _globals['_DAEMONSERVICE']._serialized_start=1759
+  _globals['_DAEMONSERVICE']._serialized_end=2801
 # @@protoc_insertion_point(module_scope)

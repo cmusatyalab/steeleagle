@@ -2,9 +2,11 @@
 docs/superpowers/specs/2026-10-15-gcs-generic-plugins-design.md.
 
 The methods mirror the revised DaemonService RPCs
-(api/steeleagle_protocol/v1/services/eagled/eagled.proto), plus log
+(api/steeleagle_protocol/v1/services/daemon/daemon.proto), plus log
 methods that the proto no longer has (logs are moving to logdy; until then
-only the mock serves them). Two implementations: MockDaemonBackend
+only the mock serves them), and get_plugin_tomls, the per-service plugin
+files GetConfiguration returns (read by the Flow Builder's catalog). Two
+implementations: MockDaemonBackend
 (app/mock_daemon.py) for `mock://` addresses while the eagled rework is in
 progress, and GrpcDaemonBackend (app/grpc_daemon_backend.py) for real
 daemons. Backends raise the BackendFailure subclasses below instead of
@@ -35,10 +37,25 @@ class DaemonError(BackendFailure):
     """The daemon was reached but refused or failed the operation."""
 
 
+# The only categories RestartServices accepts; eagled restarts everything
+# else (commanders, simulators, databases, extras) through Configure.
+RESTARTABLE_CATEGORIES = ("vehicle", "engine", "monitor")
+
+
 @dataclass(frozen=True)
 class ServiceRef:
     name: str
     category: str
+
+
+@dataclass(frozen=True)
+class ServiceState:
+    """A service as the daemon's ListServices reports it."""
+
+    name: str
+    category: str
+    running: bool
+    uptime_s: float | None
 
 
 @dataclass
@@ -63,6 +80,8 @@ class DaemonBackend(Protocol):
     async def configure(self, config_toml: str) -> None: ...
     async def reset_configuration(self) -> None: ...
     async def restart_services(self, refs: list[ServiceRef]) -> None: ...
+    async def list_services(self) -> list[ServiceState]: ...
+    async def get_plugin_tomls(self) -> dict[str, bytes]: ...
     async def list_log_sources(self) -> list[LogSource]: ...
     def stream_logs(
         self, sources: list[str], tail: int, follow: bool, after_seq: dict[str, int]

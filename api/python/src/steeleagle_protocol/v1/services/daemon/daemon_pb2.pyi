@@ -16,16 +16,18 @@ class ServiceCategory(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     SERVICE_CATEGORY_VEHICLE: _ClassVar[ServiceCategory]
     SERVICE_CATEGORY_ENGINE: _ClassVar[ServiceCategory]
     SERVICE_CATEGORY_MONITOR: _ClassVar[ServiceCategory]
-    SERVICE_CATEGORY_GCS: _ClassVar[ServiceCategory]
-    SERVICE_CATEGORY_SIM: _ClassVar[ServiceCategory]
-    SERVICE_CATEGORY_DB: _ClassVar[ServiceCategory]
+    SERVICE_CATEGORY_COMMANDER: _ClassVar[ServiceCategory]
+    SERVICE_CATEGORY_SIMULATOR: _ClassVar[ServiceCategory]
+    SERVICE_CATEGORY_DATABASE: _ClassVar[ServiceCategory]
+    SERVICE_CATEGORY_EXTRA: _ClassVar[ServiceCategory]
 SERVICE_CATEGORY_UNSPECIFIED: ServiceCategory
 SERVICE_CATEGORY_VEHICLE: ServiceCategory
 SERVICE_CATEGORY_ENGINE: ServiceCategory
 SERVICE_CATEGORY_MONITOR: ServiceCategory
-SERVICE_CATEGORY_GCS: ServiceCategory
-SERVICE_CATEGORY_SIM: ServiceCategory
-SERVICE_CATEGORY_DB: ServiceCategory
+SERVICE_CATEGORY_COMMANDER: ServiceCategory
+SERVICE_CATEGORY_SIMULATOR: ServiceCategory
+SERVICE_CATEGORY_DATABASE: ServiceCategory
+SERVICE_CATEGORY_EXTRA: ServiceCategory
 
 class ConfigureRequest(_message.Message):
     __slots__ = ("config_toml",)
@@ -42,15 +44,8 @@ class GetConfigurationRequest(_message.Message):
     def __init__(self) -> None: ...
 
 class GetConfigurationResponse(_message.Message):
-    __slots__ = ("config_toml", "caps", "plugins")
-    class CapsEntry(_message.Message):
-        __slots__ = ("key", "value")
-        KEY_FIELD_NUMBER: _ClassVar[int]
-        VALUE_FIELD_NUMBER: _ClassVar[int]
-        key: str
-        value: bytes
-        def __init__(self, key: _Optional[str] = ..., value: _Optional[bytes] = ...) -> None: ...
-    class PluginsEntry(_message.Message):
+    __slots__ = ("config_toml", "plugin_tomls")
+    class PluginTomlsEntry(_message.Message):
         __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
         VALUE_FIELD_NUMBER: _ClassVar[int]
@@ -58,26 +53,22 @@ class GetConfigurationResponse(_message.Message):
         value: bytes
         def __init__(self, key: _Optional[str] = ..., value: _Optional[bytes] = ...) -> None: ...
     CONFIG_TOML_FIELD_NUMBER: _ClassVar[int]
-    CAPS_FIELD_NUMBER: _ClassVar[int]
-    PLUGINS_FIELD_NUMBER: _ClassVar[int]
+    PLUGIN_TOMLS_FIELD_NUMBER: _ClassVar[int]
     config_toml: bytes
-    caps: _containers.ScalarMap[str, bytes]
-    plugins: _containers.ScalarMap[str, bytes]
-    def __init__(self, config_toml: _Optional[bytes] = ..., caps: _Optional[_Mapping[str, bytes]] = ..., plugins: _Optional[_Mapping[str, bytes]] = ...) -> None: ...
+    plugin_tomls: _containers.ScalarMap[str, bytes]
+    def __init__(self, config_toml: _Optional[bytes] = ..., plugin_tomls: _Optional[_Mapping[str, bytes]] = ...) -> None: ...
 
 class ActiveService(_message.Message):
-    __slots__ = ("name", "category", "running", "cap", "uptime")
+    __slots__ = ("name", "category", "running", "uptime")
     NAME_FIELD_NUMBER: _ClassVar[int]
     CATEGORY_FIELD_NUMBER: _ClassVar[int]
     RUNNING_FIELD_NUMBER: _ClassVar[int]
-    CAP_FIELD_NUMBER: _ClassVar[int]
     UPTIME_FIELD_NUMBER: _ClassVar[int]
     name: str
     category: ServiceCategory
     running: bool
-    cap: bytes
     uptime: _duration_pb2.Duration
-    def __init__(self, name: _Optional[str] = ..., category: _Optional[_Union[ServiceCategory, str]] = ..., running: _Optional[bool] = ..., cap: _Optional[bytes] = ..., uptime: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ...) -> None: ...
+    def __init__(self, name: _Optional[str] = ..., category: _Optional[_Union[ServiceCategory, str]] = ..., running: _Optional[bool] = ..., uptime: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ...) -> None: ...
 
 class ListServicesRequest(_message.Message):
     __slots__ = ()

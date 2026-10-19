@@ -1,0 +1,18 @@
+# Mock plugin file for the seed's kestrel vehicle; the camera is the one in
+# config/examples/driver.plugin.toml.
+
+[driver]
+type = "copter"
+
+[[driver.cameras]]
+name = "rgb"
+type = "steeleagle_protocol/v1/messages/frame/RawFrame"
+description = "Main RGB camera on gimbal"
+hres = 1080
+vres = 720
+hfov = 69
+vfov = 43
+fps = 30
+latency = 280
+gimbal = true
+primary = true

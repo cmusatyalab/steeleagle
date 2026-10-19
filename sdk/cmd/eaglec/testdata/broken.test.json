@@ -1,0 +1,34 @@
+{
+  "Modules": {"Modules": [{"Path": "github.com/cmusatyalab/steeleagle/sdk", "Override": "../.."}]},
+  "Imports": {"Imports": [
+    {"Path": "github.com/cmusatyalab/steeleagle/sdk/dsl/actions"},
+    {"Path": "github.com/cmusatyalab/steeleagle/sdk/dsl/events"},
+    {"Path": "github.com/cmusatyalab/steeleagle/sdk/dsl/datatypes"},
+    {"Path": "github.com/cmusatyalab/steeleagle/sdk/params"},
+    {"Path": "github.com/cmusatyalab/steeleagle/sdk/enums"}
+  ]},
+  "Actions": {"Decls": [
+    {"Type": "actions.TakeOff", "Name": "takeoff", "Attrs": [{"Key": "Altitude", "Value": {"Float": 5.0}}]},
+    {"Type": "actions.SetGimbalPose", "Name": "gimbal", "Attrs": [
+      {"Key": "Pose", "Value": {"Inline": {"Type": "datatypes.Pose", "Args": [
+        {"Key": "Pitch", "Value": {"Float": -30.0}},
+        {"Key": "Roll", "Value": {"Float": 0.0}},
+        {"Key": "Yaw", "Value": {"Float": 0.0}}
+      ]}}},
+      {"Key": "AngleMode", "Value": {"Ident": "enums.AngleModeAbsolute"}}
+    ]},
+    {"Type": "actions.Patrol", "Name": "patrol", "Attrs": [
+      {"Key": "Area", "Value": {"Ident": "params.Polygon_Poly"}},
+      {"Key": "Altitud", "Value": {"Float": 15.0}}
+    ]},
+    {"Type": "actions.Land", "Name": "land", "Attrs": []}
+  ]},
+  "Events": {"Decls": [
+    {"Type": "events.Battery", "Name": "low", "Attrs": [{"Key": "Comparator", "Value": {"Ident": "events.LessOrEqual"}}]}
+  ]},
+  "Mission": {"Start": "takeoff", "Blocks": [
+    {"Action": "takeoff", "Rules": [{"Event": "done", "Next": "gimbal"}]},
+    {"Action": "gimbal", "Rules": [{"Event": "done", "Next": "patrol"}]},
+    {"Action": "patrol", "Rules": [{"Event": "low", "Next": "land"}, {"Event": "done", "Next": "land"}]}
+  ]}
+}

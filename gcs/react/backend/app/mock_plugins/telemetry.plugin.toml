@@ -1,0 +1,12 @@
+# Mock plugin file for the seed's telemetry engine. It takes two input types
+# (the list form; see the spec's open questions) so the reference flow's
+# remote engine can receive both telemetry and forwarded frames.
+
+[engine]
+type = "generic"
+
+[engine.input]
+type = ["steeleagle_protocol/v1/messages/telemetry/Telemetry", "steeleagle_protocol/v1/messages/frame/RawFrame"]
+
+[engine.result]
+type = "steeleagle_protocol/v1/messages/result/GenericResult"

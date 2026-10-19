@@ -20,8 +20,12 @@ import TaskNodePanel from './TaskNodePanel.jsx';
 import EdgePanel from './EdgePanel.jsx';
 import FsmPalette from './FsmPalette.jsx';
 import ConnectModal from './ConnectModal.jsx';
+import CanvasContextMenu from './CanvasContextMenu.jsx';
+import FlowBuilder from './FlowBuilder.jsx';
+import { canvasThemeVars } from './canvasTheme.js';
 import { getApiUrl } from './urls.js';
 import { runValidation } from './validation.js';
+import { missionRequestBody, renderDsl } from './missionGraph.js';
 
 const nodeTypes = { taskNode: TaskNode };
 const edgeTypes = { selfLoop: SelfLoopEdge };
@@ -80,99 +84,6 @@ function bfsLayout(nodeIds, startId, edges) {
     return positions;
 }
 
-// Generate a DSL string from canvas state
-function generateDsl(nodes, edges, eventInstances, startNodeId, schema) {
-    const dataEntries = [];
-    const usedDataIds = new Set();
-
-    function dataId(instanceId, paramName) {
-        let id = `${instanceId}_${paramName}`;
-        let n = 2;
-        while (usedDataIds.has(id)) id = `${instanceId}_${paramName}_${n++}`;
-        usedDataIds.add(id);
-        return id;
-    }
-
-    function serializeVal(val, fieldSchema) {
-        if (val === undefined || val === null) return null;
-        if (typeof val === 'object' && !Array.isArray(val) && fieldSchema?.nested_fields?.length) {
-            const typeName = fieldSchema.object_type || 'Object';
-            const did = dataId(fieldSchema._ownerInstanceId || 'item', fieldSchema.name);
-            const attrParts = Object.entries(val)
-                .filter(([, v]) => v !== undefined && v !== null && v !== '')
-                .map(([k, v]) => `${k} = ${v}`);
-            dataEntries.push(`    ${typeName} ${did}(${attrParts.join(', ')})`);
-            return did;
-        }
-        if (typeof val === 'boolean') return val ? 'true' : 'false';
-        if (val === '') return null;
-        // An enum field's value is an unquoted ident_ref (e.g.
-        // PatrolModeSurvey) the compiler resolves against the SDK's
-        // generated consts -- everything else (map_feature area names
-        // included) is a plain string value and must round-trip through
-        // Apply/parse_dsl as one, or the parser reads it as an
-        // (unresolvable) identifier instead.
-        if (typeof val === 'string' && !fieldSchema?.enum_type) return JSON.stringify(val);
-        return String(val);
-    }
-
-    function buildAttrStr(params, fields, instanceId) {
-        const parts = [];
-        for (const [k, v] of Object.entries(params || {})) {
-            const fs = fields?.find(f => f.name === k);
-            const fsWithOwner = fs ? { ...fs, _ownerInstanceId: instanceId } : null;
-            const sv = serializeVal(v, fsWithOwner);
-            if (sv !== null) parts.push(`${k} = ${sv}`);
-        }
-        // Grammar requires the parens literally, even with no attrs inside
-        // (sdk/dsl/parser/ast.go's Decl: `"(" (Attr (","Attr)*)? ")"`).
-        return `(${parts.join(', ')})`;
-    }
-
-    const actionLines = nodes.map(n => {
-        const fields = schema.actions[n.data.type_name]?.fields ?? [];
-        return `    ${n.data.type_name} ${n.data.instance_id}${buildAttrStr(n.data.params, fields, n.data.instance_id)}`;
-    });
-
-    const eventLines = (eventInstances || []).map(ev => {
-        const fields = schema.events[ev.type_name]?.fields ?? [];
-        return `    ${ev.type_name} ${ev.instance_id}${buildAttrStr(ev.params, fields, ev.instance_id)}`;
-    });
-
-    const nodeById = Object.fromEntries(nodes.map(n => [n.id, n]));
-    const startNode = nodes.find(n => n.id === startNodeId);
-    const startInstId = startNode?.data.instance_id ?? '';
-
-    const duringBlocks = nodes.map(n => {
-        const nodeEdges = edges.filter(e => e.source === n.id);
-        if (!nodeEdges.length) return null;
-        const transLines = nodeEdges.map(e => {
-            const evId = e.data?.eventId ?? 'done';
-            const target = nodeById[e.target]?.data.instance_id ?? e.target;
-            return `        ${evId} -> ${target}`;
-        });
-        return `    During ${n.data.instance_id}:\n${transLines.join('\n')}`;
-    }).filter(Boolean);
-
-    const parts = [];
-    if (schema.default_role) parts.push(`Role ${schema.default_role}:`);
-    if (schema.imports?.length) {
-        const importLines = schema.imports.map(imp => {
-            const alias = imp.alias ? `${imp.alias} ` : '';
-            const version = imp.version ? ` ${imp.version}` : '';
-            return `    ${alias}"${imp.path}"${version}`;
-        });
-        parts.push(`Imports:\n${importLines.join('\n')}`);
-    }
-    if (dataEntries.length) parts.push(`Data:\n${dataEntries.join('\n')}`);
-    parts.push(`Actions:\n${actionLines.join('\n')}`);
-    if (eventLines.length) parts.push(`Events:\n${eventLines.join('\n')}`);
-    const missionContent = [`    Start ${startInstId}`, ...duringBlocks].join('\n');
-    parts.push(`Mission:\n${missionContent}`);
-
-    return parts.join('\n\n');
-}
-
 // Coerces a FieldSchema's raw string default (the proto's wire type,
 // regardless of the field's own kind) to the JS type params actually
 // need: a number for number/integer fields, a boolean for boolean
@@ -199,7 +110,7 @@ function getNamedAreas(featuresStr) {
 
 function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventInstances,
                      startNodeId, setStartNodeId, schema, features, setPanelNode,
-                     setPanelEdgeId, pushSnapshot, theme }) {
+                     setPanelEdgeId, pushSnapshot, theme, active = true }) {
     const { screenToFlowPosition } = useReactFlow();
     const [connectModal, setConnectModal] = useState({ visible: false, connection: null });
     const [contextMenu, setContextMenu] = useState(null);
@@ -317,6 +228,7 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
         <div style={{ flex: 1, position: 'relative' }} onClick={() => setContextMenu(null)}>
             <ReactFlow
                 colorMode={theme}
+                deleteKeyCode={active ? 'Backspace' : null}
                 nodes={nodes}
                 edges={edges}
                 nodeTypes={nodeTypes}
@@ -336,57 +248,17 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
                 <Background variant="dots" gap={12} size={1} />
             </ReactFlow>
 
-            {/* Context menu — shared by nodes and edges */}
-            {contextMenu && (
-                <div
-                    style={{
-                        position: 'fixed', left: contextMenu.x, top: contextMenu.y,
-                        background: '#1e2a38', border: '1px solid #4a7a9b', borderRadius: 6,
-                        zIndex: 1000, minWidth: 160, boxShadow: '0 4px 12px #00000088',
-                    }}
-                    onClick={e => e.stopPropagation()}
-                >
-                    {contextMenu.nodeId ? (
-                        <>
-                            <div
-                                style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12 }}
-                                onMouseEnter={e => e.currentTarget.style.background = '#2a3a50'}
-                                onMouseLeave={e => e.currentTarget.style.background = ''}
-                                onClick={() => setAsStart(contextMenu.nodeId)}
-                            >
-                                ▶ Set as Start State
-                            </div>
-                            <div
-                                style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12, color: '#e88080' }}
-                                onMouseEnter={e => e.currentTarget.style.background = '#2a3a50'}
-                                onMouseLeave={e => e.currentTarget.style.background = ''}
-                                onClick={() => deleteNode(contextMenu.nodeId)}
-                            >
-                                🗑 Delete node
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            <div
-                                style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12 }}
-                                onMouseEnter={e => e.currentTarget.style.background = '#2a3a50'}
-                                onMouseLeave={e => e.currentTarget.style.background = ''}
-                                onClick={() => { setPanelEdgeId(contextMenu.edgeId); setContextMenu(null); }}
-                            >
-                                ✏ Edit transition
-                            </div>
-                            <div
-                                style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12, color: '#e88080' }}
-                                onMouseEnter={e => e.currentTarget.style.background = '#2a3a50'}
-                                onMouseLeave={e => e.currentTarget.style.background = ''}
-                                onClick={() => { pushSnapshot(); setEdges(es => es.filter(e => e.id !== contextMenu.edgeId)); setContextMenu(null); }}
-                            >
-                                🗑 Delete transition
-                            </div>
-                        </>
-                    )}
-                </div>
-            )}
+            <CanvasContextMenu
+                position={contextMenu}
+                onClose={() => setContextMenu(null)}
+                items={contextMenu?.nodeId ? [
+                    { label: '▶ Set as Start State', onClick: () => setAsStart(contextMenu.nodeId) },
+                    { label: '🗑 Delete node', danger: true, onClick: () => deleteNode(contextMenu.nodeId) },
+                ] : [
+                    { label: '✏ Edit transition', onClick: () => setPanelEdgeId(contextMenu?.edgeId) },
+                    { label: '🗑 Delete transition', danger: true, onClick: () => { pushSnapshot(); setEdges(es => es.filter(e => e.id !== contextMenu.edgeId)); } },
+                ]}
+            />
 
             <ConnectModal
                 visible={connectModal.visible}
@@ -401,7 +273,8 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
     );
 }
 
-function PlanPage({ theme, vehicles = [], squadList, uploadState, setUploadState }) {
+function PlanPage({ theme, vehicles = [], squadList, uploadState, setUploadState, visible = true }) {
+    const [activeIndex, setActiveIndex] = useState(0);
     const [nodes, setNodes] = useState([]);
     const [edges, setEdges] = useState([]);
     const [eventInstances, setEventInstances] = useState([]);
@@ -444,6 +317,25 @@ function PlanPage({ theme, vehicles = [], squadList, uploadState, setUploadState
         }, 500);
         return () => clearTimeout(timer);
     }, [nodes, startNodeId, schema]);
+
+    const [renderedDsl, setRenderedDsl] = useState('');
+    // Debounced like validation above. The backend renders the DSL from
+    // the same AST it compiles, so the tab never drifts from what's built.
+    useEffect(() => {
+        if (nodes.length === 0) return undefined;
+        const controller = new AbortController();
+        const timer = setTimeout(() => {
+            renderDsl(missionRequestBody(nodes, edges, eventInstances, startNodeId), controller.signal)
+                .then(setRenderedDsl)
+                .catch(e => {
+                    if (e.name !== 'AbortError') setRenderedDsl(`# DSL preview unavailable: ${e.message}`);
+                });
+        }, 300);
+        return () => {
+            clearTimeout(timer);
+            controller.abort();
+        };
+    }, [nodes, edges, eventInstances, startNodeId]);
 
     function snapshotCurrent() {
         return {
@@ -524,20 +416,7 @@ function PlanPage({ theme, vehicles = [], squadList, uploadState, setUploadState
     const startNode = nodes.find(n => n.id === startNodeId);
 
     function buildMissionRequestBody() {
-        return {
-            nodes: nodes.map(n => ({
-                instance_id: n.data.instance_id,
-                type_name: n.data.type_name,
-                params: n.data.params,
-            })),
-            events: eventInstances,
-            edges: edges.map(e => ({
-                source: nodes.find(n => n.id === e.source)?.data.instance_id,
-                event_id: e.data?.eventId ?? 'done',
-                target: nodes.find(n => n.id === e.target)?.data.instance_id,
-            })),
-            start_id: startNode?.data.instance_id,
-        };
+        return missionRequestBody(nodes, edges, eventInstances, startNodeId);
     }
 
     function highlightErrorNodes(errors) {
@@ -555,12 +434,22 @@ function PlanPage({ theme, vehicles = [], squadList, uploadState, setUploadState
         }
         setCompiling(true);
         try {
-            const body = buildMissionRequestBody();
+            const body = { ...buildMissionRequestBody(), geojson: features };
             const resp = await fetch(getApiUrl('/api/compile'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
             });
+            if (!resp.ok) {
+                let detail = `Server error ${resp.status}`;
+                try {
+                    const err = await resp.json();
+                    const d = err.detail;
+                    if (d !== undefined && d !== null) detail = typeof d === 'string' ? d : JSON.stringify(d);
+                } catch { /* keep the status message */ }
+                toast.current.show({ severity: 'error', summary: 'Compile failed', detail });
+                return;
+            }
             const result = await resp.json();
             if (result.errors) {
                 toast.current.show({ severity: 'error', summary: 'Compile error', detail: result.errors[0]?.message });
@@ -724,6 +613,11 @@ function PlanPage({ theme, vehicles = [], squadList, uploadState, setUploadState
         setDslText('');
     }
 
+    function showParseWarnings(parsed) {
+        (parsed.warnings ?? []).forEach(w =>
+            toast.current.show({ severity: 'warn', summary: 'DSL warning', detail: w, life: 8000 }));
+    }
+
     async function parseDslText(text) {
         const resp = await fetch(getApiUrl('/api/parse_dsl'), {
             method: 'POST',
@@ -745,6 +639,7 @@ function PlanPage({ theme, vehicles = [], squadList, uploadState, setUploadState
             const text = await file.text();
             const parsed = await parseDslText(text);
             loadFromParsed(parsed);
+            showParseWarnings(parsed);
             toast.current.show({ severity: 'success', summary: 'DSL loaded', detail: `${parsed.nodes.length} actions, ${parsed.events.length} events` });
         } catch (e) {
             toast.current.show({ severity: 'error', summary: 'DSL parse error', detail: e.message });
@@ -759,6 +654,7 @@ function PlanPage({ theme, vehicles = [], squadList, uploadState, setUploadState
         try {
             const parsed = await parseDslText(dslText);
             loadFromParsed(parsed);
+            showParseWarnings(parsed);
             toast.current.show({ severity: 'success', summary: 'DSL applied', detail: `${parsed.nodes.length} actions, ${parsed.events.length} events` });
         } catch (e) {
             toast.current.show({ severity: 'error', summary: 'DSL parse error', detail: e.message });
@@ -772,9 +668,15 @@ function PlanPage({ theme, vehicles = [], squadList, uploadState, setUploadState
         setDslText('');
     }
 
-    function handleExportDsl() {
-        const dsl = generateDsl(nodes, edges, eventInstances, startNodeId, schema);
-        const blob = new Blob([dsl + '\n'], { type: 'text/plain' });
+    async function handleExportDsl() {
+        let dsl;
+        try {
+            dsl = await renderDsl(buildMissionRequestBody());
+        } catch (e) {
+            toast.current.show({ severity: 'error', summary: 'Export failed', detail: e.message });
+            return;
+        }
+        const blob = new Blob([dsl], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -783,7 +685,7 @@ function PlanPage({ theme, vehicles = [], squadList, uploadState, setUploadState
         URL.revokeObjectURL(url);
     }
 
-    const liveDsl = nodes.length > 0 ? generateDsl(nodes, edges, eventInstances, startNodeId, schema) : '# Add nodes to see DSL preview';
+    const liveDsl = nodes.length > 0 ? renderedDsl : '# Add nodes to see DSL preview';
     const displayDsl = dslEdited ? dslText : liveDsl;
 
     const buildArchOptions = [
@@ -819,8 +721,8 @@ function PlanPage({ theme, vehicles = [], squadList, uploadState, setUploadState
                     onChange={e => setDeployTargets(e.value)}
                     placeholder="Select vehicles" />
             </Dialog>
-            <TabView renderActiveOnly={false}>
-                <TabPanel header="FSM Builder" leftIcon="pi pi-share-alt mr-2" headerClassName="mr-2">
+            <TabView renderActiveOnly={false} activeIndex={activeIndex} onTabChange={(e) => setActiveIndex(e.index)}>
+                <TabPanel header="Mission Builder" leftIcon="pi pi-share-alt mr-2" headerClassName="mr-2">
                     <div className="flex flex-column" style={{ height: 'calc(100vh - 180px)' }}>
                         {/* Hidden file input — outside toolbar div */}
                         <input
@@ -907,23 +809,11 @@ function PlanPage({ theme, vehicles = [], squadList, uploadState, setUploadState
                         </div>
 
                         {/* Canvas — middle */}
-                        <div className="flex flex-1" style={{
-                            overflow: 'hidden',
-                            '--node-bg':            theme === 'light' ? '#ffffff'  : '#1e3040',
-                            '--node-text':          theme === 'light' ? '#111827'  : '#ffffff',
-                            '--node-id-color':      theme === 'light' ? '#1d4ed8'  : '#7ecfff',
-                            '--node-chip-bg':       theme === 'light' ? '#f1f5f9'  : '#0d1820',
-                            '--node-chip-text':     theme === 'light' ? '#475569'  : '#aaaaaa',
-                            '--palette-bg':         theme === 'light' ? '#f8fafc'  : '#1a2530',
-                            '--palette-border':     theme === 'light' ? '#e2e8f0'  : '#2a3a4a',
-                            '--palette-header':     theme === 'light' ? '#1d4ed8'  : '#7ecfff',
-                            '--palette-item-text':  theme === 'light' ? '#1e293b'  : '#ffffff',
-                            '--palette-item-div':   theme === 'light' ? '#e2e8f0'  : '#1e2a38',
-                            '--palette-item-hover': theme === 'light' ? '#dbeafe'  : '#1e3040',
-                        }}>
+                        <div className="flex flex-1" style={{ overflow: 'hidden', ...canvasThemeVars(theme) }}>
                             <FsmPalette onSchemaLoaded={setSchema} />
                             <ReactFlowProvider>
                                 <FsmCanvas
+                                    active={visible && activeIndex === 0}
                                     nodes={nodesWithWarnings} edges={edges}
                                     setNodes={setNodes} setEdges={setEdges}
                                     eventInstances={eventInstances} setEventInstances={setEventInstances}
@@ -978,6 +868,9 @@ function PlanPage({ theme, vehicles = [], squadList, uploadState, setUploadState
                     />
                 </TabPanel>
 
+                <TabPanel header="Flow Builder" leftIcon="pi pi-sitemap mr-2" headerClassName="mr-2">
+                    <FlowBuilder theme={theme} toast={toast} active={visible && activeIndex === 1} />
+                </TabPanel>
                 <TabPanel header="Map" leftIcon="pi pi-map mr-2" headerClassName="mr-2">
                     <div style={{ height: 'calc(100vh - 180px)' }}>
                         <MapDraw features={features} setFeatures={setFeatures} toast={toast} />

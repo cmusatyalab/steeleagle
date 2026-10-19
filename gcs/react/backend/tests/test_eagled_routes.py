@@ -1,9 +1,10 @@
 import httpx
 import pytest
 from fastapi import FastAPI
-from steeleagle_protocol.v1.services.eagled import eagled_pb2
+from steeleagle_protocol.v1.services.daemon import daemon_pb2
 
 from app import daemon_registry, daemon_config, eagled_routes
+from app.daemon_backend import DaemonError, NotSupported, ServiceState
 from app.eagled_routes import (
     DaemonAddressBody,
     PutConfigBody,
@@ -73,7 +74,7 @@ async def test_status_mock_disabled_is_unreachable():
 async def test_status_over_grpc(daemon_server_factory):
     _servicer, address = await daemon_server_factory(
         {
-            "GetConfiguration": eagled_pb2.GetConfigurationResponse(
+            "GetConfiguration": daemon_pb2.GetConfigurationResponse(
                 config_toml=b'hostname = "real"\n'
             )
         }
@@ -103,9 +104,11 @@ async def test_plugins_lists_every_configured_instance(mock_daemons):
         ("harpy", "vehicle"),
         ("kestrel", "vehicle"),
         ("detector", "engine"),
+        ("yolo", "engine"),
+        ("telemetry", "engine"),
         ("battery-watch", "monitor"),
         ("swarm-controller", "extra"),
-        ("gcs", "extra"),
+        ("gcs", "commander"),
     }
     harpy = next(i for i in result.instances if i.name == "harpy")
     assert harpy.source == {
@@ -117,6 +120,67 @@ async def test_plugins_lists_every_configured_instance(mock_daemons):
     assert harpy.section["instance_fields"]["sim"]["lat"] == 40.413664
     detector = next(i for i in result.instances if i.name == "detector")
     assert detector.section["plugin"]["args"] == {"model": "yolov8n", "confidence": 0.5}
+
+
+async def test_plugins_marks_only_vehicles_engines_and_monitors_restartable(
+    mock_daemons,
+):
+    restartable = {i.name: i.restartable for i in (await get_plugins(MOCK)).instances}
+
+    assert restartable["harpy"] and restartable["yolo"] and restartable["battery-watch"]
+    assert not restartable["gcs"] and not restartable["swarm-controller"]
+
+
+async def test_plugins_includes_each_services_run_state(mock_daemons):
+    result = await get_plugins(MOCK)
+
+    assert result.ok is True
+    assert all(i.running is True for i in result.instances)
+    assert all(i.uptime_s is not None and i.uptime_s >= 0 for i in result.instances)
+
+
+async def test_plugins_without_list_services_leaves_run_state_unknown(
+    mock_daemons, monkeypatch
+):
+    async def unsupported():
+        raise NotSupported("ListServices")
+
+    monkeypatch.setattr(mock(), "list_services", unsupported)
+
+    result = await get_plugins(MOCK)
+
+    assert result.ok is True and result.error is None
+    assert len(result.instances) == 8
+    assert all(i.running is None and i.uptime_s is None for i in result.instances)
+
+
+async def test_plugins_still_lists_services_when_run_state_fails(
+    mock_daemons, monkeypatch
+):
+    async def broken():
+        raise DaemonError("supervisor wedged")
+
+    monkeypatch.setattr(mock(), "list_services", broken)
+
+    result = await get_plugins(MOCK)
+
+    assert result.reachable is True and result.ok is False
+    assert "supervisor wedged" in result.error
+    assert len(result.instances) == 8
+    assert all(i.running is None for i in result.instances)
+
+
+async def test_plugins_marks_a_stopped_service(mock_daemons, monkeypatch):
+    async def states():
+        return [ServiceState("harpy", "vehicle", running=False, uptime_s=None)]
+
+    monkeypatch.setattr(mock(), "list_services", states)
+
+    instances = {i.name: i for i in (await get_plugins(MOCK)).instances}
+
+    assert instances["harpy"].running is False
+    # Configured but not reported: the daemon isn't running it at all.
+    assert instances["kestrel"].running is False
 
 
 async def test_plugins_returns_odd_config_values_verbatim(mock_daemons):
@@ -149,7 +213,7 @@ async def test_restart_sends_one_request_for_all_instances(mock_daemons):
         address=MOCK,
         instances=[
             {"name": "harpy", "category": "vehicle"},
-            {"name": "gcs", "category": "extra"},
+            {"name": "detector", "category": "engine"},
         ],
     )
 
@@ -179,6 +243,21 @@ async def test_restart_body_validation():
             },
         )
     assert empty.status_code == 422 and bad_name.status_code == 422
+
+
+@pytest.mark.parametrize("category", ["commander", "simulator", "database", "extra"])
+async def test_restart_refuses_services_only_configure_restarts(mock_daemons, category):
+    async with asgi_client() as client:
+        response = await client.post(
+            "/api/daemons/plugins/restart",
+            json={
+                "address": MOCK,
+                "instances": [{"name": "gcs", "category": category}],
+            },
+        )
+
+    assert response.status_code == 422
+    assert not [e for e in mock().events if e[0] == "restart"]
 
 
 async def test_reset_config_then_status_is_unconfigured(mock_daemons):

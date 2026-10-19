@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature, vehicleColor, vehicleSpeed, isVehicleDisconnected, vehicleStatus, vehicleStatusColor, vehicleStatusRailFill, vehicleStatusMapColor, vehicleStatusTextColor, sortVehiclesForDisplay } from './mapUtils.js';
+import { defaultFeatureName, featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature, vehicleColor, vehicleSpeed, isVehicleDisconnected, vehicleStatus, vehicleStatusColor, vehicleStatusRailFill, vehicleStatusMapColor, vehicleStatusTextColor, sortVehiclesForDisplay } from './mapUtils.js';
 
 const SAMPLE_FC = {
     type: 'FeatureCollection',
@@ -277,5 +277,24 @@ describe('sortVehiclesForDisplay', () => {
         const vehicles = [v('b', 0), v('a', 0)];
         sortVehiclesForDisplay(vehicles, []);
         expect(vehicles.map((x) => x.name)).toEqual(['b', 'a']);
+    });
+});
+
+describe('defaultFeatureName', () => {
+    const named = (type, name) => ({ type: 'Feature', geometry: { type }, properties: { name } });
+
+    it('numbers features per geometry type with no spaces', () => {
+        expect(defaultFeatureName('Polygon', [])).toBe('Polygon_1');
+        expect(defaultFeatureName('LineString', [named('Polygon', 'Polygon_1')])).toBe('LineString_1');
+        expect(defaultFeatureName('Point', [named('Point', 'Point_1'), named('Point', 'Home')])).toBe('Point_3');
+    });
+
+    it('skips names already in use, whatever their type', () => {
+        const features = [named('Polygon', 'Polygon_1'), named('Point', 'Polygon_2')];
+        expect(defaultFeatureName('Polygon', features)).toBe('Polygon_3');
+    });
+
+    it('ignores unnamed features when checking for collisions', () => {
+        expect(defaultFeatureName('Polygon', [{ geometry: { type: 'Polygon' }, properties: {} }])).toBe('Polygon_2');
     });
 });

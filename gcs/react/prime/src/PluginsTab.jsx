@@ -9,16 +9,18 @@ import { confirmDialog } from 'primereact/confirmdialog';
 import ServiceConfigPanel from './ServiceConfigPanel.jsx';
 import { daemonRequest, describeFailure, query } from './daemonApi.js';
 import { CATEGORIES, CATEGORY_LABELS } from './configForm.js';
-import { logSourcesFor, sourceIcon, sourceLabel } from './pluginView.js';
+import { formatUptime, hasRunState, logSourcesFor, runStatus, sourceIcon, sourceLabel } from './pluginView.js';
 
 // Same cadence as OrchestrationPage's daemon status poll.
 const POLL_INTERVAL_MS = 5000;
 const FILTERS = [{ label: 'All', value: 'all' }, ...CATEGORIES.map((c) => ({ label: CATEGORY_LABELS[c], value: c }))];
 
 // The Services tab: every service in one daemon's config (vehicles,
-// engines, monitors, extras). eagled keeps trying to run everything its
-// config lists, so there is no run state to show; the only per-service
-// action is a restart (plus a jump to its logs). Expanding a row shows the
+// engines, monitors, extras), with each one's run state and uptime from the
+// daemon's ListServices (both columns hidden for a daemon that can't report
+// them). The only per-service action is a restart (plus a jump to its logs),
+// offered only where the daemon allows it (vehicles, engines, monitors; the
+// rest restart through Configure). Expanding a row shows the
 // service's config entry read-only; changes go through the Configure
 // command.
 // Mounted only while its tab is active, so it polls only while visible.
@@ -73,6 +75,13 @@ function PluginsTab({ daemon, toast, onShowLogs, onEditConfig }) {
         [state.instances, filter]
     );
 
+    const showRunState = hasRunState(state.instances);
+
+    const statusCell = (inst) => {
+        const status = runStatus(inst);
+        return status ? <Tag value={status.label} severity={status.severity} /> : '—';
+    };
+
     const sourceCell = (inst) => (
         <span className="flex align-items-center gap-2" title={sourceLabel(inst.source)} style={{ maxWidth: '32rem' }}>
             <i className={sourceIcon(inst.source)} />
@@ -100,6 +109,8 @@ function PluginsTab({ daemon, toast, onShowLogs, onEditConfig }) {
                 <Column expander style={{ width: '3rem' }} />
                 <Column field="name" header="Name" sortable />
                 <Column field="category" header="Category" sortable body={(i) => <Tag value={i.category} severity="info" />} />
+                {showRunState && <Column field="running" header="Status" sortable body={statusCell} />}
+                {showRunState && <Column field="uptime_s" header="Uptime" sortable body={(i) => formatUptime(i.uptime_s)} />}
                 <Column header="Source" body={sourceCell} />
                 <Column
                     header=""
@@ -107,7 +118,9 @@ function PluginsTab({ daemon, toast, onShowLogs, onEditConfig }) {
                     body={(inst) => (
                         <div className="flex gap-1">
                             <Button icon="pi pi-align-left" size="small" text rounded tooltip={`${inst.name} logs`} tooltipOptions={{ position: 'top' }} aria-label={`${inst.name} logs`} onClick={() => onShowLogs(logSourcesFor(inst))} />
-                            <Button icon="pi pi-refresh" size="small" text rounded tooltip={`Restart ${inst.name}`} tooltipOptions={{ position: 'top' }} aria-label={`Restart ${inst.name}`} onClick={() => confirmRestart(inst)} />
+                            {inst.restartable && (
+                                <Button icon="pi pi-refresh" size="small" text rounded tooltip={`Restart ${inst.name}`} tooltipOptions={{ position: 'top' }} aria-label={`Restart ${inst.name}`} onClick={() => confirmRestart(inst)} />
+                            )}
                         </div>
                     )}
                 />
