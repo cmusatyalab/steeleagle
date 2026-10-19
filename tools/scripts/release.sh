@@ -21,20 +21,24 @@ usage() {
 	cat <<'EOF'
 usage: git release <patch|minor|major> [alpha|beta|prod] [options]
 
-Bumps every Go module in the repo and creates an annotated tag for each one
-on HEAD. Prerelease stages continue an existing series for the same version
+Bumps every Go module in the repo and creates an annotated tag for each one.
+Prerelease stages continue an existing series for the same version
 (alpha.1 -> alpha.2 -> beta.1 -> prod); going back from beta to alpha is
 refused.
 
 Modules are built against each other locally through a gitignored go.work,
 so each go.mod only requires published versions and replace directives are
-refused. To move one module onto a new release of another (e.g. sdk onto a
-new api/go), release the dependency, push it, then `go get` it in the
-dependent module, commit, and release that.
+refused. Each module being released is moved onto the newest version of the
+other repo modules it requires, including ones released in the same run:
+dependencies are tagged and pushed first, then `go get` records them (with
+their go.sum hashes) in the modules that need them, that is committed, and
+those modules are tagged and pushed in turn. Releasing in more than one
+round like this needs --push.
 
 options:
   --only <mods>    comma-separated modules to release: root, api/go, sdk, ...
   --push           push the branch and tags atomically, then warm the Go proxy
+  --no-sync        leave require lines on other repo modules as they are
   --remote <name>  remote to fetch from and push to (default: origin)
   --no-fetch       don't fetch tags from the remote first
   -n, --dry-run    show what would happen without changing anything
@@ -53,6 +57,7 @@ stage=prod
 only=
 remote=origin
 push=false
+sync=true
 fetch=true
 dry_run=false
 yes=false
@@ -75,6 +80,7 @@ while (($#)); do
 		;;
 	--remote=*) remote=${1#*=} ;;
 	--push) push=true ;;
+	--no-sync) sync=false ;;
 	--no-fetch) fetch=false ;;
 	-n | --dry-run) dry_run=true ;;
 	-y | --yes) yes=true ;;
@@ -134,6 +140,21 @@ name_of() { [[ $1 == . ]] && echo root || echo "$1"; }
 prefix_of() { [[ $1 == . ]] && echo "" || echo "$1/"; }
 path_of() { awk '$1 == "module" { print $2; exit }' "$1/go.mod"; }
 
+# Version of dep_path that the go.mod in dir requires, if any.
+required_of() {
+	sed -nE "s#^[[:space:]]*(require[[:space:]]+)?${2//./\\.}[[:space:]]+(v[^[:space:]]+).*#\2#p" "$1/go.mod" | head -1
+}
+
+declare -A mod_path
+for d in "${dirs[@]}"; do
+	mod_path[$d]=$(path_of "$d")
+	[[ -n ${mod_path[$d]} ]] || die "$d/go.mod has no module line"
+done
+
+# The repo's import path prefix, e.g. github.com/cmusatyalab/steeleagle.
+repo_path=${mod_path[.]:-}
+repo_path=${repo_path%/v[0-9]*}
+
 selected=()
 if [[ -n $only ]]; then
 	IFS=, read -ra wanted <<<"$only"
@@ -184,20 +205,17 @@ module_pathspec() {
 	done
 }
 
-declare -A mod_path cur_tag next_ver next_tag note
-
-for dir in "${selected[@]}"; do
-	path=$(path_of "$dir")
-	[[ -n $path ]] || die "$dir/go.mod has no module line"
+# Sets best (newest tag), best_core, best_stage, best_n, stable (newest
+# release as "MAJOR MINOR PATCH") and path_major for the module in dir.
+scan_tags() {
+	local dir=$1 prefix t v ma mi pa st n k best_key= stable_key=
 	prefix=$(prefix_of "$dir")
-	mod_path[$dir]=$path
+	best= best_core= best_stage= best_n=0 stable=
 
 	# A /vN suffix pins the major version; without one, only v0 and v1 are valid.
 	path_major=
-	[[ $path =~ /v([0-9]+)$ ]] && path_major=${BASH_REMATCH[1]}
+	[[ ${mod_path[$dir]} =~ /v([0-9]+)$ ]] && path_major=${BASH_REMATCH[1]}
 
-	best_key= best= best_core= best_stage= best_n=0
-	stable_key= stable=
 	while IFS= read -r t; do
 		v=${t#"$prefix"}
 		[[ $v =~ $semver_re ]] || continue
@@ -216,6 +234,19 @@ for dir in "${selected[@]}"; do
 			stable_key=$k stable="$ma $mi $pa"
 		fi
 	done < <(git tag -l "${prefix}v*")
+}
+
+declare -A cur_tag cur_ver next_ver next_tag note
+
+for dir in "${dirs[@]}"; do
+	scan_tags "$dir"
+	cur_tag[$dir]=$best
+	cur_ver[$dir]=${best#"$(prefix_of "$dir")"}
+done
+
+for dir in "${selected[@]}"; do
+	scan_tags "$dir"
+	path=${mod_path[$dir]}
 
 	if [[ -n $stable ]]; then
 		read -r ma mi pa <<<"$stable"
@@ -262,10 +293,9 @@ for dir in "${selected[@]}"; do
 		ver+="-$stage.1"
 	fi
 
-	tag="$prefix$ver"
+	tag="$(prefix_of "$dir")$ver"
 	git rev-parse -q --verify "refs/tags/$tag" >/dev/null && die "tag $tag already exists"
 
-	cur_tag[$dir]=${best:-}
 	next_ver[$dir]=$ver
 	next_tag[$dir]=$tag
 	note[$dir]=
@@ -277,21 +307,56 @@ done
 
 # --- internal require lines ---------------------------------------------------
 
-# Point out modules that will still require an older version of a module being
-# released; moving them forward is a separate go get + release.
+# A module being released moves onto the newest version of every repo module it
+# requires: the one being released alongside it, or else its newest tag.
+syncs=() # "dir|dep|version"
 warnings=()
 for dir in "${dirs[@]}"; do
-	for dep in "${selected[@]}"; do
+	for dep in "${dirs[@]}"; do
 		[[ $dep == "$dir" ]] && continue
-		dep_path=${mod_path[$dep]}
-		required=$(sed -nE "s#^[[:space:]]*(require[[:space:]]+)?${dep_path//./\\.}[[:space:]]+(v[^[:space:]]+).*#\2#p" "$dir/go.mod" | head -1)
+		required=$(required_of "$dir" "${mod_path[$dep]}")
 		[[ -n $required ]] || continue
+		target=${next_ver[$dep]:-${cur_ver[$dep]}}
+		[[ -n $target ]] || continue
 		have=$(version_key "$required")
-		want=$(version_key "${next_ver[$dep]}")
-		if [[ -z $have || $want > $have ]]; then
-			warnings+=("$(name_of "$dir") requires $dep_path $required (releasing ${next_ver[$dep]})")
+		want=$(version_key "$target")
+		[[ -z $have || $want > $have ]] || continue
+
+		if [[ -n ${next_ver[$dir]:-} ]] && $sync; then
+			if [[ -z ${next_ver[$dep]:-} ]] && ! $dry_run &&
+				! git ls-remote --exit-code --tags "$remote" "refs/tags/${cur_tag[$dep]}" >/dev/null; then
+				die "$(name_of "$dir") would move to ${cur_tag[$dep]}, which isn't on $remote; push it or use --no-sync"
+			fi
+			syncs+=("$dir|$dep|$target")
+		elif [[ -n ${next_ver[$dep]:-} ]]; then
+			warnings+=("$(name_of "$dir") stays on ${mod_path[$dep]} $required (releasing $target)")
 		fi
 	done
+done
+
+# Split the release into waves: a module waits for the wave that publishes any
+# repo module it is moving onto.
+declare -A wave_of
+waves=()
+remaining=("${selected[@]}")
+while ((${#remaining[@]})); do
+	this=() rest=()
+	for dir in "${remaining[@]}"; do
+		ready=true
+		for s in "${syncs[@]}"; do
+			IFS='|' read -r sd dep _ <<<"$s"
+			if [[ $sd == "$dir" && -n ${next_ver[$dep]:-} && -z ${wave_of[$dep]:-} ]]; then
+				ready=false
+			fi
+		done
+		if $ready; then this+=("$dir"); else rest+=("$dir"); fi
+	done
+	((${#this[@]})) || die "repo modules require each other in a cycle: ${rest[*]}"
+	for dir in "${this[@]}"; do
+		wave_of[$dir]=$((${#waves[@]} + 1))
+	done
+	waves+=("${this[*]}")
+	remaining=("${rest[@]}")
 done
 
 # --- plan ---------------------------------------------------------------------
@@ -304,10 +369,27 @@ for dir in "${selected[@]}"; do
 	echo "$line"
 done
 echo
+for i in "${!waves[@]}"; do
+	read -ra wave <<<"${waves[i]}"
+	((${#waves[@]} > 1)) && echo "  round $((i + 1)):"
+	for dir in "${wave[@]}"; do
+		for s in "${syncs[@]}"; do
+			IFS='|' read -r sd dep ver <<<"$s"
+			[[ $sd == "$dir" ]] && echo "    $(name_of "$dir"): go get ${mod_path[$dep]}@$ver"
+		done
+		echo "    tag ${next_tag[$dir]}"
+	done
+done
+echo
 for w in "${warnings[@]}"; do
 	echo "  note: $w"
 done
 ((${#warnings[@]})) && echo
+
+if ((${#waves[@]} > 1)) && ! $push; then
+	$dry_run || die "this release runs in ${#waves[@]} rounds, so later modules can require the ones published before them; rerun with --push (or --no-sync)"
+	echo "note: this release runs in ${#waves[@]} rounds and needs --push"
+fi
 
 if $dry_run; then
 	echo "dry run: nothing changed"
@@ -324,13 +406,80 @@ fi
 # --- commit, tag, push --------------------------------------------------------
 
 tags=()
-for dir in "${selected[@]}"; do
-	tags+=("${next_tag[$dir]}")
-done
+pushed=()
+commits=0
 
-for dir in "${selected[@]}"; do
-	git tag -a "${next_tag[$dir]}" -m "${mod_path[$dir]} ${next_ver[$dir]}"
-	echo "tagged ${next_tag[$dir]}"
+# Report what is already done, and how to finish, then exit.
+fail() {
+	echo "release: $*" >&2
+	local left=() unpushed=() dir t
+	for dir in "${selected[@]}"; do
+		[[ " ${pushed[*]} " == *" ${next_tag[$dir]} "* ]] || left+=("$(name_of "$dir")")
+	done
+	for t in "${tags[@]}"; do
+		[[ " ${pushed[*]} " == *" $t "* ]] || unpushed+=("$t")
+	done
+	if ((${#unpushed[@]})); then
+		echo "release: delete the unpushed tags with: git tag -d ${unpushed[*]}" >&2
+	fi
+	if ((${#pushed[@]})); then
+		echo "release: already pushed: ${pushed[*]}" >&2
+		echo "release: once fixed, finish with: git release $level $stage --only $(
+			IFS=,
+			echo "${left[*]}"
+		) --push" >&2
+	fi
+	exit 1
+}
+
+# Our modules are fetched straight from the repo rather than the proxy and
+# checksum database, which may not have seen tags pushed moments ago.
+go_get() {
+	local dir=$1
+	shift
+	(cd "$dir" && GOWORK=off GOFLAGS=-mod=mod GOPRIVATE="${GOPRIVATE:+$GOPRIVATE,}$repo_path" go get "$@")
+}
+
+for i in "${!waves[@]}"; do
+	read -ra wave <<<"${waves[i]}"
+
+	changed=()
+	moved=()
+	for dir in "${wave[@]}"; do
+		args=()
+		for s in "${syncs[@]}"; do
+			IFS='|' read -r sd dep ver <<<"$s"
+			[[ $sd == "$dir" ]] || continue
+			args+=("${mod_path[$dep]}@$ver")
+			moved+=("$(name_of "$dep")@$ver")
+		done
+		((${#args[@]})) || continue
+		echo "$(name_of "$dir"): go get ${args[*]}"
+		go_get "$dir" "${args[@]}" || fail "go get failed in $(name_of "$dir")"
+		for f in "$dir/go.mod" "$dir/go.sum"; do
+			[[ -e $f ]] && changed+=("$f")
+		done
+	done
+	if ((${#changed[@]})) && ! git diff --quiet -- "${changed[@]}"; then
+		mapfile -t moved < <(printf '%s\n' "${moved[@]}" | sort -u)
+		git add -- "${changed[@]}"
+		git commit --quiet -m "Require ${moved[*]}" -- "${changed[@]}" || fail "commit failed"
+		commits=$((commits + 1))
+		echo "committed $(git rev-parse --short HEAD): Require ${moved[*]}"
+	fi
+
+	wave_tags=()
+	for dir in "${wave[@]}"; do
+		git tag -a "${next_tag[$dir]}" -m "${mod_path[$dir]} ${next_ver[$dir]}" || fail "could not tag ${next_tag[$dir]}"
+		echo "tagged ${next_tag[$dir]}"
+		wave_tags+=("${next_tag[$dir]}")
+		tags+=("${next_tag[$dir]}")
+	done
+
+	if $push; then
+		git push --atomic "$remote" "$branch" "${wave_tags[@]}" || fail "push failed"
+		pushed+=("${wave_tags[@]}")
+	fi
 done
 
 if ! $push; then
@@ -339,21 +488,17 @@ if ! $push; then
 	echo "  git push --atomic $remote ${branch:-HEAD} ${tags[*]}"
 	echo "to undo:"
 	echo "  git tag -d ${tags[*]}"
+	((commits)) && echo "  git reset --soft HEAD~$commits"
 	exit 0
 fi
 
-git push --atomic "$remote" "$branch" "${tags[@]}"
-
 # Ask the Go proxy for each new version so it is cached right away, but only
 # when the remote is the repo the module paths point at.
-root_path=$(path_of .)
-repo=${root_path%/v[0-9]*}
-repo=${repo#*/}
-if [[ $(git remote get-url "$remote") == *"$repo"* ]]; then
+if [[ $(git remote get-url "$remote") == *"${repo_path#*/}"* ]]; then
 	for dir in "${selected[@]}"; do
 		(cd / && GOWORK=off GOPROXY=https://proxy.golang.org go list -m "${mod_path[$dir]}@${next_ver[$dir]}") ||
 			echo "release: warning: proxy.golang.org has not picked up ${mod_path[$dir]}@${next_ver[$dir]} yet" >&2
 	done
 else
-	echo "release: $remote doesn't look like $repo; skipped warming the Go proxy" >&2
+	echo "release: $remote doesn't look like ${repo_path#*/}; skipped warming the Go proxy" >&2
 fi

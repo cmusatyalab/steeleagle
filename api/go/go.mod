@@ -2,6 +2,11 @@ module github.com/cmusatyalab/steeleagle/api/go
 
 go 1.26.5
 
+// Go reads retractions from the latest release's go.mod, so keep this in
+// every future version.
+
+retract [v0.1.0, v0.3.0] // Pre-v4 protocol; use v0.4.0 or later.
+
 require (
 	google.golang.org/grpc v1.83.0
 	google.golang.org/protobuf v1.36.11
