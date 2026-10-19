@@ -47,6 +47,15 @@ service SafetyService {
    */
   rpc SetMissionGeofence (SetMissionGeofenceRequest)
     returns (SetMissionGeofenceResponse) {}
+
+  /*
+   * Sets the fallback behavior for the vehicle.
+   *
+   * Sets the fallback behavior in case of disconnection. Can choose either RTH, 
+   * mission, or hold fallback.
+   */
+  rpc SetFallbackBehavior (SetFallbackBehaviorRequest)
+    returns (SetFallbackBehaviorResponse) {}
 }
 
 message ConfigureDMSRequest {
@@ -73,3 +82,18 @@ message SetMissionGeofenceRequest {
 }
 
 message SetMissionGeofenceResponse {}
+
+// Types of disconnection fallbacks.
+enum FallbackBehavior {
+  FALLBACK_BEHAVIOR_UNSPECIFIED = 0;  // no specified fallback (defaults to hold)
+  FALLBACK_BEHAVIOR_HOLD = 1;         // hold
+  FALLBACK_BEHAVIOR_RTH = 2;          // return to home
+  FALLBACK_BEHAVIOR_MISSION_HOLD = 3; // start the last uploaded mission then hold once done
+  FALLBACK_BEHAVIOR_MISSION_RTH = 4;  // start the last uploaded mission then return to home once done
+}
+
+message SetFallbackBehaviorRequest {
+  FallbackBehavior behavior = 1; // fallback behavior
+}
+
+message SetFallbackBehaviorResponse {}

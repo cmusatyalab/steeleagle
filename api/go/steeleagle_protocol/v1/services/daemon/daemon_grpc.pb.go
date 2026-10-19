@@ -61,13 +61,13 @@ type DaemonServiceClient interface {
 	// List active services.
 	//
 	// List services lists all active daemon services, whether they are running or
-	// stopped.
+	// stopped, and their cap files, if applicable.
 	ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error)
 	// Restart daemon services.
 	//
 	// Restarts a list of daemon services. These must be vehicles, monitors, or
 	// engines. Restarts of other services, like GCS or simulator, must be done
-	// through a `Configure` call.
+	// through a `Configure` call and will return an error if included.
 	RestartServices(ctx context.Context, in *RestartServicesRequest, opts ...grpc.CallOption) (*RestartServicesResponse, error)
 	// Install a plugin.
 	//
@@ -78,7 +78,7 @@ type DaemonServiceClient interface {
 	InstallPlugin(ctx context.Context, in *InstallPluginRequest, opts ...grpc.CallOption) (*InstallPluginResponse, error)
 	// Remove a plugin.
 	//
-	// Removes a plugin identified by its `url` or `nickname`.
+	// Removes a plugin identified by its `url`.
 	RemovePlugin(ctx context.Context, in *RemovePluginRequest, opts ...grpc.CallOption) (*RemovePluginResponse, error)
 }
 
@@ -189,13 +189,13 @@ type DaemonServiceServer interface {
 	// List active services.
 	//
 	// List services lists all active daemon services, whether they are running or
-	// stopped.
+	// stopped, and their cap files, if applicable.
 	ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error)
 	// Restart daemon services.
 	//
 	// Restarts a list of daemon services. These must be vehicles, monitors, or
 	// engines. Restarts of other services, like GCS or simulator, must be done
-	// through a `Configure` call.
+	// through a `Configure` call and will return an error if included.
 	RestartServices(context.Context, *RestartServicesRequest) (*RestartServicesResponse, error)
 	// Install a plugin.
 	//
@@ -206,7 +206,7 @@ type DaemonServiceServer interface {
 	InstallPlugin(context.Context, *InstallPluginRequest) (*InstallPluginResponse, error)
 	// Remove a plugin.
 	//
-	// Removes a plugin identified by its `url` or `nickname`.
+	// Removes a plugin identified by its `url`.
 	RemovePlugin(context.Context, *RemovePluginRequest) (*RemovePluginResponse, error)
 	mustEmbedUnimplementedDaemonServiceServer()
 }

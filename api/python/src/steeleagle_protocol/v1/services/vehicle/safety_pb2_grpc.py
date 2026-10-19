@@ -34,6 +34,11 @@ class SafetyServiceStub:
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_safety__pb2.SetMissionGeofenceRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_safety__pb2.SetMissionGeofenceResponse.FromString,
                 _registered_method=True)
+        self.SetFallbackBehavior = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.vehicle.SafetyService/SetFallbackBehavior',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_safety__pb2.SetFallbackBehaviorRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_safety__pb2.SetFallbackBehaviorResponse.FromString,
+                _registered_method=True)
 
 
 class SafetyServiceServicer:
@@ -82,6 +87,17 @@ class SafetyServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def SetFallbackBehavior(self, request, context):
+        """
+        Sets the fallback behavior for the vehicle.
+
+        Sets the fallback behavior in case of disconnection. Can choose either RTH, 
+        mission, or hold fallback.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_SafetyServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -99,6 +115,11 @@ def add_SafetyServiceServicer_to_server(servicer, server):
                     servicer.SetMissionGeofence,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_safety__pb2.SetMissionGeofenceRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_safety__pb2.SetMissionGeofenceResponse.SerializeToString,
+            ),
+            'SetFallbackBehavior': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetFallbackBehavior,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_safety__pb2.SetFallbackBehaviorRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_safety__pb2.SetFallbackBehaviorResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -187,6 +208,33 @@ class SafetyService:
             '/steeleagle_protocol.v1.services.vehicle.SafetyService/SetMissionGeofence',
             steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_safety__pb2.SetMissionGeofenceRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_safety__pb2.SetMissionGeofenceResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SetFallbackBehavior(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/steeleagle_protocol.v1.services.vehicle.SafetyService/SetFallbackBehavior',
+            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_safety__pb2.SetFallbackBehaviorRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_safety__pb2.SetFallbackBehaviorResponse.FromString,
             options,
             channel_credentials,
             insecure,

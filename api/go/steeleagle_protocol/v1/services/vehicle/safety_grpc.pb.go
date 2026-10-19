@@ -23,9 +23,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SafetyService_ConfigureDMS_FullMethodName       = "/steeleagle_protocol.v1.services.vehicle.SafetyService/ConfigureDMS"
-	SafetyService_SetGeofence_FullMethodName        = "/steeleagle_protocol.v1.services.vehicle.SafetyService/SetGeofence"
-	SafetyService_SetMissionGeofence_FullMethodName = "/steeleagle_protocol.v1.services.vehicle.SafetyService/SetMissionGeofence"
+	SafetyService_ConfigureDMS_FullMethodName        = "/steeleagle_protocol.v1.services.vehicle.SafetyService/ConfigureDMS"
+	SafetyService_SetGeofence_FullMethodName         = "/steeleagle_protocol.v1.services.vehicle.SafetyService/SetGeofence"
+	SafetyService_SetMissionGeofence_FullMethodName  = "/steeleagle_protocol.v1.services.vehicle.SafetyService/SetMissionGeofence"
+	SafetyService_SetFallbackBehavior_FullMethodName = "/steeleagle_protocol.v1.services.vehicle.SafetyService/SetFallbackBehavior"
 )
 
 // SafetyServiceClient is the client API for SafetyService service.
@@ -57,6 +58,11 @@ type SafetyServiceClient interface {
 	// If `off` is set, the vehicle turns the mission geofence off. Superceded by the
 	// vehicle geofence.
 	SetMissionGeofence(ctx context.Context, in *SetMissionGeofenceRequest, opts ...grpc.CallOption) (*SetMissionGeofenceResponse, error)
+	// Sets the fallback behavior for the vehicle.
+	//
+	// Sets the fallback behavior in case of disconnection. Can choose either RTH,
+	// mission, or hold fallback.
+	SetFallbackBehavior(ctx context.Context, in *SetFallbackBehaviorRequest, opts ...grpc.CallOption) (*SetFallbackBehaviorResponse, error)
 }
 
 type safetyServiceClient struct {
@@ -97,6 +103,16 @@ func (c *safetyServiceClient) SetMissionGeofence(ctx context.Context, in *SetMis
 	return out, nil
 }
 
+func (c *safetyServiceClient) SetFallbackBehavior(ctx context.Context, in *SetFallbackBehaviorRequest, opts ...grpc.CallOption) (*SetFallbackBehaviorResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetFallbackBehaviorResponse)
+	err := c.cc.Invoke(ctx, SafetyService_SetFallbackBehavior_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SafetyServiceServer is the server API for SafetyService service.
 // All implementations must embed UnimplementedSafetyServiceServer
 // for forward compatibility.
@@ -126,6 +142,11 @@ type SafetyServiceServer interface {
 	// If `off` is set, the vehicle turns the mission geofence off. Superceded by the
 	// vehicle geofence.
 	SetMissionGeofence(context.Context, *SetMissionGeofenceRequest) (*SetMissionGeofenceResponse, error)
+	// Sets the fallback behavior for the vehicle.
+	//
+	// Sets the fallback behavior in case of disconnection. Can choose either RTH,
+	// mission, or hold fallback.
+	SetFallbackBehavior(context.Context, *SetFallbackBehaviorRequest) (*SetFallbackBehaviorResponse, error)
 	mustEmbedUnimplementedSafetyServiceServer()
 }
 
@@ -144,6 +165,9 @@ func (UnimplementedSafetyServiceServer) SetGeofence(context.Context, *SetGeofenc
 }
 func (UnimplementedSafetyServiceServer) SetMissionGeofence(context.Context, *SetMissionGeofenceRequest) (*SetMissionGeofenceResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetMissionGeofence not implemented")
+}
+func (UnimplementedSafetyServiceServer) SetFallbackBehavior(context.Context, *SetFallbackBehaviorRequest) (*SetFallbackBehaviorResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetFallbackBehavior not implemented")
 }
 func (UnimplementedSafetyServiceServer) mustEmbedUnimplementedSafetyServiceServer() {}
 func (UnimplementedSafetyServiceServer) testEmbeddedByValue()                       {}
@@ -220,6 +244,24 @@ func _SafetyService_SetMissionGeofence_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SafetyService_SetFallbackBehavior_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetFallbackBehaviorRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SafetyServiceServer).SetFallbackBehavior(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SafetyService_SetFallbackBehavior_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SafetyServiceServer).SetFallbackBehavior(ctx, req.(*SetFallbackBehaviorRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SafetyService_ServiceDesc is the grpc.ServiceDesc for SafetyService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -238,6 +280,10 @@ var SafetyService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetMissionGeofence",
 			Handler:    _SafetyService_SetMissionGeofence_Handler,
+		},
+		{
+			MethodName: "SetFallbackBehavior",
+			Handler:    _SafetyService_SetFallbackBehavior_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

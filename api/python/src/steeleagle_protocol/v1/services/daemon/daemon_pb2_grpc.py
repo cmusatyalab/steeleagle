@@ -105,7 +105,7 @@ class DaemonServiceServicer:
         List active services.
 
         List services lists all active daemon services, whether they are running or
-        stopped.
+        stopped, and their cap files, if applicable.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -117,7 +117,7 @@ class DaemonServiceServicer:
 
         Restarts a list of daemon services. These must be vehicles, monitors, or
         engines. Restarts of other services, like GCS or simulator, must be done
-        through a `Configure` call.
+        through a `Configure` call and will return an error if included.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -140,7 +140,7 @@ class DaemonServiceServicer:
         """
         Remove a plugin.
 
-        Removes a plugin identified by its `url` or `nickname`.
+        Removes a plugin identified by its `url`.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')

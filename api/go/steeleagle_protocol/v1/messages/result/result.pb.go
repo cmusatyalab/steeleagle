@@ -31,7 +31,6 @@ const (
 // Defines the upper left and lower right corners of a detected object
 // in an image frame. Origin (0,0) is the top left corner of the input image.
 // (image_height, image_width) is the bottom right corner.
-// Also the class and confidence threshold associated with the box.
 type BoundingBox struct {
 	state           protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_YMin float64                `protobuf:"fixed64,1,opt,name=y_min,json=yMin,proto3"`

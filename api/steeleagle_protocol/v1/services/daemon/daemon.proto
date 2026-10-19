@@ -7,7 +7,6 @@ package steeleagle_protocol.v1.services.daemon;
 
 option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon;daemon";
 
-import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
 
 /*
@@ -50,7 +49,7 @@ service DaemonService {
    * List active services.
    *
    * List services lists all active daemon services, whether they are running or
-   * stopped.
+   * stopped, and their cap files, if applicable.
    */
   rpc ListServices (ListServicesRequest)
     returns (ListServicesResponse) {}
@@ -60,7 +59,7 @@ service DaemonService {
    *
    * Restarts a list of daemon services. These must be vehicles, monitors, or
    * engines. Restarts of other services, like GCS or simulator, must be done
-   * through a `Configure` call.
+   * through a `Configure` call and will return an error if included.
    */
   rpc RestartServices (RestartServicesRequest)
     returns (RestartServicesResponse) {}
@@ -79,7 +78,7 @@ service DaemonService {
   /*
    * Remove a plugin.
    *
-   * Removes a plugin identified by its `url` or `nickname`.
+   * Removes a plugin identified by its `url`.
    */
   rpc RemovePlugin (RemovePluginRequest)
     returns (RemovePluginResponse) {}
@@ -105,7 +104,9 @@ enum ServiceCategory {
   SERVICE_CATEGORY_VEHICLE = 1;     // vehicle service
   SERVICE_CATEGORY_ENGINE = 2;      // engine service
   SERVICE_CATEGORY_MONITOR = 3;     // monitor service
-  SERVICE_CATEGORY_EXTRA = 4;       // extra service
+  SERVICE_CATEGORY_GCS = 4;         // gcs service
+  SERVICE_CATEGORY_SIM = 5;         // simulator service
+  SERVICE_CATEGORY_DB = 6;          // database service
 }
 
 // An active service in the system.
@@ -113,7 +114,8 @@ message ActiveService {
   string name = 1;                     // name of the service
   ServiceCategory category = 2;        // service category
   bool running = 3;                    // whether or not the service is running
-  google.protobuf.Duration uptime = 4; // service uptime
+  optional bytes cap = 4;              // cap toml if applicable 
+  google.protobuf.Duration uptime = 5; // service uptime
 }
 
 message ListServicesRequest {}
@@ -135,7 +137,6 @@ message RestartServicesRequest {
 message RestartServicesResponse {}
 
 message InstallPluginRequest {
-  optional string nickname = 1; // plugin nickname (default: to path base of url)
   string url = 2;               // url to pull the plugin from 
   optional string tag = 3;      // branch or commit tag
   ServiceCategory category = 4; // service category
@@ -144,8 +145,8 @@ message InstallPluginRequest {
 message InstallPluginResponse {}
 
 message RemovePluginRequest {
-  string nickname = 1;          // plugin nickname
-  ServiceCategory category = 5; // service category
+  string url = 1;               // plugin url
+  ServiceCategory category = 2; // service category
 }
 
 message RemovePluginResponse {}

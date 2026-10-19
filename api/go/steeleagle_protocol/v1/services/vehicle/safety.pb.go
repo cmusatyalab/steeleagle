@@ -25,6 +25,57 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Types of disconnection fallbacks.
+type FallbackBehavior int32
+
+const (
+	FallbackBehavior_FALLBACK_BEHAVIOR_UNSPECIFIED  FallbackBehavior = 0 // no specified fallback (defaults to hold)
+	FallbackBehavior_FALLBACK_BEHAVIOR_HOLD         FallbackBehavior = 1 // hold
+	FallbackBehavior_FALLBACK_BEHAVIOR_RTH          FallbackBehavior = 2 // return to home
+	FallbackBehavior_FALLBACK_BEHAVIOR_MISSION_HOLD FallbackBehavior = 3 // start the last uploaded mission then hold once done
+	FallbackBehavior_FALLBACK_BEHAVIOR_MISSION_RTH  FallbackBehavior = 4 // start the last uploaded mission then return to home once done
+)
+
+// Enum value maps for FallbackBehavior.
+var (
+	FallbackBehavior_name = map[int32]string{
+		0: "FALLBACK_BEHAVIOR_UNSPECIFIED",
+		1: "FALLBACK_BEHAVIOR_HOLD",
+		2: "FALLBACK_BEHAVIOR_RTH",
+		3: "FALLBACK_BEHAVIOR_MISSION_HOLD",
+		4: "FALLBACK_BEHAVIOR_MISSION_RTH",
+	}
+	FallbackBehavior_value = map[string]int32{
+		"FALLBACK_BEHAVIOR_UNSPECIFIED":  0,
+		"FALLBACK_BEHAVIOR_HOLD":         1,
+		"FALLBACK_BEHAVIOR_RTH":          2,
+		"FALLBACK_BEHAVIOR_MISSION_HOLD": 3,
+		"FALLBACK_BEHAVIOR_MISSION_RTH":  4,
+	}
+)
+
+func (x FallbackBehavior) Enum() *FallbackBehavior {
+	p := new(FallbackBehavior)
+	*p = x
+	return p
+}
+
+func (x FallbackBehavior) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (FallbackBehavior) Descriptor() protoreflect.EnumDescriptor {
+	return file_steeleagle_protocol_v1_services_vehicle_safety_proto_enumTypes[0].Descriptor()
+}
+
+func (FallbackBehavior) Type() protoreflect.EnumType {
+	return &file_steeleagle_protocol_v1_services_vehicle_safety_proto_enumTypes[0]
+}
+
+func (x FallbackBehavior) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
 type ConfigureDMSRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Timeout *durationpb.Duration   `protobuf:"bytes,1,opt,name=timeout,proto3"`
@@ -460,6 +511,106 @@ func (b0 SetMissionGeofenceResponse_builder) Build() *SetMissionGeofenceResponse
 	return m0
 }
 
+type SetFallbackBehaviorRequest struct {
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Behavior FallbackBehavior       `protobuf:"varint,1,opt,name=behavior,proto3,enum=steeleagle_protocol.v1.services.vehicle.FallbackBehavior"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *SetFallbackBehaviorRequest) Reset() {
+	*x = SetFallbackBehaviorRequest{}
+	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetFallbackBehaviorRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetFallbackBehaviorRequest) ProtoMessage() {}
+
+func (x *SetFallbackBehaviorRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SetFallbackBehaviorRequest) GetBehavior() FallbackBehavior {
+	if x != nil {
+		return x.xxx_hidden_Behavior
+	}
+	return FallbackBehavior_FALLBACK_BEHAVIOR_UNSPECIFIED
+}
+
+func (x *SetFallbackBehaviorRequest) SetBehavior(v FallbackBehavior) {
+	x.xxx_hidden_Behavior = v
+}
+
+type SetFallbackBehaviorRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Behavior FallbackBehavior
+}
+
+func (b0 SetFallbackBehaviorRequest_builder) Build() *SetFallbackBehaviorRequest {
+	m0 := &SetFallbackBehaviorRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Behavior = b.Behavior
+	return m0
+}
+
+type SetFallbackBehaviorResponse struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetFallbackBehaviorResponse) Reset() {
+	*x = SetFallbackBehaviorResponse{}
+	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetFallbackBehaviorResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetFallbackBehaviorResponse) ProtoMessage() {}
+
+func (x *SetFallbackBehaviorResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type SetFallbackBehaviorResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 SetFallbackBehaviorResponse_builder) Build() *SetFallbackBehaviorResponse {
+	m0 := &SetFallbackBehaviorResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
 var File_steeleagle_protocol_v1_services_vehicle_safety_proto protoreflect.FileDescriptor
 
 const file_steeleagle_protocol_v1_services_vehicle_safety_proto_rawDesc = "" +
@@ -478,39 +629,56 @@ const file_steeleagle_protocol_v1_services_vehicle_safety_proto_rawDesc = "" +
 	"\x19SetMissionGeofenceRequest\x12\x10\n" +
 	"\x03off\x18\x01 \x01(\bR\x03off\x12M\n" +
 	"\bgeofence\x18\x02 \x01(\v21.steeleagle_protocol.v1.services.vehicle.GeofenceR\bgeofence\"\x1c\n" +
-	"\x1aSetMissionGeofenceResponse2\xce\x03\n" +
+	"\x1aSetMissionGeofenceResponse\"s\n" +
+	"\x1aSetFallbackBehaviorRequest\x12U\n" +
+	"\bbehavior\x18\x01 \x01(\x0e29.steeleagle_protocol.v1.services.vehicle.FallbackBehaviorR\bbehavior\"\x1d\n" +
+	"\x1bSetFallbackBehaviorResponse*\xb3\x01\n" +
+	"\x10FallbackBehavior\x12!\n" +
+	"\x1dFALLBACK_BEHAVIOR_UNSPECIFIED\x10\x00\x12\x1a\n" +
+	"\x16FALLBACK_BEHAVIOR_HOLD\x10\x01\x12\x19\n" +
+	"\x15FALLBACK_BEHAVIOR_RTH\x10\x02\x12\"\n" +
+	"\x1eFALLBACK_BEHAVIOR_MISSION_HOLD\x10\x03\x12!\n" +
+	"\x1dFALLBACK_BEHAVIOR_MISSION_RTH\x10\x042\xf3\x04\n" +
 	"\rSafetyService\x12\x8d\x01\n" +
 	"\fConfigureDMS\x12<.steeleagle_protocol.v1.services.vehicle.ConfigureDMSRequest\x1a=.steeleagle_protocol.v1.services.vehicle.ConfigureDMSResponse\"\x00\x12\x8a\x01\n" +
 	"\vSetGeofence\x12;.steeleagle_protocol.v1.services.vehicle.SetGeofenceRequest\x1a<.steeleagle_protocol.v1.services.vehicle.SetGeofenceResponse\"\x00\x12\x9f\x01\n" +
-	"\x12SetMissionGeofence\x12B.steeleagle_protocol.v1.services.vehicle.SetMissionGeofenceRequest\x1aC.steeleagle_protocol.v1.services.vehicle.SetMissionGeofenceResponse\"\x00B\xc8\x02\n" +
+	"\x12SetMissionGeofence\x12B.steeleagle_protocol.v1.services.vehicle.SetMissionGeofenceRequest\x1aC.steeleagle_protocol.v1.services.vehicle.SetMissionGeofenceResponse\"\x00\x12\xa2\x01\n" +
+	"\x13SetFallbackBehavior\x12C.steeleagle_protocol.v1.services.vehicle.SetFallbackBehaviorRequest\x1aD.steeleagle_protocol.v1.services.vehicle.SetFallbackBehaviorResponse\"\x00B\xc8\x02\n" +
 	"+com.steeleagle_protocol.v1.services.vehicleB\vSafetyProtoP\x01ZPgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle\xa2\x02\x04SVSV\xaa\x02&SteeleagleProtocol.V1.Services.Vehicle\xca\x02&SteeleagleProtocol\\V1\\Services\\Vehicle\xe2\x022SteeleagleProtocol\\V1\\Services\\Vehicle\\GPBMetadata\xea\x02)SteeleagleProtocol::V1::Services::Vehicleb\x06proto3"
 
-var file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_steeleagle_protocol_v1_services_vehicle_safety_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_steeleagle_protocol_v1_services_vehicle_safety_proto_goTypes = []any{
-	(*ConfigureDMSRequest)(nil),        // 0: steeleagle_protocol.v1.services.vehicle.ConfigureDMSRequest
-	(*ConfigureDMSResponse)(nil),       // 1: steeleagle_protocol.v1.services.vehicle.ConfigureDMSResponse
-	(*Geofence)(nil),                   // 2: steeleagle_protocol.v1.services.vehicle.Geofence
-	(*SetGeofenceRequest)(nil),         // 3: steeleagle_protocol.v1.services.vehicle.SetGeofenceRequest
-	(*SetGeofenceResponse)(nil),        // 4: steeleagle_protocol.v1.services.vehicle.SetGeofenceResponse
-	(*SetMissionGeofenceRequest)(nil),  // 5: steeleagle_protocol.v1.services.vehicle.SetMissionGeofenceRequest
-	(*SetMissionGeofenceResponse)(nil), // 6: steeleagle_protocol.v1.services.vehicle.SetMissionGeofenceResponse
-	(*durationpb.Duration)(nil),        // 7: google.protobuf.Duration
+	(FallbackBehavior)(0),               // 0: steeleagle_protocol.v1.services.vehicle.FallbackBehavior
+	(*ConfigureDMSRequest)(nil),         // 1: steeleagle_protocol.v1.services.vehicle.ConfigureDMSRequest
+	(*ConfigureDMSResponse)(nil),        // 2: steeleagle_protocol.v1.services.vehicle.ConfigureDMSResponse
+	(*Geofence)(nil),                    // 3: steeleagle_protocol.v1.services.vehicle.Geofence
+	(*SetGeofenceRequest)(nil),          // 4: steeleagle_protocol.v1.services.vehicle.SetGeofenceRequest
+	(*SetGeofenceResponse)(nil),         // 5: steeleagle_protocol.v1.services.vehicle.SetGeofenceResponse
+	(*SetMissionGeofenceRequest)(nil),   // 6: steeleagle_protocol.v1.services.vehicle.SetMissionGeofenceRequest
+	(*SetMissionGeofenceResponse)(nil),  // 7: steeleagle_protocol.v1.services.vehicle.SetMissionGeofenceResponse
+	(*SetFallbackBehaviorRequest)(nil),  // 8: steeleagle_protocol.v1.services.vehicle.SetFallbackBehaviorRequest
+	(*SetFallbackBehaviorResponse)(nil), // 9: steeleagle_protocol.v1.services.vehicle.SetFallbackBehaviorResponse
+	(*durationpb.Duration)(nil),         // 10: google.protobuf.Duration
 }
 var file_steeleagle_protocol_v1_services_vehicle_safety_proto_depIdxs = []int32{
-	7, // 0: steeleagle_protocol.v1.services.vehicle.ConfigureDMSRequest.timeout:type_name -> google.protobuf.Duration
-	2, // 1: steeleagle_protocol.v1.services.vehicle.SetGeofenceRequest.geofence:type_name -> steeleagle_protocol.v1.services.vehicle.Geofence
-	2, // 2: steeleagle_protocol.v1.services.vehicle.SetMissionGeofenceRequest.geofence:type_name -> steeleagle_protocol.v1.services.vehicle.Geofence
-	0, // 3: steeleagle_protocol.v1.services.vehicle.SafetyService.ConfigureDMS:input_type -> steeleagle_protocol.v1.services.vehicle.ConfigureDMSRequest
-	3, // 4: steeleagle_protocol.v1.services.vehicle.SafetyService.SetGeofence:input_type -> steeleagle_protocol.v1.services.vehicle.SetGeofenceRequest
-	5, // 5: steeleagle_protocol.v1.services.vehicle.SafetyService.SetMissionGeofence:input_type -> steeleagle_protocol.v1.services.vehicle.SetMissionGeofenceRequest
-	1, // 6: steeleagle_protocol.v1.services.vehicle.SafetyService.ConfigureDMS:output_type -> steeleagle_protocol.v1.services.vehicle.ConfigureDMSResponse
-	4, // 7: steeleagle_protocol.v1.services.vehicle.SafetyService.SetGeofence:output_type -> steeleagle_protocol.v1.services.vehicle.SetGeofenceResponse
-	6, // 8: steeleagle_protocol.v1.services.vehicle.SafetyService.SetMissionGeofence:output_type -> steeleagle_protocol.v1.services.vehicle.SetMissionGeofenceResponse
-	6, // [6:9] is the sub-list for method output_type
-	3, // [3:6] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	10, // 0: steeleagle_protocol.v1.services.vehicle.ConfigureDMSRequest.timeout:type_name -> google.protobuf.Duration
+	3,  // 1: steeleagle_protocol.v1.services.vehicle.SetGeofenceRequest.geofence:type_name -> steeleagle_protocol.v1.services.vehicle.Geofence
+	3,  // 2: steeleagle_protocol.v1.services.vehicle.SetMissionGeofenceRequest.geofence:type_name -> steeleagle_protocol.v1.services.vehicle.Geofence
+	0,  // 3: steeleagle_protocol.v1.services.vehicle.SetFallbackBehaviorRequest.behavior:type_name -> steeleagle_protocol.v1.services.vehicle.FallbackBehavior
+	1,  // 4: steeleagle_protocol.v1.services.vehicle.SafetyService.ConfigureDMS:input_type -> steeleagle_protocol.v1.services.vehicle.ConfigureDMSRequest
+	4,  // 5: steeleagle_protocol.v1.services.vehicle.SafetyService.SetGeofence:input_type -> steeleagle_protocol.v1.services.vehicle.SetGeofenceRequest
+	6,  // 6: steeleagle_protocol.v1.services.vehicle.SafetyService.SetMissionGeofence:input_type -> steeleagle_protocol.v1.services.vehicle.SetMissionGeofenceRequest
+	8,  // 7: steeleagle_protocol.v1.services.vehicle.SafetyService.SetFallbackBehavior:input_type -> steeleagle_protocol.v1.services.vehicle.SetFallbackBehaviorRequest
+	2,  // 8: steeleagle_protocol.v1.services.vehicle.SafetyService.ConfigureDMS:output_type -> steeleagle_protocol.v1.services.vehicle.ConfigureDMSResponse
+	5,  // 9: steeleagle_protocol.v1.services.vehicle.SafetyService.SetGeofence:output_type -> steeleagle_protocol.v1.services.vehicle.SetGeofenceResponse
+	7,  // 10: steeleagle_protocol.v1.services.vehicle.SafetyService.SetMissionGeofence:output_type -> steeleagle_protocol.v1.services.vehicle.SetMissionGeofenceResponse
+	9,  // 11: steeleagle_protocol.v1.services.vehicle.SafetyService.SetFallbackBehavior:output_type -> steeleagle_protocol.v1.services.vehicle.SetFallbackBehaviorResponse
+	8,  // [8:12] is the sub-list for method output_type
+	4,  // [4:8] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_steeleagle_protocol_v1_services_vehicle_safety_proto_init() }
@@ -523,13 +691,14 @@ func file_steeleagle_protocol_v1_services_vehicle_safety_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_services_vehicle_safety_proto_rawDesc), len(file_steeleagle_protocol_v1_services_vehicle_safety_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   7,
+			NumEnums:      1,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_steeleagle_protocol_v1_services_vehicle_safety_proto_goTypes,
 		DependencyIndexes: file_steeleagle_protocol_v1_services_vehicle_safety_proto_depIdxs,
+		EnumInfos:         file_steeleagle_protocol_v1_services_vehicle_safety_proto_enumTypes,
 		MessageInfos:      file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes,
 	}.Build()
 	File_steeleagle_protocol_v1_services_vehicle_safety_proto = out.File

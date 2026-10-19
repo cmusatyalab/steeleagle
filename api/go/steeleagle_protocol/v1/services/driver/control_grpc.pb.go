@@ -68,7 +68,7 @@ type ControlServiceClient interface {
 	// Order the vehicle to stand _(Action)_.
 	//
 	// Causes the vehicle to stand at its current location. Implicitly
-	// arms the vehicle. Pedal only.
+	// arms the vehicle. Legged only.
 	//
 	// Returns an _Action_ style response with `expected_mode` set to STAND
 	// and `expected_status` set to `MOTION_STATUS_HOLDING`.
@@ -76,7 +76,7 @@ type ControlServiceClient interface {
 	// Order the vehicle to sit _(Action)_.
 	//
 	// Causes the vehicle to sit at its current location. Implicitly
-	// disarms the vehicle. Pedal only.
+	// disarms the vehicle. Legged only.
 	//
 	// Returns an _Action_ style response with `expected_mode` set to SIT
 	// and `expected_status` set to `MOTION_STATUS_STOPPED`.
@@ -341,7 +341,7 @@ type ControlServiceServer interface {
 	// Order the vehicle to stand _(Action)_.
 	//
 	// Causes the vehicle to stand at its current location. Implicitly
-	// arms the vehicle. Pedal only.
+	// arms the vehicle. Legged only.
 	//
 	// Returns an _Action_ style response with `expected_mode` set to STAND
 	// and `expected_status` set to `MOTION_STATUS_HOLDING`.
@@ -349,7 +349,7 @@ type ControlServiceServer interface {
 	// Order the vehicle to sit _(Action)_.
 	//
 	// Causes the vehicle to sit at its current location. Implicitly
-	// disarms the vehicle. Pedal only.
+	// disarms the vehicle. Legged only.
 	//
 	// Returns an _Action_ style response with `expected_mode` set to SIT
 	// and `expected_status` set to `MOTION_STATUS_STOPPED`.

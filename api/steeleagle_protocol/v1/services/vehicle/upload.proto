@@ -1,0 +1,80 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - Living Edge Lab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+package steeleagle_protocol.v1.services.vehicle;
+
+option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle;vehicle";
+
+import "google/protobuf/timestamp.proto";
+
+/*
+ * Used to upload/load missions onto the vehicle
+ *
+ * This service is used to upload missions to the vehicle over the network
+ * or to load missions from disk.
+ */
+service LoaderService {
+  /*
+   * Upload a mission.
+   * 
+   * Uploads a mission to the vehicle over the network, and saves it in the
+   * <vehicle name>/missions/ folder. This overwrites the previously active
+   * mission, but does not delete the old mission file on disk.
+   */
+  rpc UploadMission (stream UploadMissionRequest)
+    returns (stream UploadMissionResponse) {}
+
+  /*
+   * Loads a mission from disk.
+   *
+   * Load a mission to the vehicle from disk. Must have an exact name match
+   * with the file. Loads from <vehicle name>/missions/.
+   */
+  rpc LoadMission (LoadMissionRequest)
+    returns (LoadMissionResponse) {}
+
+  /*
+   * Get missions on disk.
+   *
+   * List all the missions that are in <vehicle name>/missions/ folder and
+   * the current active mission, if there is one.
+   */
+  rpc GetMissions (GetMissionsRequest)
+    returns (GetMissionsResponse) {}
+}
+
+message UploadMissionRequest {
+  string name = 1;  // file name
+  bytes chunk = 2;  // file chunk
+  int32 number = 3; // chunk number
+  int32 total = 4;  // total chunks
+}
+
+message UploadMissionResponse {
+  int32 received = 1; // chunk number received and saved
+}
+
+message LoadMissionRequest {
+  string name = 1; // file name to load
+}
+
+message LoadMissionResponse {}
+
+// Info about a mission on disk.
+message MissionInfo {
+  // mission name
+  string name = 1;
+  // hash of the file
+  string hash = 2;
+  // creation timestamp of the file
+  google.protobuf.Timestamp creation_time = 3;
+}
+
+message GetMissionsRequest {}
+
+message GetMissionsResponse {
+  optional MissionInfo active_mission = 1; // current active mission
+  repeated MissionInfo missions = 2;       // missions on disk
+}
