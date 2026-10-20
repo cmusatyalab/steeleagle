@@ -20,7 +20,7 @@ func CreateSandboxPlugin(options ...PluginOption) (*SandboxPlugin, error) {
 	// Create the plugin
 	internal, err := CreateBasePlugin(options...)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 	p := &SandboxPlugin{
 		BasePlugin: internal,
@@ -39,6 +39,14 @@ func CreateSandboxPlugin(options ...PluginOption) (*SandboxPlugin, error) {
 	if err != nil {
 		p.log.Error().Err(err).Msg("bubblewrap couldn't run")
 		return nil, err
+	}
+
+	// Package plugins are started with pixi, so make sure it is available
+	// within the sandbox
+	if p.pkg && p.exec == pixiExec {
+		if _, ok := p.files[pixiExec]; !ok {
+			p.files[pixiExec] = 2
+		}
 	}
 
 	return p, nil
@@ -67,6 +75,11 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
 		"--bind", p.runDir, p.runDir,
 		"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
 		"--ro-bind", "/etc/nsswitch.conf", "/etc/nsswitch.conf",
+		// CA certificates and a temp directory are required by pixi
+		"--ro-bind-try", "/etc/ssl", "/etc/ssl",
+		"--ro-bind-try", "/etc/ca-certificates", "/etc/ca-certificates",
+		"--ro-bind-try", "/etc/pki", "/etc/pki",
+		"--tmpfs", "/tmp",
 		"--proc", "/proc",
 		"--dev", "/dev",
 		"--die-with-parent",
@@ -134,8 +147,8 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
 				"--chdir",
 				bindDir,
 			)
+			p.script = fmt.Sprintf("./%s", filepath.Base(p.script))
 		}
-		p.script = fmt.Sprintf("./%s", filepath.Base(p.script))
 	}
 
 	return p.BasePlugin.Start(ctx)

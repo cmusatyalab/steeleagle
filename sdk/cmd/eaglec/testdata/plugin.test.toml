@@ -1,12 +1,12 @@
-plugin = "driver"
+[plugin]
+name = "Parrot Anafi"
 
-[device]
-model = "Anafi"
-manufacturer = "Parrot"
+[driver]
 type = "copter"
 
-[[cameras]]
+[[driver.cameras]]
 name = "rgb"
+type = "steeleagle_protocol/v1/messages/frame/RawFrame"
 hres = 1080
 vres = 720
 hfov = 69
@@ -15,8 +15,9 @@ fps = 30
 latency = 280
 gimbal = true
 
-[[cameras]]
+[[driver.cameras]]
 name = "thermal"
+type = "steeleagle_protocol/v1/messages/frame/RawFrame"
 hres = 1080
 vres = 720
 hfov = 69
@@ -25,14 +26,14 @@ fps = 30
 latency = 280
 gimbal = true
 
-[supported]
+[driver.supported]
 services = [
     "steeleagle_protocol/v1/services/driver/ControlService",
     "steeleagle_protocol/v1/services/driver/StreamService",
     "steeleagle_protocol/v1/services/driver/CalibrateService",
 ]
 
-[unsupported]
+[driver.unsupported]
 methods = [
     "steeleagle_protocol/v1/services/driver/ControlService/Kill",
 ]

@@ -10,13 +10,13 @@ import (
 )
 
 func TestShimPlugin(t *testing.T) {
-	acl := listener.GetACL([]string{}, []int{})
+	acl := listener.GetAcl([]string{}, []int{})
 	in := "/tmp/in.sock"
 	out := "/tmp/out.sock"
 	plugin, err := newTestShimPlugin(t,
 		in,
 		out,
-		WithACL(acl),
+		WithAcl(acl),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
@@ -36,7 +36,7 @@ func TestShimPlugin(t *testing.T) {
 		t.Fatalf("couldn't start command: %v", err)
 	}
 	defer cmd.Wait()
-	acl.AddPID(cmd.Process.Pid)
+	acl.AddPid(cmd.Process.Pid)
 	ln, conn, err := plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)

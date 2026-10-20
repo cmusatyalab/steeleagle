@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/cmusatyalab/steeleagle/config"
 	"github.com/cmusatyalab/steeleagle/sdk"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl"
 	"github.com/cmusatyalab/steeleagle/sdk/geo"
@@ -20,10 +21,10 @@ import (
 {{end -}}
 )
 
-// capToml is the vehicle capability file this mission was compiled
+// pluginToml is the vehicle driver plugin config this mission was compiled
 // against, embedded so the generated binary can rebuild it without the
 // original file.
-var capToml = []byte({{printf "%q" .CapToml}})
+var pluginToml = []byte({{printf "%q" .PluginToml}})
 
 // manifestToml is the manifest file for the current mission, embedded
 // so the generated binary can rebuild it without the original file.
@@ -49,12 +50,16 @@ func main() {
 	}
 	defer conn.Close()
 
-	capFile := &sdk.CapFile{}
-	if len(capToml) > 0 {
-		capFile, err = sdk.ParseCapFromBytes(capToml)
+	capFile := &config.DriverCap{}
+	if len(pluginToml) > 0 {
+		plugin, err := config.ParsePluginConfigFromBytes(pluginToml)
 		if err != nil {
-			log.Fatal().Err(err).Msg("failed to parse cap file")
+			log.Fatal().Err(err).Msg("failed to parse plugin config")
 		}
+		if plugin.Driver == nil {
+			log.Fatal().Msg("plugin config has no [driver] table")
+		}
+		capFile = plugin.Driver
 	}
 
 	manifestFile := &sdk.ManifestFile{}

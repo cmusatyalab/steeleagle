@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"io"
+	"os/exec"
 	"testing"
 
 	"github.com/rs/zerolog"
@@ -59,4 +60,28 @@ func newTestShimPlugin(t *testing.T, client string, listener string, options ...
 	logger := zerolog.New(zerolog.ConsoleWriter{Out: out})
 	options = append(options, WithProcessOutputStream(out), WithLogger(logger))
 	return CreateShimPlugin(client, listener, options...)
+}
+
+// requirePixi skips the test if pixi is not installed.
+func requirePixi(t *testing.T) {
+	t.Helper()
+	if _, err := exec.LookPath("pixi"); err != nil {
+		t.Skip("pixi not found, skipping test")
+	}
+}
+
+// requireSandbox skips the test if bubblewrap is not installed.
+func requireSandbox(t *testing.T) {
+	t.Helper()
+	if _, err := exec.LookPath("bwrap"); err != nil {
+		t.Skip("bubblewrap (bwrap) not found, skipping test")
+	}
+}
+
+// requireContainer skips the test if podman is not installed.
+func requireContainer(t *testing.T) {
+	t.Helper()
+	if _, err := exec.LookPath("podman"); err != nil {
+		t.Skip("podman not found, skipping test")
+	}
 }

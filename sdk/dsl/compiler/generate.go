@@ -20,7 +20,7 @@ var mainTemplate = template.Must(template.New("main.go.tmpl").Parse(mainTemplate
 // templateData is the top-level value main.go.tmpl is executed with.
 type templateData struct {
 	*linker.IR
-	CapToml      string
+	PluginToml   string
 	ManifestToml string
 	GeoJson      string
 }
@@ -32,7 +32,7 @@ type templateData struct {
 func generate(ir *linker.IR, cfg *buildtools.Config, dir string) error {
 	data := &templateData{
 		IR:           ir,
-		CapToml:      string(cfg.CapToml),
+		PluginToml:   string(cfg.PluginToml),
 		ManifestToml: string(cfg.ManifestToml),
 		GeoJson:      string(cfg.GeoJson),
 	}

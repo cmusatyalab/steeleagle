@@ -177,9 +177,9 @@ func TestBuildSdkScrubsLocalModule(t *testing.T) {
 	skipIfShort(t)
 	dir := sdkApp(t)
 	out := filepath.Join(t.TempDir(), "app")
-	cap := "[unsupported]\nmethods = [\"services/driver/ControlService/Kill\"]\n"
+	cap := "[driver.unsupported]\nmethods = [\"services/driver/ControlService/Kill\"]\n"
 	errs := BuildSdk(dir, []string{"."},
-		WithCap([]byte(cap)), WithGeoJson([]byte(testGeoJson)), WithOutputFile(out))
+		WithPlugin([]byte(cap)), WithGeoJson([]byte(testGeoJson)), WithOutputFile(out))
 	if len(errs) > 0 {
 		t.Fatalf("BuildSdk() errors = %v", errs)
 	}
@@ -191,7 +191,7 @@ func TestBuildSdkScrubsLocalModule(t *testing.T) {
 // TestBuildSdkErrors checks that BuildSdk reports a bad cap file, bad
 // GeoJSON, a directory outside any module, and a failing build.
 func TestBuildSdkErrors(t *testing.T) {
-	requireErrorContaining(t, BuildSdk(t.TempDir(), nil, WithCap([]byte("[[[\n"))), "toml")
+	requireErrorContaining(t, BuildSdk(t.TempDir(), nil, WithPlugin([]byte("[[[\n"))), "toml")
 	if errs := BuildSdk(t.TempDir(), nil, WithGeoJson([]byte("{"))); len(errs) == 0 {
 		t.Error("BuildSdk() with invalid GeoJSON succeeded")
 	}
@@ -206,8 +206,8 @@ func TestBuildSdkErrors(t *testing.T) {
 // squawks and flows and GeoJSON features into the params package, and
 // overlays the SDK's module with the cap file's support.
 func TestOverlayConfig(t *testing.T) {
-	cap := "[unsupported]\nmethods = [\"services/driver/ControlService/Kill\"]\n"
-	c, errs := NewConfig(WithCap([]byte(cap)), WithManifest([]byte(testManifest)), WithGeoJson([]byte(testGeoJson)))
+	cap := "[driver.unsupported]\nmethods = [\"services/driver/ControlService/Kill\"]\n"
+	c, errs := NewConfig(WithPlugin([]byte(cap)), WithManifest([]byte(testManifest)), WithGeoJson([]byte(testGeoJson)))
 	if len(errs) > 0 {
 		t.Fatalf("NewConfig() errors = %v", errs)
 	}
@@ -269,7 +269,7 @@ func TestOverlayConfigErrors(t *testing.T) {
 // TestNewConfigErrors checks that unparseable cap and manifest files are
 // reported.
 func TestNewConfigErrors(t *testing.T) {
-	if _, errs := NewConfig(WithCap([]byte("[[[\n"))); len(errs) == 0 {
+	if _, errs := NewConfig(WithPlugin([]byte("[[[\n"))); len(errs) == 0 {
 		t.Error("NewConfig() with a bad cap file succeeded")
 	}
 	if _, errs := NewConfig(WithManifest([]byte("[[[\n"))); len(errs) == 0 {

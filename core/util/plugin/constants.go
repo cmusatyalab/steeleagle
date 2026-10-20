@@ -1,8 +1,15 @@
 package plugin
 
-// The run hook that processes are started from within containers
+// The directory that plugin files are bound to within sandboxes/containers
 const bindDir string = "steeleagle"
-const runHook string = "run.sh"
+
+// The executable and task that package plugins are started with (pixi run start)
+const pixiExec string = "pixi"
+const pixiRun string = "run"
+const pixiTask string = "start"
+
+// Manifests that mark a directory as a pixi package, in order of precedence
+var pixiManifests = []string{"pixi.toml", "pyproject.toml"}
 
 // Socket names for server/client
 const clientSockName string = "out.sock"

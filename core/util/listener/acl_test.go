@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func TestACLIP(t *testing.T) {
+func TestAclIp(t *testing.T) {
 	base, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("couldn't listen on localhost: %v", err)
@@ -16,18 +16,18 @@ func TestACLIP(t *testing.T) {
 	defer base.Close()
 
 	lis := newSpoofedListener(t, base)
-	acl := GetACL([]string{"100.64.0.0/10", "10.5.2/10/2"}, []int{}) // add in a bogus ip to make sure it is ignored
+	acl := GetAcl([]string{"100.64.0.0/10", "10.5.2/10/2"}, []int{}) // add in a bogus ip to make sure it is ignored
 
 	// Test adding bad and good IPs
-	err = acl.AddIP("125.100.0.0/24")
+	err = acl.AddIp("125.100.0.0/24")
 	if err != nil {
 		t.Errorf("couldn't add correct IP: %v", err)
 	}
-	err = acl.AddIP("130.100.0.0")
+	err = acl.AddIp("130.100.0.0")
 	if err != nil {
 		t.Errorf("couldn't add correct IP: %v", err)
 	}
-	err = acl.AddIP("160.1/2/2")
+	err = acl.AddIp("160.1/2/2")
 	if err == nil {
 		t.Errorf("added incorrect IP without error")
 	}
@@ -69,7 +69,7 @@ func TestACLIP(t *testing.T) {
 	client2.Close()
 }
 
-func TestACLPID(t *testing.T) {
+func TestAclPid(t *testing.T) {
 	const sockPath = "/tmp/listener.sock"
 	os.Remove(sockPath)
 	base, err := net.Listen("unix", sockPath)
@@ -78,8 +78,8 @@ func TestACLPID(t *testing.T) {
 	}
 	defer base.Close()
 
-	acl := GetACL([]string{}, []int{})
-	err = acl.AddPID(-1)
+	acl := GetAcl([]string{}, []int{})
+	err = acl.AddPid(-1)
 	if err == nil {
 		t.Errorf("added incorrect pid")
 	}
@@ -100,7 +100,7 @@ func TestACLPID(t *testing.T) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Start()
-	acl.AddPID(cmd.Process.Pid)
+	acl.AddPid(cmd.Process.Pid)
 	if err != nil {
 		t.Errorf("couldn't start command")
 	}

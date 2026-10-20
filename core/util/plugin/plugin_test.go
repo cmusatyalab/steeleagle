@@ -64,7 +64,8 @@ func TestPluginWithParent(t *testing.T) {
 	os.RemoveAll(path)
 }
 
-func TestPluginRunhook(t *testing.T) {
+func TestPluginPixi(t *testing.T) {
+	requirePixi(t)
 	path, err := filepath.Abs(goPkg)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_pkg: %v", err)
@@ -86,7 +87,74 @@ func TestPluginRunhook(t *testing.T) {
 	}
 }
 
+// TestPluginPixiArgs ensures that script args are forwarded to the pixi start
+// task.
+func TestPluginPixiArgs(t *testing.T) {
+	requirePixi(t)
+	path, err := filepath.Abs(goPkg)
+	if err != nil {
+		t.Fatalf("couldn't stat mock_plugin helper go_pkg: %v", err)
+	}
+	plugin, err := newTestBasePlugin(t,
+		WithPath(path),
+		WithScriptArgs([]string{"--error"}),
+		WithoutClient(),
+		WithoutListener(),
+	)
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
+	_, _, err = plugin.Start(t.Context())
+	if err != nil {
+		t.Fatalf("encountered error spawning plugin: %v", err)
+	}
+
+	var exitErr *exec.ExitError
+	if err := plugin.Wait(); !errors.As(err, &exitErr) {
+		t.Fatalf("expected an exit error from the start task, got: %v", err)
+	}
+}
+
+// TestPluginPixiCustomExec ensures that setting the executable and its args
+// replaces `pixi run` while still running the start task.
+func TestPluginPixiCustomExec(t *testing.T) {
+	requirePixi(t)
+	path, err := filepath.Abs(goPkg)
+	if err != nil {
+		t.Fatalf("couldn't stat mock_plugin helper go_pkg: %v", err)
+	}
+	plugin, err := newTestBasePlugin(t,
+		WithPath(path),
+		WithExecutable("pixi"),
+		WithExecutableArgs([]string{"run", "--frozen"}),
+	)
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
+	ln, conn, err := plugin.Start(t.Context())
+	if err != nil {
+		t.Fatalf("encountered error spawning plugin: %v", err)
+	}
+
+	err = pluginRPCCheck(t, ln, conn, listener.UnknownCode)
+	if err != nil {
+		t.Errorf("encountered error with plugin RPC handshake: %v", err)
+	}
+}
+
+// TestPluginNoManifest ensures that package plugins without a pixi manifest
+// are rejected.
+func TestPluginNoManifest(t *testing.T) {
+	_, err := newTestBasePlugin(t,
+		WithPath(t.TempDir()),
+	)
+	if err == nil {
+		t.Fatal("expected error creating plugin without a pixi manifest")
+	}
+}
+
 func TestPluginPython(t *testing.T) {
+	requirePixi(t)
 	path, err := filepath.Abs(pyPkg)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper py_pkg: %v", err)

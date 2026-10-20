@@ -10,7 +10,7 @@ import (
 // TestScrubNoDirectivesUnchanged checks to make sure that a file with
 // no directives set comes back exactly the same.
 func TestScrubNoDirectivesUnchanged(t *testing.T) {
-	cap := newCapFile(t)
+	cap := newDriverCap(t)
 	src := "package foo\n\nfunc Bar() {}\n"
 	out, dirty, err := preprocess.Scrub(cap.Supports, []byte(src))
 	if err != nil {
@@ -27,7 +27,7 @@ func TestScrubNoDirectivesUnchanged(t *testing.T) {
 // TestScrubSingleLineExcludeSatisfied checks to make sure that a single
 // line exclude directive works.
 func TestScrubSingleLineExcludeSatisfied(t *testing.T) {
-	cap := newCapFile(t, "services/driver/TakeOffRequest/altitude")
+	cap := newDriverCap(t, "services/driver/TakeOffRequest/altitude")
 	src := "// #exclude-ifndef services/driver/TakeOffRequest/altitude\n" +
 		"GetAltitude() float32\n" +
 		"GetLatitude() float32\n"
@@ -51,7 +51,7 @@ func TestScrubSingleLineExcludeSatisfied(t *testing.T) {
 // single line exclude directive leaves its governed line alone when it
 // isn't satisfied, even though the tag line itself is still stripped.
 func TestScrubSingleLineExcludeNotSatisfied(t *testing.T) {
-	cap := newCapFile(t) // altitude is supported, directive shouldn't fire
+	cap := newDriverCap(t) // altitude is supported, directive shouldn't fire
 	src := "// #exclude-ifndef services/driver/TakeOffRequest/altitude\nGetAltitude() float32\n"
 	out, dirty, err := preprocess.Scrub(cap.Supports, []byte(src))
 	if err != nil {
@@ -74,7 +74,7 @@ func TestScrubSingleLineExcludeNotSatisfied(t *testing.T) {
 // (e.g. a doc comment) to exclude the next actual line of code, and that
 // the comment lines in between are excluded along with it.
 func TestScrubSingleLineExcludeSkipsCommentLines(t *testing.T) {
-	cap := newCapFile(t, "services/driver/TakeOffRequest/altitude")
+	cap := newDriverCap(t, "services/driver/TakeOffRequest/altitude")
 	src := "// #exclude-ifndef services/driver/TakeOffRequest/altitude\n" +
 		"// GetAltitude returns the last known altitude.\n" +
 		"GetAltitude() float32\n" +
@@ -102,7 +102,7 @@ func TestScrubSingleLineExcludeSkipsCommentLines(t *testing.T) {
 // #private-ifndef directive reaches past intervening comment lines to
 // private the next actual line of code.
 func TestScrubSingleLinePrivateSkipsCommentLines(t *testing.T) {
-	cap := newCapFile(t, "services/control/HeadingMode/HEADING_MODE_START")
+	cap := newDriverCap(t, "services/control/HeadingMode/HEADING_MODE_START")
 	src := "// #private-ifndef services/control/HeadingMode/HEADING_MODE_START\n" +
 		"// HeadingMode_HEADING_MODE_START is the starting heading mode.\n" +
 		"HeadingMode_HEADING_MODE_START HeadingMode = 0\n" +
@@ -130,7 +130,7 @@ func TestScrubSingleLinePrivateSkipsCommentLines(t *testing.T) {
 // TestScrubSingleLinePrivateSatisfied checks to make sure that a single
 // line private directive works.
 func TestScrubSingleLinePrivateSatisfied(t *testing.T) {
-	cap := newCapFile(t, "services/control/ReturnToHomeEndBehavior/RETURN_TO_HOME_END_BEHAVIOR_HOVER")
+	cap := newDriverCap(t, "services/control/ReturnToHomeEndBehavior/RETURN_TO_HOME_END_BEHAVIOR_HOVER")
 	src := "// #private-ifndef services/control/ReturnToHomeEndBehavior/RETURN_TO_HOME_END_BEHAVIOR_HOVER\n" +
 		"ReturnToHomeEndBehavior_RETURN_TO_HOME_END_BEHAVIOR_HOVER ReturnToHomeEndBehavior = 3\n"
 	out, dirty, err := preprocess.Scrub(cap.Supports, []byte(src))
@@ -150,7 +150,7 @@ func TestScrubSingleLinePrivateSatisfied(t *testing.T) {
 // TestScrubBeginEndExcludeBlock checks to make sure that a begin/end
 // exclude block blanks every line it wraps.
 func TestScrubBeginEndExcludeBlock(t *testing.T) {
-	cap := newCapFile(t, "services/driver/ControlService/Kill")
+	cap := newDriverCap(t, "services/driver/ControlService/Kill")
 	src := "// #begin-exclude-ifndef services/driver/ControlService/Kill\n" +
 		"GetKillReason() string\n" +
 		"hasKillReason() bool\n" +
@@ -175,7 +175,7 @@ func TestScrubBeginEndExcludeBlock(t *testing.T) {
 // TestScrubBeginEndPrivateBlock checks to make sure that a begin/end
 // private block privates every line it wraps.
 func TestScrubBeginEndPrivateBlock(t *testing.T) {
-	cap := newCapFile(t, "services/control/HeadingMode/HEADING_MODE_START")
+	cap := newDriverCap(t, "services/control/HeadingMode/HEADING_MODE_START")
 	src := "// #begin-private-ifndef services/control/HeadingMode/HEADING_MODE_START\n" +
 		"HeadingMode_HEADING_MODE_START HeadingMode = 0\n" +
 		"HeadingMode_HEADING_MODE_MAGNETIC HeadingMode = 1\n" +
@@ -207,7 +207,7 @@ func TestScrubBeginEndPrivateBlock(t *testing.T) {
 // TestScrubNestedExcludeDominance checks to make sure that a nested
 // exclude block can't un-satisfy a dominant outer block.
 func TestScrubNestedExcludeDominance(t *testing.T) {
-	cap := newCapFile(t, "services/driver/ControlService/Kill")
+	cap := newDriverCap(t, "services/driver/ControlService/Kill")
 	src := strings.Join([]string{
 		"// #begin-exclude-ifndef services/driver/ControlService/Kill",
 		"GetKillReason() string",
@@ -237,7 +237,7 @@ func TestScrubNestedExcludeDominance(t *testing.T) {
 // TestScrubMultipleTypesOrSemantics checks to make sure that a directive
 // fires if any of its comma-separated types is unsupported.
 func TestScrubMultipleTypesOrSemantics(t *testing.T) {
-	cap := newCapFile(t, "services/driver/TakeOffRequest/altitude")
+	cap := newDriverCap(t, "services/driver/TakeOffRequest/altitude")
 	src := "// #exclude-ifndef services/driver/TakeOffRequest/latitude,services/driver/TakeOffRequest/altitude\n" +
 		"GetLatitude() float32\n"
 	out, dirty, err := preprocess.Scrub(cap.Supports, []byte(src))
@@ -257,7 +257,7 @@ func TestScrubMultipleTypesOrSemantics(t *testing.T) {
 // even when a private directive doesn't actually change any governed
 // line, because the directive lines themselves are still stripped.
 func TestScrubPrivateNoOpStillDirty(t *testing.T) {
-	cap := newCapFile(t, "services/control/HeadingMode/HEADING_MODE_START")
+	cap := newDriverCap(t, "services/control/HeadingMode/HEADING_MODE_START")
 	src := "// #begin-private-ifndef services/control/HeadingMode/HEADING_MODE_START\n// a comment\n// #end-private\n"
 	_, dirty, err := preprocess.Scrub(cap.Supports, []byte(src))
 	if err != nil {
@@ -271,7 +271,7 @@ func TestScrubPrivateNoOpStillDirty(t *testing.T) {
 // TestScrubMismatchedEndExclude checks to make sure that an #end-exclude
 // with no matching begin returns an error.
 func TestScrubMismatchedEndExclude(t *testing.T) {
-	cap := newCapFile(t)
+	cap := newDriverCap(t)
 	src := "GetStatus() string\n// #end-exclude\n"
 	_, _, err := preprocess.Scrub(cap.Supports, []byte(src))
 	if err == nil {
@@ -282,7 +282,7 @@ func TestScrubMismatchedEndExclude(t *testing.T) {
 // TestScrubMismatchedEndPrivate checks to make sure that an #end-private
 // with no matching begin returns an error.
 func TestScrubMismatchedEndPrivate(t *testing.T) {
-	cap := newCapFile(t)
+	cap := newDriverCap(t)
 	src := "GetStatus() string\n// #end-private\n"
 	_, _, err := preprocess.Scrub(cap.Supports, []byte(src))
 	if err == nil {
@@ -293,7 +293,7 @@ func TestScrubMismatchedEndPrivate(t *testing.T) {
 // TestScrubUnclosedExcludeBlock checks to make sure that an unclosed
 // begin-exclude block returns an error.
 func TestScrubUnclosedExcludeBlock(t *testing.T) {
-	cap := newCapFile(t, "services/driver/ControlService/Kill")
+	cap := newDriverCap(t, "services/driver/ControlService/Kill")
 	src := "// #begin-exclude-ifndef services/driver/ControlService/Kill\nGetKillReason() string\n"
 	_, _, err := preprocess.Scrub(cap.Supports, []byte(src))
 	if err == nil {
@@ -304,7 +304,7 @@ func TestScrubUnclosedExcludeBlock(t *testing.T) {
 // TestScrubUnclosedPrivateBlock checks to make sure that an unclosed
 // begin-private block returns an error.
 func TestScrubUnclosedPrivateBlock(t *testing.T) {
-	cap := newCapFile(t, "services/control/HeadingMode/HEADING_MODE_START")
+	cap := newDriverCap(t, "services/control/HeadingMode/HEADING_MODE_START")
 	src := "// #begin-private-ifndef services/control/HeadingMode/HEADING_MODE_START\nHeadingMode_HEADING_MODE_START HeadingMode = 0\n"
 	_, _, err := preprocess.Scrub(cap.Supports, []byte(src))
 	if err == nil {
@@ -316,7 +316,7 @@ func TestScrubUnclosedPrivateBlock(t *testing.T) {
 // always stripped from the output, regardless of whether its directive is
 // satisfied. Directive lines are preprocessor syntax, not source.
 func TestScrubTagLinesAlwaysRemoved(t *testing.T) {
-	cap := newCapFile(t, "services/driver/ControlService/Kill")
+	cap := newDriverCap(t, "services/driver/ControlService/Kill")
 	tagLines := []string{
 		"// #exclude-ifndef services/driver/ControlService/Kill",       // satisfied
 		"// #exclude-ifndef services/driver/TakeOffRequest/altitude",   // not satisfied
@@ -356,7 +356,7 @@ func TestScrubTagLinesAlwaysRemoved(t *testing.T) {
 // block keeps its original section and drops its replacement section when
 // every tagged type is supported.
 func TestScrubReplaceSupportedKeepsOriginal(t *testing.T) {
-	cap := newCapFile(t) // everything supported, directive shouldn't fire
+	cap := newDriverCap(t) // everything supported, directive shouldn't fire
 	src := strings.Join([]string{
 		"// #begin-replace-ifndef services/driver/TakeOffRequest/altitude",
 		"return req.GetAltitude()",
@@ -386,7 +386,7 @@ func TestScrubReplaceSupportedKeepsOriginal(t *testing.T) {
 // replace block drops its original section and keeps its replacement
 // section when a tagged type is unsupported.
 func TestScrubReplaceUnsupportedKeepsReplacement(t *testing.T) {
-	cap := newCapFile(t, "services/driver/TakeOffRequest/altitude")
+	cap := newDriverCap(t, "services/driver/TakeOffRequest/altitude")
 	src := strings.Join([]string{
 		"// #begin-replace-ifndef services/driver/TakeOffRequest/altitude",
 		"return req.GetAltitude()",
@@ -436,7 +436,7 @@ func TestScrubReplaceMultipleTypes(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cap := newCapFile(t, tt.unsupported...)
+			cap := newDriverCap(t, tt.unsupported...)
 			out, _, err := preprocess.Scrub(cap.Supports, []byte(src))
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
@@ -452,7 +452,7 @@ func TestScrubReplaceMultipleTypes(t *testing.T) {
 // TestScrubReplaceMultiLineSections checks to make sure that every line in
 // each section of a replace block is kept or dropped together.
 func TestScrubReplaceMultiLineSections(t *testing.T) {
-	cap := newCapFile(t, "services/driver/ControlService/Kill")
+	cap := newDriverCap(t, "services/driver/ControlService/Kill")
 	src := strings.Join([]string{
 		"// #begin-replace-ifndef services/driver/ControlService/Kill",
 		"reason := resp.GetKillReason()",
@@ -481,7 +481,7 @@ func TestScrubReplaceMultiLineSections(t *testing.T) {
 // with an empty section is valid, so it can be used to only add or only
 // remove code.
 func TestScrubReplaceEmptySections(t *testing.T) {
-	cap := newCapFile(t, "services/driver/ControlService/Kill")
+	cap := newDriverCap(t, "services/driver/ControlService/Kill")
 	src := strings.Join([]string{
 		"// #begin-replace-ifndef services/driver/ControlService/Kill",
 		"// #replace-with",
@@ -506,7 +506,7 @@ func TestScrubReplaceEmptySections(t *testing.T) {
 // in a kept section is evaluated on its own, while one nested in a dropped
 // section is dropped entirely regardless of its own types.
 func TestScrubReplaceNested(t *testing.T) {
-	cap := newCapFile(t, "services/driver/ControlService/Kill")
+	cap := newDriverCap(t, "services/driver/ControlService/Kill")
 	src := strings.Join([]string{
 		"// #begin-replace-ifndef services/driver/TakeOffRequest/altitude", // supported: keep original
 		"// #begin-replace-ifndef services/driver/ControlService/Kill",     // unsupported: keep replacement
@@ -543,7 +543,7 @@ func TestScrubReplaceNested(t *testing.T) {
 // TestScrubReplaceInsideExclude checks to make sure that an exclude block
 // dominates a replace block nested inside of it, so neither section is kept.
 func TestScrubReplaceInsideExclude(t *testing.T) {
-	cap := newCapFile(t, "services/driver/ControlService/Kill")
+	cap := newDriverCap(t, "services/driver/ControlService/Kill")
 	src := strings.Join([]string{
 		"// #begin-exclude-ifndef services/driver/ControlService/Kill",
 		"// #begin-replace-ifndef services/driver/TakeOffRequest/altitude",
@@ -566,7 +566,7 @@ func TestScrubReplaceInsideExclude(t *testing.T) {
 // TestScrubReplaceWithPrivate checks to make sure that the kept section of
 // a replace block is still subject to an enclosing private block.
 func TestScrubReplaceWithPrivate(t *testing.T) {
-	cap := newCapFile(t, "services/driver/ControlService/Kill")
+	cap := newDriverCap(t, "services/driver/ControlService/Kill")
 	src := strings.Join([]string{
 		"// #begin-private-ifndef services/driver/ControlService/Kill",
 		"// #begin-replace-ifndef services/driver/ControlService/Kill",
@@ -602,7 +602,7 @@ func TestScrubReplaceErrors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cap := newCapFile(t, "services/driver/ControlService/Kill")
+			cap := newDriverCap(t, "services/driver/ControlService/Kill")
 			if _, _, err := preprocess.Scrub(cap.Supports, []byte(tt.src)); err == nil {
 				t.Fatal("expected error, got nil")
 			}
@@ -622,7 +622,7 @@ func TestScrubReplaceTagLinesAlwaysRemoved(t *testing.T) {
 		"",
 	}, "\n")
 	for _, unsupported := range [][]string{nil, {"services/driver/ControlService/Kill"}} {
-		cap := newCapFile(t, unsupported...)
+		cap := newDriverCap(t, unsupported...)
 		out, _, err := preprocess.Scrub(cap.Supports, []byte(src))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)

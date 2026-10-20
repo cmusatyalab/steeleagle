@@ -1,11 +1,16 @@
 package buildtools
 
-import "github.com/cmusatyalab/steeleagle/sdk"
+import (
+	"errors"
+
+	"github.com/cmusatyalab/steeleagle/config"
+	"github.com/cmusatyalab/steeleagle/sdk"
+)
 
 // Options are the options for building against the SDK, shared by SDK
 // builds and DSL mission compiles.
 type Options struct {
-	CapToml      []byte
+	PluginToml   []byte
 	ManifestToml []byte
 	GeoJson      []byte
 	OutputFile   string
@@ -13,10 +18,11 @@ type Options struct {
 
 type Option func(*Options)
 
-// WithCap sets the cap file (as TOML bytes) the SDK is scrubbed with.
-func WithCap(capToml []byte) Option {
+// WithPlugin sets the driver plugin config (as TOML bytes) whose driver cap the
+// SDK is scrubbed with.
+func WithPlugin(pluginToml []byte) Option {
 	return func(o *Options) {
-		o.CapToml = capToml
+		o.PluginToml = pluginToml
 	}
 }
 
@@ -46,7 +52,7 @@ func WithOutputFile(output string) Option {
 // give parsed.
 type Config struct {
 	Options
-	Cap      *sdk.CapFile      // parsed cap file, nil if none was given
+	Cap      *config.DriverCap // driver cap of the plugin config, nil if none was given
 	Manifest *sdk.ManifestFile // parsed manifest file, nil if none was given
 }
 
@@ -63,10 +69,15 @@ func NewConfig(options ...Option) (*Config, []*CompileError) {
 			return nil, []*CompileError{{Err: err}}
 		}
 	}
-	if c.CapToml != nil {
-		if c.Cap, err = sdk.ParseCapFromBytes(c.CapToml); err != nil {
+	if c.PluginToml != nil {
+		plugin, err := config.ParsePluginConfigFromBytes(c.PluginToml)
+		if err != nil {
 			return nil, []*CompileError{{Err: err}}
 		}
+		if plugin.Driver == nil {
+			return nil, []*CompileError{{Err: errors.New("plugin config has no [driver] table")}}
+		}
+		c.Cap = plugin.Driver
 	}
 	return c, nil
 }

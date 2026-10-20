@@ -6,3 +6,15 @@ dependencies = [
     "grpcio>=1.81.0",
     "grpcio-health-checking>=1.81.0",
 ]
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64"]
+
+[tool.pixi.dependencies]
+python = ">=3.12"
+
+[tool.pixi.tasks]
+# The start task is what the plugin runner invokes; extra arguments passed to
+# the plugin are appended to this command
+start = "python main.py"

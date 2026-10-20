@@ -9,19 +9,19 @@ import (
 	"github.com/shirou/gopsutil/v3/process"
 )
 
-// ACL provides a basic access control list for a listener. It can be set to
+// Acl provides a basic access control list for a listener. It can be set to
 // check access rights for process clients using PIDs or network clients using
 // IP CIDRs.
-type ACL struct {
+type Acl struct {
 	nets  []*net.IPNet
 	cidrs []string
 	pids  []int
 	mu    sync.Mutex
 }
 
-// GetACL constructs an ACL from a list of CIDR strings and allowed process IDs.
+// GetAcl constructs an Acl from a list of CIDR strings and allowed process IDs.
 // Plain IP addresses without a prefix length are treated as /32 (IPv4) or /128 (IPv6).
-func GetACL(cidrs []string, pids []int) *ACL {
+func GetAcl(cidrs []string, pids []int) *Acl {
 	nets := make([]*net.IPNet, 0, len(cidrs))
 	for _, cidr := range cidrs {
 		ipnet, err := parseCIDR(cidr)
@@ -30,11 +30,11 @@ func GetACL(cidrs []string, pids []int) *ACL {
 		}
 		nets = append(nets, ipnet)
 	}
-	return &ACL{nets: nets, cidrs: cidrs, pids: pids}
+	return &Acl{nets: nets, cidrs: cidrs, pids: pids}
 }
 
-// AllowsIP reports whether the given IP address is permitted by the ACL.
-func (a *ACL) AllowsIP(ip net.IP) bool {
+// AllowsIp reports whether the given IP address is permitted by the ACL.
+func (a *Acl) AllowsIp(ip net.IP) bool {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	for _, n := range a.nets {
@@ -45,8 +45,8 @@ func (a *ACL) AllowsIP(ip net.IP) bool {
 	return false
 }
 
-// AllowsPID reports whether pid is a descendant of any PID in the ACL's allowed list.
-func (a *ACL) AllowsPID(pid int) bool {
+// AllowsPid reports whether pid is a descendant of any PID in the ACL's allowed list.
+func (a *Acl) AllowsPid(pid int) bool {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	for _, p := range a.pids {
@@ -57,8 +57,8 @@ func (a *ACL) AllowsPID(pid int) bool {
 	return false
 }
 
-// AddIP parses a CIDR and adds it to the ACL.
-func (a *ACL) AddIP(cidr string) error {
+// AddIp parses a CIDR and adds it to the ACL.
+func (a *Acl) AddIp(cidr string) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	ipnet, err := parseCIDR(cidr)
@@ -70,8 +70,8 @@ func (a *ACL) AddIP(cidr string) error {
 	return nil
 }
 
-// AddPID adds an allowed PID to the ACL.
-func (a *ACL) AddPID(pid int) error {
+// AddPid adds an allowed PID to the ACL.
+func (a *Acl) AddPid(pid int) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if pid <= 0 {

@@ -1,7 +1,6 @@
 package plugin
 
 import (
-	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -9,11 +8,11 @@ import (
 	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
 )
 
+// The image used to run package plugins, which must include pixi
+const pixiImage string = "ghcr.io/prefix-dev/pixi:latest"
+
 func TestContainerPlugin(t *testing.T) {
-	_, err := exec.LookPath("podman")
-	if err != nil {
-		t.Skip("podman not found, skipping test")
-	}
+	requireContainer(t)
 	path, err := filepath.Abs(goBinary)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
@@ -37,17 +36,14 @@ func TestContainerPlugin(t *testing.T) {
 	}
 }
 
-func TestContainerPluginRunhook(t *testing.T) {
-	_, err := exec.LookPath("podman")
-	if err != nil {
-		t.Skip("podman not found, skipping test")
-	}
+func TestContainerPluginPixi(t *testing.T) {
+	requireContainer(t)
 	path, err := filepath.Abs(goPkg)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_pkg: %v", err)
 	}
 	plugin, err := newTestContainerPlugin(t,
-		"alpine",
+		pixiImage,
 		WithPath(path),
 		WithRunnerArgs([]string{"--rm"}),
 	)
@@ -66,16 +62,13 @@ func TestContainerPluginRunhook(t *testing.T) {
 }
 
 func TestContainerPluginPython(t *testing.T) {
-	_, err := exec.LookPath("podman")
-	if err != nil {
-		t.Skip("podman not found, skipping test")
-	}
+	requireContainer(t)
 	path, err := filepath.Abs(pyPkg)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper py_pkg: %v", err)
 	}
 	plugin, err := newTestContainerPlugin(t,
-		"ghcr.io/astral-sh/uv:python3.12-bookworm-slim",
+		pixiImage,
 		WithPath(path),
 		WithRunnerArgs([]string{"--rm"}),
 	)
@@ -94,10 +87,7 @@ func TestContainerPluginPython(t *testing.T) {
 }
 
 func TestContainerPluginPythonCustomExec(t *testing.T) {
-	_, err := exec.LookPath("podman")
-	if err != nil {
-		t.Skip("podman not found, skipping test")
-	}
+	requireContainer(t)
 	path, err := filepath.Abs(pyPkg)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper py_pkg: %v", err)
@@ -125,10 +115,7 @@ func TestContainerPluginPythonCustomExec(t *testing.T) {
 }
 
 func TestContainerPluginFileBinding(t *testing.T) {
-	_, err := exec.LookPath("podman")
-	if err != nil {
-		t.Skip("podman not found, skipping test")
-	}
+	requireContainer(t)
 	plugin, err := newTestContainerPlugin(t,
 		"ghcr.io/astral-sh/uv:python3.12-bookworm-slim",
 		WithoutClient(),
@@ -152,10 +139,7 @@ func TestContainerPluginFileBinding(t *testing.T) {
 }
 
 func TestContainerPluginWrongAuthCode(t *testing.T) {
-	_, err := exec.LookPath("podman")
-	if err != nil {
-		t.Skip("podman not found, skipping test")
-	}
+	requireContainer(t)
 	path, err := filepath.Abs(goBinary)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
@@ -181,10 +165,7 @@ func TestContainerPluginWrongAuthCode(t *testing.T) {
 }
 
 func TestContainerPluginArgs(t *testing.T) {
-	_, err := exec.LookPath("podman")
-	if err != nil {
-		t.Skip("podman not found, skipping test")
-	}
+	requireContainer(t)
 	path, err := filepath.Abs(goBinary)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
@@ -213,10 +194,7 @@ func TestContainerPluginArgs(t *testing.T) {
 }
 
 func TestContainerPluginWrongTag(t *testing.T) {
-	_, err := exec.LookPath("podman")
-	if err != nil {
-		t.Skip("podman not found, skipping test")
-	}
+	requireContainer(t)
 	path, err := filepath.Abs(goBinary)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)

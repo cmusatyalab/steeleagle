@@ -1,15 +1,15 @@
 // Command eaglec builds SteelEagle programs with the SDK preprocessed
 // for a vehicle. It has four modes:
 //
-//	eaglec sdk [-cap file] [-manifest file] [-geojson file] [-o file] [packages]
-//	eaglec dsl [-json] [-cap file] [-manifest file] [-geojson file] [-o file] mission
-//	eaglec schema [-json] [-cap file] [-manifest file] [-geojson file] mission
+//	eaglec sdk [-plugin file] [-manifest file] [-geojson file] [-o file] [packages]
+//	eaglec dsl [-json] [-plugin file] [-manifest file] [-geojson file] [-o file] mission
+//	eaglec schema [-json] [-plugin file] [-manifest file] [-geojson file] mission
 //	eaglec parse mission.dsl
 //
 // An SDK compile runs go build on packages (the package in the working
 // directory by default) in the local Go module, with the module's and the
-// SDK's packages scrubbed according to the cap file and with the consts
-// named by the manifest and GeoJSON generated into them.
+// SDK's packages scrubbed according to the plugin config's driver cap and
+// with the consts named by the manifest and GeoJSON generated into them.
 //
 // A DSL compile compiles a mission in a temporary workspace, preprocessing
 // the SDK the same way, into a DSL binary (mission.dslb by default).
@@ -232,7 +232,7 @@ func cleanAst(v any) any {
 // inputFiles are the paths of the optional input files the sdk, dsl and
 // schema modes take.
 type inputFiles struct {
-	cap, manifest, geoJson string
+	plugin, manifest, geoJson string
 }
 
 // newBaseFlagSet returns a flag set for mode with the -errors flag every
@@ -252,7 +252,7 @@ func newBaseFlagSet(mode, args string) *flag.FlagSet {
 func newFlagSet(mode, args string) (*flag.FlagSet, *inputFiles) {
 	fs := newBaseFlagSet(mode, args)
 	files := &inputFiles{}
-	fs.StringVar(&files.cap, "cap", "", "vehicle cap file (optional; nothing is scrubbed without one)")
+	fs.StringVar(&files.plugin, "plugin", "", "vehicle driver plugin config (optional; nothing is scrubbed without one)")
 	fs.StringVar(&files.manifest, "manifest", "", "mission manifest file (optional)")
 	fs.StringVar(&files.geoJson, "geojson", "", "mission GeoJSON file (optional)")
 	return fs, files
@@ -277,7 +277,7 @@ func (f *inputFiles) options() ([]buildtools.Option, error) {
 		path   string
 		option func([]byte) buildtools.Option
 	}{
-		{f.cap, buildtools.WithCap},
+		{f.plugin, buildtools.WithPlugin},
 		{f.manifest, buildtools.WithManifest},
 		{f.geoJson, buildtools.WithGeoJson},
 	} {

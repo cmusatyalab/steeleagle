@@ -137,7 +137,8 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 	if p.check {
 		// Bind in the plugin files
 		if p.pkg {
-			// Bind in the plugin directory
+			// Bind in the plugin directory, which is started with pixi from
+			// within the container
 			p.rargs = append(
 				p.rargs, "-v",
 				fmt.Sprintf("%s:/%s:Z", p.path, bindDir),
@@ -148,9 +149,9 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 				p.rargs, "-v",
 				fmt.Sprintf("%s:/%s/%s:Z", p.script, bindDir, filepath.Base(p.script)),
 			)
+			p.script = "./" + filepath.Base(p.script)
 		}
 		p.rargs = append(p.rargs, "-w", "/"+bindDir, p.imageRef) // change workdir
-		p.script = "./" + filepath.Base(p.script)
 	}
 
 	// Append the podman PID namespace to the allowed PIDs
@@ -170,7 +171,7 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 		return nil, nil, err
 	}
 	// The listener shares the plugin's ACL, so allow the container PID on it
-	p.acl.AddPID(pid)
+	p.acl.AddPid(pid)
 	return ln, conn, err
 }
 

@@ -24,13 +24,13 @@ func (c *Conn) RemoteAddr() net.Addr {
 type codedListener struct {
 	net.Listener
 	code AuthCode
-	acl  *ACL
+	acl  *Acl
 }
 
 // NewCodedListener wraps ln with AuthCode tagging and optional ACL enforcement.
 // Every accepted connection is wrapped in a Conn whose RemoteAddr carries code.
 // If acl is non-nil, connections that fail the ACL check are silently closed.
-func NewCodedListener(ln net.Listener, code AuthCode, acl *ACL) net.Listener {
+func NewCodedListener(ln net.Listener, code AuthCode, acl *Acl) net.Listener {
 	return &codedListener{
 		Listener: ln,
 		code:     code,
@@ -49,7 +49,7 @@ func (l *codedListener) Accept() (net.Conn, error) {
 		// If our access control list is set, check the incoming IP
 		if l.acl != nil {
 			if tc, ok := c.RemoteAddr().(*net.TCPAddr); ok {
-				if !l.acl.AllowsIP(tc.IP) {
+				if !l.acl.AllowsIp(tc.IP) {
 					c.Close()
 					continue
 				}
@@ -64,7 +64,7 @@ func (l *codedListener) Accept() (net.Conn, error) {
 				raw.Control(func(fd uintptr) {
 					cred, err = syscall.GetsockoptUcred(int(fd), syscall.SOL_SOCKET, syscall.SO_PEERCRED)
 				})
-				if err != nil || !l.acl.AllowsPID(int(cred.Pid)) {
+				if err != nil || !l.acl.AllowsPid(int(cred.Pid)) {
 					c.Close()
 					continue
 				}

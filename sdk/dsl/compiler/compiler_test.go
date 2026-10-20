@@ -430,9 +430,9 @@ func TestLoadOutsideModule(t *testing.T) {
 func TestLoadCapScrubsSdk(t *testing.T) {
 	skipIfShort(t)
 	path := linkedMission(t, "", dslPkgPath, actionsPkg)
-	cap := "[supported]\nservices = [\"steeleagle_protocol/v1/services/driver/ControlService\"]\n" +
-		"[unsupported]\nmethods = [\"steeleagle_protocol/v1/services/driver/ControlService/Kill\"]\n"
-	out, errs := Load(FromFile(path), buildtools.WithCap([]byte(cap)))
+	cap := "[driver.supported]\nservices = [\"steeleagle_protocol/v1/services/driver/ControlService\"]\n" +
+		"[driver.unsupported]\nmethods = [\"steeleagle_protocol/v1/services/driver/ControlService/Kill\"]\n"
+	out, errs := Load(FromFile(path), buildtools.WithPlugin([]byte(cap)))
 	if len(errs) > 0 {
 		t.Fatalf("Load() errors = %v", errs)
 	}

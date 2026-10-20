@@ -25,6 +25,19 @@ func TestMain(m *testing.M) {
 		panic(string(out))
 	}
 
+	// Install the pixi package environments ahead of time, so that tests
+	// running in sandboxes without network access can use them
+	if _, err := exec.LookPath("pixi"); err == nil {
+		for _, pkg := range []string{goPkg, pyPkg} {
+			cmd := exec.Command("pixi", "install")
+			cmd.Dir = pkg
+			out, err := cmd.CombinedOutput()
+			if err != nil {
+				panic(string(out))
+			}
+		}
+	}
+
 	// Run test cases
 	code := m.Run()
 

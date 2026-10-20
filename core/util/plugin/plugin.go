@@ -59,6 +59,7 @@ type BasePlugin struct {
 	eargs       []string           // executable args
 	script      string             // script target (plugin script)
 	sargs       []string           // script args
+	dir         string             // working directory for the subprocess
 	files       map[string]int     // linked files (only applicable to sandboxes/containers)
 	start       int64              // plugin start time
 	timeout     int                // timeout in seconds waiting for the server to start
@@ -71,7 +72,7 @@ type BasePlugin struct {
 	listen      bool               // whether or not to support a plugin client
 	check       bool               // whether or not to check existence of files
 	cmd         *exec.Cmd          // command to run
-	acl         *listener.ACL      // ACL for listener connections
+	acl         *listener.Acl      // ACL for listener connections
 	log         zerolog.Logger     // logger object
 	outStream   io.Writer          // replacement out file for Stdout/err
 	environ     []string           // environment to run the plugin in
@@ -107,7 +108,7 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 
 	// Create a new ACL if it isn't initialized
 	if p.acl == nil {
-		p.acl = listener.GetACL([]string{}, []int{})
+		p.acl = listener.GetAcl([]string{}, []int{})
 	}
 
 	// Find and validate script if checks are on
@@ -183,8 +184,10 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 	p.cmd.Cancel = func() error {
 		return syscall.Kill(-p.cmd.Process.Pid, syscall.SIGKILL)
 	}
-	if p.script != "" {
-		// Set the working directory for the command
+	// Set the working directory for the command
+	if p.dir != "" {
+		p.cmd.Dir = p.dir
+	} else if p.script != "" {
 		p.cmd.Dir = filepath.Dir(p.script)
 	}
 	p.log.Info().Msgf("starting: %v", p.final)
@@ -206,9 +209,9 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 		return nil, nil, err
 	}
 	p.log.Info().Int("pid", p.cmd.Process.Pid).Msg("plugin process launched")
-	p.acl.AddPID(p.cmd.Process.Pid)
+	p.acl.AddPid(p.cmd.Process.Pid)
 
-	// Cleanup goroutine.
+	// Cleanup goroutine
 	go func() {
 		err := p.waitProcess()
 		if ctx.Err() != nil {
@@ -249,26 +252,6 @@ func (p *BasePlugin) Wait() error {
 	return err
 }
 
-// waitProcess blocks until the plugin subprocess exits and returns its exit
-// error.
-func (p *BasePlugin) waitProcess() error {
-	if !p.running.Load() {
-		return fmt.Errorf("plugin not running")
-	}
-	if p.cmd == nil {
-		return nil
-	}
-	p.waitOnce.Do(func() {
-		p.waitErr = p.cmd.Wait()
-		if p.ctx.Err() != nil {
-			p.waitErr = p.ctx.Err()
-		}
-		close(p.waitDone)
-	})
-	<-p.waitDone
-	return p.waitErr
-}
-
 // Name gets the readable name of the plugin.
 func (p *BasePlugin) Name() string {
 	return p.name
@@ -280,7 +263,10 @@ func (p *BasePlugin) Code() listener.AuthCode {
 }
 
 // validateScript resolves and validates the plugin's script path, setting pkg
-// and exec fields as needed.
+// and exec fields as needed. Directories are treated as pixi packages and
+// started with `pixi run start`, unless an executable has been set, in which
+// case the executable and its args are used in place of `pixi run`. Files are
+// treated as binaries and run directly.
 func (p *BasePlugin) validateScript() error {
 	// Check if script has already been manually set
 	if p.script != "" {
@@ -303,18 +289,21 @@ func (p *BasePlugin) validateScript() error {
 		return err
 	}
 
-	// If the plugin is a directory, then use the runhook as the
-	// target executable
+	// If the plugin is a directory, then run its pixi start task
 	if info.IsDir() {
-		// Set info and target to the runhook
-		p.pkg = true
-		p.script = filepath.Join(p.path, runHook)
-		info, err = os.Stat(p.script)
+		manifest, err := findManifest(p.path)
 		if err != nil {
-			p.log.Error().Err(err).Msg("couldn't stat plugin run hook, is it there?")
+			p.log.Error().Err(err).Msg("couldn't find pixi manifest, is it there?")
 			return err
 		}
-		p.exec = "sh"
+		p.log.Debug().Str("manifest", manifest).Msg("found pixi manifest")
+		p.pkg = true
+		p.dir = p.path
+		p.script = pixiTask
+		if p.exec == "" {
+			p.exec = pixiExec
+			p.eargs = slices.Insert(p.eargs, 0, pixiRun)
+		}
 	} else {
 		p.script = p.path
 		// Ensure that the script is runnable
@@ -325,6 +314,37 @@ func (p *BasePlugin) validateScript() error {
 	}
 
 	return nil
+}
+
+// waitProcess blocks until the plugin subprocess exits and returns its exit
+// error.
+func (p *BasePlugin) waitProcess() error {
+	if !p.running.Load() {
+		return fmt.Errorf("plugin not running")
+	}
+	if p.cmd == nil {
+		return nil
+	}
+	p.waitOnce.Do(func() {
+		p.waitErr = p.cmd.Wait()
+		if p.ctx.Err() != nil {
+			p.waitErr = p.ctx.Err()
+		}
+		close(p.waitDone)
+	})
+	<-p.waitDone
+	return p.waitErr
+}
+
+// findManifest returns the path of the pixi manifest within dir.
+func findManifest(dir string) (string, error) {
+	for _, name := range pixiManifests {
+		manifest := filepath.Join(dir, name)
+		if _, err := os.Stat(manifest); err == nil {
+			return manifest, nil
+		}
+	}
+	return "", fmt.Errorf("plugin %s does not contain a pixi manifest (one of %v)", dir, pixiManifests)
 }
 
 // createSocketEndpoints listens on the server socket and, when server mode is

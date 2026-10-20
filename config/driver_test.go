@@ -1,26 +1,29 @@
-package sdk
+package config
 
 import "testing"
 
-// TestCapParsesPluginAndSupported checks that the top level plugin field and
-// the supported services table are parsed from a cap file.
-func TestCapParsesPluginAndSupported(t *testing.T) {
-	c, err := ParseCapFromFile("cmd/eaglec/testdata/cap.test.toml")
+// TestDriverCapParsesTypeAndSupported checks that the driver type and the
+// supported services table are parsed from a driver plugin config.
+func TestDriverCapParsesTypeAndSupported(t *testing.T) {
+	p, err := ParsePluginConfigFromFilepath("examples/driver.plugin.toml")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.Plugin != "driver" {
-		t.Errorf("Plugin = %q, want %q", c.Plugin, "driver")
+	if p.Driver == nil {
+		t.Fatal("Driver = nil, want a driver cap")
 	}
-	if len(c.Supported.Services) != 3 {
-		t.Errorf("len(Supported.Services) = %d, want 3", len(c.Supported.Services))
+	if p.Driver.Type != "copter" {
+		t.Errorf("Driver.Type = %q, want %q", p.Driver.Type, "copter")
+	}
+	if len(p.Driver.Supported.Services) != 3 {
+		t.Errorf("len(Driver.Supported.Services) = %d, want 3", len(p.Driver.Supported.Services))
 	}
 }
 
-// TestCapSupports checks that services are opt-in and gate their methods,
+// TestDriverCapSupports checks that services are opt-in and gate their methods,
 // and that everything else is supported unless listed as unsupported.
-func TestCapSupports(t *testing.T) {
-	c, err := ParseCapFromFile("cmd/eaglec/testdata/cap.test.toml")
+func TestDriverCapSupports(t *testing.T) {
+	p, err := ParsePluginConfigFromFilepath("examples/driver.plugin.toml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,7 +46,7 @@ func TestCapSupports(t *testing.T) {
 		"steeleagle_protocol/v1/messages/telemetry/PositionInfo/velocity_body/linear_vel": true,
 	}
 	for name, want := range cases {
-		if got := c.Supports(name); got != want {
+		if got := p.Driver.Supports(name); got != want {
 			t.Errorf("Supports(%q) = %v, want %v", name, got, want)
 		}
 	}

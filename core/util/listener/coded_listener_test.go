@@ -19,7 +19,7 @@ func TestAuthCode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to listen: %v", err)
 	}
-	ln := NewCodedListener(sock, MissionCode, GetACL([]string{}, []int{os.Getpid()}))
+	ln := NewCodedListener(sock, MissionCode, GetAcl([]string{}, []int{os.Getpid()}))
 
 	conn, err := grpc.NewClient("unix:///tmp/listener.sock", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
