@@ -16,6 +16,12 @@ import (
 // InstallTimeout bounds how long a plugin's install.sh is allowed to run.
 const InstallTimeout = 5 * time.Minute
 
+// GabrielWheelEnv names the variable that gives a plugin's install.sh the path
+// of Gabriel's Python wheel, if eagled has one. Gabriel's shared memory layout
+// may change between commits, so plugins install the wheel built with eagled
+// rather than one of their own.
+const GabrielWheelEnv = "GABRIEL_WHEEL"
+
 // fetchRefName is the local branch every narrow fetch lands under,
 // regardless of what name or hash the caller's ref resolves to remotely.
 // Using a fixed local name means the caller's ref never needs to double as a
@@ -25,8 +31,8 @@ const fetchRefName = plumbing.ReferenceName("refs/heads/install-target")
 // installPlugin fetches repo at ref, extracts subpath, moves it into place
 // under installDir/<name>, and then runs install.sh. A failed install rolls
 // the move back, leaving whatever was previously installed, if anything,
-// untouched.
-func installPlugin(ctx context.Context, installDir, name, repo, ref, subpath string) error {
+// untouched. install.sh gets gabrielWheel's path, unless it is "".
+func installPlugin(ctx context.Context, installDir, name, repo, ref, subpath, gabrielWheel string) error {
 	if err := os.MkdirAll(installDir, 0755); err != nil {
 		return fmt.Errorf("creating install directory: %w", err)
 	}
@@ -74,6 +80,9 @@ func installPlugin(ctx context.Context, installDir, name, repo, ref, subpath str
 	defer cancel()
 	cmd := exec.CommandContext(installCtx, "sh", "install.sh")
 	cmd.Dir = targetDir
+	if gabrielWheel != "" {
+		cmd.Env = append(os.Environ(), GabrielWheelEnv+"="+gabrielWheel)
+	}
 	if output, err := cmd.CombinedOutput(); err != nil {
 		os.RemoveAll(targetDir)
 		if replaced {

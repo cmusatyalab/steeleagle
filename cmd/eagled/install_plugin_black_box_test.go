@@ -271,3 +271,73 @@ address = "127.0.0.1:1"
 			recordedRef, map[string]string{ref1: "ref1", ref2: "ref2"}[recordedRef], got, wantMarker)
 	}
 }
+
+// TestInstallPluginGabrielWheel checks that a plugin's install.sh gets the
+// path of the Gabriel wheel eagled was started with, and nothing without one.
+func TestInstallPluginGabrielWheel(t *testing.T) {
+	const pluginName, subpath = "wheeldriver", "subdir"
+	// install.sh records $GABRIEL_WHEEL, or that it is unset.
+	const installScript = "#!/bin/sh\nprintf '%s' \"${GABRIEL_WHEEL-unset}\" > wheel.marker\n"
+	wheel := filepath.Join(t.TempDir(), "gabriel-0.1.0-py3-none-any.whl")
+	if err := os.WriteFile(wheel, nil, 0644); err != nil {
+		t.Fatalf("writing wheel: %v", err)
+	}
+
+	tests := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{"wheel", []string{"-gabriel-wheel", wheel}, wheel},
+		{"nowheel", nil, "unset"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			inst := startEagled(t, "", test.args...)
+			ctx := t.Context()
+
+			cfgResp, err := inst.Client.Configure(ctx, eagledpb.ConfigureRequest_builder{
+				ConfigToml: `
+port-base = 0
+plugin-dir = "` + inst.PluginDir + `"
+
+[backend.swarm-controller]
+address = "127.0.0.1:1"
+`,
+			}.Build())
+			if err != nil || len(cfgResp.GetVehicles()) != 0 {
+				t.Fatalf("Configure: resp=%v err=%v", cfgResp, err)
+			}
+
+			repo := gitFixtureRepo(t, subpath)
+			if err := os.WriteFile(filepath.Join(repo, subpath, "install.sh"), []byte(installScript), 0755); err != nil {
+				t.Fatalf("writing install.sh: %v", err)
+			}
+			if out, err := gitCmd(t, repo, "commit", "-q", "-a", "-m", "record the wheel", "--no-gpg-sign", "--no-verify").CombinedOutput(); err != nil {
+				t.Fatalf("git commit: %v\n%s", err, out)
+			}
+
+			installResp, err := inst.Client.InstallPlugin(ctx, eagledpb.InstallPluginRequest_builder{
+				Name:     pluginName,
+				Repo:     repo,
+				Ref:      gitHead(t, repo),
+				Subpath:  subpath,
+				Category: eagledpb.PluginCategory_PLUGIN_CATEGORY_DRIVER,
+			}.Build())
+			if err != nil {
+				t.Fatalf("InstallPlugin: %v", err)
+			}
+			if !installResp.GetOk() {
+				t.Fatalf("InstallPlugin failed: %s", installResp.GetError())
+			}
+
+			got, err := os.ReadFile(filepath.Join(inst.DataDir, "steeleagle", "plugins", "driver", pluginName, "wheel.marker"))
+			if err != nil {
+				t.Fatalf("reading what install.sh recorded: %v", err)
+			}
+			if string(got) != test.want {
+				t.Errorf("install.sh got GABRIEL_WHEEL %q, want %q", got, test.want)
+			}
+		})
+	}
+}

@@ -32,6 +32,7 @@ func main() {
 	controlPort := flag.Int("control-port", DefaultControlPort, "port DaemonService listens on")
 	metricsPort := flag.Int("metrics-port", 0, "port to serve Prometheus metrics on, at "+metricsPath+"; 0 serves none")
 	gabrielMetricsPort := flag.Int("gabriel-metrics-port", 0, "port for Gabriel to serve its own Prometheus metrics on, at "+metricsPath+"; 0 serves none")
+	gabrielWheel := flag.String("gabriel-wheel", "", "Gabriel's Python wheel, built from the same Gabriel commit as eagled, for plugins to install; plugins' install.sh get its path as $"+GabrielWheelEnv)
 	logLevel := flag.String("log-level", zerolog.InfoLevel.String(), "log level: trace, debug, info, warn, error, fatal, panic, or disabled")
 	flag.Parse()
 
@@ -40,6 +41,12 @@ func main() {
 		log.Fatal().Msgf("parsing -log-level: %v", err)
 	}
 	zerolog.SetGlobalLevel(level)
+
+	// Absolute, since install.sh runs in the plugin's own directory.
+	wheel, err := absoluteGabrielWheel(*gabrielWheel)
+	if err != nil {
+		log.Fatal().Msgf("-gabriel-wheel: %v", err)
+	}
 
 	logs := logstore.Open(logstore.Options{Dir: logDir()})
 	daemonLog := logs.Writer("daemon")
@@ -76,6 +83,7 @@ func main() {
 	eagledpb.RegisterDaemonServiceServer(grpcServer, d)
 	d.grpcServer = grpcServer
 	d.controlPort = *controlPort
+	d.gabrielWheel = wheel
 
 	if err := d.loadPersistedInstalled(); err != nil {
 		log.Error().Err(err).Msg("could not reload persisted plugin refs")
@@ -109,6 +117,18 @@ func main() {
 		grpcServer.Stop()
 		<-stopped
 	}
+}
+
+// absoluteGabrielWheel returns wheel's absolute path, after checking that it
+// exists, or "" if no wheel was given.
+func absoluteGabrielWheel(wheel string) (string, error) {
+	if wheel == "" {
+		return "", nil
+	}
+	if _, err := os.Stat(wheel); err != nil {
+		return "", err
+	}
+	return filepath.Abs(wheel)
 }
 
 // logDir returns the directory eagled persists logs under. If the data

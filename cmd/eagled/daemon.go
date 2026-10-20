@@ -98,9 +98,10 @@ type daemon struct {
 	ctx      context.Context    // canceled on daemon shutdown, stops every vehicle and its registration stream
 	shutdown context.CancelFunc // cancels ctx, ResetConfig calls this itself to trigger the same shutdown a signal would
 
-	grpcServer  *grpc.Server    // gRPC server to serve DaemonService on
-	controlPort int             // port gRPC server listens on
-	logs        *logstore.Store // per-source log capture and history
+	grpcServer   *grpc.Server    // gRPC server to serve DaemonService on
+	controlPort  int             // port gRPC server listens on
+	gabrielWheel string          // Gabriel's Python wheel for plugins to install, or "" if none
+	logs         *logstore.Store // per-source log capture and history
 
 	mu              sync.Mutex
 	configured      bool

@@ -110,8 +110,9 @@ func (inst *eagledInstance) WaitExit(t *testing.T, timeout time.Duration) {
 
 // startEagled launches eagled as a real subprocess with an isolated data
 // directory and control port, and waits for its DaemonService to accept
-// connections. It's torn down via t.Cleanup.
-func startEagled(t *testing.T, dataDir string) *eagledInstance {
+// connections, passing it args besides its control port. It's torn down via
+// t.Cleanup.
+func startEagled(t *testing.T, dataDir string, args ...string) *eagledInstance {
 	t.Helper()
 
 	if dataDir == "" {
@@ -120,7 +121,7 @@ func startEagled(t *testing.T, dataDir string) *eagledInstance {
 	pluginDir := t.TempDir()
 	controlPort := freePort(t)
 
-	cmd := exec.Command(eagledBinary, "-control-port", fmt.Sprintf("%d", controlPort))
+	cmd := exec.Command(eagledBinary, append([]string{"-control-port", fmt.Sprintf("%d", controlPort)}, args...)...)
 	cmd.Env = append(os.Environ(),
 		"XDG_DATA_HOME="+dataDir,
 		"XDG_RUNTIME_DIR="+t.TempDir(),

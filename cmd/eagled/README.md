@@ -103,6 +103,13 @@ without that, two overlapping installs could interleave the swap-in and
 leave the recorded ref pointing at a different version than what's actually
 on disk.
 
+A plugin that uses Gabriel, such as the parrot_anafi driver, must use the
+Python wheel built from the same Gabriel commit as eagled. That's because
+Gabriel's shared memory layout can change from one commit to the next. So the
+wheel ships with eagled, not with the plugin. Start eagled with
+`-gabriel-wheel <path>`, and each `install.sh` gets that path in
+`$GABRIEL_WHEEL`. Build the wheel as Gabriel's `python/README.md` says.
+
 ## Deployment (systemd)
 
 `systemd/install.sh` (run as root) builds eagled, or installs a prebuilt binary

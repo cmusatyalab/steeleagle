@@ -30,7 +30,7 @@ func (d *daemon) InstallPlugin(ctx context.Context, req *eagledpb.InstallPluginR
 	installMu.Lock()
 	defer installMu.Unlock()
 
-	if err := installPlugin(ctx, installDir, req.GetName(), req.GetRepo(), req.GetRef(), req.GetSubpath()); err != nil {
+	if err := installPlugin(ctx, installDir, req.GetName(), req.GetRepo(), req.GetRef(), req.GetSubpath(), d.gabrielWheel); err != nil {
 		log.Warn().Str("plugin", req.GetName()).Err(err).Msg("plugin install failed")
 		return eagledpb.InstallPluginResponse_builder{Ok: false, Error: err.Error()}.Build(), nil
 	}
