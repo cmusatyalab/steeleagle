@@ -15,6 +15,7 @@ type testLogger struct {
 	t *testing.T
 }
 
+// Write pipes p to the testing log.
 func (l testLogger) Write(p []byte) (n int, err error) {
 	l.t.Log(string(p))
 	return len(p), nil

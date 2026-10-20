@@ -11,18 +11,18 @@ type ControlLawState struct {
 	// Name of the state
 	Name string `toml:"name" json:"name"`
 	// Enter trigger
-	Enter []string `toml:"enter,omitempty" json:"enter"`
+	Enter []string `toml:"enter" json:"enter"`
 	// Allowed commands
-	Allowed []string `toml:"allowed,omitempty" json:"allowed"`
+	Allowed []string `toml:"allowed" json:"allowed"`
 	// Match transitions
-	Match [][]string `toml:"match,omitempty" json:"match"`
+	Match [][]string `toml:"match" json:"match"`
 }
 
 type ControlLaw struct {
 	// First state
 	First string `toml:"first" json:"first"`
 	// List of states
-	States []ControlLawState `toml:"states,omitempty" json:"states"`
+	States []ControlLawState `toml:"states" json:"states"`
 }
 
 // Map returns the law map keyed by state string for a ControlLaw. This is useful

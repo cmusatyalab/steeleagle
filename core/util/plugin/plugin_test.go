@@ -14,6 +14,8 @@ import (
 	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
 )
 
+// TestPlugin ensures that a binary plugin can be started and complete an RPC
+// handshake.
 func TestPlugin(t *testing.T) {
 	path, err := filepath.Abs(goBinary)
 	if err != nil {
@@ -34,6 +36,8 @@ func TestPlugin(t *testing.T) {
 	}
 }
 
+// TestPluginWithParent ensures that a plugin can be started with a custom
+// parent directory for its sockets and files.
 func TestPluginWithParent(t *testing.T) {
 	path, err := filepath.Abs(goBinary)
 	if err != nil {
@@ -64,6 +68,8 @@ func TestPluginWithParent(t *testing.T) {
 	os.RemoveAll(path)
 }
 
+// TestPluginPixi ensures that a Go package plugin can be started through its
+// pixi start task.
 func TestPluginPixi(t *testing.T) {
 	requirePixi(t)
 	path, err := filepath.Abs(goPkg)
@@ -153,6 +159,8 @@ func TestPluginNoManifest(t *testing.T) {
 	}
 }
 
+// TestPluginPython ensures that a Python package plugin can be started through
+// its pixi start task.
 func TestPluginPython(t *testing.T) {
 	requirePixi(t)
 	path, err := filepath.Abs(pyPkg)
@@ -176,6 +184,8 @@ func TestPluginPython(t *testing.T) {
 	}
 }
 
+// TestPluginWrongAuthCode ensures that RPCs from a plugin are rejected when it
+// is given a different AuthCode than the one expected.
 func TestPluginWrongAuthCode(t *testing.T) {
 	path, err := filepath.Abs(goBinary)
 	if err != nil {
@@ -199,6 +209,7 @@ func TestPluginWrongAuthCode(t *testing.T) {
 	}
 }
 
+// TestPluginArgs ensures that script args are forwarded to a binary plugin.
 func TestPluginArgs(t *testing.T) {
 	path, err := filepath.Abs(goBinary)
 	if err != nil {
@@ -226,6 +237,8 @@ func TestPluginArgs(t *testing.T) {
 	}
 }
 
+// TestPluginNoCheck ensures that a plugin can be started with a script that
+// isn't on disk when script path validation is disabled.
 func TestPluginNoCheck(t *testing.T) {
 	path, err := filepath.Abs(pyPkg)
 	if err != nil {
@@ -255,6 +268,8 @@ func TestPluginNoCheck(t *testing.T) {
 	}
 }
 
+// TestPluginStartAlreadyRunning ensures that starting a plugin which is
+// already running returns an error.
 func TestPluginStartAlreadyRunning(t *testing.T) {
 	path, err := filepath.Abs(goBinary)
 	if err != nil {

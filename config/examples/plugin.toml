@@ -6,7 +6,7 @@ description = "Runs the Logdy logging service"
 # Extra dependencies not covered by Pixi (optional)
 dependencies = ["logdy"]
 
-[[args]] # Plugin arguments (optional)
+[[args]] # Plugin arguments (can be empty)
 # Name of the argument
 name = "timeout"
 # JSON type: (string, object, boolean, array, number)

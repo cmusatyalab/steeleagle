@@ -9,6 +9,8 @@ import (
 	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
 )
 
+// TestSandboxPlugin ensures that a binary plugin can be started in a sandbox
+// and complete an RPC handshake.
 func TestSandboxPlugin(t *testing.T) {
 	requireSandbox(t)
 	path, err := filepath.Abs(goBinary)
@@ -32,6 +34,8 @@ func TestSandboxPlugin(t *testing.T) {
 	}
 }
 
+// TestSandboxPluginPixi ensures that a Go package plugin can be started in a
+// sandbox through its pixi start task.
 func TestSandboxPluginPixi(t *testing.T) {
 	requireSandbox(t)
 	requirePixi(t)
@@ -56,6 +60,8 @@ func TestSandboxPluginPixi(t *testing.T) {
 	}
 }
 
+// TestSandboxPluginPython ensures that a Python package plugin can be started
+// in a sandbox through its pixi start task.
 func TestSandboxPluginPython(t *testing.T) {
 	requireSandbox(t)
 	path, err := filepath.Abs(pyPkg)
@@ -81,6 +87,8 @@ func TestSandboxPluginPython(t *testing.T) {
 	}
 }
 
+// TestSandboxPluginFileBinding ensures that writable, read-only and
+// executable files are bound into the sandbox.
 func TestSandboxPluginFileBinding(t *testing.T) {
 	requireSandbox(t)
 	_, err := exec.LookPath("uv")
@@ -110,6 +118,8 @@ func TestSandboxPluginFileBinding(t *testing.T) {
 	}
 }
 
+// TestSandboxPluginWrongAuthCode ensures that RPCs from a sandboxed plugin are
+// rejected when it is given a different AuthCode than the one expected.
 func TestSandboxPluginWrongAuthCode(t *testing.T) {
 	requireSandbox(t)
 	path, err := filepath.Abs(goBinary)
@@ -134,6 +144,8 @@ func TestSandboxPluginWrongAuthCode(t *testing.T) {
 	}
 }
 
+// TestSandboxPluginArgs ensures that script args are forwarded to a sandboxed
+// plugin.
 func TestSandboxPluginArgs(t *testing.T) {
 	requireSandbox(t)
 	path, err := filepath.Abs(goBinary)

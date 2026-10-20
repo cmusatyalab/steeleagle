@@ -1,17 +1,15 @@
 [info]
+# Name of the mission
 name = "Patrol and Track"
+# Version of the mission
 version = "0.1.0"
+# Mission roles (optional)
 roles = ["Patroller", "Tracker"]
+# Mission squawks (optional)
 squawks = ["target_found", "done_with_mission"]
 
-[[flows]]
+[[flows]] # List of flows (can be empty)
+# Name of the flow
 name = "yolo"
+# Type of the result
 result = "messages/result/DetectionResult"
-
-[[flows]]
-name = "yolo_q"
-result = "messages/result/DetectionResult"
-
-[[flows]]
-name = "swiftmap"
-result = "messages/result/GenericResult"

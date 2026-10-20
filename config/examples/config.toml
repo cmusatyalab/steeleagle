@@ -2,7 +2,7 @@
 # Daemon default port
 port = 8998
 # Gabriel server default port
-port-gabriel = 8999
+gabriel = 8999
 # Hostname is optional, but determines how the daemon presents itself if using a
 # DNS-enabled VPN like Tailscale
 hostname = "eagled"
@@ -11,7 +11,7 @@ hostname = "eagled"
 # vehicles from other daemons to create a centralized control hub (optional)
 orchestrator = "homebase"
 
-[[vehicles]] # List of vehicles (optional)
+[[vehicles]] # List of vehicles (can be empty)
 # Name of the vehicle
 name = "harpy"
 # If set to true, will spawn the vehicle in the simulated world instead of running
@@ -26,10 +26,10 @@ plugin = "parrot_anafi"
 package = "github.com/cmusatyalab/steeleagle_plugins/drivers/parrot"
 # Tag to use (or commit hash), defaults to latest (optional)
 tag = "afec80"
-[vehicles.plugin.args] # Args for this plugin (optional)
+[vehicles.plugin.args] # Args for this plugin (can be empty)
 ip = "10.202.0.1"
 
-[[engines]] # List of engines (optional)
+[[engines]] # List of engines (can be empty)
 # Name of the engine
 name = "yolo"
 [engines.plugin] # Plugin for this engine
@@ -39,10 +39,10 @@ plugin = "yolo_qnn"
 package = "github.com/cmusatyalab/steeleagle_plugins/engines/yolo"
 # Tag to use (or commit hash), defaults to latest (optional)
 tag = "efcd8e"
-[engines.plugin.args] # Args for this plugin (optional)
+[engines.plugin.args] # Args for this plugin (can be empty)
 confidence = 0.0
 
-[[commanders]] # List of commanders (optional)
+[[commanders]] # List of commanders (can be empty)
 # Name of the commander
 name = "gcs"
 [commanders.plugin] # Plugin for this commander
@@ -52,11 +52,11 @@ plugin = "gcs"
 package = "github.com/cmusatyalab/steeleagle_plugins/commanders/gcs"
 # Tag to use (or commit hash), defaults to latest (optional)
 tag = "abcefd"
-[commanders.plugin.args] # Args for this plugin (optional)
+[commanders.plugin.args] # Args for this plugin (can be empty)
 
-# [[monitors]] and [[extras]] follow the same format as [[engines]] and [[commanders]] (optional)
+# [[monitors]] and [[extras]] follow the same format as [[engines]] and [[commanders]] (can be empty)
 
-[simulator] # Simulator for this daemon (optional)
+[simulator] # Simulator for this daemon (can be empty)
 # Name of the simulator
 name = "aviary"
 [simulator.plugin] # Plugin for the simulator

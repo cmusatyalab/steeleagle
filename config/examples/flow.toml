@@ -1,0 +1,21 @@
+# List of producers in the flow, {vehicle} is subbed out for
+# the vehicle name automatically
+[[producers]]
+# Name of the producer
+name = "{vehicle}.telemetry"
+
+# List of engines in the flow
+[[engines]]
+# Name of the engine
+name = "{vehicle}.yolo"
+# Location of the engine
+location = "local"
+
+# List of edges in the flow
+[[edges]]
+# Origin of the edge
+from = "{vehicle}.telemetry"
+# Destination of the edge
+to = "telemetry"
+# Edge timeout
+timeout = "2s"

@@ -11,6 +11,8 @@ import (
 // The image used to run package plugins, which must include pixi
 const pixiImage string = "ghcr.io/prefix-dev/pixi:latest"
 
+// TestContainerPlugin ensures that a binary plugin can be started in a
+// container and complete an RPC handshake.
 func TestContainerPlugin(t *testing.T) {
 	requireContainer(t)
 	path, err := filepath.Abs(goBinary)
@@ -36,6 +38,8 @@ func TestContainerPlugin(t *testing.T) {
 	}
 }
 
+// TestContainerPluginPixi ensures that a Go package plugin can be started in a
+// container through its pixi start task.
 func TestContainerPluginPixi(t *testing.T) {
 	requireContainer(t)
 	path, err := filepath.Abs(goPkg)
@@ -61,6 +65,8 @@ func TestContainerPluginPixi(t *testing.T) {
 	}
 }
 
+// TestContainerPluginPython ensures that a Python package plugin can be
+// started in a container through its pixi start task.
 func TestContainerPluginPython(t *testing.T) {
 	requireContainer(t)
 	path, err := filepath.Abs(pyPkg)
@@ -86,6 +92,8 @@ func TestContainerPluginPython(t *testing.T) {
 	}
 }
 
+// TestContainerPluginPythonCustomExec ensures that setting the executable and
+// its args replaces `pixi run` for a containerized Python plugin.
 func TestContainerPluginPythonCustomExec(t *testing.T) {
 	requireContainer(t)
 	path, err := filepath.Abs(pyPkg)
@@ -114,6 +122,8 @@ func TestContainerPluginPythonCustomExec(t *testing.T) {
 	}
 }
 
+// TestContainerPluginFileBinding ensures that writable and read-only files are
+// bound into the container.
 func TestContainerPluginFileBinding(t *testing.T) {
 	requireContainer(t)
 	plugin, err := newTestContainerPlugin(t,
@@ -138,6 +148,9 @@ func TestContainerPluginFileBinding(t *testing.T) {
 	}
 }
 
+// TestContainerPluginWrongAuthCode ensures that RPCs from a containerized
+// plugin are rejected when it is given a different AuthCode than the one
+// expected.
 func TestContainerPluginWrongAuthCode(t *testing.T) {
 	requireContainer(t)
 	path, err := filepath.Abs(goBinary)
@@ -164,6 +177,8 @@ func TestContainerPluginWrongAuthCode(t *testing.T) {
 	}
 }
 
+// TestContainerPluginArgs ensures that script args are forwarded to a
+// containerized plugin.
 func TestContainerPluginArgs(t *testing.T) {
 	requireContainer(t)
 	path, err := filepath.Abs(goBinary)
@@ -193,6 +208,8 @@ func TestContainerPluginArgs(t *testing.T) {
 	}
 }
 
+// TestContainerPluginWrongTag ensures that creating a container plugin with an
+// image that doesn't exist returns an error.
 func TestContainerPluginWrongTag(t *testing.T) {
 	requireContainer(t)
 	path, err := filepath.Abs(goBinary)

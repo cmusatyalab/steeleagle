@@ -14,6 +14,8 @@ import (
 	"google.golang.org/grpc/peer"
 )
 
+// TestAuthCode ensures that the coded listener tags connections with its
+// AuthCode, so that gRPC interceptors can read it from the peer address.
 func TestAuthCode(t *testing.T) {
 	sock, err := net.Listen("unix", "/tmp/listener.sock")
 	if err != nil {

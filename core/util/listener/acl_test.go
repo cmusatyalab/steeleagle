@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+// TestAclIp ensures that invalid CIDRs are rejected, and that the coded
+// listener only keeps connections from IPs inside the ACL's allowed ranges.
 func TestAclIp(t *testing.T) {
 	base, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -69,6 +71,8 @@ func TestAclIp(t *testing.T) {
 	client2.Close()
 }
 
+// TestAclPid ensures that invalid PIDs are rejected, and that the coded
+// listener only accepts unix socket clients descended from an allowed PID.
 func TestAclPid(t *testing.T) {
 	const sockPath = "/tmp/listener.sock"
 	os.Remove(sockPath)

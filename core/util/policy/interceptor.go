@@ -24,13 +24,13 @@ func (p *Policy) NewPolicyInterceptor() grpc.StreamServerInterceptor {
 		command := qualifyCommand(ss.Context(), info.FullMethod)
 		p.log.Info().Str("command", command).Msg("received RPC request")
 		// Check if command is allowed by laws, and transit to new state if necessary
-		allowed, _, err := p.SafeCheckAndTransit(ss.Context(), command)
-		if allowed == false && err == nil {
-			p.log.Error().Str("command", command).Str("state", p.currentState).Msg("command is not allowed in current state")
-			return status.Errorf(codes.PermissionDenied, "command %s is not allowed in state %s", command, p.currentState)
-		} else if allowed == false && err != nil {
+		allowed, state, err := p.SafeCheckAndTransit(ss.Context(), command)
+		if err != nil {
 			p.log.Warn().Err(err).Msg("policy check failed, denying to be safe")
 			return status.Errorf(codes.Internal, "error making policy request, denying to be safe")
+		} else if !allowed {
+			p.log.Error().Str("command", command).Str("state", state).Msg("command is not allowed in current state")
+			return status.Errorf(codes.PermissionDenied, "command %s is not allowed in state %s", command, state)
 		}
 
 		p.log.Info().Str("command", command).Msg("RPC request approved, sending command")

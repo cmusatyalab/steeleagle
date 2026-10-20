@@ -13,7 +13,7 @@ type PluginRoot struct {
 	// Plugin description (optional)
 	Description string `toml:"description,omitempty"`
 	// List of dependencies for the plugin external to Pixi
-	Dependencies []string `toml:"dependencies,omitempty"`
+	Dependencies []string `toml:"dependencies"`
 }
 
 type ArgsField struct {
@@ -31,7 +31,7 @@ type PluginConfig struct {
 	// Plugin details
 	Plugin PluginRoot `toml:"plugin"`
 	// Plugin argument specification (optional)
-	Args []ArgsField `toml:"args,omitempty"`
+	Args []ArgsField `toml:"args"`
 	// Driver cap (if applicable), should have a driver cap, an engine cap, or no cap,
 	// both a driver and engine cap defined will result in an error
 	Driver *DriverCap `toml:"driver,omitempty"`

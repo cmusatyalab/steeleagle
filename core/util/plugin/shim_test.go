@@ -9,6 +9,8 @@ import (
 	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
 )
 
+// TestShimPlugin ensures that a shim plugin can connect to an externally
+// started process and complete an RPC handshake with it.
 func TestShimPlugin(t *testing.T) {
 	acl := listener.GetAcl([]string{}, []int{})
 	in := "/tmp/in.sock"

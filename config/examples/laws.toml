@@ -1,0 +1,20 @@
+# First law state entered
+first = 'REMOTE'
+
+# List of law states; each state has commands that are allowed,
+# and a list of transition matches which transition when that
+# command is encountered to another state
+[[states]]
+# Name of the state
+name = 'REMOTE'
+# Allowed commands
+allowed = []
+# Transition matches
+match = [
+    ['server/**.MissionService/StartMission', 'LOCAL'] # Goes to LOCAL state on match
+]
+
+[[states]]
+name = 'LOCAL'
+allowed = []
+match = []

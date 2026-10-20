@@ -29,6 +29,7 @@ type backend struct {
 	lastMD metadata.MD // incoming metadata of the most recent call
 }
 
+// record stores the incoming metadata of a call.
 func (b *backend) record(ctx context.Context) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	b.mu.Lock()
@@ -36,12 +37,14 @@ func (b *backend) record(ctx context.Context) {
 	b.mu.Unlock()
 }
 
+// metadata returns the incoming metadata of the most recent call.
 func (b *backend) metadata() metadata.MD {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	return b.lastMD
 }
 
+// UnaryCall echoes the request payload, and fails if FillUsername is set.
 func (b *backend) UnaryCall(ctx context.Context, req *testgrpc.SimpleRequest) (*testgrpc.SimpleResponse, error) {
 	b.record(ctx)
 	grpc.SetHeader(ctx, metadata.Pairs("x-backend-header", b.name))
@@ -56,6 +59,7 @@ func (b *backend) UnaryCall(ctx context.Context, req *testgrpc.SimpleRequest) (*
 	}, nil
 }
 
+// StreamingOutputCall sends one message of each requested size.
 func (b *backend) StreamingOutputCall(req *testgrpc.StreamingOutputCallRequest, stream grpc.ServerStreamingServer[testgrpc.StreamingOutputCallResponse]) error {
 	b.record(stream.Context())
 	for i, p := range req.GetResponseParameters() {
@@ -69,6 +73,7 @@ func (b *backend) StreamingOutputCall(req *testgrpc.StreamingOutputCallRequest, 
 	return nil
 }
 
+// StreamingInputCall replies with the total payload size received.
 func (b *backend) StreamingInputCall(stream grpc.ClientStreamingServer[testgrpc.StreamingInputCallRequest, testgrpc.StreamingInputCallResponse]) error {
 	b.record(stream.Context())
 	var total int32
@@ -84,6 +89,8 @@ func (b *backend) StreamingInputCall(stream grpc.ClientStreamingServer[testgrpc.
 	}
 }
 
+// FullDuplexCall echoes every message, and fails with the requested status if
+// one is set.
 func (b *backend) FullDuplexCall(stream grpc.BidiStreamingServer[testgrpc.StreamingOutputCallRequest, testgrpc.StreamingOutputCallResponse]) error {
 	b.record(stream.Context())
 	for {
@@ -161,6 +168,8 @@ func startProxy(t *testing.T, r *Router) testgrpc.TestServiceClient {
 	return testgrpc.NewTestServiceClient(cc)
 }
 
+// testContext returns a context with a timeout that is canceled when the test
+// ends.
 func testContext(t *testing.T) context.Context {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

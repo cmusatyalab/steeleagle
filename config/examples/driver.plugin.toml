@@ -4,7 +4,7 @@ name = "Parrot Anafi 4K"
 # Description of the plugin (optional)
 description = "Parrot Anafi 4K quadcopter driver"
 
-[[args]] # Plugin arguments (optional)
+[[args]] # Plugin arguments (can be empty)
 # Name of the argument
 name = "ip"
 # JSON type: (string, object, boolean, array, number)
@@ -18,7 +18,7 @@ default = "192.168.42.1"
 # Driver type: (copter, legged, wheeled, boat)
 type = "copter"
 
-[[driver.cameras]] # Driver cameras (optional)
+[[driver.cameras]] # Driver cameras (can be empty)
 # Name of the camera
 name = "rgb"
 # Type of input it creates

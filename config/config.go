@@ -10,7 +10,7 @@ type DaemonRoot struct {
 	// Daemon port
 	Port int `toml:"port"`
 	// Gabriel port
-	Gabriel int `toml:"port-gabriel"`
+	Gabriel int `toml:"gabriel"`
 	// Hostname for this daemon (defaults to "eagled")
 	Hostname string `toml:"hostname"`
 	// Orchestrator daemon hostname or IP, accepts DNS entries if applicable
@@ -25,7 +25,7 @@ type PluginField struct {
 	// Tag or commit hash to pull from
 	Tag string `toml:"tag,omitempty"`
 	// Arguments for the plugin
-	Args map[string]interface{} `toml:"args,omitempty"`
+	Args map[string]interface{} `toml:"args"`
 }
 
 type VehicleField struct {
@@ -34,7 +34,7 @@ type VehicleField struct {
 	// Whether or not to simulate the vehicle
 	Simulate bool `toml:"simulate,omitempty"`
 	// Origin point within the simulator
-	Origin []float64 `toml:"origin,omitempty"`
+	Origin []float64 `toml:"origin"`
 	// Plugin details
 	Plugin PluginField `toml:"plugin"`
 }
@@ -50,15 +50,15 @@ type DaemonConfig struct {
 	// Daemon details
 	Daemon DaemonRoot `toml:"daemon"`
 	// List of daemon vehicles
-	Vehicles []VehicleField `toml:"vehicles,omitempty"`
+	Vehicles []VehicleField `toml:"vehicles"`
 	// List of daemon engines
-	Engines []ServiceField `toml:"engines,omitempty"`
+	Engines []ServiceField `toml:"engines"`
 	// List of daemon commanders
-	Commanders []ServiceField `toml:"commanders,omitempty"`
+	Commanders []ServiceField `toml:"commanders"`
 	// List of daemon monitors
-	Monitors []ServiceField `toml:"monitors,omitempty"`
+	Monitors []ServiceField `toml:"monitors"`
 	// List of extra daemon services
-	Extras []ServiceField `toml:"extras,omitempty"`
+	Extras []ServiceField `toml:"extras"`
 	// Daemon simulator service
 	Simulator ServiceField `toml:"simulator,omitempty"`
 }

@@ -33,23 +33,23 @@ type DriverCamera struct {
 
 type DriverSupported struct {
 	// Services that are supported
-	Services []string `toml:"services,omitempty"`
+	Services []string `toml:"services"`
 }
 
 type DriverUnsupported struct {
 	// Methods that are unsupported
-	Methods []string `toml:"methods,omitempty"`
+	Methods []string `toml:"methods"`
 	// Fields that are unsupported
-	Fields []string `toml:"fields,omitempty"`
+	Fields []string `toml:"fields"`
 	// Enums that are unsupported
-	Enums []string `toml:"enums,omitempty"`
+	Enums []string `toml:"enums"`
 }
 
 type DriverCap struct {
 	// Type of driver (one of "copter", "legged", "wheeled", "boat")
 	Type string `toml:"type"`
 	// Driver cameras (optional)
-	Cameras []DriverCamera `toml:"cameras,omitempty"`
+	Cameras []DriverCamera `toml:"cameras"`
 	// Supported services
 	Supported DriverSupported `toml:"supported"`
 	// Unsupported types

@@ -8,32 +8,32 @@ import (
 
 type Producer struct {
 	// Name of the producer
-	Name string
+	Name string `toml:"name"`
 }
 
 type Engine struct {
 	// Name of the engine
-	Name string
+	Name string `toml:"name"`
 	// Location string (one of: remote, local)
-	Location string
+	Location string `toml:"location"`
 }
 
 type Edge struct {
 	// Start node
-	From string
+	From string `toml:"from"`
 	// End node
-	To string
+	To string `toml:"to"`
 	// Timeout string literal ("2s", e.g.)
-	Timeout string
+	Timeout string `toml:"timeout"`
 }
 
 type FlowConfig struct {
 	// Flow graph producers
-	Producers []Producer
+	Producers []Producer `toml:"producers"`
 	// Flow graph engines
-	Engines []Engine
+	Engines []Engine `toml:"engines"`
 	// Flow graph edges
-	Edges []Edge
+	Edges []Edge `toml:"edges"`
 }
 
 // ParseFlowConfigFromBytes parses a flow config from a TOML byte slice.

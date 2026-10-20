@@ -12,11 +12,14 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/connectivity"
 	testgrpc "google.golang.org/grpc/interop/grpc_testing"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
+// TestResolve ensures that calls resolve to header routes before service
+// routes, and that calls with no matching route are Unimplemented.
 func TestResolve(t *testing.T) {
 	_, addrA := startBackend(t, "a")
 	_, addrB := startBackend(t, "b")
@@ -63,6 +66,89 @@ func TestResolve(t *testing.T) {
 	}
 }
 
+// TestResolveGlob ensures that header and service routes match glob
+// patterns, with exact keys winning over patterns and longer patterns winning
+// over shorter ones.
+func TestResolveGlob(t *testing.T) {
+	_, addr := startBackend(t, "a")
+	r := newRouter(t,
+		map[string]string{"vehicle-*": addr, "vehicle-a*": addr, "vehicle-ab": addr},
+		map[string]string{"pkg.services.driver.*": addr, "pkg.services.*": addr, "*": addr},
+	)
+
+	withHeader := func(v string) context.Context {
+		return metadata.NewIncomingContext(context.Background(), metadata.Pairs(routeHeader, v))
+	}
+	tests := []struct {
+		name   string
+		ctx    context.Context
+		method string
+		want   *grpc.ClientConn
+	}{
+		{"header glob", withHeader("vehicle-z"), "/x.Y/M", r.headers["vehicle-*"]},
+		{"longer header glob wins", withHeader("vehicle-abc"), "/x.Y/M", r.headers["vehicle-a*"]},
+		{"exact header wins", withHeader("vehicle-ab"), "/x.Y/M", r.headers["vehicle-ab"]},
+		{"unmatched header falls back to service", withHeader("drone"), "/pkg.services.driver.Control/M", r.services["pkg.services.driver.*"]},
+		{"service glob", context.Background(), "/pkg.services.driver.Control/M", r.services["pkg.services.driver.*"]},
+		{"shorter service glob", context.Background(), "/pkg.services.mission.Mission/M", r.services["pkg.services.*"]},
+		{"catch-all service glob", context.Background(), "/other.Service/M", r.services["*"]},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := r.resolve(tc.ctx, tc.method)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got != tc.want {
+				t.Errorf("resolved to wrong conn: got %p, want %p", got, tc.want)
+			}
+		})
+	}
+}
+
+// TestAddRouteBadPattern ensures that malformed glob patterns are rejected
+// and not registered.
+func TestAddRouteBadPattern(t *testing.T) {
+	_, addr := startBackend(t, "a")
+	r := newRouter(t, nil, nil)
+	if err := r.AddServiceRoute("pkg.[", addr); err == nil {
+		t.Errorf("added service route with bad pattern without error")
+	}
+	if err := r.AddHeaderRoute("key-[", addr); err == nil {
+		t.Errorf("added header route with bad pattern without error")
+	}
+	if len(r.services) != 0 || len(r.headers) != 0 {
+		t.Errorf("failed route was still registered")
+	}
+}
+
+// TestAddRouteOverwriteClosesOld ensures that overwriting a route closes the
+// connection it replaces.
+func TestAddRouteOverwriteClosesOld(t *testing.T) {
+	_, addrA := startBackend(t, "a")
+	_, addrB := startBackend(t, "b")
+	r := newRouter(t, map[string]string{"key": addrA}, map[string]string{"pkg.*": addrA})
+	oldHeader, oldService := r.headers["key"], r.services["pkg.*"]
+
+	if err := r.AddHeaderRoute("key", addrB); err != nil {
+		t.Fatalf("couldn't overwrite header route: %v", err)
+	}
+	if err := r.AddServiceRoute("pkg.*", addrB); err != nil {
+		t.Fatalf("couldn't overwrite service route: %v", err)
+	}
+	if s := oldHeader.GetState(); s != connectivity.Shutdown {
+		t.Errorf("old header conn not closed: %v", s)
+	}
+	if s := oldService.GetState(); s != connectivity.Shutdown {
+		t.Errorf("old service conn not closed: %v", s)
+	}
+	if r.headers["key"].Target() != addrB || r.services["pkg.*"].Target() != addrB {
+		t.Errorf("routes not overwritten with new address")
+	}
+}
+
+// TestAddRouteBadAddress ensures that routes with invalid addresses are
+// rejected and not registered.
 func TestAddRouteBadAddress(t *testing.T) {
 	r := newRouter(t, nil, nil)
 	if err := r.AddServiceRoute("pkg.Service", "bogus-scheme://%%%"); err == nil {
@@ -76,6 +162,8 @@ func TestAddRouteBadAddress(t *testing.T) {
 	}
 }
 
+// TestNewRouter ensures that initial routes are registered on creation, nil
+// route maps are allowed, and any bad address fails creation.
 func TestNewRouter(t *testing.T) {
 	_, addrA := startBackend(t, "a")
 	_, addrB := startBackend(t, "b")
@@ -105,6 +193,8 @@ func TestNewRouter(t *testing.T) {
 	}
 }
 
+// TestUnary ensures that unary calls are proxied to the backend with their
+// payload, headers and trailers intact.
 func TestUnary(t *testing.T) {
 	_, addr := startBackend(t, "a")
 	r := newRouter(t, nil, map[string]string{testService: addr})
@@ -133,6 +223,8 @@ func TestUnary(t *testing.T) {
 	}
 }
 
+// TestHeaderRouting ensures that calls are routed by the routing header, and
+// fall back to the service route when the header is missing or unknown.
 func TestHeaderRouting(t *testing.T) {
 	_, addrA := startBackend(t, "a")
 	_, addrB := startBackend(t, "b")
@@ -163,6 +255,8 @@ func TestHeaderRouting(t *testing.T) {
 	}
 }
 
+// TestMetadataForwarding ensures that caller metadata is forwarded to the
+// backend intact, without the routing header or the caller's :authority.
 func TestMetadataForwarding(t *testing.T) {
 	b, addr := startBackend(t, "a")
 	r := newRouter(t, map[string]string{"a": addr}, nil)
@@ -194,6 +288,8 @@ func TestMetadataForwarding(t *testing.T) {
 	}
 }
 
+// TestNoRoute ensures that calls are Unimplemented when the router has no
+// routes.
 func TestNoRoute(t *testing.T) {
 	client := startProxy(t, newRouter(t, nil, nil))
 	_, err := client.UnaryCall(testContext(t), &testgrpc.SimpleRequest{})
@@ -202,6 +298,8 @@ func TestNoRoute(t *testing.T) {
 	}
 }
 
+// TestBackendErrorPassthrough ensures that backend error statuses and
+// trailers are passed through to the caller.
 func TestBackendErrorPassthrough(t *testing.T) {
 	_, addr := startBackend(t, "a")
 	r := newRouter(t, nil, map[string]string{testService: addr})
@@ -221,6 +319,8 @@ func TestBackendErrorPassthrough(t *testing.T) {
 	}
 }
 
+// TestBackendUnimplementedMethod ensures that a method the backend doesn't
+// implement returns the backend's Unimplemented status.
 func TestBackendUnimplementedMethod(t *testing.T) {
 	_, addr := startBackend(t, "a")
 	r := newRouter(t, nil, map[string]string{testService: addr})
@@ -232,6 +332,8 @@ func TestBackendUnimplementedMethod(t *testing.T) {
 	}
 }
 
+// TestBackendUnavailable ensures that calls to a backend that isn't listening
+// are Unavailable.
 func TestBackendUnavailable(t *testing.T) {
 	// Grab a free port and close it so nothing is listening
 	lis, err := net.Listen("tcp", "127.0.0.1:0")
@@ -250,6 +352,8 @@ func TestBackendUnavailable(t *testing.T) {
 	}
 }
 
+// TestServerStreaming ensures that server streams are proxied in order with
+// every message intact.
 func TestServerStreaming(t *testing.T) {
 	_, addr := startBackend(t, "a")
 	r := newRouter(t, nil, map[string]string{testService: addr})
@@ -279,6 +383,8 @@ func TestServerStreaming(t *testing.T) {
 	}
 }
 
+// TestClientStreaming ensures that client streams are proxied with every
+// message reaching the backend.
 func TestClientStreaming(t *testing.T) {
 	_, addr := startBackend(t, "a")
 	r := newRouter(t, nil, map[string]string{testService: addr})
@@ -305,6 +411,8 @@ func TestClientStreaming(t *testing.T) {
 	}
 }
 
+// TestBidiStreaming ensures that bidirectional streams are proxied in order
+// with every message intact while frames flow both ways at once.
 func TestBidiStreaming(t *testing.T) {
 	_, addr := startBackend(t, "a")
 	r := newRouter(t, nil, map[string]string{testService: addr})
@@ -348,6 +456,8 @@ func TestBidiStreaming(t *testing.T) {
 	}
 }
 
+// TestBidiStreamingErrorMidStream ensures that an error status sent by the
+// backend partway through a stream is passed through to the caller.
 func TestBidiStreamingErrorMidStream(t *testing.T) {
 	_, addr := startBackend(t, "a")
 	r := newRouter(t, nil, map[string]string{testService: addr})
@@ -375,6 +485,8 @@ func TestBidiStreamingErrorMidStream(t *testing.T) {
 	}
 }
 
+// TestClientCancelPropagates ensures that a caller canceling a call cancels
+// the proxied call to the backend.
 func TestClientCancelPropagates(t *testing.T) {
 	b, addr := startBackend(t, "a")
 	r := newRouter(t, nil, map[string]string{testService: addr})
@@ -410,6 +522,8 @@ func TestClientCancelPropagates(t *testing.T) {
 	}
 }
 
+// TestConcurrentCallsAndRouteUpdates ensures that calls are proxied correctly
+// while routes are added concurrently.
 func TestConcurrentCallsAndRouteUpdates(t *testing.T) {
 	_, addr := startBackend(t, "a")
 	r := newRouter(t, nil, map[string]string{testService: addr})
@@ -450,6 +564,8 @@ func TestConcurrentCallsAndRouteUpdates(t *testing.T) {
 	}
 }
 
+// TestRawCodec ensures that the raw codec keeps the proto content-type, only
+// handles frames, and copies payloads on unmarshal.
 func TestRawCodec(t *testing.T) {
 	c := rawCodec{}
 	if c.Name() != "proto" {

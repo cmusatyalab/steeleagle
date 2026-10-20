@@ -60,13 +60,17 @@ func (p *Policy) SafeCheckAndTransit(ctx context.Context, command string) (bool,
 	allow, nextState, err := p.check(ctx, command)
 	if err != nil {
 		p.log.Error().Str("command", command).Msg("command denied")
-		return false, "", err
+		return false, p.currentState, err
 	} else if nextState != "" {
 		p.log.Info().Str("command", command).Str("next", nextState).Msg("found match for command, transiting to new state")
-		return allow, nextState, p.transit(nextState)
+		if err := p.transit(nextState); err != nil {
+			p.log.Error().Err(err).Str("command", command).Msg("command denied")
+			return false, p.currentState, err
+		}
+		return allow, nextState, nil
+	} else {
+		return allow, p.currentState, nil
 	}
-
-	return allow, nextState, nil
 }
 
 // getRegoQuery gets the Rego query from a string.
@@ -87,6 +91,9 @@ func (p *Policy) check(ctx context.Context, command string) (bool, string, error
 		"state":   p.currentState,
 		"law":     p.lawMap,
 	}))
+	if err != nil {
+		return false, "", fmt.Errorf("failed to evaluate rego query: %w", err)
+	}
 
 	if len(results) == 0 {
 		return false, "", fmt.Errorf("got no results back from rego query")
