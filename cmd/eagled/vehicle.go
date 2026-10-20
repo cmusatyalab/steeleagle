@@ -285,7 +285,7 @@ func withLogCapture(logs *logstore.Store, source string) []util.PluginOption {
 // set, or a plugin installed under PLUGIN_CATEGORY_DRIVER otherwise. Driver
 // is ignored when Simulate is true -- including any Args on it, since the
 // shim wraps an already-running aviary process rather than spawning one.
-func newDriverPlugin(vehicleCfg VehicleConfig, pluginDir string, logs *logstore.Store) (util.Plugin, error) {
+func newDriverPlugin(vehicleCfg VehicleConfig, pluginDir string, gabrielCfg GabrielConfig, logs *logstore.Store) (util.Plugin, error) {
 	if vehicleCfg.Simulate {
 		return util.CreateShimPlugin(aviarySocketPath(pluginDir, vehicleCfg.Name), "")
 	}
@@ -306,8 +306,22 @@ func newDriverPlugin(vehicleCfg VehicleConfig, pluginDir string, logs *logstore.
 	if len(args) > 0 {
 		opts = append(opts, util.WithScriptArgs(args))
 	}
+	for key, value := range driverEnvironment(vehicleCfg.Name, gabrielCfg) {
+		opts = append(opts, util.WithEnvironment(key, value))
+	}
 	opts = append(opts, withLogCapture(logs, source)...)
 	return util.CreateBasePlugin(opts...)
+}
+
+// driverEnvironment is what the vehicle's driver is told beyond its sockets:
+// where to publish its raw frames, if vehicles run a Gabriel flow. It is set
+// whether or not the flow takes them, since the flow may change while the
+// driver runs.
+func driverEnvironment(vehicleName string, gabrielCfg GabrielConfig) map[string]string {
+	if !gabrielCfg.enabled() {
+		return nil
+	}
+	return vehicle.GabrielDriverEnvironment(vehicleName)
 }
 
 // newMissionPlugin builds vehicleCfg's mission plugin, if specified.
@@ -365,8 +379,8 @@ func newExtraPlugins(vehicleCfg VehicleConfig, logs *logstore.Store) ([]util.Plu
 // resolvePlugins builds vehicleCfg's driver, mission, and extra plugins,
 // validating each installed name against its expected category before
 // spawnVehicle ever starts a process.
-func resolvePlugins(vehicleCfg VehicleConfig, pluginDir string, logs *logstore.Store) (driver, mission util.Plugin, extra []util.Plugin, err error) {
-	driver, err = newDriverPlugin(vehicleCfg, pluginDir, logs)
+func resolvePlugins(vehicleCfg VehicleConfig, pluginDir string, gabrielCfg GabrielConfig, logs *logstore.Store) (driver, mission util.Plugin, extra []util.Plugin, err error) {
+	driver, err = newDriverPlugin(vehicleCfg, pluginDir, gabrielCfg, logs)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("creating driver plugin: %w", err)
 	}

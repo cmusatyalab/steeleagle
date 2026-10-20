@@ -29,9 +29,11 @@ port-base = 9000
 # without Gabriel.
 #
 # Gabriel's names are global to a machine, so in names, "{vehicle}" stands for
-# the vehicle's name. A vehicle's frames are "{vehicle}.frames" and its
-# telemetry "{vehicle}.telemetry". A "local" engine runs on this machine; a
-# "remote" one on the remote gabriel-server below.
+# the vehicle's name. A vehicle's frames are "{vehicle}.frames" (JPEG) and its
+# telemetry "{vehicle}.telemetry". A driver that publishes them itself, such
+# as parrot_anafi, gives its raw RGB frames as "{vehicle}.raw_frames". A
+# "local" engine runs on this machine; a "remote" one on the remote
+# gabriel-server below.
 #
 # The remote server's host:port. Gabriel connects to it over QUIC itself, not
 # through a vehicle's tsnet node, so this machine's own network must reach it

@@ -1,0 +1,36 @@
+# Flow A, the baseline: no engines but the cloudlet's telemetry engine, which
+# puts the vehicle and its imagery on the GCS. Every frame and telemetry
+# message goes over the network.
+#
+#   {vehicle}.telemetry ──▶ telemetry (remote)
+#   {vehicle}.frames    ──▶ telemetry (remote)
+#
+# Merge it over the vehicle's own config, which gives [gabriel]'s
+# remote-server and remote-certificate (see README.md).
+
+[[gabriel.flow.producers]]
+name = "{vehicle}.telemetry"
+[[gabriel.flow.producers]]
+name = "{vehicle}.frames"
+
+[[gabriel.flow.engines]]
+name = "telemetry"
+location = "remote"
+
+[[gabriel.flow.engines]]
+name = "detector"
+location = "remote"
+
+# Remote edges allow for a slow cellular link.
+[[gabriel.flow.edges]]
+from = "{vehicle}.telemetry"
+to = "telemetry"
+timeout = "2s"
+[[gabriel.flow.edges]]
+from = "{vehicle}.frames"
+to = "telemetry"
+timeout = "2s"
+[[gabriel.flow.edges]]
+from = "{vehicle}.frames"
+to = "detector"
+timeout = "2s"

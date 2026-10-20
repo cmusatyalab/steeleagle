@@ -415,7 +415,7 @@ func (d *daemon) startOne(
 	swarmCfg SwarmControllerConfig,
 	daemonName string,
 ) error {
-	driverPlugin, missionPlugin, extraPlugins, err := resolvePlugins(vehicleCfg, pluginDir, d.logs)
+	driverPlugin, missionPlugin, extraPlugins, err := resolvePlugins(vehicleCfg, pluginDir, gabrielCfg, d.logs)
 	if err != nil {
 		d.failSpawn(vehicleCfg.Name, rv, err)
 		return err

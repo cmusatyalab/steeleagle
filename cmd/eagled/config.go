@@ -35,6 +35,11 @@ type GabrielConfig struct {
 	Flow vehicle.GabrielFlow `toml:"flow"`
 }
 
+// enabled reports whether vehicles run a Gabriel flow.
+func (c GabrielConfig) enabled() bool {
+	return vehicle.GabrielConfig{Flow: c.Flow}.Enabled()
+}
+
 // vehicleConfig returns the config of a vehicle's Gabriel flow, and checks it.
 func (c GabrielConfig) vehicleConfig() (vehicle.GabrielConfig, error) {
 	certificate, err := base64.StdEncoding.DecodeString(c.RemoteCertificate)
