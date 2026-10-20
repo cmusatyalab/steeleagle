@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/cmusatyalab/steeleagle/config"
-	"github.com/cmusatyalab/steeleagle/sdk"
 )
 
 // Options are the options for building against the SDK, shared by SDK
@@ -52,12 +51,11 @@ func WithOutputFile(output string) Option {
 // give parsed.
 type Config struct {
 	Options
-	Cap      *config.DriverCap // driver cap of the plugin config, nil if none was given
-	Manifest *sdk.ManifestFile // parsed manifest file, nil if none was given
+	Cap      *config.DriverCap       // driver cap of the plugin config, nil if none was given
+	Manifest *config.MissionManifest // parsed manifest file, nil if none was given
 }
 
-// NewConfig applies options and parses the cap and manifest files they
-// give.
+// NewConfig applies options and parses the cap and manifest files they give.
 func NewConfig(options ...Option) (*Config, []*CompileError) {
 	c := &Config{}
 	for _, opt := range options {
@@ -65,7 +63,7 @@ func NewConfig(options ...Option) (*Config, []*CompileError) {
 	}
 	var err error
 	if c.ManifestToml != nil {
-		if c.Manifest, err = sdk.ParseManifestFromBytes(c.ManifestToml); err != nil {
+		if c.Manifest, err = config.ParseMissionManifestFromBytes(c.ManifestToml); err != nil {
 			return nil, []*CompileError{{Err: err}}
 		}
 	}

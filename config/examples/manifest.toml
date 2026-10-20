@@ -1,0 +1,17 @@
+[info]
+name = "Patrol and Track"
+version = "0.1.0"
+roles = ["Patroller", "Tracker"]
+squawks = ["target_found", "done_with_mission"]
+
+[[flows]]
+name = "yolo"
+result = "messages/result/DetectionResult"
+
+[[flows]]
+name = "yolo_q"
+result = "messages/result/DetectionResult"
+
+[[flows]]
+name = "swiftmap"
+result = "messages/result/GenericResult"

@@ -169,14 +169,14 @@ func setupPlugins(t *testing.T, url string) (plugin.Plugin, plugin.Plugin, *grpc
 
 	// Create shim plugins that attach to the pre-created listeners
 	driverAddr := filepath.Join(tempDir, DriverServerSocket)
-	driverPlugin, err := plugin.CreateShimPlugin(driverAddr, "")
+	driverPlugin, err := plugin.NewShimPlugin(driverAddr, "")
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
 	missionAddr := filepath.Join(tempDir, MissionServerSocket)
 	missionListener := filepath.Join(tempDir, MissionListenSocket)
 	acl := listener.GetAcl([]string{}, []int{os.Getpid()})
-	missionPlugin, err := plugin.CreateShimPlugin(
+	missionPlugin, err := plugin.NewShimPlugin(
 		missionAddr,
 		missionListener,
 		plugin.WithAcl(acl),

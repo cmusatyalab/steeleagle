@@ -33,7 +33,7 @@ func TestVehicleThirdPartyPlugin(t *testing.T) {
 	// listener and serve it alongside the other listeners.
 	lnSockPath := filepath.Join(t.TempDir(), "thirdparty.sock")
 	acl := listener.GetAcl([]string{}, []int{os.Getpid()})
-	thirdPartyPlugin, err := plugin.CreateShimPlugin(
+	thirdPartyPlugin, err := plugin.NewShimPlugin(
 		"",
 		lnSockPath,
 		plugin.WithAuthCode(listener.ExternalCode),

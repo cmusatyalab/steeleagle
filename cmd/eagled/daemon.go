@@ -11,8 +11,8 @@ import (
 
 	eagledpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/eagled"
 	"github.com/cmusatyalab/steeleagle/v4/cmd/eagled/logstore"
+	"github.com/cmusatyalab/steeleagle/v4/core/network"
 	"github.com/cmusatyalab/steeleagle/v4/core/util"
-	"github.com/cmusatyalab/steeleagle/v4/internal/tailscale"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -105,13 +105,13 @@ type daemon struct {
 
 	mu                 sync.Mutex
 	configured         bool
-	tsServer           *tailscale.Server // eagled's own tsnet node, once started; nil until then
-	tsHostname         string            // hostname tsServer is currently running under
-	baseCfg            Config            // last-applied config, minus Vehicles
-	daemonName         string            // resolved from baseCfg
-	pluginDir          string            // plugin runtime directory
-	vehicleAuthKey     string            // tsnet auth key every vehicle joins with
-	vehicleMemStore    bool              // whether vehicles keep tsnet state in memory instead of persisting it to disk
+	tsServer           *network.Server // eagled's own tsnet node, once started; nil until then
+	tsHostname         string          // hostname tsServer is currently running under
+	baseCfg            Config          // last-applied config, minus Vehicles
+	daemonName         string          // resolved from baseCfg
+	pluginDir          string          // plugin runtime directory
+	vehicleAuthKey     string          // tsnet auth key every vehicle joins with
+	vehicleMemStore    bool            // whether vehicles keep tsnet state in memory instead of persisting it to disk
 	gabrielCfg         GabrielConfig
 	swarmCfg           SwarmControllerConfig
 	nextPort           int                           // next port to assign to a vehicle
@@ -123,7 +123,7 @@ type daemon struct {
 	aviaryDir          string                        // resolved from baseCfg.Aviary.Dir
 
 	// configMu and aviaryMu each serialize their own slow, one-time setup
-	// call (tailscale.NewServer, spawnAviary) across concurrent RPCs, without
+	// call (network.NewServer, spawnAviary) across concurrent RPCs, without
 	// forcing every other RPC to wait on mu for that same duration.
 	configMu      sync.Mutex
 	aviaryMu      sync.Mutex
@@ -308,7 +308,7 @@ func (d *daemon) ForgetVehicles(ctx context.Context, req *eagledpb.ForgetVehicle
 // that never joined the tailnet (no auth key, or memStore) has nothing to
 // remove, so errors here are only logged.
 func removeTsnetState(name string) {
-	dir, err := tailscale.StateDir(name)
+	dir, err := network.StateDir(name)
 	if err != nil {
 		log.Warn().Err(err).Str("vehicle", name).Msg("could not determine tsnet state directory to clean up")
 		return
@@ -627,13 +627,14 @@ func (d *daemon) ensureNetworkLocked(cfg Config) error {
 
 	startCtx, cancel := context.WithTimeout(d.ctx, TailscaleStartTimeout)
 	defer cancel()
-	ts, err := tailscale.NewServer(startCtx, hostname, authKey, "daemon", false)
+	ts, err := network.NewServer(startCtx, hostname, authKey, "daemon", false)
 	if err != nil {
 		return status.Errorf(codes.Internal, "starting tailscale: %v", err)
 	}
 
-	// Also serve the control plane through tailscale
-	if d.grpcServer != nil {
+	// Also serve the control plane through tailscale. Without tailscale the
+	// node is the host network, where main already listens on controlPort.
+	if d.grpcServer != nil && network.Tailscale {
 		tsLn, err := ts.Listen("tcp", d.controlPort)
 		if err != nil {
 			ts.Close()

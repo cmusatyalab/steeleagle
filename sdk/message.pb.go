@@ -722,6 +722,18 @@ func (w *classificationResultWrapper) GetScore() float64 {
 	return w.inner.GetScore()
 }
 
+func (w *classificationResultWrapper) GetClass() (string, error) {
+	if !w.hasClass() {
+		var zero string
+		return zero, ErrFieldNotPresent
+	}
+	return w.inner.GetClass(), nil
+}
+
+func (w *classificationResultWrapper) hasClass() bool {
+	return w.inner.HasClass()
+}
+
 type guidanceResultWrapper struct {
 	inner *result.GuidanceResult // generated concrete type
 }

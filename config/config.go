@@ -2,7 +2,6 @@ package config
 
 import (
 	"bytes"
-	"os"
 
 	"github.com/BurntSushi/toml"
 )
@@ -66,20 +65,12 @@ type DaemonConfig struct {
 
 // ParseDaemonConfigFromFilepath parses a config.toml from a filepath.
 func ParseDaemonConfigFromFilepath(filepath string) (*DaemonConfig, error) {
-	content, err := os.ReadFile(filepath)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDaemonConfigFromBytes(content)
+	return ParseTomlFromFilepath[DaemonConfig](filepath)
 }
 
 // ParseDaemonConfigFromBytes parses a config.toml from bytes.
 func ParseDaemonConfigFromBytes(config []byte) (*DaemonConfig, error) {
-	d := &DaemonConfig{}
-	if err := toml.Unmarshal(config, d); err != nil {
-		return nil, err
-	}
-	return d, nil
+	return ParseTomlFromBytes[DaemonConfig](config)
 }
 
 // ToBytes writes a DaemonConfig to TOML bytes.

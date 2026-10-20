@@ -84,8 +84,8 @@ type BasePlugin struct {
 	cleanupDone chan struct{}      // closed once cleanup() finishes running for the current Start()
 }
 
-// CreateBasePlugin creates an instance of a BasePlugin.
-func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
+// NewBasePlugin creates an instance of a BasePlugin.
+func NewBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 	// Set defaults
 	p := &BasePlugin{
 		name:      uuid.New().String(),

@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"slices"
 
-	"github.com/cmusatyalab/steeleagle/sdk"
+	"github.com/cmusatyalab/steeleagle/config"
 	"github.com/cmusatyalab/steeleagle/sdk/buildtools"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/compiler/linker"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl/compiler/loader"
@@ -153,7 +153,7 @@ func newMission(src Source, options []buildtools.Option) (*mission, []*buildtool
 
 // checkRole reports an error unless role, if the mission has one, is
 // declared by the manifest.
-func checkRole(role *parser.RoleStanza, manifest *sdk.ManifestFile) *buildtools.CompileError {
+func checkRole(role *parser.RoleStanza, manifest *config.MissionManifest) *buildtools.CompileError {
 	if role.Name == "" {
 		return nil
 	}

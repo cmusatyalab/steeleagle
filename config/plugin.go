@@ -3,7 +3,6 @@ package config
 import (
 	"bytes"
 	"errors"
-	"os"
 
 	"github.com/BurntSushi/toml"
 )
@@ -42,26 +41,37 @@ type PluginConfig struct {
 
 // ParsePluginConfigFromFilepath parses a plugin.toml from a filepath.
 func ParsePluginConfigFromFilepath(filepath string) (*PluginConfig, error) {
-	content, err := os.ReadFile(filepath)
+	p, err := ParseTomlFromFilepath[PluginConfig](filepath)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePluginConfigFromBytes(content)
+	if err := p.validate(); err != nil {
+		return nil, err
+	}
+	return p, nil
 }
 
 // ParsePluginConfigFromBytes parses a plugin.toml from bytes.
 func ParsePluginConfigFromBytes(config []byte) (*PluginConfig, error) {
-	p := &PluginConfig{}
-	if err := toml.Unmarshal(config, p); err != nil {
+	p, err := ParseTomlFromBytes[PluginConfig](config)
+	if err != nil {
 		return nil, err
 	}
+	if err := p.validate(); err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
+// validate checks cap exclusivity and builds the driver cap lookup sets.
+func (p *PluginConfig) validate() error {
 	if p.Driver != nil && p.Engine != nil {
-		return nil, errors.New("plugin config cannot define both a driver and an engine cap")
+		return errors.New("plugin config cannot define both a driver and an engine cap")
 	}
 	if p.Driver != nil {
 		p.Driver.buildSets()
 	}
-	return p, nil
+	return nil
 }
 
 // ToBytes writes a PluginConfig to TOML bytes.

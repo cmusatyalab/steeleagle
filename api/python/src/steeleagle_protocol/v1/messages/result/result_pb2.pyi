@@ -41,8 +41,9 @@ class DetectionResult(_message.Message):
 class ClassificationResult(_message.Message):
     __slots__ = ("score",)
     SCORE_FIELD_NUMBER: _ClassVar[int]
+    CLASS_FIELD_NUMBER: _ClassVar[int]
     score: float
-    def __init__(self, score: _Optional[float] = ...) -> None: ...
+    def __init__(self, score: _Optional[float] = ..., **kwargs) -> None: ...
 
 class GuidanceResult(_message.Message):
     __slots__ = ("trajectory",)

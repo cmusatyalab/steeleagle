@@ -28,11 +28,20 @@ func GetDataDir() (string, error) {
 	return dataPath, nil
 }
 
-// GetInstalledPluginDir returns the persistent directory installed plugins of
-// the given category (e.g. "driver", "mission", "extra") are stored in, kept
-// separate per category so the same name can't collide across categories.
-func GetInstalledPluginDir(category string) (string, error) {
-	dir := filepath.Join(GetDataHome(), projectDir, installedPluginDir, category)
+// GetVpnDir returns the persistent vpn data directory, creating it if it does
+// not exist.
+func GetVpnDir() (string, error) {
+	vpnPath := filepath.Join(GetDataHome(), projectDir, vpnDir)
+	err := os.MkdirAll(vpnPath, 0755)
+	if err != nil {
+		return "", err
+	}
+	return vpnPath, nil
+}
+
+// GetPackageDir returns the persistent directory installed packages.
+func GetPackageDir(category string) (string, error) {
+	dir := filepath.Join(GetDataHome(), projectDir, packageDir)
 	err := os.MkdirAll(dir, 0755)
 	if err != nil {
 		return "", err
@@ -55,11 +64,11 @@ func GetPluginDir() (string, error) {
 func GetPluginDirByName(name, parent string) (string, error) {
 	var pluginPath string
 	if parent == "" { // if the parent is not set, place the plugin in the main runtime directory
-		pluginPath = filepath.Join(xdg.RuntimeDir, projectDir, pluginDir, name)
+		pluginPath = filepath.Join(GetRuntimeDir(), projectDir, pluginDir, name)
 	} else if filepath.IsAbs(parent) {
 		pluginPath = filepath.Join(parent, pluginDir, name)
 	} else { // if parent is set, place the plugin in that directory
-		pluginPath = filepath.Join(xdg.RuntimeDir, projectDir, parent, pluginDir, name)
+		pluginPath = filepath.Join(GetRuntimeDir(), projectDir, parent, pluginDir, name)
 	}
 	err := os.MkdirAll(pluginPath, 0755)
 	if err != nil {
@@ -68,21 +77,10 @@ func GetPluginDirByName(name, parent string) (string, error) {
 	return pluginPath, nil
 }
 
-// GetMissionDir returns the persistent directory uploaded mission binaries
-// are stored in, creating it if it does not exist.
-func GetMissionDir() (string, error) {
-	dir := filepath.Join(GetDataHome(), projectDir, missionDir)
-	err := os.MkdirAll(dir, 0755)
-	if err != nil {
-		return "", err
-	}
-	return dir, nil
-}
-
 // GetVehicleRuntimeDir returns the vehicle runtime directory, creating it if
 // it does not exist.
 func GetVehicleDir() (string, error) {
-	vehiclePath := filepath.Join(xdg.RuntimeDir, projectDir, vehicleDir)
+	vehiclePath := filepath.Join(GetRuntimeDir(), projectDir, vehicleDir)
 	err := os.MkdirAll(vehiclePath, 0755)
 	if err != nil {
 		return "", err
@@ -91,12 +89,23 @@ func GetVehicleDir() (string, error) {
 }
 
 // GetVehicleDirByName returns the runtime directory for the vehicle with the
-// given ID, creating it if it does not exist.
+// given name, creating it if it does not exist.
 func GetVehicleDirByName(name string) (string, error) {
-	vehiclePath := filepath.Join(xdg.RuntimeDir, projectDir, vehicleDir, name)
+	vehiclePath := filepath.Join(GetRuntimeDir(), projectDir, vehicleDir, name)
 	err := os.MkdirAll(vehiclePath, 0755)
 	if err != nil {
 		return "", err
 	}
 	return vehiclePath, nil
+}
+
+// GetMissionDirByVehicle returns the persistent mission directory for the vehicle
+// with the given name, creating it if it does not exist.
+func GetMissionDirByName(name string) (string, error) {
+	dir := filepath.Join(GetRuntimeDir(), projectDir, vehicleDir, name, missionDir)
+	err := os.MkdirAll(dir, 0755)
+	if err != nil {
+		return "", err
+	}
+	return dir, nil
 }

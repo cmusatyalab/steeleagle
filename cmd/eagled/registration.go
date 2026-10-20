@@ -19,7 +19,7 @@ const initialRegisterBackoff = 1 * time.Second
 const maxRegisterBackoff = 30 * time.Second
 
 // dialFunc dials out from a specific network identity — matches
-// (*tailscale.Server).Dial's signature, so a vehicle's own tsnet node can be
+// (*network.Server).Dial's signature, so a vehicle's own tsnet node can be
 // passed straight in. A nil dialFunc falls back to gRPC's default dialer.
 type dialFunc func(ctx context.Context, network, addr string) (net.Conn, error)
 

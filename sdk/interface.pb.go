@@ -291,6 +291,10 @@ type DetectionResult interface {
 type ClassificationResult interface {
 	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ClassificationResult/score
 	GetScore() float64
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ClassificationResult/class
+	GetClass() (string, error)
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ClassificationResult/class
+	hasClass() bool
 }
 
 type GuidanceResult_Trajectory interface {

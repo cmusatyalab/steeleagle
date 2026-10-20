@@ -79,6 +79,8 @@ github.com/cmusatyalab/gabriel/protocol/go v0.3.0 h1:TniyTQZaSWcw0PlPCelO+3XVvsX
 github.com/cmusatyalab/gabriel/protocol/go v0.3.0/go.mod h1:rzDrMuUGyYnW2iaM+vxyIrYIiSGCy091/LqNP6MUO1c=
 github.com/cmusatyalab/steeleagle/api/go v0.3.0 h1:CG85fv5kMNVPGc7VcJjfDh8ttsojvdPS6cZk7nqSk9Y=
 github.com/cmusatyalab/steeleagle/api/go v0.3.0/go.mod h1:9tAohORXlpFLLI6RZ6DBR2x4i4IpWurNI9v0GyFuNwI=
+github.com/cmusatyalab/steeleagle/config v0.0.0-20261020034212-353eb2969f61 h1:dIkGVKrSxSE67ZRIicJDf6lyCFWTREsogxLqFESuK9A=
+github.com/cmusatyalab/steeleagle/config v0.0.0-20261020034212-353eb2969f61/go.mod h1:ufbS1yFbr6eExvEp9JRqNMsXuqmh7QfR/CTqCyRwDLk=
 github.com/coder/websocket v1.8.15 h1:6B2JPeOGlpff2Uz6vOEH1Vzpi0iUz20A+lPVhPHtNUA=
 github.com/coder/websocket v1.8.15/go.mod h1:NX3SzP+inril6yawo5CQXx8+fk145lPDC6pumgx0mVg=
 github.com/coreos/go-iptables v0.7.1-0.20240112124308-65c67c9f46e6 h1:8h5+bWd7R6AYUslN6c6iuZWTKsKxUFDlpnmilO6R2n0=

@@ -149,7 +149,7 @@ inheriting anyone's interactive shell environment.
 get their own tsnet identity. No auth key means we use plain TCP only.
 
 By default both eagled's own node and every vehicle's node persist their tsnet
-state to disk (under `internal/tailscale.StateDir`), so a restart reconnects
+state to disk (under `core/network.StateDir`), so a restart reconnects
 under the same identity instead of registering a new one under the same
 hostname. Set `vehicle-tsnet-mem-store = true` in the config to keep vehicle
 tsnet state in memory instead (eagled's own node is always persisted). Each

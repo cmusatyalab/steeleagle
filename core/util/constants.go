@@ -4,10 +4,6 @@ package util
 const projectDir string = "steeleagle"
 const vehicleDir string = "vehicles"
 const pluginDir string = "plugins"
-
-// Directory where installed plugins live, one subdirectory per category
-// (e.g. "driver", "mission", "extra")
-const installedPluginDir string = "plugins"
-
-// Directory where uploaded mission binaries live
+const packageDir string = "pkg"
+const vpnDir string = "vpn"
 const missionDir string = "missions"

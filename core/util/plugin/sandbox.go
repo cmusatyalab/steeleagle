@@ -15,10 +15,10 @@ type SandboxPlugin struct {
 	*BasePlugin
 }
 
-// CreateSandboxPlugin creates a SandboxPlugin backed by bubblewrap (bwrap).
-func CreateSandboxPlugin(options ...PluginOption) (*SandboxPlugin, error) {
+// NewSandboxPlugin creates a SandboxPlugin backed by bubblewrap (bwrap).
+func NewSandboxPlugin(options ...PluginOption) (*SandboxPlugin, error) {
 	// Create the plugin
-	internal, err := CreateBasePlugin(options...)
+	internal, err := NewBasePlugin(options...)
 	if err != nil {
 		return nil, err
 	}

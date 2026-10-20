@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/cmusatyalab/steeleagle/v4/cmd/eagled/logstore"
+	"github.com/cmusatyalab/steeleagle/v4/core/network"
 	"github.com/cmusatyalab/steeleagle/v4/core/util"
 	"github.com/cmusatyalab/steeleagle/v4/core/vehicle"
-	"github.com/cmusatyalab/steeleagle/v4/internal/tailscale"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -46,11 +46,11 @@ func spawnVehicle(
 ) (done <-chan struct{}, err error) {
 	var ln net.Listener
 	var dial dialFunc
-	var vehicleTS *tailscale.Server
+	var vehicleTS *network.Server
 	if authKey != "" {
 		startCtx, cancel := context.WithTimeout(ctx, TailscaleStartTimeout)
 		defer cancel()
-		vehicleTS, err = tailscale.NewServer(startCtx, vehicleCfg.Name, authKey, vehicleCfg.Name, memStore)
+		vehicleTS, err = network.NewServer(startCtx, vehicleCfg.Name, authKey, vehicleCfg.Name, memStore)
 		if err != nil {
 			return nil, fmt.Errorf("starting tailscale for vehicle %s: %w", vehicleCfg.Name, err)
 		}
@@ -287,7 +287,7 @@ func withLogCapture(logs *logstore.Store, source string) []util.PluginOption {
 // shim wraps an already-running aviary process rather than spawning one.
 func newDriverPlugin(vehicleCfg VehicleConfig, pluginDir string, logs *logstore.Store) (util.Plugin, error) {
 	if vehicleCfg.Simulate {
-		return util.CreateShimPlugin(aviarySocketPath(pluginDir, vehicleCfg.Name), "")
+		return util.NewShimPlugin(aviarySocketPath(pluginDir, vehicleCfg.Name), "")
 	}
 	var name string
 	var args []string
@@ -307,7 +307,7 @@ func newDriverPlugin(vehicleCfg VehicleConfig, pluginDir string, logs *logstore.
 		opts = append(opts, util.WithScriptArgs(args))
 	}
 	opts = append(opts, withLogCapture(logs, source)...)
-	return util.CreateBasePlugin(opts...)
+	return util.NewBasePlugin(opts...)
 }
 
 // newMissionPlugin builds vehicleCfg's mission plugin, if specified.
@@ -333,7 +333,7 @@ func newMissionPlugin(vehicleCfg VehicleConfig, logs *logstore.Store) (util.Plug
 		opts = append(opts, util.WithScriptArgs(vehicleCfg.Mission.Args))
 	}
 	opts = append(opts, withLogCapture(logs, source)...)
-	return util.CreateBasePlugin(opts...)
+	return util.NewBasePlugin(opts...)
 }
 
 // newExtraPlugins builds every plugin listed in vehicleCfg.Plugins.
@@ -353,7 +353,7 @@ func newExtraPlugins(vehicleCfg VehicleConfig, logs *logstore.Store) ([]util.Plu
 			opts = append(opts, util.WithScriptArgs(ref.Args))
 		}
 		opts = append(opts, withLogCapture(logs, source)...)
-		p, err := util.CreateBasePlugin(opts...)
+		p, err := util.NewBasePlugin(opts...)
 		if err != nil {
 			return nil, err
 		}

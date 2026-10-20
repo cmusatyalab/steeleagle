@@ -21,11 +21,11 @@ type ContainerPlugin struct {
 	cid      string
 }
 
-// CreateContainerPlugin creates a ContainerPlugin backed by podman, pulling
+// NewContainerPlugin creates a ContainerPlugin backed by podman, pulling
 // the image if it is not already present.
-func CreateContainerPlugin(imageRef string, options ...PluginOption) (*ContainerPlugin, error) {
+func NewContainerPlugin(imageRef string, options ...PluginOption) (*ContainerPlugin, error) {
 	// Create the plugin
-	internal, err := CreateBasePlugin(options...)
+	internal, err := NewBasePlugin(options...)
 	if err != nil {
 		return nil, err
 	}

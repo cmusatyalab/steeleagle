@@ -12,7 +12,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/cmusatyalab/steeleagle/config"
-	"github.com/cmusatyalab/steeleagle/sdk"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl"
 	"github.com/cmusatyalab/steeleagle/sdk/geo"
 	"github.com/cmusatyalab/steeleagle/sdk/params"
@@ -62,9 +61,9 @@ func main() {
 		capFile = plugin.Driver
 	}
 
-	manifestFile := &sdk.ManifestFile{}
+	manifestFile := &config.MissionManifest{}
 	if len(manifestToml) > 0 {
-		manifestFile, err = sdk.ParseManifestFromBytes(manifestToml)
+		manifestFile, err = config.ParseMissionManifestFromBytes(manifestToml)
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to parse manifest file")
 		}
