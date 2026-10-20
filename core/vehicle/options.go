@@ -49,7 +49,7 @@ func WithDialer(dialer Dialer) VehicleOption {
 	}
 }
 
-func WithServerListener(ln net.Listener, acl *listener.ACL) VehicleOption {
+func WithServerListener(ln net.Listener, acl *listener.Acl) VehicleOption {
 	return func(v *Vehicle) {
 		codedLn := listener.NewCodedListener(ln, listener.ServerCode, acl)
 		v.listeners[ServerListenerName] = codedLn

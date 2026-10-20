@@ -175,11 +175,11 @@ func setupPlugins(t *testing.T, url string) (plugin.Plugin, plugin.Plugin, *grpc
 	}
 	missionAddr := filepath.Join(tempDir, MissionServerSocket)
 	missionListener := filepath.Join(tempDir, MissionListenSocket)
-	acl := listener.GetACL([]string{}, []int{os.Getpid()})
+	acl := listener.GetAcl([]string{}, []int{os.Getpid()})
 	missionPlugin, err := plugin.CreateShimPlugin(
 		missionAddr,
 		missionListener,
-		plugin.WithACL(acl),
+		plugin.WithAcl(acl),
 		plugin.WithAuthCode(listener.MissionCode),
 	)
 	if err != nil {

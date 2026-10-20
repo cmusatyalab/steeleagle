@@ -67,7 +67,7 @@ func TestWithServerListener(t *testing.T) {
 	}
 	defer ln.Close()
 
-	acl := listener.GetACL(nil, nil)
+	acl := listener.GetAcl(nil, nil)
 	WithServerListener(ln, acl)(v)
 
 	codedLn, ok := v.listeners[ServerListenerName]

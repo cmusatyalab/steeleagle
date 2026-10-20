@@ -32,12 +32,12 @@ func TestVehicleThirdPartyPlugin(t *testing.T) {
 	// It only needs a listen socket: the vehicle should pick up the returned
 	// listener and serve it alongside the other listeners.
 	lnSockPath := filepath.Join(t.TempDir(), "thirdparty.sock")
-	acl := listener.GetACL([]string{}, []int{os.Getpid()})
+	acl := listener.GetAcl([]string{}, []int{os.Getpid()})
 	thirdPartyPlugin, err := plugin.CreateShimPlugin(
 		"",
 		lnSockPath,
 		plugin.WithAuthCode(listener.ExternalCode),
-		plugin.WithACL(acl),
+		plugin.WithAcl(acl),
 	)
 	if err != nil {
 		t.Fatalf("couldn't create third-party plugin: %v", err)

@@ -151,7 +151,7 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		listener.NewCodedListener(
 			ln,
 			listener.AdminCode,
-			listener.GetACL(nil, []int{os.Getpid()}),
+			listener.GetAcl(nil, []int{os.Getpid()}),
 		)
 
 	// Start driver plugin
