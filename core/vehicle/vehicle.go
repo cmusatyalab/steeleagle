@@ -269,7 +269,7 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	v.store.init(ctx)
 
 	// Run the Gabriel flow, if one is configured
-	if v.gabrielCfg.enabled() {
+	if v.gabrielCfg.Enabled() {
 		if err = v.startGabriel(ctx); err != nil {
 			v.log.Err(err).Msg("failed to start Gabriel")
 			cancel()

@@ -1,6 +1,7 @@
 package vehicle
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -48,6 +49,9 @@ func TestGabrielConfigValidate(t *testing.T) {
 		{"remote flow without a server", GabrielConfig{
 			Flow: GabrielFlow{Producers: frames, Engines: []GabrielEngine{remote}},
 		}, false},
+		{"driver's raw frames", GabrielConfig{
+			Flow: GabrielFlow{Producers: []GabrielProducer{{Name: GabrielRawFramesProducer}}, Engines: []GabrielEngine{local}},
+		}, true},
 		{"producer that is not a stream", GabrielConfig{
 			Flow: GabrielFlow{Producers: []GabrielProducer{{Name: "camera"}}},
 		}, false},
@@ -114,7 +118,8 @@ func TestGabrielFlowStoresResults(t *testing.T) {
 		resultpb.Detection_builder{ClassName: "person", Score: 0.9}.Build(),
 	}}.Build()
 	engineErr := make(chan error, 1)
-	go func() { engineErr <- runTestDetector(ctx, engineName, detections) }()
+	frameType := string((*telemetrypb.EncodedFrame)(nil).ProtoReflect().Descriptor().FullName())
+	go func() { engineErr <- runTestDetector(ctx, engineName, frameType, detections) }()
 
 	if err := v.startGabriel(ctx); err != nil {
 		t.Fatalf("startGabriel: %v", err)
@@ -165,11 +170,81 @@ func TestGabrielFlowStoresResults(t *testing.T) {
 	}
 }
 
-// runTestDetector is an engine that answers each EncodedFrame with
+// TestGabrielFlowTakesDriverFrames runs a flow on the driver's raw frames,
+// whose producer starts after the flow, as a driver's would.
+func TestGabrielFlowTakesDriverFrames(t *testing.T) {
+	store, err := newDataStore(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	v := &Vehicle{
+		// Not the other tests' name: their servers may still be closing.
+		Name:  fmt.Sprintf("driver%d", os.Getpid()),
+		store: store,
+		log:   zerolog.New(io.Discard),
+		gabrielCfg: GabrielConfig{
+			Flow: GabrielFlow{
+				Producers: []GabrielProducer{{Name: GabrielRawFramesProducer}},
+				Engines:   []GabrielEngine{{Name: "{vehicle}.detector", Location: GabrielLocal}},
+				Edges: []GabrielEdge{
+					{From: GabrielRawFramesProducer, To: "{vehicle}.detector", Timeout: "1s"},
+				},
+			},
+		},
+	}
+	engineName := v.Name + ".detector"
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	detections := resultpb.DetectionResult_builder{Detections: []*resultpb.Detection{
+		resultpb.Detection_builder{ClassName: "person", Score: 0.9}.Build(),
+	}}.Build()
+	engineErr := make(chan error, 1)
+	frameType := string((*telemetrypb.RawFrame)(nil).ProtoReflect().Descriptor().FullName())
+	go func() { engineErr <- runTestDetector(ctx, engineName, frameType, detections) }()
+
+	if err := v.startGabriel(ctx); err != nil {
+		t.Fatalf("startGabriel: %v", err)
+	}
+
+	// The driver.
+	producer, err := gabriel.NewProducer(v.Name+".raw_frames", frameType, gabrielTestMaxResultSize)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer producer.Close()
+	frame, err := proto.Marshal(telemetrypb.RawFrame_builder{Data: []byte("rgb"), HRes: 1, VRes: 1, Channels: 3}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	deadline := time.Now().Add(gabrielTestWait)
+	for {
+		// The flow may still be installing, so send frames until one is
+		// answered.
+		if _, err := producer.Send(v.Name, frame); err != nil {
+			t.Fatalf("sending a frame: %v", err)
+		}
+		if result := store.getLatestResult(engineName); result != nil {
+			if !proto.Equal(result.GetDetectionResult(), detections) {
+				t.Fatalf("stored %v, want detections %v", result, detections)
+			}
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("no result was stored")
+		}
+		time.Sleep(gabrielTestPoll)
+	}
+	cancel()
+	if err := <-engineErr; err != nil {
+		t.Fatal(err)
+	}
+}
+
+// runTestDetector is an engine that answers each input of frameType with
 // detections, until ctx ends.
-func runTestDetector(ctx context.Context, name string, detections *resultpb.DetectionResult) error {
+func runTestDetector(ctx context.Context, name, frameType string, detections *resultpb.DetectionResult) error {
 	resultType := string(detections.ProtoReflect().Descriptor().FullName())
-	frameType := string((*telemetrypb.EncodedFrame)(nil).ProtoReflect().Descriptor().FullName())
 	result, err := proto.Marshal(detections)
 	if err != nil {
 		return err
@@ -190,5 +265,38 @@ func runTestDetector(ctx context.Context, name string, detections *resultpb.Dete
 		if err := engine.Stop(result); err != nil {
 			return err
 		}
+	}
+}
+
+func TestLogGabrielDetections(t *testing.T) {
+	event := gabriel.Event{
+		Kind:    gabriel.EventResult,
+		ID:      gabriel.InputID{Seq: 7},
+		Engine:  "harpy.yolo",
+		Forward: gabriel.ForwardPass,
+	}
+	result := resultpb.DetectionResult_builder{
+		Detections: []*resultpb.Detection{resultpb.Detection_builder{
+			ClassName: "person",
+			Score:     0.875,
+			Bbox: resultpb.BoundingBox_builder{
+				XMin: 0.1, YMin: 0.2,
+				XMax: 0.3, YMax: 0.4,
+			}.Build(),
+		}.Build()},
+	}.Build()
+	const want = `{"level":"debug","engine":"harpy.yolo","seq":7,"forward":"pass",` +
+		`"detections":["person 0.88 [0.10,0.20 0.30,0.40]"],"message":"gabriel detections"}` + "\n"
+
+	var out bytes.Buffer
+	logGabrielDetections(zerolog.New(&out).Level(zerolog.DebugLevel), event, result)
+	if out.String() != want {
+		t.Errorf("logged %s, want %s", out.String(), want)
+	}
+
+	out.Reset()
+	logGabrielDetections(zerolog.New(&out).Level(zerolog.InfoLevel), event, result)
+	if out.Len() != 0 {
+		t.Errorf("logged %s at info level, want nothing", out.String())
 	}
 }

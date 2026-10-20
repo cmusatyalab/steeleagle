@@ -34,6 +34,9 @@ const (
 	// of the vehicle's video frames and its telemetry in a flow.
 	GabrielFramesProducer    = GabrielVehiclePlaceholder + ".frames"
 	GabrielTelemetryProducer = GabrielVehiclePlaceholder + ".telemetry"
+	// GabrielRawFramesProducer names the producer of the vehicle's raw
+	// frames (RawFrame), which the driver publishes itself, not the vehicle.
+	GabrielRawFramesProducer = GabrielVehiclePlaceholder + ".raw_frames"
 	// GabrielLocal and GabrielRemote are where an engine runs.
 	GabrielLocal  = "local"
 	GabrielRemote = "remote"
@@ -41,7 +44,26 @@ const (
 	DefaultGabrielMaxFrameSize = 4 << 20
 	// gabrielMaxTelemetrySize fits a serialized Telemetry message.
 	gabrielMaxTelemetrySize = 64 << 10
+	// GabrielRawFramesProducerEnv and GabrielFlowEnv name the variables of
+	// GabrielDriverEnvironment.
+	GabrielRawFramesProducerEnv = "GABRIEL_RAW_FRAMES_PRODUCER"
+	GabrielFlowEnv              = "GABRIEL_FLOW"
 )
+
+// GabrielFlowName is the name of the vehicle's flow. It stays the same
+// whatever the flow's spec, so a producer need not know which flow runs.
+func GabrielFlowName(vehicle string) string {
+	return vehicle
+}
+
+// GabrielDriverEnvironment is the environment that tells the vehicle's driver
+// where to publish its raw frames: as which producer, and on which flow.
+func GabrielDriverEnvironment(vehicle string) map[string]string {
+	return map[string]string{
+		GabrielRawFramesProducerEnv: strings.ReplaceAll(GabrielRawFramesProducer, GabrielVehiclePlaceholder, vehicle),
+		GabrielFlowEnv:              GabrielFlowName(vehicle),
+	}
+}
 
 // forVehicle returns the flow with the vehicle's name in place of
 // GabrielVehiclePlaceholder.
@@ -67,14 +89,16 @@ func (f GabrielFlow) forVehicle(name string) GabrielFlow {
 }
 
 // Validate checks what the vehicle relies on, before Gabriel checks the rest
-// when the flow is added: each producer is one of the vehicle's streams, each
-// engine runs locally or remotely, and a flow with remote engines has a remote
-// server to run them.
+// when the flow is added: each producer is one of the vehicle's streams or the
+// driver's, each engine runs locally or remotely, and a flow with remote
+// engines has a remote server to run them.
 func (c GabrielConfig) Validate() error {
 	for _, p := range c.Flow.Producers {
-		if p.Name != GabrielFramesProducer && p.Name != GabrielTelemetryProducer {
-			return fmt.Errorf("gabriel producer %q is not one of the vehicle's streams (%s, %s)",
-				p.Name, GabrielFramesProducer, GabrielTelemetryProducer)
+		switch p.Name {
+		case GabrielFramesProducer, GabrielTelemetryProducer, GabrielRawFramesProducer:
+		default:
+			return fmt.Errorf("gabriel producer %q is not one of the vehicle's streams (%s, %s, %s)",
+				p.Name, GabrielFramesProducer, GabrielTelemetryProducer, GabrielRawFramesProducer)
 		}
 	}
 	for _, e := range c.Flow.Engines {
@@ -92,8 +116,8 @@ func (c GabrielConfig) Validate() error {
 	return nil
 }
 
-// enabled reports whether the vehicle runs a Gabriel flow.
-func (c GabrielConfig) enabled() bool {
+// Enabled reports whether the vehicle runs a Gabriel flow.
+func (c GabrielConfig) Enabled() bool {
 	return len(c.Flow.Producers) > 0
 }
 
@@ -105,6 +129,7 @@ func (v *Vehicle) startGabriel(ctx context.Context) (err error) {
 		return err
 	}
 	flow := cfg.Flow.forVehicle(v.Name)
+	flowName := GabrielFlowName(v.Name)
 	var spec bytes.Buffer
 	if err := toml.NewEncoder(&spec).Encode(flow); err != nil {
 		return fmt.Errorf("encoding the gabriel flow: %w", err)
@@ -184,13 +209,17 @@ func (v *Vehicle) startGabriel(ctx context.Context) (err error) {
 		case GabrielFramesProducer:
 			frames := v.store.subscribeToFrames()
 			streams.Go(func() {
-				runGabrielProducer(streamsCtx, published, recorder, v.Name, frames, maxFrameSize, ready, v.log)
+				runGabrielProducer(streamsCtx, published, recorder, flowName, frames, maxFrameSize, ready, v.log)
 			})
 		case GabrielTelemetryProducer:
 			telemetry := v.store.subscribeToTelemetry()
 			streams.Go(func() {
-				runGabrielProducer(streamsCtx, published, recorder, v.Name, telemetry, gabrielMaxTelemetrySize, ready, v.log)
+				runGabrielProducer(streamsCtx, published, recorder, flowName, telemetry, gabrielMaxTelemetrySize, ready, v.log)
 			})
+		case GabrielRawFramesProducer:
+			// The driver publishes them, whenever it starts: the client takes
+			// a producer's inputs once both have opened its service.
+			ready <- nil
 		}
 		if err := errors.Join(<-ready, <-ready); err != nil {
 			return fmt.Errorf("starting gabriel producer %q: %w", p.Name, err)
@@ -199,7 +228,7 @@ func (v *Vehicle) startGabriel(ctx context.Context) (err error) {
 			return fmt.Errorf("adding gabriel producer %q: %w", p.Name, err)
 		}
 	}
-	if err := client.AddFlow(v.Name, spec.String()); err != nil {
+	if err := client.AddFlow(flowName, spec.String()); err != nil {
 		return fmt.Errorf("adding the gabriel flow: %w", err)
 	}
 	v.log.Info().Str("remote-server", cfg.RemoteServer).Msg("gabriel flow added")
@@ -303,13 +332,18 @@ func (v *Vehicle) storeGabrielResults(
 		recorder.event(producer, event)
 		switch event.Kind {
 		case gabriel.EventResult:
+			detections := &resultpb.DetectionResult{}
+			isDetection := event.PayloadType == detectionType && proto.Unmarshal(event.Result, detections) == nil
+			// A detector that found nothing has an empty result.
+			if isDetection || len(event.Result) == 0 {
+				logGabrielDetections(log, event, detections)
+			}
 			// A filter that passes or stops an input may have no result.
 			if len(event.Result) == 0 {
 				continue
 			}
 			result := resultpb.ComputeResult_builder{Timestamp: timestamppb.Now()}
-			detections := &resultpb.DetectionResult{}
-			if event.PayloadType == detectionType && proto.Unmarshal(event.Result, detections) == nil {
+			if isDetection {
 				result.DetectionResult = detections
 			} else {
 				result.GenericResult = resultpb.GenericResult_builder{Payload: event.Result}.Build()
@@ -325,4 +359,24 @@ func (v *Vehicle) storeGabrielResults(
 				Msg("gabriel engine timed out")
 		}
 	}
+}
+
+// logGabrielDetections logs, at debug level, what a detector found in an
+// input and whether it passed the input on, e.g. to watch an early-discard
+// filter at work. Each detection is its class, score and box, as fractions
+// of the image: [x_min,y_min x_max,y_max].
+func logGabrielDetections(log zerolog.Logger, event gabriel.Event, result *resultpb.DetectionResult) {
+	e := log.Debug()
+	if !e.Enabled() {
+		return
+	}
+	found := make([]string, 0, len(result.GetDetections()))
+	for _, d := range result.GetDetections() {
+		box := d.GetBbox()
+		found = append(found, fmt.Sprintf("%s %.2f [%.2f,%.2f %.2f,%.2f]", d.GetClassName(),
+			d.GetScore(), box.GetXMin(), box.GetYMin(), box.GetXMax(), box.GetYMax()))
+	}
+	e.Str("engine", event.Engine).Uint64("seq", event.ID.Seq).
+		Stringer("forward", event.Forward).Strs("detections", found).
+		Msg("gabriel detections")
 }
