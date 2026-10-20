@@ -1,12 +1,10 @@
-# Initial control state
 first = 'REMOTE'
 
-# State definitions start here!
 [[states]]
 name = 'REMOTE'
 allowed = []
 match = [
-    ['server/**.MissionService/StartMission', 'LOCAL']
+    ['**/**.MissionService/StartMission', 'LOCAL'],
 ]
 
 [[states]]
@@ -16,5 +14,8 @@ allowed = [
     'mission/**.DataService/*',
 ]
 match = [
-    ['server/**', 'REMOTE']
+    ['server/**.ControlService/*', 'REMOTE'],
+    ['server/**.MissionService/StopMission', 'REMOTE'],
+    ['admin/**.ControlService/*', 'REMOTE'],
+    ['admin/**.MissionService/StopMission', 'REMOTE'],
 ]
