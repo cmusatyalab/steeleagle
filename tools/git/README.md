@@ -1,4 +1,4 @@
-# Scripts
+# Git Scripts
 
 ## `release.sh`: tagging Go module releases
 
@@ -20,11 +20,13 @@ tracked in git, so a new module is included automatically.
 ### Setup (once per clone)
 
 ```sh
-git config alias.release '!tools/scripts/release.sh'
-go work init . ./api/go ./sdk ./config
+tools/scripts/alias.sh   # registers `git release` and `git workspace`
+git workspace up         # creates go.work over every module in the repo
 ```
 
-The `go.work` file is gitignored. It makes local builds use the other modules'
+`git workspace down` removes the workspace again, so each module builds
+against the published versions in its `go.mod`. The `go.work` file is
+gitignored. It makes local builds use the other modules'
 working-tree sources. No `go.mod` may contain a `replace` directive, and the
 script refuses to run if one does.
 
@@ -116,29 +118,3 @@ release: once fixed, finish with: git release minor alpha --only root,sdk --push
 
 The rerun computes the same versions and moves `root` and `sdk` onto the
 `api/go` tag that was already pushed.
-
-### Retractions and old tags
-
-The repo's tags from before it used Go are kept out of Go's version
-resolution:
-
-- **Root:** the root module's path is `/v4`. `v1.2.0`, `v1.3.0` and
-  `v2.2.1+incompatible` are retracted under the old unsuffixed path by
-  `v1.3.1`, whose `go.mod` contains the `retract` lines.
-- **`api/go`:** `v0.1.0`–`v0.3.0` (the pre-v4 protocol) are retracted in
-  `api/go/go.mod`.
-
-Rules:
-
-- **Go only reads retractions from the latest release's `go.mod`**, and it
-  skips prereleases when choosing that release. So a retraction takes effect
-  at the next release without an alpha or beta suffix, not at an alpha.
-- **Keep the `retract` lines in every later version.** If a newer version
-  drops them, the old versions are no longer retracted.
-- **Never delete `v1.3.1`.** It carries the old path's retractions.
-- **Never reuse a deleted tag name for a different commit.** The checksum
-  database records each Go module version permanently, and anyone fetching
-  the reused version gets a checksum `SECURITY ERROR`.
-- **Delete a retracted `api/go` tag only after nothing requires that version
-  any more.** proxy.golang.org keeps serving cached copies, but anything
-  fetching directly from GitHub breaks, including this script.

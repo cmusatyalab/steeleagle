@@ -7,7 +7,7 @@
 # the go.mod files tracked in git, so new ones are picked up automatically.
 #
 # Set up the alias once per clone:
-#   git config alias.release '!tools/scripts/release.sh'
+#   tools/git/alias.sh
 #
 # Then:
 #   git release minor              # v4.1.0
@@ -25,15 +25,6 @@ Bumps every Go module in the repo and creates an annotated tag for each one.
 Prerelease stages continue an existing series for the same version
 (alpha.1 -> alpha.2 -> beta.1 -> prod); going back from beta to alpha is
 refused.
-
-Modules are built against each other locally through a gitignored go.work,
-so each go.mod only requires published versions and replace directives are
-refused. Each module being released is moved onto the newest version of the
-other repo modules it requires, including ones released in the same run:
-dependencies are tagged and pushed first, then `go get` records them (with
-their go.sum hashes) in the modules that need them, that is committed, and
-those modules are tagged and pushed in turn. Releasing in more than one
-round like this needs --push.
 
 options:
   --only <mods>    comma-separated modules to release: root, api/go, sdk, ...
