@@ -160,7 +160,7 @@ def main():
                     f"Failed to process an input from {engine_input.id.producer}"
                 )
             finally:
-                engine.stop(result or b"")
+                engine.drop(result=result or b"")
 
 
 if __name__ == "__main__":

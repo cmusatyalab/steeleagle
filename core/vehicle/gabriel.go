@@ -377,6 +377,6 @@ func logGabrielDetections(log zerolog.Logger, event gabriel.Event, result *resul
 			d.GetScore(), box.GetXMin(), box.GetYMin(), box.GetXMax(), box.GetYMax()))
 	}
 	e.Str("engine", event.Engine).Uint64("seq", event.ID.Seq).
-		Stringer("forward", event.Forward).Strs("detections", found).
+		Stringer("outcome", event.Outcome).Strs("detections", found).
 		Msg("gabriel detections")
 }

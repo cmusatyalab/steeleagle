@@ -57,10 +57,10 @@ const (
 var (
 	gabrielInputsHeader = []string{"producer", "session", "seq", "published_ns"}
 	gabrielEventsHeader = []string{
-		"kind", "producer", "session", "seq", "flow", "engine", "forward",
+		"kind", "producer", "session", "seq", "flow", "engine", "outcome",
 		"result_len", "offered_ns", "at_ns", "received_ns", "lost",
 	}
-	// gabrielEventKindNames and gabrielForwardNames are the names
+	// gabrielEventKindNames and gabrielOutcomeNames are the names
 	// gabriel-bench writes, which analyze.py expects.
 	gabrielEventKindNames = map[gabriel.EventKind]string{
 		gabriel.EventAccepted:     "Accepted",
@@ -72,10 +72,10 @@ var (
 		gabriel.EventDerived:      "Derived",
 		gabriel.EventLost:         "Lost",
 	}
-	gabrielForwardNames = map[gabriel.Forward]string{
-		gabriel.ForwardStop: "Stop",
-		gabriel.ForwardPass: "Pass",
-		gabriel.ForwardEmit: "Emit",
+	gabrielOutcomeNames = map[gabriel.Outcome]string{
+		gabriel.OutcomeDrop:    "Drop",
+		gabriel.OutcomeForward: "Forward",
+		gabriel.OutcomeReplace: "Replace",
 	}
 )
 
@@ -212,7 +212,7 @@ func (r *gabrielRecorder) event(producer string, event gabriel.Event) {
 	}
 	row := []string{kind, producer, "", "", event.Flow, event.Engine, "", "", "", "", "", ""}
 	const (
-		session, seq, forward, resultLen, offered, at, received, lost = 2, 3, 6, 7, 8, 9, 10, 11
+		session, seq, outcome, resultLen, offered, at, received, lost = 2, 3, 6, 7, 8, 9, 10, 11
 	)
 	switch event.Kind {
 	case gabriel.EventLost:
@@ -224,7 +224,7 @@ func (r *gabrielRecorder) event(producer string, event gabriel.Event) {
 		row[session], row[seq] = uintField(event.ID.Session), uintField(event.ID.Seq)
 	}
 	if event.Kind == gabriel.EventResult {
-		row[forward] = gabrielForwardNames[event.Forward]
+		row[outcome] = gabrielOutcomeNames[event.Outcome]
 		row[resultLen] = strconv.Itoa(len(event.Result))
 	}
 	row[offered] = timestampField(event.OfferedAt)

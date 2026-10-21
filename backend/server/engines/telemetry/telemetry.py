@@ -97,7 +97,7 @@ def main():
                 except Exception:
                     logger.exception(f"Failed to process an input from {engine_input.id.producer}")
                 finally:
-                    engine.stop()
+                    engine.drop()
     finally:
         telemetry_engine.cleanup()
 

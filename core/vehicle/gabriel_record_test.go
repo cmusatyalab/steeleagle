@@ -32,7 +32,7 @@ func TestGabrielRecorderWritesBenchFormat(t *testing.T) {
 		ID:         gabriel.InputID{Producer: "harpy.frames", Session: session, Seq: seq},
 		Engine:     "detector",
 		Flow:       "harpy",
-		Forward:    gabriel.ForwardStop,
+		Outcome:    gabriel.OutcomeDrop,
 		Result:     []byte("cat"),
 		OfferedAt:  gabriel.Timestamp(2 * time.Second),
 		At:         gabriel.Timestamp(3 * time.Second),
@@ -49,7 +49,7 @@ func TestGabrielRecorderWritesBenchFormat(t *testing.T) {
 	events := readCSV(t, filepath.Join(recorder.dir, gabrielEventsFile))
 	wantEvents := [][]string{
 		gabrielEventsHeader,
-		{"Result", "harpy.frames", "7", "1", "harpy", "detector", "Stop", "3",
+		{"Result", "harpy.frames", "7", "1", "harpy", "detector", "Drop", "3",
 			"2000000000", "3000000000", "4000000000", ""},
 		{"Lost", "harpy.frames", "", "", "", "", "", "", "", "", "", "2"},
 	}

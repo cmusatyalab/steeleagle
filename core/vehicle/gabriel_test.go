@@ -262,7 +262,7 @@ func runTestDetector(ctx context.Context, name, frameType string, detections *re
 		if input.PayloadType != frameType {
 			return fmt.Errorf("engine got an input of type %q, want %q", input.PayloadType, frameType)
 		}
-		if err := engine.Stop(result); err != nil {
+		if err := engine.Drop(result); err != nil {
 			return err
 		}
 	}
@@ -273,7 +273,7 @@ func TestLogGabrielDetections(t *testing.T) {
 		Kind:    gabriel.EventResult,
 		ID:      gabriel.InputID{Seq: 7},
 		Engine:  "harpy.yolo",
-		Forward: gabriel.ForwardPass,
+		Outcome: gabriel.OutcomeForward,
 	}
 	result := resultpb.DetectionResult_builder{
 		Detections: []*resultpb.Detection{resultpb.Detection_builder{
@@ -285,7 +285,7 @@ func TestLogGabrielDetections(t *testing.T) {
 			}.Build(),
 		}.Build()},
 	}.Build()
-	const want = `{"level":"debug","engine":"harpy.yolo","seq":7,"forward":"pass",` +
+	const want = `{"level":"debug","engine":"harpy.yolo","seq":7,"outcome":"forward",` +
 		`"detections":["person 0.88 [0.10,0.20 0.30,0.40]"],"message":"gabriel detections"}` + "\n"
 
 	var out bytes.Buffer
