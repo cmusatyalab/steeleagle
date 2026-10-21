@@ -34,7 +34,7 @@ func TestAclIp(t *testing.T) {
 		t.Errorf("added incorrect IP without error")
 	}
 
-	aclLn := NewCodedListener(lis, ServerCode, acl)
+	aclLn := newTestCodedListener(t, lis, ServerCode, acl)
 	defer aclLn.Close()
 
 	accepted := make(chan net.Conn)
@@ -87,7 +87,7 @@ func TestAclPid(t *testing.T) {
 	if err == nil {
 		t.Errorf("added incorrect pid")
 	}
-	aclLn := NewCodedListener(base, ServerCode, acl)
+	aclLn := newTestCodedListener(t, base, ServerCode, acl)
 	defer aclLn.Close()
 	go aclLn.Accept()
 
@@ -101,8 +101,8 @@ func TestAclPid(t *testing.T) {
 	}
 
 	cmd = exec.Command(pidBinary)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = logger
+	cmd.Stderr = logger
 	err = cmd.Start()
 	acl.AddPid(cmd.Process.Pid)
 	if err != nil {

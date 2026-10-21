@@ -2,10 +2,8 @@ package router
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
-	"path"
 	"strings"
 	"sync"
 
@@ -22,13 +20,11 @@ const routeHeader = "x-route-key"
 
 // Router is a proxy router that sends messages to the correct backend
 // by header (uses "x-route-key" as the routing key) or by service if
-// no header is provided. Route keys are glob patterns (see path.Match),
-// so "pkg.*" matches every service in package pkg. An exact key always
-// wins, then the longest matching pattern.
+// no header is provided.
 type Router struct {
 	mu       sync.RWMutex                // mutex for atomic updates
-	headers  map[string]*grpc.ClientConn // x-route-key value pattern
-	services map[string]*grpc.ClientConn // "pkg.Service" pattern
+	headers  map[string]*grpc.ClientConn // x-route-key value
+	services map[string]*grpc.ClientConn // "pkg.Service"
 	log      zerolog.Logger              // logger object
 }
 
@@ -71,12 +67,9 @@ func (r *Router) Close() {
 	}
 }
 
-// AddHeaderRoute adds a new header-based routing rule. The header may be a
-// glob pattern. Overwriting an existing route closes its old connection.
+// AddHeaderRoute adds a new header-based routing rule. Overwriting an
+// existing route closes its old connection.
 func (r *Router) AddHeaderRoute(header, address string) error {
-	if _, err := path.Match(header, ""); err != nil {
-		return fmt.Errorf("bad header pattern %q: %w", header, err)
-	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	c, err := grpc.NewClient(address,
@@ -94,12 +87,9 @@ func (r *Router) AddHeaderRoute(header, address string) error {
 	return nil
 }
 
-// AddServiceRoute adds a new service-based routing rule. The service may be a
-// glob pattern. Overwriting an existing route closes its old connection.
+// AddServiceRoute adds a new service-based routing rule. Overwriting an
+// existing route closes its old connection.
 func (r *Router) AddServiceRoute(service, address string) error {
-	if _, err := path.Match(service, ""); err != nil {
-		return fmt.Errorf("bad service pattern %q: %w", service, err)
-	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	c, err := grpc.NewClient(address,
@@ -124,39 +114,20 @@ func (r *Router) resolve(ctx context.Context, fullMethod string) (*grpc.ClientCo
 
 	md, _ := metadata.FromIncomingContext(ctx)
 	if v := md.Get(routeHeader); len(v) > 0 {
-		if c, ok := match(r.headers, v[0]); ok {
+		if c, ok := r.headers[v[0]]; ok {
 			r.log.Debug().Str("method", fullMethod).Str("addr", c.Target()).Msg("dispatching method")
 			return c, nil
 		}
 	}
 	// fullMethod looks like "/pkg.Service/Method"
 	svc := strings.SplitN(strings.TrimPrefix(fullMethod, "/"), "/", 2)[0]
-	if c, ok := match(r.services, svc); ok {
+	if c, ok := r.services[svc]; ok {
 		r.log.Debug().Str("method", fullMethod).Str("addr", c.Target()).Msg("dispatching method")
 		return c, nil
 	}
 	// Reject if there is no recognized header key or service
 	r.log.Error().Str("method", fullMethod).Msg("no route for method")
 	return nil, status.Errorf(codes.Unimplemented, "no route for %s", fullMethod)
-}
-
-// match finds the route for key, preferring an exact key and then the longest
-// matching pattern (ties broken alphabetically so the choice is stable).
-func match(routes map[string]*grpc.ClientConn, key string) (*grpc.ClientConn, bool) {
-	if c, ok := routes[key]; ok {
-		return c, true
-	}
-	var best string
-	var found *grpc.ClientConn
-	for pattern, c := range routes {
-		if ok, _ := path.Match(pattern, key); !ok {
-			continue
-		}
-		if found == nil || len(pattern) > len(best) || (len(pattern) == len(best) && pattern < best) {
-			best, found = pattern, c
-		}
-	}
-	return found, found != nil
 }
 
 // handle handles a gRPC call.

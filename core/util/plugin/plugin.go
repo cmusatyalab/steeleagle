@@ -391,7 +391,7 @@ func (p *BasePlugin) createSocketEndpoints() (net.Listener, *grpc.ClientConn, er
 		}
 	}
 
-	return listener.NewCodedListener(listen, p.code, p.acl), client, nil
+	return listener.NewCodedListener(listen, p.code, p.acl, listener.WithLogger(p.log)), client, nil
 }
 
 // waitForSocket polls path until the socket file exists or the plugin timeout

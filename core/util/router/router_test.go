@@ -66,74 +66,18 @@ func TestResolve(t *testing.T) {
 	}
 }
 
-// TestResolveGlob ensures that header and service routes match glob
-// patterns, with exact keys winning over patterns and longer patterns winning
-// over shorter ones.
-func TestResolveGlob(t *testing.T) {
-	_, addr := startBackend(t, "a")
-	r := newRouter(t,
-		map[string]string{"vehicle-*": addr, "vehicle-a*": addr, "vehicle-ab": addr},
-		map[string]string{"pkg.services.driver.*": addr, "pkg.services.*": addr, "*": addr},
-	)
-
-	withHeader := func(v string) context.Context {
-		return metadata.NewIncomingContext(context.Background(), metadata.Pairs(routeHeader, v))
-	}
-	tests := []struct {
-		name   string
-		ctx    context.Context
-		method string
-		want   *grpc.ClientConn
-	}{
-		{"header glob", withHeader("vehicle-z"), "/x.Y/M", r.headers["vehicle-*"]},
-		{"longer header glob wins", withHeader("vehicle-abc"), "/x.Y/M", r.headers["vehicle-a*"]},
-		{"exact header wins", withHeader("vehicle-ab"), "/x.Y/M", r.headers["vehicle-ab"]},
-		{"unmatched header falls back to service", withHeader("drone"), "/pkg.services.driver.Control/M", r.services["pkg.services.driver.*"]},
-		{"service glob", context.Background(), "/pkg.services.driver.Control/M", r.services["pkg.services.driver.*"]},
-		{"shorter service glob", context.Background(), "/pkg.services.mission.Mission/M", r.services["pkg.services.*"]},
-		{"catch-all service glob", context.Background(), "/other.Service/M", r.services["*"]},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := r.resolve(tc.ctx, tc.method)
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-			if got != tc.want {
-				t.Errorf("resolved to wrong conn: got %p, want %p", got, tc.want)
-			}
-		})
-	}
-}
-
-// TestAddRouteBadPattern ensures that malformed glob patterns are rejected
-// and not registered.
-func TestAddRouteBadPattern(t *testing.T) {
-	_, addr := startBackend(t, "a")
-	r := newRouter(t, nil, nil)
-	if err := r.AddServiceRoute("pkg.[", addr); err == nil {
-		t.Errorf("added service route with bad pattern without error")
-	}
-	if err := r.AddHeaderRoute("key-[", addr); err == nil {
-		t.Errorf("added header route with bad pattern without error")
-	}
-	if len(r.services) != 0 || len(r.headers) != 0 {
-		t.Errorf("failed route was still registered")
-	}
-}
-
 // TestAddRouteOverwriteClosesOld ensures that overwriting a route closes the
 // connection it replaces.
 func TestAddRouteOverwriteClosesOld(t *testing.T) {
 	_, addrA := startBackend(t, "a")
 	_, addrB := startBackend(t, "b")
-	r := newRouter(t, map[string]string{"key": addrA}, map[string]string{"pkg.*": addrA})
-	oldHeader, oldService := r.headers["key"], r.services["pkg.*"]
+	r := newRouter(t, map[string]string{"key": addrA}, map[string]string{"pkg.Service": addrA})
+	oldHeader, oldService := r.headers["key"], r.services["pkg.Service"]
 
 	if err := r.AddHeaderRoute("key", addrB); err != nil {
 		t.Fatalf("couldn't overwrite header route: %v", err)
 	}
-	if err := r.AddServiceRoute("pkg.*", addrB); err != nil {
+	if err := r.AddServiceRoute("pkg.Service", addrB); err != nil {
 		t.Fatalf("couldn't overwrite service route: %v", err)
 	}
 	if s := oldHeader.GetState(); s != connectivity.Shutdown {
@@ -142,7 +86,7 @@ func TestAddRouteOverwriteClosesOld(t *testing.T) {
 	if s := oldService.GetState(); s != connectivity.Shutdown {
 		t.Errorf("old service conn not closed: %v", s)
 	}
-	if r.headers["key"].Target() != addrB || r.services["pkg.*"].Target() != addrB {
+	if r.headers["key"].Target() != addrB || r.services["pkg.Service"].Target() != addrB {
 		t.Errorf("routes not overwritten with new address")
 	}
 }
@@ -185,10 +129,10 @@ func TestNewRouter(t *testing.T) {
 	}
 
 	// A single bad address fails the whole router
-	if _, err := NewRouter(map[string]string{"ok": addrA, "bad": "bogus-scheme://%%%"}, nil); err == nil {
+	if _, err := NewRouter(map[string]string{"ok": addrA, "bad": "bogus-scheme://%%%"}, nil, WithLogger(newTestLogger(t))); err == nil {
 		t.Errorf("created router with bad header address without error")
 	}
-	if _, err := NewRouter(nil, map[string]string{"bad.Service": "bogus-scheme://%%%"}); err == nil {
+	if _, err := NewRouter(nil, map[string]string{"bad.Service": "bogus-scheme://%%%"}, WithLogger(newTestLogger(t))); err == nil {
 		t.Errorf("created router with bad service address without error")
 	}
 }

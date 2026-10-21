@@ -4,7 +4,17 @@ import (
 	"net"
 	"testing"
 	"time"
+
+	"github.com/rs/zerolog"
 )
+
+// newTestCodedListener wraps NewCodedListener, and pipes logs to a testLogger.
+func newTestCodedListener(t *testing.T, ln net.Listener, code AuthCode, acl *Acl, opts ...ListenerOption) net.Listener {
+	t.Helper()
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
+	opts = append(opts, WithLogger(logger))
+	return NewCodedListener(ln, code, acl, opts...)
+}
 
 type spoofedConn struct {
 	net.Conn

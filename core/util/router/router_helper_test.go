@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -18,6 +19,26 @@ import (
 )
 
 const testService = "grpc.testing.TestService"
+
+// testLogger implements the io.Writer interface to allow zerolog to write logs
+// to the testing log method. By using testLogger, zerolog logs are printed to
+// the console only when a test fails or is run with -v.
+type testLogger struct {
+	t *testing.T
+}
+
+// Write pipes p to the testing log.
+func (l testLogger) Write(p []byte) (n int, err error) {
+	l.t.Log(string(p))
+	return len(p), nil
+}
+
+var _ io.Writer = (*testLogger)(nil)
+
+// newTestLogger returns a zerolog logger that writes to a testLogger.
+func newTestLogger(t *testing.T) zerolog.Logger {
+	return zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
+}
 
 // backend is a TestService that tags every response with its name so tests
 // can tell which backend a call was routed to.
@@ -132,10 +153,11 @@ func startBackend(t *testing.T, name string) (*backend, string) {
 	return b, lis.Addr().String()
 }
 
-// newRouter creates a Router that is closed when the test ends.
+// newRouter creates a Router that is closed when the test ends, and pipes its
+// logs to a testLogger.
 func newRouter(t *testing.T, headers, services map[string]string) *Router {
 	t.Helper()
-	r, err := NewRouter(headers, services)
+	r, err := NewRouter(headers, services, WithLogger(newTestLogger(t)))
 	if err != nil {
 		t.Fatalf("couldn't create router: %v", err)
 	}
