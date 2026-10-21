@@ -7,6 +7,7 @@ Each file here is one Gabriel flow a vehicle can run:
 | `baseline.toml` | A: frames and telemetry to the cloudlet's telemetry engine only |
 | `early-discard.toml` | B: YOLO on the vehicle passes on only frames with objects |
 | `fusion.toml` | C: YOLO on the vehicle and a detector on the cloudlet, in parallel |
+| `raw-detect.toml` | D: YOLO on the vehicle takes the driver's raw frames, without JPEG |
 
 A flow file holds only the flow. The vehicle's own settings stay in its own
 config: the vehicles, the swarm controller, and the remote server under

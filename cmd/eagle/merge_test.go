@@ -60,8 +60,13 @@ func TestReadConfigMergesEachFlowOverTheVehicle(t *testing.T) {
 				len(cfg.Vehicles) != 1 || cfg.Vehicles[0].Name != "harpy" {
 				t.Errorf("merged config lost the vehicle's settings: %+v", cfg)
 			}
-			if len(cfg.Gabriel.Flow.Producers) != 2 || len(cfg.Gabriel.Flow.Edges) == 0 {
-				t.Errorf("merged flow = %+v, want the flow file's", cfg.Gabriel.Flow)
+			var want mergedConfig
+			if _, err := toml.DecodeFile(flow, &want); err != nil {
+				t.Fatal(err)
+			}
+			if len(cfg.Gabriel.Flow.Producers) != len(want.Gabriel.Flow.Producers) ||
+				len(cfg.Gabriel.Flow.Edges) != len(want.Gabriel.Flow.Edges) {
+				t.Errorf("merged flow = %+v, want the flow file's: %+v", cfg.Gabriel.Flow, want.Gabriel.Flow)
 			}
 			gabrielCfg := vehicle.GabrielConfig{
 				Flow:              cfg.Gabriel.Flow,
