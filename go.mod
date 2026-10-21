@@ -6,7 +6,7 @@ require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/adrg/xdg v0.5.3
 	github.com/alecthomas/participle/v2 v2.1.4
-	github.com/cmusatyalab/gabriel v0.0.0
+	github.com/cmusatyalab/gabriel/go v0.0.0
 	github.com/cmusatyalab/steeleagle/api/go v0.1.0
 	github.com/go-git/go-git/v5 v5.19.2
 	github.com/google/uuid v1.6.0
@@ -135,7 +135,8 @@ require (
 
 replace github.com/cmusatyalab/steeleagle/api/go => ./api/go
 
-// Steps required:
+// Steps required (see Gabriel's README for installing libgabriel):
 // git clone -b gabriel2 https://github.com/cmusatyalab/gabriel ../gabriel-rust
-// cargo build --release -p gabriel
-replace github.com/cmusatyalab/gabriel => ../gabriel-rust
+// cd ../gabriel-rust && cargo cinstall --release -p gabriel --library-type staticlib --prefix ~/.local --libdir lib
+// export PKG_CONFIG_PATH=~/.local/lib/pkgconfig
+replace github.com/cmusatyalab/gabriel/go => ../gabriel-rust/go

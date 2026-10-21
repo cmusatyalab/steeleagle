@@ -47,9 +47,15 @@ jobs:
         # libclang generates the bindings of Gabriel's shared memory transport.
         run: sudo apt-get update && sudo apt-get install -y ffmpeg bubblewrap libclang-dev
 
-      - name: Build Gabriel's library
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-c
+
+      - name: Install Gabriel's library
         working-directory: ../gabriel-rust
-        run: cargo build --release --locked -p gabriel
+        run: |
+          cargo cinstall --release --locked -p gabriel --library-type staticlib --prefix "$HOME/.local" --libdir lib
+          echo "PKG_CONFIG_PATH=$HOME/.local/lib/pkgconfig" >> "$GITHUB_ENV"
 
       - name: Allow unprivileged user namespaces (required by bubblewrap)
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0

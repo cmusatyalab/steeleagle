@@ -22,7 +22,7 @@ import (
 // gabrielModulePath and steeleagleProtocolModulePath are the module paths
 // whose resolved versions are logged on every Configure call.
 const (
-	gabrielModulePath            = "github.com/cmusatyalab/gabriel"
+	gabrielModulePath            = "github.com/cmusatyalab/gabriel/go"
 	steeleagleProtocolModulePath = "github.com/cmusatyalab/steeleagle/api/go"
 )
 
