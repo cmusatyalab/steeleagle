@@ -60,7 +60,7 @@ func TestPluginWithParent(t *testing.T) {
 		t.Errorf("encountered error with plugin RPC handshake: %v", err)
 	}
 
-	path, err = util.GetVehicleDirByName("foo")
+	path, err = util.GetVehicleRunDirByName("foo")
 	if err != nil {
 		t.Errorf("couldn't get vehicle directory: %v", err)
 	}

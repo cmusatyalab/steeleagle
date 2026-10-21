@@ -13,9 +13,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/connectivity"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	testgrpc "google.golang.org/grpc/interop/grpc_testing"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // TestResolve ensures that calls resolve to header routes before service
@@ -24,12 +28,8 @@ func TestResolve(t *testing.T) {
 	_, addrA := startBackend(t, "a")
 	_, addrB := startBackend(t, "b")
 	r := newRouter(t, nil, nil)
-	if err := r.AddHeaderRoute("vehicle-a", addrA); err != nil {
-		t.Fatalf("couldn't add header route: %v", err)
-	}
-	if err := r.AddServiceRoute("pkg.Service", addrB); err != nil {
-		t.Fatalf("couldn't add service route: %v", err)
-	}
+	r.AddHeaderRoute("vehicle-a", dial(t, addrA))
+	r.AddServiceRoute("pkg.Service", dial(t, addrB))
 
 	withHeader := func(v string) context.Context {
 		return metadata.NewIncomingContext(context.Background(), metadata.Pairs(routeHeader, v))
@@ -66,48 +66,30 @@ func TestResolve(t *testing.T) {
 	}
 }
 
-// TestAddRouteOverwriteClosesOld ensures that overwriting a route closes the
-// connection it replaces.
-func TestAddRouteOverwriteClosesOld(t *testing.T) {
+// TestAddRouteOverwrite ensures that overwriting a route replaces its conn
+// without closing the old one, since the router doesn't own its conns.
+func TestAddRouteOverwrite(t *testing.T) {
 	_, addrA := startBackend(t, "a")
 	_, addrB := startBackend(t, "b")
 	r := newRouter(t, map[string]string{"key": addrA}, map[string]string{"pkg.Service": addrA})
 	oldHeader, oldService := r.headers["key"], r.services["pkg.Service"]
 
-	if err := r.AddHeaderRoute("key", addrB); err != nil {
-		t.Fatalf("couldn't overwrite header route: %v", err)
+	ccB := dial(t, addrB)
+	r.AddHeaderRoute("key", ccB)
+	r.AddServiceRoute("pkg.Service", ccB)
+	if r.headers["key"] != ccB || r.services["pkg.Service"] != ccB {
+		t.Errorf("routes not overwritten with new conn")
 	}
-	if err := r.AddServiceRoute("pkg.Service", addrB); err != nil {
-		t.Fatalf("couldn't overwrite service route: %v", err)
+	if s := oldHeader.GetState(); s == connectivity.Shutdown {
+		t.Errorf("old header conn was closed by router")
 	}
-	if s := oldHeader.GetState(); s != connectivity.Shutdown {
-		t.Errorf("old header conn not closed: %v", s)
-	}
-	if s := oldService.GetState(); s != connectivity.Shutdown {
-		t.Errorf("old service conn not closed: %v", s)
-	}
-	if r.headers["key"].Target() != addrB || r.services["pkg.Service"].Target() != addrB {
-		t.Errorf("routes not overwritten with new address")
+	if s := oldService.GetState(); s == connectivity.Shutdown {
+		t.Errorf("old service conn was closed by router")
 	}
 }
 
-// TestAddRouteBadAddress ensures that routes with invalid addresses are
-// rejected and not registered.
-func TestAddRouteBadAddress(t *testing.T) {
-	r := newRouter(t, nil, nil)
-	if err := r.AddServiceRoute("pkg.Service", "bogus-scheme://%%%"); err == nil {
-		t.Errorf("added service route with bad address without error")
-	}
-	if err := r.AddHeaderRoute("key", "bogus-scheme://%%%"); err == nil {
-		t.Errorf("added header route with bad address without error")
-	}
-	if len(r.services) != 0 || len(r.headers) != 0 {
-		t.Errorf("failed route was still registered")
-	}
-}
-
-// TestNewRouter ensures that initial routes are registered on creation, nil
-// route maps are allowed, and any bad address fails creation.
+// TestNewRouter ensures that initial routes are registered on creation and
+// nil route maps are allowed.
 func TestNewRouter(t *testing.T) {
 	_, addrA := startBackend(t, "a")
 	_, addrB := startBackend(t, "b")
@@ -123,17 +105,10 @@ func TestNewRouter(t *testing.T) {
 	}
 
 	// Nil maps are allowed and routes can still be added afterwards
-	empty := newRouter(t, nil, nil)
-	if err := empty.AddServiceRoute("pkg.Service", addrB); err != nil {
-		t.Errorf("couldn't add route to router made from nil maps: %v", err)
-	}
-
-	// A single bad address fails the whole router
-	if _, err := NewRouter(map[string]string{"ok": addrA, "bad": "bogus-scheme://%%%"}, nil, WithLogger(newTestLogger(t))); err == nil {
-		t.Errorf("created router with bad header address without error")
-	}
-	if _, err := NewRouter(nil, map[string]string{"bad.Service": "bogus-scheme://%%%"}, WithLogger(newTestLogger(t))); err == nil {
-		t.Errorf("created router with bad service address without error")
+	empty := NewRouter(nil, nil, WithLogger(newTestLogger(t)))
+	empty.AddServiceRoute("pkg.Service", dial(t, addrB))
+	if empty.services["pkg.Service"] == nil {
+		t.Errorf("couldn't add route to router made from nil maps")
 	}
 }
 
@@ -492,13 +467,12 @@ func TestConcurrentCallsAndRouteUpdates(t *testing.T) {
 		}()
 	}
 	// Mutate the routing table while calls are in flight
+	cc := dial(t, addr)
 	for i := range 32 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if err := r.AddHeaderRoute(fmt.Sprintf("key-%d", i), addr); err != nil {
-				errs <- err
-			}
+			r.AddHeaderRoute(fmt.Sprintf("key-%d", i), cc)
 		}()
 	}
 	wg.Wait()
@@ -509,9 +483,10 @@ func TestConcurrentCallsAndRouteUpdates(t *testing.T) {
 }
 
 // TestRawCodec ensures that the raw codec keeps the proto content-type, only
-// handles frames, and copies payloads on unmarshal.
+// passes frames through, falls back to protobuf for other messages, and copies
+// payloads on unmarshal.
 func TestRawCodec(t *testing.T) {
-	c := rawCodec{}
+	c := RawCodec{}
 	if c.Name() != "proto" {
 		t.Errorf("codec name must be proto to keep content-type, got %q", c.Name())
 	}
@@ -535,5 +510,70 @@ func TestRawCodec(t *testing.T) {
 	}
 	if err := c.Unmarshal(data, struct{}{}); err == nil {
 		t.Errorf("unmarshalled into non-frame without error")
+	}
+
+	msg := wrapperspb.String("hello")
+	enc, err := c.Marshal(msg)
+	if err != nil {
+		t.Fatalf("marshal proto message failed: %v", err)
+	}
+	got := &wrapperspb.StringValue{}
+	if err := c.Unmarshal(enc, got); err != nil || got.GetValue() != "hello" {
+		t.Errorf("proto round trip: got %q, %v", got.GetValue(), err)
+	}
+}
+
+// TestMixedServer ensures that a server using RawCodec can host registered
+// services alongside Handle, with registered services encoded as normal
+// protobuf and unknown services proxied as raw frames.
+func TestMixedServer(t *testing.T) {
+	_, addr := startBackend(t, "a")
+	r := newRouter(t, nil, map[string]string{testService: addr})
+
+	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("couldn't listen on localhost: %v", err)
+	}
+	s := grpc.NewServer(
+		grpc.UnknownServiceHandler(r.Handle),
+		grpc.ForceServerCodec(RawCodec{}),
+	)
+	hs := health.NewServer()
+	hs.SetServingStatus("local", healthpb.HealthCheckResponse_SERVING)
+	healthpb.RegisterHealthServer(s, hs)
+	go s.Serve(lis)
+	t.Cleanup(s.Stop)
+
+	cc, err := grpc.NewClient(lis.Addr().String(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		t.Fatalf("couldn't create client: %v", err)
+	}
+	t.Cleanup(func() { cc.Close() })
+	ctx := testContext(t)
+
+	// Registered service is handled locally
+	hresp, err := healthpb.NewHealthClient(cc).Check(ctx, &healthpb.HealthCheckRequest{Service: "local"})
+	if err != nil {
+		t.Fatalf("local health check failed: %v", err)
+	}
+	if hresp.GetStatus() != healthpb.HealthCheckResponse_SERVING {
+		t.Errorf("local service decoded wrong: got %v", hresp.GetStatus())
+	}
+
+	// Unknown service is proxied to the backend
+	body := []byte("proxied")
+	resp, err := testgrpc.NewTestServiceClient(cc).UnaryCall(ctx,
+		&testgrpc.SimpleRequest{Payload: &testgrpc.Payload{Body: body}},
+	)
+	if err != nil {
+		t.Fatalf("proxied unary call failed: %v", err)
+	}
+	if resp.GetServerId() != "a" {
+		t.Errorf("routed to wrong backend: %q", resp.GetServerId())
+	}
+	if !bytes.Equal(resp.GetPayload().GetBody(), body) {
+		t.Errorf("payload mangled: got %q, want %q", resp.GetPayload().GetBody(), body)
 	}
 }

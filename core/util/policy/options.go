@@ -10,3 +10,10 @@ func WithLogger(logger zerolog.Logger) PolicyOption {
 		p.log = logger
 	}
 }
+
+// WithRego sets a custom Rego OPA config for the policy, overriding DefaultRego.
+func WithRego(rego string) PolicyOption {
+	return func(p *Policy) {
+		p.rego = rego
+	}
+}

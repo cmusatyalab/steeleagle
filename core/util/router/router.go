@@ -10,7 +10,6 @@ import (
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
@@ -29,9 +28,10 @@ type Router struct {
 }
 
 // NewRouter creates a Router, optionally seeded with header routes
-// (x-route-key value -> address) and service routes ("pkg.Service" -> address).
-// Either map may be nil.
-func NewRouter(headers, services map[string]string, opts ...RouterOption) (*Router, error) {
+// (x-route-key value -> conn) and service routes ("pkg.Service" -> conn).
+// Either map may be nil. The router does not take ownership of the conns;
+// the caller is responsible for closing them.
+func NewRouter(headers, services map[string]*grpc.ClientConn, opts ...RouterOption) *Router {
 	r := &Router{
 		headers:  map[string]*grpc.ClientConn{},
 		services: map[string]*grpc.ClientConn{},
@@ -40,98 +40,40 @@ func NewRouter(headers, services map[string]string, opts ...RouterOption) (*Rout
 	for _, opt := range opts {
 		opt(r)
 	}
-	for header, address := range headers {
-		if err := r.AddHeaderRoute(header, address); err != nil {
-			r.Close()
-			return nil, err
-		}
+	for header, c := range headers {
+		r.AddHeaderRoute(header, c)
 	}
-	for service, address := range services {
-		if err := r.AddServiceRoute(service, address); err != nil {
-			r.Close()
-			return nil, err
-		}
+	for service, c := range services {
+		r.AddServiceRoute(service, c)
 	}
-	return r, nil
+	return r
 }
 
-// Close closes every backend connection held by the router.
-func (r *Router) Close() {
+// AddHeaderRoute adds a header-based routing rule (x-route-key value -> conn),
+// overwriting any existing route with the same key. The conn need not use
+// RawCodec; the router forces it per call.
+func (r *Router) AddHeaderRoute(header string, c *grpc.ClientConn) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	for _, c := range r.headers {
-		c.Close()
-	}
-	for _, c := range r.services {
-		c.Close()
-	}
-}
-
-// AddHeaderRoute adds a new header-based routing rule. Overwriting an
-// existing route closes its old connection.
-func (r *Router) AddHeaderRoute(header, address string) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	c, err := grpc.NewClient(address,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithDefaultCallOptions(grpc.ForceCodec(rawCodec{})),
-	)
-	if err != nil {
-		return err
-	}
-	if old, ok := r.headers[header]; ok {
-		old.Close()
-	}
 	r.headers[header] = c
-	r.log.Debug().Str("header", header).Str("addr", address).Msg("adding header route")
-	return nil
+	r.log.Debug().Str("header", header).Str("addr", c.Target()).Msg("adding header route")
 }
 
-// AddServiceRoute adds a new service-based routing rule. Overwriting an
-// existing route closes its old connection.
-func (r *Router) AddServiceRoute(service, address string) error {
+// AddServiceRoute adds a service-based routing rule ("pkg.Service" -> conn),
+// overwriting any existing route with the same service. The service may also
+// be given as a type path ("pkg/Service"), which is sanitized to "pkg.Service".
+// The conn need not use RawCodec; the router forces it per call.
+func (r *Router) AddServiceRoute(service string, c *grpc.ClientConn) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	c, err := grpc.NewClient(address,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithDefaultCallOptions(grpc.ForceCodec(rawCodec{})),
-	)
-	if err != nil {
-		return err
-	}
-	if old, ok := r.services[service]; ok {
-		old.Close()
-	}
+	service = sanitizeService(service)
 	r.services[service] = c
-	r.log.Debug().Str("service", service).Str("addr", address).Msg("adding service route")
-	return nil
+	r.log.Debug().Str("service", service).Str("addr", c.Target()).Msg("adding service route")
 }
 
-// resolve gets the gRPCClientConn for a gRPC call.
-func (r *Router) resolve(ctx context.Context, fullMethod string) (*grpc.ClientConn, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	md, _ := metadata.FromIncomingContext(ctx)
-	if v := md.Get(routeHeader); len(v) > 0 {
-		if c, ok := r.headers[v[0]]; ok {
-			r.log.Debug().Str("method", fullMethod).Str("addr", c.Target()).Msg("dispatching method")
-			return c, nil
-		}
-	}
-	// fullMethod looks like "/pkg.Service/Method"
-	svc := strings.SplitN(strings.TrimPrefix(fullMethod, "/"), "/", 2)[0]
-	if c, ok := r.services[svc]; ok {
-		r.log.Debug().Str("method", fullMethod).Str("addr", c.Target()).Msg("dispatching method")
-		return c, nil
-	}
-	// Reject if there is no recognized header key or service
-	r.log.Error().Str("method", fullMethod).Msg("no route for method")
-	return nil, status.Errorf(codes.Unimplemented, "no route for %s", fullMethod)
-}
-
-// handle handles a gRPC call.
-func (r *Router) handle(_ any, down grpc.ServerStream) error {
+// Handle proxies a gRPC call to the backend resolved by header or service.
+// Use it as a grpc.UnknownServiceHandler alongside grpc.ForceServerCodec(RawCodec{}).
+func (r *Router) Handle(_ any, down grpc.ServerStream) error {
 	fullMethod, ok := grpc.MethodFromServerStream(down)
 	if !ok {
 		return status.Error(codes.Internal, "no method in stream")
@@ -154,9 +96,10 @@ func (r *Router) handle(_ any, down grpc.ServerStream) error {
 	upCtx, cancel := context.WithCancel(metadata.NewOutgoingContext(ctx, outMD))
 	defer cancel()
 
-	// Treat every call as bidi streaming
+	// Treat every call as bidi streaming, forcing RawCodec in case the
+	// conn was created with a different default codec
 	desc := &grpc.StreamDesc{ServerStreams: true, ClientStreams: true}
-	up, err := cc.NewStream(upCtx, desc, fullMethod)
+	up, err := cc.NewStream(upCtx, desc, fullMethod, grpc.ForceCodec(RawCodec{}))
 	if err != nil {
 		return err
 	}
@@ -235,4 +178,33 @@ func pumpUpToDown(src grpc.ClientStream, dst grpc.ServerStream) <-chan error {
 		}
 	}()
 	return ch
+}
+
+// sanitizeService converts a service type path ("pkg/Service") into a gRPC
+// service name ("pkg.Service").
+func sanitizeService(service string) string {
+	return strings.ReplaceAll(service, "/", ".")
+}
+
+// resolve gets the gRPCClientConn for a gRPC call.
+func (r *Router) resolve(ctx context.Context, fullMethod string) (*grpc.ClientConn, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	md, _ := metadata.FromIncomingContext(ctx)
+	if v := md.Get(routeHeader); len(v) > 0 {
+		if c, ok := r.headers[v[0]]; ok {
+			r.log.Debug().Str("method", fullMethod).Str("addr", c.Target()).Msg("dispatching method")
+			return c, nil
+		}
+	}
+	// fullMethod looks like "/pkg.Service/Method"
+	svc := strings.SplitN(strings.TrimPrefix(fullMethod, "/"), "/", 2)[0]
+	if c, ok := r.services[svc]; ok {
+		r.log.Debug().Str("method", fullMethod).Str("addr", c.Target()).Msg("dispatching method")
+		return c, nil
+	}
+	// Reject if there is no recognized header key or service
+	r.log.Error().Str("method", fullMethod).Msg("no route for method")
+	return nil, status.Errorf(codes.Unimplemented, "no route for %s", fullMethod)
 }

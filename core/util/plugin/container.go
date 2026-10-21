@@ -171,7 +171,7 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 		return nil, nil, err
 	}
 	// The listener shares the plugin's ACL, so allow the container PID on it
-	p.acl.AddPid(pid)
+	p.acl.AddPid(pid, p.code)
 	return ln, conn, err
 }
 

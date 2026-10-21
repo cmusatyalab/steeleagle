@@ -1,15 +1,15 @@
 [daemon]
 # Daemon default port
-port = 8998
-# Gabriel server default port
-gabriel = 8999
+port = 9000
+# LCS (local compute server) default port
+lcs = 9001
 # Hostname is optional, but determines how the daemon presents itself if using a
 # DNS-enabled VPN like Tailscale
 hostname = "eagled"
 # Orchestrator is the DNS name or IP address of another daemon in the network
 # which is the orchestrator daemon: orchestrator daemons aggregate data and
 # vehicles from other daemons to create a centralized control hub (optional)
-orchestrator = "homebase"
+orchestrator = "homebase:9000"
 
 [[vehicles]] # List of vehicles (can be empty)
 # Name of the vehicle
@@ -22,10 +22,8 @@ origin = [40.413664, -79.949285]
 [vehicles.plugin] # Driver plugin for this vehicle
 # Plugin to use
 plugin = "parrot_anafi"
-# Package to search in (optional, for when plugin name is ambiguous)
+# Package to search in 
 package = "github.com/cmusatyalab/steeleagle_plugins/drivers/parrot"
-# Tag to use (or commit hash), defaults to latest (optional)
-tag = "afec80"
 [vehicles.plugin.args] # Args for this plugin (can be empty)
 ip = "10.202.0.1"
 
@@ -35,10 +33,8 @@ name = "yolo"
 [engines.plugin] # Plugin for this engine
 # Plugin to use
 plugin = "yolo_qnn"
-# Package to search in (optional, for when plugin name is ambiguous)
+# Package to search in 
 package = "github.com/cmusatyalab/steeleagle_plugins/engines/yolo"
-# Tag to use (or commit hash), defaults to latest (optional)
-tag = "efcd8e"
 [engines.plugin.args] # Args for this plugin (can be empty)
 confidence = 0.0
 
@@ -48,10 +44,8 @@ name = "gcs"
 [commanders.plugin] # Plugin for this commander
 # Plugin to use
 plugin = "gcs"
-# Package to search in (optional, for when plugin name is ambiguous)
+# Package to search in 
 package = "github.com/cmusatyalab/steeleagle_plugins/commanders/gcs"
-# Tag to use (or commit hash), defaults to latest (optional)
-tag = "abcefd"
 [commanders.plugin.args] # Args for this plugin (can be empty)
 
 # [[monitors]] and [[extras]] follow the same format as [[engines]] and [[commanders]] (can be empty)
@@ -62,5 +56,5 @@ name = "aviary"
 [simulator.plugin] # Plugin for the simulator
 # Plugin to use
 plugin = "aviary"
-# Package to search in (optional, for when plugin name is ambiguous)
+# Package to search in
 package = "github.com/cmusatyalab/steeleagle_plugins/simulators/aviary"

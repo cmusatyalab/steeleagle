@@ -1,30 +1,40 @@
 package router
 
-import "fmt"
+import (
+	"fmt"
+
+	"google.golang.org/protobuf/proto"
+)
 
 type frame struct{ payload []byte }
 
-// Implementation of a gRPC server codec.
-type rawCodec struct{}
+// RawCodec is a gRPC codec that forwards frame bytes untouched and falls back
+// to standard protobuf encoding for any other message. This lets a single server
+// host registered services alongside Handle as an UnknownServiceHandler.
+type RawCodec struct{}
 
-func (rawCodec) Marshal(v any) ([]byte, error) {
-	f, ok := v.(*frame)
-	if !ok {
-		return nil, fmt.Errorf("rawCodec: unexpected type %T", v)
+func (RawCodec) Marshal(v any) ([]byte, error) {
+	switch m := v.(type) {
+	case *frame:
+		return m.payload, nil
+	case proto.Message:
+		return proto.Marshal(m)
 	}
-	return f.payload, nil
+	return nil, fmt.Errorf("RawCodec: unexpected type %T", v)
 }
 
-func (rawCodec) Unmarshal(data []byte, v any) error {
-	f, ok := v.(*frame)
-	if !ok {
-		return fmt.Errorf("rawCodec: unexpected type %T", v)
+func (RawCodec) Unmarshal(data []byte, v any) error {
+	switch m := v.(type) {
+	case *frame:
+		// Copy into a fresh buffer since gRPC may reuse data after Unmarshal returns,
+		// and the previous payload may still be queued for writing by the transport
+		m.payload = append([]byte(nil), data...)
+		return nil
+	case proto.Message:
+		return proto.Unmarshal(data, m)
 	}
-	// Copy into a fresh buffer since gRPC may reuse data after Unmarshal returns,
-	// and the previous payload may still be queued for writing by the transport
-	f.payload = append([]byte(nil), data...)
-	return nil
+	return fmt.Errorf("RawCodec: unexpected type %T", v)
 }
 
 // "proto" keeps the content-type as application/grpc+proto on both legs.
-func (rawCodec) Name() string { return "proto" }
+func (RawCodec) Name() string { return "proto" }

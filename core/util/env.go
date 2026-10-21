@@ -77,9 +77,9 @@ func GetPluginDirByName(name, parent string) (string, error) {
 	return pluginPath, nil
 }
 
-// GetVehicleRuntimeDir returns the vehicle runtime directory, creating it if
+// GetVehicleRunDir returns the vehicle parent runtime directory, creating it if
 // it does not exist.
-func GetVehicleDir() (string, error) {
+func GetVehicleRunDir() (string, error) {
 	vehiclePath := filepath.Join(GetRuntimeDir(), projectDir, vehicleDir)
 	err := os.MkdirAll(vehiclePath, 0755)
 	if err != nil {
@@ -88,9 +88,9 @@ func GetVehicleDir() (string, error) {
 	return vehiclePath, nil
 }
 
-// GetVehicleDirByName returns the runtime directory for the vehicle with the
+// GetVehicleRunDirByName returns the runtime directory for the vehicle with the
 // given name, creating it if it does not exist.
-func GetVehicleDirByName(name string) (string, error) {
+func GetVehicleRunDirByName(name string) (string, error) {
 	vehiclePath := filepath.Join(GetRuntimeDir(), projectDir, vehicleDir, name)
 	err := os.MkdirAll(vehiclePath, 0755)
 	if err != nil {
@@ -99,13 +99,24 @@ func GetVehicleDirByName(name string) (string, error) {
 	return vehiclePath, nil
 }
 
-// GetMissionDirByVehicle returns the persistent mission directory for the vehicle
+// GetVehicleMissionDirByName returns the persistent mission directory for the vehicle
 // with the given name, creating it if it does not exist.
-func GetMissionDirByName(name string) (string, error) {
-	dir := filepath.Join(GetRuntimeDir(), projectDir, vehicleDir, name, missionDir)
+func GetVehicleMissionDirByName(name string) (string, error) {
+	dir := filepath.Join(GetDataHome(), projectDir, vehicleDir, name, missionDir)
 	err := os.MkdirAll(dir, 0755)
 	if err != nil {
 		return "", err
 	}
 	return dir, nil
+}
+
+// GetDaemonRunDir returns the daemon runtime directory, creating it if it does
+// not exist.
+func GetDaemonRunDir() (string, error) {
+	daemonPath := filepath.Join(GetRuntimeDir(), projectDir)
+	err := os.MkdirAll(daemonPath, 0755)
+	if err != nil {
+		return "", err
+	}
+	return daemonPath, nil
 }

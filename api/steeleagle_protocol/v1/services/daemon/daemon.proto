@@ -7,6 +7,7 @@ package steeleagle_protocol.v1.services.daemon;
 
 option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon;daemon";
 
+import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
 
 /*
@@ -82,6 +83,14 @@ service DaemonService {
     returns (InstallPackageResponse) {}
 
   /*
+   * List packages.
+   *
+   * Lists all locally installed packages.
+   */
+  rpc ListPackages (ListPackagesRequest)
+    returns (ListPackagesResponse) {}
+
+  /*
    * Remove a package.
    *
    * Removes a package identified by its `url`.
@@ -94,7 +103,10 @@ message RegisterOrchestratorRequest {
   repeated string vehicles = 1; // vehicle names
 }
 
-message RegisterOrchestratorResponse {}
+message RegisterOrchestratorResponse {
+  string cert = 1; // cert key for the remote compute service
+  int32 port = 2;  // port for the remote compute service
+}
 
 message ConfigureRequest {
   string config_toml = 1; // eagled config.toml
@@ -120,12 +132,19 @@ enum ServiceCategory {
   SERVICE_CATEGORY_EXTRA = 6;       // extra service
 }
 
+// A service description.
+message Service {
+  string name = 1;                  // service name
+  ServiceCategory category = 2;     // service category
+}
+
 // An active service in the system.
 message ActiveService {
-  string name = 1;                     // name of the service
-  ServiceCategory category = 2;        // service category
-  bool running = 3;                    // whether or not the service is running
-  google.protobuf.Duration uptime = 4; // service uptime
+  Service srv = 1;                     // service description
+  string plugin = 2;                   // plugin name
+  string url = 3;                      // package url
+  bool running = 4;                    // whether or not the service is running
+  google.protobuf.Duration uptime = 5; // service uptime
 }
 
 message ListServicesRequest {}
@@ -134,14 +153,8 @@ message ListServicesResponse {
   repeated ActiveService services = 1; // list of active services
 }
 
-// Requested service to start.
-message ServiceRequest {
-  string name = 1;              // name of the service
-  ServiceCategory category = 2; // service category
-}
-
 message RestartServicesRequest {
-  repeated ServiceRequest services = 1; // list of target services
+  repeated Service services = 1; // list of target services
 }
 
 message RestartServicesResponse {}
@@ -153,15 +166,24 @@ message InstallPackageRequest {
 
 message InstallPackageResponse {}
 
+// Package installed on the daemon
+message Package {
+  string url = 1;                           // package url
+  string tag = 2;                           // branch or commit tag
+  map<string, ServiceCategory> plugins = 3; // plugins in this package 
+  google.protobuf.Timestamp installed = 4;  // install time
+}
+
+message ListPackagesRequest {}
+
+message ListPackagesResponse {
+}
+
 message RemovePackageRequest {
-  string url = 1;               // package url
+  string url = 1;   // package url
 }
 
 message RemovePackageResponse {}
-
-message RestartRequest {}
-
-message RestartResponse {}
 
 message ResetConfigurationRequest {}
 

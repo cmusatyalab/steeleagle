@@ -15,13 +15,13 @@ func TestDaemonConfigParsesExample(t *testing.T) {
 	}
 
 	wantDaemon := DaemonRoot{
-		Port:         8998,
-		Gabriel:      8999,
+		Port:         9000,
+		Lcs:          9001,
 		Hostname:     "eagled",
-		Orchestrator: "homebase",
+		Orchestrator: "homebase:9000",
 	}
-	if c.Daemon != wantDaemon {
-		t.Errorf("Daemon = %+v, want %+v", c.Daemon, wantDaemon)
+	if !reflect.DeepEqual(c.Daemon, wantDaemon) {
+		t.Errorf("Daemon = %+v (orchestrator %+v), want %+v (orchestrator %+v)", c.Daemon, c.Daemon.Orchestrator, wantDaemon, wantDaemon.Orchestrator)
 	}
 
 	wantVehicles := []VehicleField{{
@@ -31,7 +31,6 @@ func TestDaemonConfigParsesExample(t *testing.T) {
 		Plugin: PluginField{
 			Plugin:  "parrot_anafi",
 			Package: "github.com/cmusatyalab/steeleagle_plugins/drivers/parrot",
-			Tag:     "afec80",
 			Args:    map[string]interface{}{"ip": "10.202.0.1"},
 		},
 	}}
@@ -44,7 +43,6 @@ func TestDaemonConfigParsesExample(t *testing.T) {
 		Plugin: PluginField{
 			Plugin:  "yolo_qnn",
 			Package: "github.com/cmusatyalab/steeleagle_plugins/engines/yolo",
-			Tag:     "efcd8e",
 			Args:    map[string]interface{}{"confidence": 0.0},
 		},
 	}}
@@ -57,7 +55,6 @@ func TestDaemonConfigParsesExample(t *testing.T) {
 		Plugin: PluginField{
 			Plugin:  "gcs",
 			Package: "github.com/cmusatyalab/steeleagle_plugins/commanders/gcs",
-			Tag:     "abcefd",
 			Args:    map[string]interface{}{},
 		},
 	}}

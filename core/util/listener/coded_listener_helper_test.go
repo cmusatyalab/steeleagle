@@ -2,6 +2,7 @@ package listener
 
 import (
 	"net"
+	"sync"
 	"testing"
 	"time"
 
@@ -9,11 +10,11 @@ import (
 )
 
 // newTestCodedListener wraps NewCodedListener, and pipes logs to a testLogger.
-func newTestCodedListener(t *testing.T, ln net.Listener, code AuthCode, acl *Acl, opts ...ListenerOption) net.Listener {
+func newTestCodedListener(t *testing.T, ln net.Listener, acl *Acl, opts ...ListenerOption) net.Listener {
 	t.Helper()
 	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
 	opts = append(opts, WithLogger(logger))
-	return NewCodedListener(ln, code, acl, opts...)
+	return NewCodedListener(ln, acl, opts...)
 }
 
 type spoofedConn struct {
@@ -28,6 +29,7 @@ func (c *spoofedConn) RemoteAddr() net.Addr {
 
 type spoofedListener struct {
 	net.Listener
+	mu       sync.Mutex
 	fakeAddr net.Addr
 }
 
@@ -37,11 +39,15 @@ func (l *spoofedListener) Accept() (net.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	return &spoofedConn{Conn: conn, remoteAddr: l.fakeAddr}, nil
 }
 
 // SetFakeIP sets the IP address that will be reported as the remote address for all accepted connections.
 func (l *spoofedListener) SetFakeIP(fakeIP string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	l.fakeAddr = &net.TCPAddr{
 		IP:   net.ParseIP(fakeIP),
 		Port: 0,

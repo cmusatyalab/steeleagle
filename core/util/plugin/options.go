@@ -142,7 +142,8 @@ func WithoutScriptPathValidation() PluginOption {
 }
 
 // WithAcl sets the ACL for the plugin, which allows extra PIDs to access a
-// listener.
+// listener with their own AuthCodes. The plugin's own PID is added to it with
+// the plugin's AuthCode when it starts.
 func WithAcl(acl *listener.Acl) PluginOption {
 	return func(k *BasePlugin) {
 		k.acl = acl

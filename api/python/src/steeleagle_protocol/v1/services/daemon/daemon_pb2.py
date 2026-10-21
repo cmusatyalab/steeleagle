@@ -22,10 +22,11 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
+from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 from google.protobuf import duration_pb2 as google_dot_protobuf_dot_duration__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n3steeleagle_protocol/v1/services/daemon/daemon.proto\x12&steeleagle_protocol.v1.services.daemon\x1a\x1egoogle/protobuf/duration.proto\"9\n\x1bRegisterOrchestratorRequest\x12\x1a\n\x08vehicles\x18\x01 \x03(\tR\x08vehicles\"\x1e\n\x1cRegisterOrchestratorResponse\"3\n\x10\x43onfigureRequest\x12\x1f\n\x0b\x63onfig_toml\x18\x01 \x01(\tR\nconfigToml\"\x13\n\x11\x43onfigureResponse\"\x19\n\x17GetConfigurationRequest\"\xf1\x01\n\x18GetConfigurationResponse\x12\x1f\n\x0b\x63onfig_toml\x18\x01 \x01(\x0cR\nconfigToml\x12t\n\x0cplugin_tomls\x18\x02 \x03(\x0b\x32Q.steeleagle_protocol.v1.services.daemon.GetConfigurationResponse.PluginTomlsEntryR\x0bpluginTomls\x1a>\n\x10PluginTomlsEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\x0cR\x05value:\x02\x38\x01\"\xc5\x01\n\rActiveService\x12\x12\n\x04name\x18\x01 \x01(\tR\x04name\x12S\n\x08\x63\x61tegory\x18\x02 \x01(\x0e\x32\x37.steeleagle_protocol.v1.services.daemon.ServiceCategoryR\x08\x63\x61tegory\x12\x18\n\x07running\x18\x03 \x01(\x08R\x07running\x12\x31\n\x06uptime\x18\x04 \x01(\x0b\x32\x19.google.protobuf.DurationR\x06uptime\"\x15\n\x13ListServicesRequest\"i\n\x14ListServicesResponse\x12Q\n\x08services\x18\x01 \x03(\x0b\x32\x35.steeleagle_protocol.v1.services.daemon.ActiveServiceR\x08services\"y\n\x0eServiceRequest\x12\x12\n\x04name\x18\x01 \x01(\tR\x04name\x12S\n\x08\x63\x61tegory\x18\x02 \x01(\x0e\x32\x37.steeleagle_protocol.v1.services.daemon.ServiceCategoryR\x08\x63\x61tegory\"l\n\x16RestartServicesRequest\x12R\n\x08services\x18\x01 \x03(\x0b\x32\x36.steeleagle_protocol.v1.services.daemon.ServiceRequestR\x08services\"\x19\n\x17RestartServicesResponse\"H\n\x15InstallPackageRequest\x12\x10\n\x03url\x18\x01 \x01(\tR\x03url\x12\x15\n\x03tag\x18\x02 \x01(\tH\x00R\x03tag\x88\x01\x01\x42\x06\n\x04_tag\"\x18\n\x16InstallPackageResponse\"(\n\x14RemovePackageRequest\x12\x10\n\x03url\x18\x01 \x01(\tR\x03url\"\x17\n\x15RemovePackageResponse\"\x10\n\x0eRestartRequest\"\x11\n\x0fRestartResponse\"\x1b\n\x19ResetConfigurationRequest\"\x1c\n\x1aResetConfigurationResponse*\xe8\x01\n\x0fServiceCategory\x12 \n\x1cSERVICE_CATEGORY_UNSPECIFIED\x10\x00\x12\x1c\n\x18SERVICE_CATEGORY_VEHICLE\x10\x01\x12\x1b\n\x17SERVICE_CATEGORY_ENGINE\x10\x02\x12\x1c\n\x18SERVICE_CATEGORY_MONITOR\x10\x03\x12\x1e\n\x1aSERVICE_CATEGORY_COMMANDER\x10\x04\x12\x1e\n\x1aSERVICE_CATEGORY_SIMULATOR\x10\x05\x12\x1a\n\x16SERVICE_CATEGORY_EXTRA\x10\x06\x32\xbe\t\n\rDaemonService\x12\xa3\x01\n\x14RegisterOrchestrator\x12\x43.steeleagle_protocol.v1.services.daemon.RegisterOrchestratorRequest\x1a\x44.steeleagle_protocol.v1.services.daemon.RegisterOrchestratorResponse\"\x00\x12\x82\x01\n\tConfigure\x12\x38.steeleagle_protocol.v1.services.daemon.ConfigureRequest\x1a\x39.steeleagle_protocol.v1.services.daemon.ConfigureResponse\"\x00\x12\x97\x01\n\x10GetConfiguration\x12?.steeleagle_protocol.v1.services.daemon.GetConfigurationRequest\x1a@.steeleagle_protocol.v1.services.daemon.GetConfigurationResponse\"\x00\x12\x9d\x01\n\x12ResetConfiguration\x12\x41.steeleagle_protocol.v1.services.daemon.ResetConfigurationRequest\x1a\x42.steeleagle_protocol.v1.services.daemon.ResetConfigurationResponse\"\x00\x12\x8b\x01\n\x0cListServices\x12;.steeleagle_protocol.v1.services.daemon.ListServicesRequest\x1a<.steeleagle_protocol.v1.services.daemon.ListServicesResponse\"\x00\x12\x94\x01\n\x0fRestartServices\x12>.steeleagle_protocol.v1.services.daemon.RestartServicesRequest\x1a?.steeleagle_protocol.v1.services.daemon.RestartServicesResponse\"\x00\x12\x91\x01\n\x0eInstallPackage\x12=.steeleagle_protocol.v1.services.daemon.InstallPackageRequest\x1a>.steeleagle_protocol.v1.services.daemon.InstallPackageResponse\"\x00\x12\x8e\x01\n\rRemovePackage\x12<.steeleagle_protocol.v1.services.daemon.RemovePackageRequest\x1a=.steeleagle_protocol.v1.services.daemon.RemovePackageResponse\"\x00\x42\xc2\x02\n*com.steeleagle_protocol.v1.services.daemonB\x0b\x44\x61\x65monProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon\xa2\x02\x04SVSD\xaa\x02%SteeleagleProtocol.V1.Services.Daemon\xca\x02%SteeleagleProtocol\\V1\\Services\\Daemon\xe2\x02\x31SteeleagleProtocol\\V1\\Services\\Daemon\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Services::Daemonb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n3steeleagle_protocol/v1/services/daemon/daemon.proto\x12&steeleagle_protocol.v1.services.daemon\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/duration.proto\"9\n\x1bRegisterOrchestratorRequest\x12\x1a\n\x08vehicles\x18\x01 \x03(\tR\x08vehicles\"F\n\x1cRegisterOrchestratorResponse\x12\x12\n\x04\x63\x65rt\x18\x01 \x01(\tR\x04\x63\x65rt\x12\x12\n\x04port\x18\x02 \x01(\x05R\x04port\"3\n\x10\x43onfigureRequest\x12\x1f\n\x0b\x63onfig_toml\x18\x01 \x01(\tR\nconfigToml\"\x13\n\x11\x43onfigureResponse\"\x19\n\x17GetConfigurationRequest\"\xf1\x01\n\x18GetConfigurationResponse\x12\x1f\n\x0b\x63onfig_toml\x18\x01 \x01(\x0cR\nconfigToml\x12t\n\x0cplugin_tomls\x18\x02 \x03(\x0b\x32Q.steeleagle_protocol.v1.services.daemon.GetConfigurationResponse.PluginTomlsEntryR\x0bpluginTomls\x1a>\n\x10PluginTomlsEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\x0cR\x05value:\x02\x38\x01\"r\n\x07Service\x12\x12\n\x04name\x18\x01 \x01(\tR\x04name\x12S\n\x08\x63\x61tegory\x18\x02 \x01(\x0e\x32\x37.steeleagle_protocol.v1.services.daemon.ServiceCategoryR\x08\x63\x61tegory\"\xc9\x01\n\rActiveService\x12\x41\n\x03srv\x18\x01 \x01(\x0b\x32/.steeleagle_protocol.v1.services.daemon.ServiceR\x03srv\x12\x16\n\x06plugin\x18\x02 \x01(\tR\x06plugin\x12\x10\n\x03url\x18\x03 \x01(\tR\x03url\x12\x18\n\x07running\x18\x04 \x01(\x08R\x07running\x12\x31\n\x06uptime\x18\x05 \x01(\x0b\x32\x19.google.protobuf.DurationR\x06uptime\"\x15\n\x13ListServicesRequest\"i\n\x14ListServicesResponse\x12Q\n\x08services\x18\x01 \x03(\x0b\x32\x35.steeleagle_protocol.v1.services.daemon.ActiveServiceR\x08services\"e\n\x16RestartServicesRequest\x12K\n\x08services\x18\x01 \x03(\x0b\x32/.steeleagle_protocol.v1.services.daemon.ServiceR\x08services\"\x19\n\x17RestartServicesResponse\"H\n\x15InstallPackageRequest\x12\x10\n\x03url\x18\x01 \x01(\tR\x03url\x12\x15\n\x03tag\x18\x02 \x01(\tH\x00R\x03tag\x88\x01\x01\x42\x06\n\x04_tag\"\x18\n\x16InstallPackageResponse\"\xb4\x02\n\x07Package\x12\x10\n\x03url\x18\x01 \x01(\tR\x03url\x12\x10\n\x03tag\x18\x02 \x01(\tR\x03tag\x12V\n\x07plugins\x18\x03 \x03(\x0b\x32<.steeleagle_protocol.v1.services.daemon.Package.PluginsEntryR\x07plugins\x12\x38\n\tinstalled\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\tinstalled\x1as\n\x0cPluginsEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12M\n\x05value\x18\x02 \x01(\x0e\x32\x37.steeleagle_protocol.v1.services.daemon.ServiceCategoryR\x05value:\x02\x38\x01\"\x15\n\x13ListPackagesRequest\"\x16\n\x14ListPackagesResponse\"(\n\x14RemovePackageRequest\x12\x10\n\x03url\x18\x01 \x01(\tR\x03url\"\x17\n\x15RemovePackageResponse\"\x1b\n\x19ResetConfigurationRequest\"\x1c\n\x1aResetConfigurationResponse*\xe8\x01\n\x0fServiceCategory\x12 \n\x1cSERVICE_CATEGORY_UNSPECIFIED\x10\x00\x12\x1c\n\x18SERVICE_CATEGORY_VEHICLE\x10\x01\x12\x1b\n\x17SERVICE_CATEGORY_ENGINE\x10\x02\x12\x1c\n\x18SERVICE_CATEGORY_MONITOR\x10\x03\x12\x1e\n\x1aSERVICE_CATEGORY_COMMANDER\x10\x04\x12\x1e\n\x1aSERVICE_CATEGORY_SIMULATOR\x10\x05\x12\x1a\n\x16SERVICE_CATEGORY_EXTRA\x10\x06\x32\xcc\n\n\rDaemonService\x12\xa3\x01\n\x14RegisterOrchestrator\x12\x43.steeleagle_protocol.v1.services.daemon.RegisterOrchestratorRequest\x1a\x44.steeleagle_protocol.v1.services.daemon.RegisterOrchestratorResponse\"\x00\x12\x82\x01\n\tConfigure\x12\x38.steeleagle_protocol.v1.services.daemon.ConfigureRequest\x1a\x39.steeleagle_protocol.v1.services.daemon.ConfigureResponse\"\x00\x12\x97\x01\n\x10GetConfiguration\x12?.steeleagle_protocol.v1.services.daemon.GetConfigurationRequest\x1a@.steeleagle_protocol.v1.services.daemon.GetConfigurationResponse\"\x00\x12\x9d\x01\n\x12ResetConfiguration\x12\x41.steeleagle_protocol.v1.services.daemon.ResetConfigurationRequest\x1a\x42.steeleagle_protocol.v1.services.daemon.ResetConfigurationResponse\"\x00\x12\x8b\x01\n\x0cListServices\x12;.steeleagle_protocol.v1.services.daemon.ListServicesRequest\x1a<.steeleagle_protocol.v1.services.daemon.ListServicesResponse\"\x00\x12\x94\x01\n\x0fRestartServices\x12>.steeleagle_protocol.v1.services.daemon.RestartServicesRequest\x1a?.steeleagle_protocol.v1.services.daemon.RestartServicesResponse\"\x00\x12\x91\x01\n\x0eInstallPackage\x12=.steeleagle_protocol.v1.services.daemon.InstallPackageRequest\x1a>.steeleagle_protocol.v1.services.daemon.InstallPackageResponse\"\x00\x12\x8b\x01\n\x0cListPackages\x12;.steeleagle_protocol.v1.services.daemon.ListPackagesRequest\x1a<.steeleagle_protocol.v1.services.daemon.ListPackagesResponse\"\x00\x12\x8e\x01\n\rRemovePackage\x12<.steeleagle_protocol.v1.services.daemon.RemovePackageRequest\x1a=.steeleagle_protocol.v1.services.daemon.RemovePackageResponse\"\x00\x42\xc2\x02\n*com.steeleagle_protocol.v1.services.daemonB\x0b\x44\x61\x65monProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon\xa2\x02\x04SVSD\xaa\x02%SteeleagleProtocol.V1.Services.Daemon\xca\x02%SteeleagleProtocol\\V1\\Services\\Daemon\xe2\x02\x31SteeleagleProtocol\\V1\\Services\\Daemon\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Services::Daemonb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -35,50 +36,56 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._serialized_options = b'\n*com.steeleagle_protocol.v1.services.daemonB\013DaemonProtoP\001ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon\242\002\004SVSD\252\002%SteeleagleProtocol.V1.Services.Daemon\312\002%SteeleagleProtocol\\V1\\Services\\Daemon\342\0021SteeleagleProtocol\\V1\\Services\\Daemon\\GPBMetadata\352\002(SteeleagleProtocol::V1::Services::Daemon'
   _globals['_GETCONFIGURATIONRESPONSE_PLUGINTOMLSENTRY']._loaded_options = None
   _globals['_GETCONFIGURATIONRESPONSE_PLUGINTOMLSENTRY']._serialized_options = b'8\001'
-  _globals['_SERVICECATEGORY']._serialized_start=1417
-  _globals['_SERVICECATEGORY']._serialized_end=1649
-  _globals['_REGISTERORCHESTRATORREQUEST']._serialized_start=127
-  _globals['_REGISTERORCHESTRATORREQUEST']._serialized_end=184
-  _globals['_REGISTERORCHESTRATORRESPONSE']._serialized_start=186
-  _globals['_REGISTERORCHESTRATORRESPONSE']._serialized_end=216
-  _globals['_CONFIGUREREQUEST']._serialized_start=218
-  _globals['_CONFIGUREREQUEST']._serialized_end=269
-  _globals['_CONFIGURERESPONSE']._serialized_start=271
-  _globals['_CONFIGURERESPONSE']._serialized_end=290
-  _globals['_GETCONFIGURATIONREQUEST']._serialized_start=292
-  _globals['_GETCONFIGURATIONREQUEST']._serialized_end=317
-  _globals['_GETCONFIGURATIONRESPONSE']._serialized_start=320
-  _globals['_GETCONFIGURATIONRESPONSE']._serialized_end=561
-  _globals['_GETCONFIGURATIONRESPONSE_PLUGINTOMLSENTRY']._serialized_start=499
-  _globals['_GETCONFIGURATIONRESPONSE_PLUGINTOMLSENTRY']._serialized_end=561
-  _globals['_ACTIVESERVICE']._serialized_start=564
-  _globals['_ACTIVESERVICE']._serialized_end=761
-  _globals['_LISTSERVICESREQUEST']._serialized_start=763
-  _globals['_LISTSERVICESREQUEST']._serialized_end=784
-  _globals['_LISTSERVICESRESPONSE']._serialized_start=786
-  _globals['_LISTSERVICESRESPONSE']._serialized_end=891
-  _globals['_SERVICEREQUEST']._serialized_start=893
-  _globals['_SERVICEREQUEST']._serialized_end=1014
-  _globals['_RESTARTSERVICESREQUEST']._serialized_start=1016
-  _globals['_RESTARTSERVICESREQUEST']._serialized_end=1124
-  _globals['_RESTARTSERVICESRESPONSE']._serialized_start=1126
-  _globals['_RESTARTSERVICESRESPONSE']._serialized_end=1151
-  _globals['_INSTALLPACKAGEREQUEST']._serialized_start=1153
-  _globals['_INSTALLPACKAGEREQUEST']._serialized_end=1225
-  _globals['_INSTALLPACKAGERESPONSE']._serialized_start=1227
-  _globals['_INSTALLPACKAGERESPONSE']._serialized_end=1251
-  _globals['_REMOVEPACKAGEREQUEST']._serialized_start=1253
-  _globals['_REMOVEPACKAGEREQUEST']._serialized_end=1293
-  _globals['_REMOVEPACKAGERESPONSE']._serialized_start=1295
-  _globals['_REMOVEPACKAGERESPONSE']._serialized_end=1318
-  _globals['_RESTARTREQUEST']._serialized_start=1320
-  _globals['_RESTARTREQUEST']._serialized_end=1336
-  _globals['_RESTARTRESPONSE']._serialized_start=1338
-  _globals['_RESTARTRESPONSE']._serialized_end=1355
-  _globals['_RESETCONFIGURATIONREQUEST']._serialized_start=1357
-  _globals['_RESETCONFIGURATIONREQUEST']._serialized_end=1384
-  _globals['_RESETCONFIGURATIONRESPONSE']._serialized_start=1386
-  _globals['_RESETCONFIGURATIONRESPONSE']._serialized_end=1414
-  _globals['_DAEMONSERVICE']._serialized_start=1652
-  _globals['_DAEMONSERVICE']._serialized_end=2866
+  _globals['_PACKAGE_PLUGINSENTRY']._loaded_options = None
+  _globals['_PACKAGE_PLUGINSENTRY']._serialized_options = b'8\001'
+  _globals['_SERVICECATEGORY']._serialized_start=1801
+  _globals['_SERVICECATEGORY']._serialized_end=2033
+  _globals['_REGISTERORCHESTRATORREQUEST']._serialized_start=160
+  _globals['_REGISTERORCHESTRATORREQUEST']._serialized_end=217
+  _globals['_REGISTERORCHESTRATORRESPONSE']._serialized_start=219
+  _globals['_REGISTERORCHESTRATORRESPONSE']._serialized_end=289
+  _globals['_CONFIGUREREQUEST']._serialized_start=291
+  _globals['_CONFIGUREREQUEST']._serialized_end=342
+  _globals['_CONFIGURERESPONSE']._serialized_start=344
+  _globals['_CONFIGURERESPONSE']._serialized_end=363
+  _globals['_GETCONFIGURATIONREQUEST']._serialized_start=365
+  _globals['_GETCONFIGURATIONREQUEST']._serialized_end=390
+  _globals['_GETCONFIGURATIONRESPONSE']._serialized_start=393
+  _globals['_GETCONFIGURATIONRESPONSE']._serialized_end=634
+  _globals['_GETCONFIGURATIONRESPONSE_PLUGINTOMLSENTRY']._serialized_start=572
+  _globals['_GETCONFIGURATIONRESPONSE_PLUGINTOMLSENTRY']._serialized_end=634
+  _globals['_SERVICE']._serialized_start=636
+  _globals['_SERVICE']._serialized_end=750
+  _globals['_ACTIVESERVICE']._serialized_start=753
+  _globals['_ACTIVESERVICE']._serialized_end=954
+  _globals['_LISTSERVICESREQUEST']._serialized_start=956
+  _globals['_LISTSERVICESREQUEST']._serialized_end=977
+  _globals['_LISTSERVICESRESPONSE']._serialized_start=979
+  _globals['_LISTSERVICESRESPONSE']._serialized_end=1084
+  _globals['_RESTARTSERVICESREQUEST']._serialized_start=1086
+  _globals['_RESTARTSERVICESREQUEST']._serialized_end=1187
+  _globals['_RESTARTSERVICESRESPONSE']._serialized_start=1189
+  _globals['_RESTARTSERVICESRESPONSE']._serialized_end=1214
+  _globals['_INSTALLPACKAGEREQUEST']._serialized_start=1216
+  _globals['_INSTALLPACKAGEREQUEST']._serialized_end=1288
+  _globals['_INSTALLPACKAGERESPONSE']._serialized_start=1290
+  _globals['_INSTALLPACKAGERESPONSE']._serialized_end=1314
+  _globals['_PACKAGE']._serialized_start=1317
+  _globals['_PACKAGE']._serialized_end=1625
+  _globals['_PACKAGE_PLUGINSENTRY']._serialized_start=1510
+  _globals['_PACKAGE_PLUGINSENTRY']._serialized_end=1625
+  _globals['_LISTPACKAGESREQUEST']._serialized_start=1627
+  _globals['_LISTPACKAGESREQUEST']._serialized_end=1648
+  _globals['_LISTPACKAGESRESPONSE']._serialized_start=1650
+  _globals['_LISTPACKAGESRESPONSE']._serialized_end=1672
+  _globals['_REMOVEPACKAGEREQUEST']._serialized_start=1674
+  _globals['_REMOVEPACKAGEREQUEST']._serialized_end=1714
+  _globals['_REMOVEPACKAGERESPONSE']._serialized_start=1716
+  _globals['_REMOVEPACKAGERESPONSE']._serialized_end=1739
+  _globals['_RESETCONFIGURATIONREQUEST']._serialized_start=1741
+  _globals['_RESETCONFIGURATIONREQUEST']._serialized_end=1768
+  _globals['_RESETCONFIGURATIONRESPONSE']._serialized_start=1770
+  _globals['_RESETCONFIGURATIONRESPONSE']._serialized_end=1798
+  _globals['_DAEMONSERVICE']._serialized_start=2036
+  _globals['_DAEMONSERVICE']._serialized_end=3392
 # @@protoc_insertion_point(module_scope)

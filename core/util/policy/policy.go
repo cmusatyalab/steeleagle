@@ -17,6 +17,7 @@ import (
 type Policy struct {
 	mu           sync.RWMutex
 	currentState string
+	rego         string
 	query        rego.PreparedEvalQuery
 	lawMap       map[string]config.ControlLawState
 	log          zerolog.Logger
@@ -28,24 +29,28 @@ type PolicyDecision struct {
 	NextState string `json:"next_state"`
 }
 
-// NewPolicy creates a new policy from a control law and a Rego string.
-func NewPolicy(law config.ControlLaw, rego string, opts ...PolicyOption) (*Policy, error) {
-	lawMap, err := law.Map()
-	if err != nil {
-		return nil, err
+// NewPolicy creates a new policy from a control law. The policy uses
+// DefaultRego unless overridden with WithRego.
+func NewPolicy(law *config.ControlLaw, opts ...PolicyOption) (*Policy, error) {
+	if law == nil {
+		return nil, fmt.Errorf("cannot create policy, law was nil")
 	}
-	regoQuery, err := getRegoQuery(rego)
+	lawMap, err := law.Map()
 	if err != nil {
 		return nil, err
 	}
 	p := &Policy{
 		currentState: law.First,
-		query:        regoQuery,
+		rego:         DefaultRego,
 		lawMap:       lawMap,
 		log:          zerolog.New(os.Stdout).With().Timestamp().Logger(),
 	}
 	for _, opt := range opts {
 		opt(p)
+	}
+	p.query, err = getRegoQuery(p.rego)
+	if err != nil {
+		return nil, err
 	}
 	return p, nil
 }
@@ -71,6 +76,20 @@ func (p *Policy) SafeCheckAndTransit(ctx context.Context, command string) (bool,
 	} else {
 		return allow, p.currentState, nil
 	}
+}
+
+// SafeTransit transits the policy to a new control law state without checking
+// a command, e.g. when an internal event changes the policy state.
+func (p *Policy) SafeTransit(nextState string) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if err := p.transit(nextState); err != nil {
+		p.log.Error().Err(err).Str("next", nextState).Msg("failed to transit to new state")
+		return err
+	}
+	p.log.Info().Str("next", nextState).Msg("transited to new state")
+	return nil
 }
 
 // getRegoQuery gets the Rego query from a string.

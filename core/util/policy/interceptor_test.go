@@ -69,7 +69,7 @@ func TestQualifyCommand(t *testing.T) {
 // commands to the handler, and transits the policy as commands are approved.
 func TestPolicyInterceptor(t *testing.T) {
 	p := loadTestPolicy(t)
-	interceptor := p.NewPolicyInterceptor()
+	interceptor := p.NewStreamPolicyInterceptor()
 
 	// Steps run in order since each may transition the policy state
 	steps := []struct {
@@ -113,7 +113,7 @@ func TestPolicyInterceptor(t *testing.T) {
 // address are treated as unknown and denied.
 func TestPolicyInterceptorUnknownPeer(t *testing.T) {
 	p := loadTestPolicy(t)
-	interceptor := p.NewPolicyInterceptor()
+	interceptor := p.NewStreamPolicyInterceptor()
 
 	called := false
 	handler := func(srv any, stream grpc.ServerStream) error {
@@ -135,7 +135,7 @@ func TestPolicyInterceptorUnknownPeer(t *testing.T) {
 // an approved command are returned unchanged.
 func TestPolicyInterceptorHandlerError(t *testing.T) {
 	p := loadTestPolicy(t)
-	interceptor := p.NewPolicyInterceptor()
+	interceptor := p.NewStreamPolicyInterceptor()
 
 	expected := errors.New("handler failed")
 	handler := func(srv any, stream grpc.ServerStream) error {
@@ -159,11 +159,11 @@ import rego.v1
 
 allowed := true
 `
-	p, err := NewPolicy(simpleLaw(), rego, WithLogger(zerolog.Nop()))
+	p, err := NewPolicy(simpleLaw(), WithRego(rego), WithLogger(zerolog.Nop()))
 	if err != nil {
 		t.Fatalf("couldn't create policy: %v", err)
 	}
-	interceptor := p.NewPolicyInterceptor()
+	interceptor := p.NewStreamPolicyInterceptor()
 
 	called := false
 	handler := func(srv any, stream grpc.ServerStream) error {
@@ -192,11 +192,11 @@ import rego.v1
 allowed := true
 next_state := "MISSING"
 `
-	p, err := NewPolicy(simpleLaw(), rego, WithLogger(zerolog.Nop()))
+	p, err := NewPolicy(simpleLaw(), WithRego(rego), WithLogger(zerolog.Nop()))
 	if err != nil {
 		t.Fatalf("couldn't create policy: %v", err)
 	}
-	interceptor := p.NewPolicyInterceptor()
+	interceptor := p.NewStreamPolicyInterceptor()
 
 	called := false
 	handler := func(srv any, stream grpc.ServerStream) error {
@@ -211,5 +211,51 @@ next_state := "MISSING"
 	}
 	if status.Code(err) != codes.Internal {
 		t.Errorf("expected Internal, got %v", err)
+	}
+}
+
+// TestUnaryPolicyInterceptor ensures that the unary interceptor forwards
+// permitted commands, denies the rest, and returns the handler's response.
+func TestUnaryPolicyInterceptor(t *testing.T) {
+	p := loadTestPolicy(t)
+	interceptor := p.NewUnaryPolicyInterceptor()
+
+	steps := []struct {
+		name   string
+		code   listener.AuthCode
+		method string
+		called bool
+		status codes.Code
+		state  string
+	}{
+		{"server allowed", listener.ServerCode, "/steeleagle.ControlService/TakeOff", true, codes.OK, "REMOTE"},
+		{"mission denied in REMOTE", listener.MissionCode, "/steeleagle.ControlService/Land", false, codes.PermissionDenied, "REMOTE"},
+		{"start mission transits", listener.ServerCode, "/steeleagle.MissionService/StartMission", true, codes.OK, "LOCAL"},
+		{"unknown peer denied", listener.UnknownCode, "/steeleagle.ControlService/Land", false, codes.PermissionDenied, "LOCAL"},
+	}
+
+	for _, s := range steps {
+		called := false
+		handler := func(ctx context.Context, req any) (any, error) {
+			called = true
+			return "response", nil
+		}
+		resp, err := interceptor(codedContext(s.code), "request", &grpc.UnaryServerInfo{FullMethod: s.method}, handler)
+
+		if called != s.called {
+			t.Errorf("%s: expected handler called=%v, got %v", s.name, s.called, called)
+		}
+		if got := status.Code(err); got != s.status {
+			t.Errorf("%s: expected status %v, got %v (%v)", s.name, s.status, got, err)
+		}
+		if s.called && resp != "response" {
+			t.Errorf("%s: expected handler response, got %v", s.name, resp)
+		}
+		if !s.called && resp != nil {
+			t.Errorf("%s: expected nil response on denial, got %v", s.name, resp)
+		}
+		if p.currentState != s.state {
+			t.Errorf("%s: expected state %s, got %s", s.name, s.state, p.currentState)
+		}
 	}
 }

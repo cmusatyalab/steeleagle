@@ -106,9 +106,10 @@ func NewBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 
 	p.log = p.log.With().Str("plugin", p.name).Logger()
 
-	// Create a new ACL if it isn't initialized
+	// Create a new closed ACL if it isn't initialized; only the plugin itself
+	// should use its listener
 	if p.acl == nil {
-		p.acl = listener.GetAcl([]string{}, []int{})
+		p.acl = listener.NewAcl(nil, nil, false)
 	}
 
 	// Find and validate script if checks are on
@@ -209,7 +210,7 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 		return nil, nil, err
 	}
 	p.log.Info().Int("pid", p.cmd.Process.Pid).Msg("plugin process launched")
-	p.acl.AddPid(p.cmd.Process.Pid)
+	p.acl.AddPid(p.cmd.Process.Pid, p.code)
 
 	// Cleanup goroutine
 	go func() {
@@ -391,7 +392,10 @@ func (p *BasePlugin) createSocketEndpoints() (net.Listener, *grpc.ClientConn, er
 		}
 	}
 
-	return listener.NewCodedListener(listen, p.code, p.acl, listener.WithLogger(p.log)), client, nil
+	if listen == nil {
+		return nil, client, nil
+	}
+	return listener.NewCodedListener(listen, p.acl, listener.WithLogger(p.log)), client, nil
 }
 
 // waitForSocket polls path until the socket file exists or the plugin timeout

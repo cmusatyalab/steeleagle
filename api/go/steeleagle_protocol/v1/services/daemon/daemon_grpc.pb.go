@@ -30,6 +30,7 @@ const (
 	DaemonService_ListServices_FullMethodName         = "/steeleagle_protocol.v1.services.daemon.DaemonService/ListServices"
 	DaemonService_RestartServices_FullMethodName      = "/steeleagle_protocol.v1.services.daemon.DaemonService/RestartServices"
 	DaemonService_InstallPackage_FullMethodName       = "/steeleagle_protocol.v1.services.daemon.DaemonService/InstallPackage"
+	DaemonService_ListPackages_FullMethodName         = "/steeleagle_protocol.v1.services.daemon.DaemonService/ListPackages"
 	DaemonService_RemovePackage_FullMethodName        = "/steeleagle_protocol.v1.services.daemon.DaemonService/RemovePackage"
 )
 
@@ -79,6 +80,10 @@ type DaemonServiceClient interface {
 	// Installs a new package locally. A package can host several plugins which
 	// are indexed and available for future `Configure` calls.
 	InstallPackage(ctx context.Context, in *InstallPackageRequest, opts ...grpc.CallOption) (*InstallPackageResponse, error)
+	// List packages.
+	//
+	// Lists all locally installed packages.
+	ListPackages(ctx context.Context, in *ListPackagesRequest, opts ...grpc.CallOption) (*ListPackagesResponse, error)
 	// Remove a package.
 	//
 	// Removes a package identified by its `url`.
@@ -163,6 +168,16 @@ func (c *daemonServiceClient) InstallPackage(ctx context.Context, in *InstallPac
 	return out, nil
 }
 
+func (c *daemonServiceClient) ListPackages(ctx context.Context, in *ListPackagesRequest, opts ...grpc.CallOption) (*ListPackagesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListPackagesResponse)
+	err := c.cc.Invoke(ctx, DaemonService_ListPackages_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *daemonServiceClient) RemovePackage(ctx context.Context, in *RemovePackageRequest, opts ...grpc.CallOption) (*RemovePackageResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RemovePackageResponse)
@@ -219,6 +234,10 @@ type DaemonServiceServer interface {
 	// Installs a new package locally. A package can host several plugins which
 	// are indexed and available for future `Configure` calls.
 	InstallPackage(context.Context, *InstallPackageRequest) (*InstallPackageResponse, error)
+	// List packages.
+	//
+	// Lists all locally installed packages.
+	ListPackages(context.Context, *ListPackagesRequest) (*ListPackagesResponse, error)
 	// Remove a package.
 	//
 	// Removes a package identified by its `url`.
@@ -253,6 +272,9 @@ func (UnimplementedDaemonServiceServer) RestartServices(context.Context, *Restar
 }
 func (UnimplementedDaemonServiceServer) InstallPackage(context.Context, *InstallPackageRequest) (*InstallPackageResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method InstallPackage not implemented")
+}
+func (UnimplementedDaemonServiceServer) ListPackages(context.Context, *ListPackagesRequest) (*ListPackagesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListPackages not implemented")
 }
 func (UnimplementedDaemonServiceServer) RemovePackage(context.Context, *RemovePackageRequest) (*RemovePackageResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RemovePackage not implemented")
@@ -404,6 +426,24 @@ func _DaemonService_InstallPackage_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DaemonService_ListPackages_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListPackagesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DaemonServiceServer).ListPackages(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DaemonService_ListPackages_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DaemonServiceServer).ListPackages(ctx, req.(*ListPackagesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _DaemonService_RemovePackage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RemovePackageRequest)
 	if err := dec(in); err != nil {
@@ -456,6 +496,10 @@ var DaemonService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "InstallPackage",
 			Handler:    _DaemonService_InstallPackage_Handler,
+		},
+		{
+			MethodName: "ListPackages",
+			Handler:    _DaemonService_ListPackages_Handler,
 		},
 		{
 			MethodName: "RemovePackage",

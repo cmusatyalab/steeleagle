@@ -55,6 +55,11 @@ class DaemonServiceStub:
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.InstallPackageRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.InstallPackageResponse.FromString,
                 _registered_method=True)
+        self.ListPackages = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.daemon.DaemonService/ListPackages',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.ListPackagesRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.ListPackagesResponse.FromString,
+                _registered_method=True)
         self.RemovePackage = channel.unary_unary(
                 '/steeleagle_protocol.v1.services.daemon.DaemonService/RemovePackage',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RemovePackageRequest.SerializeToString,
@@ -149,6 +154,16 @@ class DaemonServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ListPackages(self, request, context):
+        """
+        List packages.
+
+        Lists all locally installed packages.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def RemovePackage(self, request, context):
         """
         Remove a package.
@@ -196,6 +211,11 @@ def add_DaemonServiceServicer_to_server(servicer, server):
                     servicer.InstallPackage,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.InstallPackageRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.InstallPackageResponse.SerializeToString,
+            ),
+            'ListPackages': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListPackages,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.ListPackagesRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.ListPackagesResponse.SerializeToString,
             ),
             'RemovePackage': grpc.unary_unary_rpc_method_handler(
                     servicer.RemovePackage,
@@ -398,6 +418,33 @@ class DaemonService:
             '/steeleagle_protocol.v1.services.daemon.DaemonService/InstallPackage',
             steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.InstallPackageRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.InstallPackageResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListPackages(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/steeleagle_protocol.v1.services.daemon.DaemonService/ListPackages',
+            steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.ListPackagesRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.ListPackagesResponse.FromString,
             options,
             channel_credentials,
             insecure,

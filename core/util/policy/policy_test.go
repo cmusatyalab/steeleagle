@@ -3,7 +3,6 @@ package policy
 import (
 	"bytes"
 	"context"
-	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -12,23 +11,18 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// Paths to the default Rego policy and control law used by most tests
-const regoPath string = "./testdata/check.rego"
+// Path to the control law used by most tests
 const lawPath string = "./testdata/laws.toml"
 
-// loadTestPolicy builds a policy from the testdata law and Rego files.
+// loadTestPolicy builds a policy from the testdata law and the default Rego.
 func loadTestPolicy(t *testing.T, opts ...PolicyOption) *Policy {
 	t.Helper()
 	law, err := config.ParseControlLawFromFilepath(lawPath)
 	if err != nil {
 		t.Fatalf("couldn't parse law file: %v", err)
 	}
-	rego, err := os.ReadFile(regoPath)
-	if err != nil {
-		t.Fatalf("couldn't read rego file: %v", err)
-	}
 	opts = append([]PolicyOption{WithLogger(zerolog.Nop())}, opts...)
-	p, err := NewPolicy(*law, string(rego), opts...)
+	p, err := NewPolicy(law, opts...)
 	if err != nil {
 		t.Fatalf("couldn't create policy: %v", err)
 	}
@@ -36,8 +30,8 @@ func loadTestPolicy(t *testing.T, opts ...PolicyOption) *Policy {
 }
 
 // simpleLaw returns a two state law for tests that supply their own Rego.
-func simpleLaw() config.ControlLaw {
-	return config.ControlLaw{
+func simpleLaw() *config.ControlLaw {
+	return &config.ControlLaw{
 		First: "A",
 		States: []config.ControlLawState{
 			{Name: "A"},
@@ -61,25 +55,25 @@ func TestNewPolicy(t *testing.T) {
 // TestNewPolicyErrors ensures that malformed laws and invalid Rego are
 // rejected when creating a policy.
 func TestNewPolicyErrors(t *testing.T) {
-	rego, err := os.ReadFile(regoPath)
-	if err != nil {
-		t.Fatalf("couldn't read rego file: %v", err)
-	}
-
 	tests := []struct {
 		name string
-		law  config.ControlLaw
+		law  *config.ControlLaw
 		rego string
 	}{
 		{
+			name: "nil law",
+			law:  nil,
+			rego: DefaultRego,
+		},
+		{
 			name: "unnamed state",
-			law:  config.ControlLaw{First: "A", States: []config.ControlLawState{{Name: ""}}},
-			rego: string(rego),
+			law:  &config.ControlLaw{First: "A", States: []config.ControlLawState{{Name: ""}}},
+			rego: DefaultRego,
 		},
 		{
 			name: "duplicate state",
-			law:  config.ControlLaw{First: "A", States: []config.ControlLawState{{Name: "A"}, {Name: "A"}}},
-			rego: string(rego),
+			law:  &config.ControlLaw{First: "A", States: []config.ControlLawState{{Name: "A"}, {Name: "A"}}},
+			rego: DefaultRego,
 		},
 		{
 			name: "invalid rego",
@@ -90,7 +84,7 @@ func TestNewPolicyErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p, err := NewPolicy(tt.law, tt.rego, WithLogger(zerolog.Nop()))
+			p, err := NewPolicy(tt.law, WithRego(tt.rego), WithLogger(zerolog.Nop()))
 			if err == nil {
 				t.Errorf("expected error, got none")
 			}
@@ -159,6 +153,36 @@ func TestSafeCheckAndTransit(t *testing.T) {
 	}
 }
 
+// TestSafeTransit ensures that the policy can be moved directly to a state in
+// the law, and that a state missing from the law is rejected without changing
+// the current state.
+func TestSafeTransit(t *testing.T) {
+	p := loadTestPolicy(t)
+	ctx := context.Background()
+
+	if err := p.SafeTransit("LOCAL"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if p.currentState != "LOCAL" {
+		t.Errorf("expected state LOCAL, got %s", p.currentState)
+	}
+	// Commands are now checked against the new state
+	allowed, _, err := p.SafeCheckAndTransit(ctx, "mission/steeleagle.ControlService/Land")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !allowed {
+		t.Errorf("expected mission control to be allowed in LOCAL")
+	}
+
+	if err := p.SafeTransit("MISSING"); err == nil {
+		t.Errorf("expected error for state not in law")
+	}
+	if p.currentState != "LOCAL" {
+		t.Errorf("expected state to remain LOCAL, got %s", p.currentState)
+	}
+}
+
 // TestSafeCheckAndTransitBadState ensures that a transition to a state
 // missing from the law is denied and leaves the policy in its current state.
 func TestSafeCheckAndTransitBadState(t *testing.T) {
@@ -170,7 +194,7 @@ import rego.v1
 allowed := true
 next_state := "MISSING"
 `
-	p, err := NewPolicy(simpleLaw(), rego, WithLogger(zerolog.Nop()))
+	p, err := NewPolicy(simpleLaw(), WithRego(rego), WithLogger(zerolog.Nop()))
 	if err != nil {
 		t.Fatalf("couldn't create policy: %v", err)
 	}
@@ -200,7 +224,7 @@ import rego.v1
 
 allowed := true
 `
-	p, err := NewPolicy(simpleLaw(), rego, WithLogger(zerolog.Nop()))
+	p, err := NewPolicy(simpleLaw(), WithRego(rego), WithLogger(zerolog.Nop()))
 	if err != nil {
 		t.Fatalf("couldn't create policy: %v", err)
 	}
@@ -225,7 +249,7 @@ import rego.v1
 allowed := true if input.command
 allowed := false if input.command
 `
-	p, err := NewPolicy(simpleLaw(), rego, WithLogger(zerolog.Nop()))
+	p, err := NewPolicy(simpleLaw(), WithRego(rego), WithLogger(zerolog.Nop()))
 	if err != nil {
 		t.Fatalf("couldn't create policy: %v", err)
 	}
@@ -252,7 +276,7 @@ import rego.v1
 
 allowed := "yes"
 `
-	p, err := NewPolicy(simpleLaw(), rego, WithLogger(zerolog.Nop()))
+	p, err := NewPolicy(simpleLaw(), WithRego(rego), WithLogger(zerolog.Nop()))
 	if err != nil {
 		t.Fatalf("couldn't create policy: %v", err)
 	}

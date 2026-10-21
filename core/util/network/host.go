@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/netip"
 )
 
 // Tailscale reports whether this build routes through tailscale (true) or the
@@ -36,6 +37,22 @@ func (i *Server) Listen(protocol string, port int) (net.Listener, error) {
 // Dial opens an outbound connection from the host network.
 func (i *Server) Dial(ctx context.Context, network, addr string) (net.Conn, error) {
 	return i.dialer.DialContext(ctx, network, addr)
+}
+
+// Resolve returns the IP addresses of host, which may be a literal IP or a
+// name resolved through the host's DNS resolver.
+func (i *Server) Resolve(ctx context.Context, host string) ([]netip.Addr, error) {
+	if addr, err := netip.ParseAddr(host); err == nil {
+		return []netip.Addr{addr}, nil
+	}
+	addrs, err := net.DefaultResolver.LookupNetIP(ctx, "ip", host)
+	if err != nil {
+		return nil, err
+	}
+	for j, addr := range addrs {
+		addrs[j] = addr.Unmap()
+	}
+	return addrs, nil
 }
 
 // Close is a no-op: listeners and connections handed out are owned by the

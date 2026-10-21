@@ -12,7 +12,7 @@ import (
 // TestShimPlugin ensures that a shim plugin can connect to an externally
 // started process and complete an RPC handshake with it.
 func TestShimPlugin(t *testing.T) {
-	acl := listener.GetAcl([]string{}, []int{})
+	acl := listener.NewAcl(nil, nil, false)
 	in := "/tmp/in.sock"
 	out := "/tmp/out.sock"
 	plugin, err := newTestShimPlugin(t,
@@ -38,7 +38,7 @@ func TestShimPlugin(t *testing.T) {
 		t.Fatalf("couldn't start command: %v", err)
 	}
 	defer cmd.Wait()
-	acl.AddPid(cmd.Process.Pid)
+	acl.AddPid(cmd.Process.Pid, listener.UnknownCode)
 	ln, conn, err := plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)

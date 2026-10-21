@@ -9,10 +9,12 @@ import (
 type DaemonRoot struct {
 	// Daemon port
 	Port int `toml:"port"`
-	// Gabriel port
-	Gabriel int `toml:"gabriel"`
+	// LCS (local compute service) port
+	Lcs int `toml:"lcs"`
 	// Hostname for this daemon (defaults to "eagled")
 	Hostname string `toml:"hostname"`
+	// Certificate string for the LCS
+	Cert string `toml:"cert"`
 	// Orchestrator daemon hostname or IP, accepts DNS entries if applicable
 	Orchestrator string `toml:"orchestrator,omitempty"`
 }
@@ -22,8 +24,6 @@ type PluginField struct {
 	Plugin string `toml:"plugin"`
 	// Package url
 	Package string `toml:"package"`
-	// Tag or commit hash to pull from
-	Tag string `toml:"tag,omitempty"`
 	// Arguments for the plugin
 	Args map[string]interface{} `toml:"args"`
 }

@@ -1,0 +1,20 @@
+first = 'ONLINE'
+
+[[states]]
+name = 'ONLINE'
+allowed = [
+    'external/**.DaemonService/*',
+    'external/**.TransferService/*',
+    # Proxied calls to vehicles and remote daemons; vehicle laws apply downstream
+    'external/steeleagle_protocol.v1.services.**',
+]
+match = []
+
+[[states]]
+name = 'LOCKED'
+# The orchestrator has AuthCode admin; everyone else is read-only
+allowed = [
+    'external/**.DaemonService/ListServices',
+    'external/**.DaemonService/ListPackages',
+    'external/**.DaemonService/GetConfiguration',
+]

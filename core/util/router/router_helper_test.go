@@ -153,16 +153,32 @@ func startBackend(t *testing.T, name string) (*backend, string) {
 	return b, lis.Addr().String()
 }
 
-// newRouter creates a Router that is closed when the test ends, and pipes its
-// logs to a testLogger.
+// dial creates a conn to addr with the default codec, which is closed when
+// the test ends.
+func dial(t *testing.T, addr string) *grpc.ClientConn {
+	t.Helper()
+	cc, err := grpc.NewClient(addr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		t.Fatalf("couldn't create client for %s: %v", addr, err)
+	}
+	t.Cleanup(func() { cc.Close() })
+	return cc
+}
+
+// newRouter creates a Router with routes dialed from the given addresses, and
+// pipes its logs to a testLogger.
 func newRouter(t *testing.T, headers, services map[string]string) *Router {
 	t.Helper()
-	r, err := NewRouter(headers, services, WithLogger(newTestLogger(t)))
-	if err != nil {
-		t.Fatalf("couldn't create router: %v", err)
+	conns := func(addrs map[string]string) map[string]*grpc.ClientConn {
+		m := map[string]*grpc.ClientConn{}
+		for k, addr := range addrs {
+			m[k] = dial(t, addr)
+		}
+		return m
 	}
-	t.Cleanup(r.Close)
-	return r
+	return NewRouter(conns(headers), conns(services), WithLogger(newTestLogger(t)))
 }
 
 // startProxy serves r on a random localhost port and returns a TestService
@@ -174,8 +190,8 @@ func startProxy(t *testing.T, r *Router) testgrpc.TestServiceClient {
 		t.Fatalf("couldn't listen on localhost: %v", err)
 	}
 	s := grpc.NewServer(
-		grpc.UnknownServiceHandler(r.handle),
-		grpc.ForceServerCodec(rawCodec{}),
+		grpc.UnknownServiceHandler(r.Handle),
+		grpc.ForceServerCodec(RawCodec{}),
 	)
 	go s.Serve(lis)
 	t.Cleanup(s.Stop)
