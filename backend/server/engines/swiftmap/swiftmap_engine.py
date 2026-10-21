@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # Copyright (C) 2026 Carnegie Mellon University
 # Licensed under the Apache License, Version 2.0 (the "License").
-"""SwiftMap cognitive engine: forwards Gabriel telemetry.Frame (image + paired GPS)
-to a running SwiftMap mapping server over TCP.
+"""SwiftMap cognitive engine: forwards a vehicle's EncodedFrame (image + paired
+GPS) to a running SwiftMap mapping server over TCP.
 
 To avoid overfilling the server, frames are *distance-gated*: only one frame+GPS
 pair is forwarded per ``send_distance`` meters of drone travel (haversine on the
@@ -16,14 +16,15 @@ import time
 
 import cv2
 import numpy as np
-from gabriel_protocol import gabriel_pb2
-from gabriel_server import cognitive_engine
-from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
+from steeleagle_protocol.v1.messages.telemetry import telemetry_pb2 as telemetry
 
 logger = logging.getLogger(__name__)
 
-_EARTH_RADIUS_M = 6_371_000.0
+# The full name of the payload the engine takes, as the vehicle's frames
+# producer names its inputs' type.
+FRAME_TYPE = telemetry.EncodedFrame.DESCRIPTOR.full_name
 
+_EARTH_RADIUS_M = 6_371_000.0
 
 def _haversine_m(a, b) -> float:
     """Great-circle distance in meters between two (lat, lon, alt) points."""
@@ -148,8 +149,7 @@ class SwiftMapClient:
         logger.info("SwiftMap connection closed")
 
 
-class SwiftMapEngine(cognitive_engine.Engine):
-    ENGINE_NAME = "swiftmap"
+class SwiftMapEngine:
     STATS_INTERVAL = 5  # seconds between fps log lines
 
     def __init__(self, args):
@@ -187,25 +187,19 @@ class SwiftMapEngine(cognitive_engine.Engine):
             return None
         return None
 
-    def handle(self, input_frame):
-        status = gabriel_pb2.Status()
+    def handle(self, input):
+        vehicle_id = input.id.producer.rpartition(".")[0]
+        if vehicle_id == "":
+            logger.error(f"Producer {input.id.producer} names no vehicle")
+            return None
 
-        # Only IMAGE frames carry a telemetry.Frame (image bytes + paired GPS).
-        if input_frame.payload_type != gabriel_pb2.PayloadType.IMAGE:
-            status.code = gabriel_pb2.StatusCode.WRONG_INPUT_FORMAT
-            status.message = f"Ignoring non-image payload: {input_frame.payload_type}"
-            return cognitive_engine.Result(status, b"")
-        if input_frame.WhichOneof(
-            "payload"
-        ) != "any_payload" or not input_frame.any_payload.Is(
-            telemetry.Frame.DESCRIPTOR
-        ):
-            status.code = gabriel_pb2.StatusCode.WRONG_INPUT_FORMAT
-            status.message = "Expected an any_payload telemetry.Frame"
-            return cognitive_engine.Result(status, b"")
+        if input.payload_type != FRAME_TYPE:
+            logger.error(f"Engine received wrong input format: {input.payload_type}")
+            return None
 
-        frame = telemetry.Frame()
-        input_frame.any_payload.Unpack(frame)
+        frame = telemetry.EncodedFrame()
+        frame.ParseFromString(bytes(input.data))
+        
         self._log_stats()
 
         gps = self._extract_gps(frame)
@@ -214,25 +208,38 @@ class SwiftMapEngine(cognitive_engine.Engine):
         # gating on, a frame must carry GPS (the pair is what the server maps from).
         if self.send_distance > 0:
             if gps is None:
-                return cognitive_engine.Result(
-                    status, "skipped"
-                )  # no GPS -> can't pair
+                logger.error(f"cannot forward frame from {vehicle_id} without GPS")
+                return None
             if (
                 self._last_sent_gps is not None
                 and _haversine_m(self._last_sent_gps, gps) < self.send_distance
             ):
-                return cognitive_engine.Result(status, "skipped")  # too close -> drop
+                logger.info(
+                    "SwiftMap engine: skipping frame from %s (%.1f m < %.1f m)",
+                    vehicle_id,
+                    _haversine_m(self._last_sent_gps, gps),
+                    self.send_distance,
+                )
+                return None # too close -> drop
 
-        send_status = self.client.process_frame(frame.data, gps)
+        send_status = self.client.process_frame(frame.encoded_data, gps)
         if send_status == "error":
             logger.warning("SwiftMap server unreachable; frame dropped")
-            return cognitive_engine.Result(status, b"")
+            return None
 
         self._log_stats()
+        
         # Only advance the reference once the pair is actually on its way.
         self._last_sent_gps = gps
         self.sent += 1
-        return cognitive_engine.Result(status, send_status.encode())
+
+        # TODO: return the send status as a result, as the detection engine
+        # does: return result_pb2.GenericResult(
+        # payload=send_status.encode()).SerializeToString(), and in swiftmap.py
+        # pass result_type=GENERIC_RESULT_TYPE (GenericResult's
+        # DESCRIPTOR.full_name) to gabriel.Engine and call
+        # engine.stop(result or b"").
+        return None
 
     def _log_stats(self):
         """Log average fps once per STATS_INTERVAL."""
@@ -248,3 +255,8 @@ class SwiftMapEngine(cognitive_engine.Engine):
             )
             self.last_count = self.count
             self.last_stats += elapsed
+    
+    
+    def cleanup(self):
+        """Close the SwiftMap connection on engine shutdown."""
+        self.client.close()
