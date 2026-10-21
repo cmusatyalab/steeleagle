@@ -19,18 +19,18 @@ func TestAclIp(t *testing.T) {
 
 	lis := newSpoofedListener(t, base)
 	// Add in a bogus ip to make sure it is ignored
-	acl := NewAcl(map[string]AuthCode{"100.64.0.0/10": ServerCode, "10.5.2/10/2": ServerCode}, nil, false)
+	acl := NewAcl(map[string]AuthCode{"100.64.0.0/10": AdminCode, "10.5.2/10/2": AdminCode}, nil, false)
 
 	// Test adding bad and good IPs
-	err = acl.AddIp("125.100.0.0/24", ServerCode)
+	err = acl.AddIp("125.100.0.0/24", AdminCode)
 	if err != nil {
 		t.Errorf("couldn't add correct IP: %v", err)
 	}
-	err = acl.AddIp("130.100.0.0", ServerCode)
+	err = acl.AddIp("130.100.0.0", AdminCode)
 	if err != nil {
 		t.Errorf("couldn't add correct IP: %v", err)
 	}
-	err = acl.AddIp("160.1/2/2", ServerCode)
+	err = acl.AddIp("160.1/2/2", AdminCode)
 	if err == nil {
 		t.Errorf("added incorrect IP without error")
 	}
@@ -65,8 +65,8 @@ func TestAclIp(t *testing.T) {
 		if isConnClosed(t, conn) {
 			t.Errorf("allowed connection rejected incorrectly")
 		}
-		if code := conn.RemoteAddr().(*Addr).Code; code != ServerCode {
-			t.Errorf("expected code %s, got %s", ServerCode, code)
+		if code := conn.RemoteAddr().(*Addr).Code; code != AdminCode {
+			t.Errorf("expected code %s, got %s", AdminCode, code)
 		}
 		conn.Close()
 	case <-time.After(1 * time.Second):
@@ -87,7 +87,7 @@ func TestAclPid(t *testing.T) {
 	defer base.Close()
 
 	acl := NewAcl(nil, nil, false)
-	err = acl.AddPid(-1, ServerCode)
+	err = acl.AddPid(-1, AdminCode)
 	if err == nil {
 		t.Errorf("added incorrect pid")
 	}
@@ -108,7 +108,7 @@ func TestAclPid(t *testing.T) {
 	cmd.Stdout = logger
 	cmd.Stderr = logger
 	err = cmd.Start()
-	acl.AddPid(cmd.Process.Pid, ServerCode)
+	acl.AddPid(cmd.Process.Pid, AdminCode)
 	if err != nil {
 		t.Errorf("couldn't start command")
 	}
@@ -122,8 +122,8 @@ func TestAclPid(t *testing.T) {
 // entry, picking the most specific CIDR and the nearest ancestor PID.
 func TestAclCodes(t *testing.T) {
 	acl := NewAcl(
-		map[string]AuthCode{"100.64.0.0/10": ExternalCode, "100.100.0.0/16": MissionCode, "100.100.1.1": AdminCode},
-		map[int]AuthCode{os.Getppid(): ServerCode, os.Getpid(): AdminCode},
+		map[string]AuthCode{"100.64.0.0/10": ExternalCode, "100.100.0.0/16": UserCode, "100.100.1.1": AdminCode},
+		map[int]AuthCode{os.Getppid(): PrivilegedCode, os.Getpid(): AdminCode},
 		false,
 	)
 
@@ -132,7 +132,7 @@ func TestAclCodes(t *testing.T) {
 		code AuthCode
 	}{
 		{"100.64.0.1", ExternalCode},
-		{"100.100.5.5", MissionCode},
+		{"100.100.5.5", UserCode},
 		{"100.100.1.1", AdminCode},
 	}
 	for _, tt := range ips {
@@ -146,8 +146,8 @@ func TestAclCodes(t *testing.T) {
 	if allowed, code := acl.AllowsPid(os.Getpid()); !allowed || code != AdminCode {
 		t.Errorf("expected own pid to get (true, %s), got (%v, %s)", AdminCode, allowed, code)
 	}
-	if allowed, code := acl.AllowsPid(os.Getppid()); !allowed || code != ServerCode {
-		t.Errorf("expected parent pid to get (true, %s), got (%v, %s)", ServerCode, allowed, code)
+	if allowed, code := acl.AllowsPid(os.Getppid()); !allowed || code != PrivilegedCode {
+		t.Errorf("expected parent pid to get (true, %s), got (%v, %s)", PrivilegedCode, allowed, code)
 	}
 }
 

@@ -35,11 +35,6 @@ class DaemonServiceStub:
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.GetConfigurationRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.GetConfigurationResponse.FromString,
                 _registered_method=True)
-        self.ResetConfiguration = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.daemon.DaemonService/ResetConfiguration',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.ResetConfigurationRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.ResetConfigurationResponse.FromString,
-                _registered_method=True)
         self.ListServices = channel.unary_unary(
                 '/steeleagle_protocol.v1.services.daemon.DaemonService/ListServices',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.ListServicesRequest.SerializeToString,
@@ -49,6 +44,11 @@ class DaemonServiceStub:
                 '/steeleagle_protocol.v1.services.daemon.DaemonService/RestartServices',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServicesRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServicesResponse.FromString,
+                _registered_method=True)
+        self.Restart = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.daemon.DaemonService/Restart',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartResponse.FromString,
                 _registered_method=True)
         self.InstallPackage = channel.unary_unary(
                 '/steeleagle_protocol.v1.services.daemon.DaemonService/InstallPackage',
@@ -109,17 +109,6 @@ class DaemonServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def ResetConfiguration(self, request, context):
-        """
-        Resets the current TOML config.
-
-        Deletes the current TOML config and replaces it with the default config
-        (base backend services, but no vehicles or engines).
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
     def ListServices(self, request, context):
         """
         List active services.
@@ -138,6 +127,18 @@ class DaemonServiceServicer:
         Restarts a list of daemon services. These must be vehicles, monitors, or
         engines. Restarts of other services, like GCS or simulator, must be done
         through a `Configure` call and will return an error if included.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Restart(self, request, context):
+        """
+        Restart the daemon.
+
+        Restarts the whole daemon and all of its services, including core services
+        that have died. The config is reloaded and pending package changes are
+        applied, like after a `Configure` call.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -192,11 +193,6 @@ def add_DaemonServiceServicer_to_server(servicer, server):
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.GetConfigurationRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.GetConfigurationResponse.SerializeToString,
             ),
-            'ResetConfiguration': grpc.unary_unary_rpc_method_handler(
-                    servicer.ResetConfiguration,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.ResetConfigurationRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.ResetConfigurationResponse.SerializeToString,
-            ),
             'ListServices': grpc.unary_unary_rpc_method_handler(
                     servicer.ListServices,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.ListServicesRequest.FromString,
@@ -206,6 +202,11 @@ def add_DaemonServiceServicer_to_server(servicer, server):
                     servicer.RestartServices,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServicesRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServicesResponse.SerializeToString,
+            ),
+            'Restart': grpc.unary_unary_rpc_method_handler(
+                    servicer.Restart,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartResponse.SerializeToString,
             ),
             'InstallPackage': grpc.unary_unary_rpc_method_handler(
                     servicer.InstallPackage,
@@ -321,33 +322,6 @@ class DaemonService:
             _registered_method=True)
 
     @staticmethod
-    def ResetConfiguration(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/steeleagle_protocol.v1.services.daemon.DaemonService/ResetConfiguration',
-            steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.ResetConfigurationRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.ResetConfigurationResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
     def ListServices(request,
             target,
             options=(),
@@ -391,6 +365,33 @@ class DaemonService:
             '/steeleagle_protocol.v1.services.daemon.DaemonService/RestartServices',
             steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServicesRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServicesResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Restart(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/steeleagle_protocol.v1.services.daemon.DaemonService/Restart',
+            steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartResponse.FromString,
             options,
             channel_credentials,
             insecure,

@@ -12,6 +12,8 @@ type PluginRoot struct {
 	Name string `toml:"name"`
 	// Plugin description (optional)
 	Description string `toml:"description,omitempty"`
+	// Type of the plugin (one of "driver", "engine", "commander", "monitor", "simulator", "extra")
+	Type string `toml:"type"`
 	// List of dependencies for the plugin external to Pixi
 	Dependencies []string `toml:"dependencies"`
 }

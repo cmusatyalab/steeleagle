@@ -24,3 +24,12 @@ func WithLaw(lawToml []byte) VehicleOption {
 		v.lawToml = lawToml
 	}
 }
+
+// WithRemoteCompute sets the address and cert of the remote compute service
+// provided by the orchestrator.
+func WithRemoteCompute(address, cert string) VehicleOption {
+	return func(v *Vehicle) {
+		v.remoteAddr = address
+		v.remoteCert = cert
+	}
+}

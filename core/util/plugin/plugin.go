@@ -27,8 +27,7 @@ import (
 type Plugin interface {
 	// Start launches the plugin and returns a listener for the plugin's server
 	// side and a client connection to the plugin. The returned listener and
-	// connection are both bound to the plugin's lifetime. Canceling ctx or
-	// calling Stop tears them down.
+	// connection are both bound to the plugin's lifetime. Cancel ctx to stop.
 	Start(context.Context) (net.Listener, *grpc.ClientConn, error)
 
 	// Watch returns a channel that receives the plugin's exit error when it
@@ -43,6 +42,9 @@ type Plugin interface {
 
 	// Code gets the AuthCode of the plugin.
 	Code() listener.AuthCode
+
+	// Running reports whether the plugin is currently running.
+	Running() bool
 }
 
 // BasePlugin provides common attributes shared across all plugins. It is
@@ -261,6 +263,11 @@ func (p *BasePlugin) Name() string {
 // Code gets the AuthCode of the plugin.
 func (p *BasePlugin) Code() listener.AuthCode {
 	return p.code
+}
+
+// Running reports whether the plugin is currently running.
+func (p *BasePlugin) Running() bool {
+	return p.running.Load()
 }
 
 // validateScript resolves and validates the plugin's script path, setting pkg

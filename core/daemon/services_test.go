@@ -1,0 +1,321 @@
+package daemon
+
+import (
+	"context"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	daemonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon"
+	"github.com/cmusatyalab/steeleagle/config"
+	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
+	"github.com/cmusatyalab/steeleagle/v4/core/util/policy"
+	"github.com/rs/zerolog"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+)
+
+// testPackageUrl is the url of the fake package written by writeServicePackage.
+const testPackageUrl = "github.com/org/plugins"
+
+// newTestServiceDaemon returns a daemon with a package directory holding a
+// fake package with an engine plugin "detector", and a plugin for every other
+// category of service named after its type. The start task records its
+// environment in run.txt and runs until it is killed. The daemon's gRPC server
+// enforces the daemon law, like a real daemon's. If the TEST_SERVICE_CLIENT
+// environment variable is set, the start task runs it in place of recording
+// its environment, recording its calls in calls-{plugin}.txt.
+func newTestServiceDaemon(t *testing.T) *Daemon {
+	t.Helper()
+	t.Setenv("XDG_RUNTIME_DIR", t.TempDir())
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	d := &Daemon{PkgDir: t.TempDir(), Config: &config.DaemonConfig{}, ctx: ctx, log: zerolog.Nop()}
+	law, err := config.ParseControlLawFromBytes(DefaultLaw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := policy.NewPolicy(law, policy.WithLogger(zerolog.Nop()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	d.server = grpc.NewServer(grpc.ChainUnaryInterceptor(p.NewUnaryPolicyInterceptor()))
+	daemonpb.RegisterDaemonServiceServer(d.server, d)
+	t.Cleanup(d.server.Stop)
+	u, err := parsePackageUrl(testPackageUrl)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkg := filepath.Join(d.PkgDir, u.name)
+	files := map[string]string{
+		"pixi.toml": "[workspace]\nname = 'plugins'\nchannels = []\nplatforms = ['linux-64', 'linux-aarch64', 'osx-arm64']\n\n" +
+			"[tasks]\nstart = \"sh run.sh\"\n",
+		"run.sh": "[ -n \"$TEST_SERVICE_CLIENT\" ] && exec \"$TEST_SERVICE_CLIENT\" \"calls-$STEELEAGLE_PLUGIN.txt\"\n" +
+			"env > run.txt\nexec sleep 60\n",
+		"detector" + PluginFileSuffix: "[plugin]\nname = 'Detector'\ntype = 'engine'\n",
+	}
+	for _, kind := range []string{"monitor", "commander", "simulator", "extra"} {
+		files[kind+PluginFileSuffix] = "[plugin]\nname = '" + kind + "'\ntype = '" + kind + "'\n"
+	}
+	if err := os.MkdirAll(pkg, 0755); err != nil {
+		t.Fatal(err)
+	}
+	for name, content := range files {
+		if err := os.WriteFile(filepath.Join(pkg, name), []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return d
+}
+
+// TestGatherServices ensures that services are gathered from the config
+// without being started, and that broken services are left out and reported
+// without affecting the rest.
+func TestGatherServices(t *testing.T) {
+	d := newTestServiceDaemon(t)
+	detector := config.PluginField{Plugin: "detector", Package: testPackageUrl}
+	d.Config.Engines = []config.ServiceField{
+		{Name: "yolo", Plugin: detector},
+		{Name: "yolo", Plugin: detector},
+	}
+	d.Config.Monitors = []config.ServiceField{{Name: "watch", Plugin: detector}}
+	d.Config.Extras = []config.ServiceField{
+		{Name: "missing", Plugin: config.PluginField{Plugin: "detector", Package: "github.com/org/missing"}},
+	}
+	d.Config.Vehicles = []config.VehicleField{{Name: "harpy", Simulate: true, Plugin: detector}}
+
+	err := d.gatherServices()
+	if err == nil {
+		t.Fatal("expected errors for broken services")
+	}
+	for _, want := range []string{"duplicate service name", `is a "engine" plugin, not "monitor"`,
+		"could not read plugin", "simulated vehicles are not supported yet"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("expected error to mention %q, got: %v", want, err)
+		}
+	}
+	all := d.allServices()
+	if len(all) != 1 || len(all[daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE]) != 1 {
+		t.Fatalf("expected only engine yolo, got %v", all)
+	}
+	if si := d.findService(daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE, "yolo"); si.running() {
+		t.Error("expected gathered service not to be running")
+	}
+}
+
+// TestStartStopServices ensures that an engine is started with its plugin
+// name, args and iceoryx service in its environment, and that it can be
+// stopped and started again.
+func TestStartStopServices(t *testing.T) {
+	if _, err := exec.LookPath("pixi"); err != nil {
+		t.Skip("pixi not installed")
+	}
+	d := newTestServiceDaemon(t)
+	d.Config.Engines = []config.ServiceField{{
+		Name:   "yolo",
+		Plugin: config.PluginField{Plugin: "detector", Package: testPackageUrl, Args: map[string]any{"confidence": 0.5, "label": "a b's \"c\""}},
+	}}
+	if err := d.gatherServices(); err != nil {
+		t.Fatalf("gather failed: %v", err)
+	}
+	si := d.findService(daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE, "yolo")
+	runFile := filepath.Join(d.PkgDir, "github_com_org_plugins", "run.txt")
+
+	for i := range 2 {
+		os.Remove(runFile)
+		if err := d.startServices(d.allServices()); err != nil {
+			t.Fatalf("run %d: start failed: %v", i, err)
+		}
+		var run []byte
+		for deadline := time.Now().Add(time.Minute); time.Now().Before(deadline); time.Sleep(50 * time.Millisecond) {
+			if run, _ = os.ReadFile(runFile); strings.Contains(string(run), IceoryxServiceEnv) {
+				break
+			}
+		}
+		for _, want := range []string{
+			PluginNameEnv + "=detector",
+			PluginArgsEnv + `={"confidence":0.5,"label":"a b's \"c\""}`,
+			IceoryxServiceEnv + "=yolo",
+		} {
+			if !strings.Contains(string(run), want+"\n") {
+				t.Errorf("run %d: expected %s in plugin environment", i, want)
+			}
+		}
+		if !si.running() || si.endpoint != "yolo" {
+			t.Errorf("run %d: expected engine running at endpoint yolo, got %v, %q", i, si.running(), si.endpoint)
+		}
+		if err := d.stopServices(d.allServices()); err != nil {
+			t.Fatalf("run %d: stop failed: %v", i, err)
+		}
+		if si.running() {
+			t.Errorf("run %d: expected engine stopped", i)
+		}
+	}
+}
+
+// TestServiceHandlers ensures that services are listed with their state, that
+// engines can be restarted whether running or stopped, and that requests for
+// unrestartable or unknown services are rejected without acting.
+func TestServiceHandlers(t *testing.T) {
+	if _, err := exec.LookPath("pixi"); err != nil {
+		t.Skip("pixi not installed")
+	}
+	d := newTestServiceDaemon(t)
+	detector := config.PluginField{Plugin: "detector", Package: testPackageUrl}
+	d.Config.Engines = []config.ServiceField{{Name: "yolo", Plugin: detector}}
+	if err := d.gatherServices(); err != nil {
+		t.Fatalf("gather failed: %v", err)
+	}
+	ctx := context.Background()
+	yolo := []*daemonpb.Service{daemonpb.Service_builder{
+		Name: "yolo", Category: daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE,
+	}.Build()}
+	assertRunning := func(step string, want bool) {
+		t.Helper()
+		resp, err := d.ListServices(ctx, &daemonpb.ListServicesRequest{})
+		if err != nil || len(resp.GetServices()) != 1 {
+			t.Fatalf("%s: expected one service, got %v, %v", step, resp.GetServices(), err)
+		}
+		s := resp.GetServices()[0]
+		if s.GetSrv().GetName() != "yolo" || s.GetPlugin() != "detector" || s.GetUrl() != testPackageUrl {
+			t.Errorf("%s: unexpected service description: %v", step, s)
+		}
+		if s.GetRunning() != want || s.HasUptime() != want {
+			t.Errorf("%s: expected running=%v with uptime, got %v", step, want, s)
+		}
+	}
+
+	assertRunning("gathered", false)
+	if err := d.startServices(d.allServices()); err != nil {
+		t.Fatalf("start failed: %v", err)
+	}
+	assertRunning("started", true)
+	if _, err := d.RestartServices(ctx, daemonpb.RestartServicesRequest_builder{Services: yolo}.Build()); err != nil {
+		t.Fatalf("restart failed: %v", err)
+	}
+	assertRunning("restarted", true)
+	if err := d.stopServices(d.allServices()); err != nil {
+		t.Fatalf("stop failed: %v", err)
+	}
+	assertRunning("stopped", false)
+	// Restarting a stopped service starts it
+	if _, err := d.RestartServices(ctx, daemonpb.RestartServicesRequest_builder{Services: yolo}.Build()); err != nil {
+		t.Fatalf("restart of a stopped service failed: %v", err)
+	}
+	assertRunning("restarted from stopped", true)
+	if err := d.stopServices(d.allServices()); err != nil {
+		t.Fatalf("stop failed: %v", err)
+	}
+
+	// A bad entry rejects the whole request, so yolo stays stopped
+	bad := map[string]struct {
+		service *daemonpb.Service
+		code    codes.Code
+	}{
+		"commander": {daemonpb.Service_builder{Name: "gcs", Category: daemonpb.ServiceCategory_SERVICE_CATEGORY_COMMANDER}.Build(), codes.InvalidArgument},
+		"unknown":   {daemonpb.Service_builder{Name: "nope", Category: daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE}.Build(), codes.NotFound},
+	}
+	for name, tt := range bad {
+		req := daemonpb.RestartServicesRequest_builder{Services: append(yolo, tt.service)}.Build()
+		if _, err := d.RestartServices(ctx, req); status.Code(err) != tt.code {
+			t.Errorf("%s: expected %v, got %v", name, tt.code, err)
+		}
+	}
+	assertRunning("rejected", false)
+}
+
+// configureAllCategories configures one service of every category except
+// vehicles, each on the test package plugin for its category.
+func configureAllCategories(d *Daemon) {
+	field := func(plugin string) config.PluginField {
+		return config.PluginField{Plugin: plugin, Package: testPackageUrl}
+	}
+	d.Config.Simulator = config.ServiceField{Name: "aviary", Plugin: field("simulator")}
+	d.Config.Engines = []config.ServiceField{{Name: "yolo", Plugin: field("detector")}}
+	d.Config.Commanders = []config.ServiceField{{Name: "gcs", Plugin: field("commander")}}
+	d.Config.Monitors = []config.ServiceField{{Name: "watch", Plugin: field("monitor")}}
+	d.Config.Extras = []config.ServiceField{{Name: "logs", Plugin: field("extra")}}
+}
+
+// TestServiceCalls ensures that the daemon serves the listener of every
+// category of plugin, and that the law applies to each with its category's
+// AuthCode: external callers can only read, privileged callers can also
+// write, and unknown callers can do neither.
+func TestServiceCalls(t *testing.T) {
+	if _, err := exec.LookPath("pixi"); err != nil {
+		t.Skip("pixi not installed")
+	}
+	client := filepath.Join(t.TempDir(), "service")
+	if out, err := exec.Command("go", "build", "-o", client, "./testdata/service").CombinedOutput(); err != nil {
+		t.Fatalf("couldn't build fake service: %v\n%s", err, out)
+	}
+	t.Setenv("TEST_SERVICE_CLIENT", client)
+	d := newTestServiceDaemon(t)
+	configureAllCategories(d)
+	if err := d.gatherServices(); err != nil {
+		t.Fatalf("gather failed: %v", err)
+	}
+	if err := d.startServices(d.allServices()); err != nil {
+		t.Fatalf("start failed: %v", err)
+	}
+	t.Cleanup(func() { d.stopServices(d.allServices()) })
+
+	const (
+		readOnly = "list=OK\ninstall=PermissionDenied\n"
+		// The install passes the law, and fails on its empty url
+		readWrite = "list=OK\ninstall=InvalidArgument\n"
+		denied    = "list=PermissionDenied\ninstall=PermissionDenied\n"
+	)
+	want := map[string]string{
+		"simulator": readOnly,
+		"detector":  readOnly,
+		"commander": readWrite,
+		"monitor":   readOnly,
+		"extra":     denied,
+	}
+	pkg := filepath.Join(d.PkgDir, "github_com_org_plugins")
+	for plugin, calls := range want {
+		callsFile := filepath.Join(pkg, "calls-"+plugin+".txt")
+		var got []byte
+		for deadline := time.Now().Add(time.Minute); time.Now().Before(deadline); time.Sleep(50 * time.Millisecond) {
+			if got, _ = os.ReadFile(callsFile); len(got) > 0 {
+				break
+			}
+		}
+		if string(got) != calls {
+			t.Errorf("%s: expected calls %q, got %q", plugin, calls, got)
+		}
+	}
+}
+
+// TestServiceCodes ensures that each category of plugin is created with the
+// AuthCode its calls to the daemon carry.
+func TestServiceCodes(t *testing.T) {
+	d := newTestServiceDaemon(t)
+	configureAllCategories(d)
+	if err := d.gatherServices(); err != nil {
+		t.Fatalf("gather failed: %v", err)
+	}
+
+	want := map[daemonpb.ServiceCategory]listener.AuthCode{
+		daemonpb.ServiceCategory_SERVICE_CATEGORY_MONITOR:   listener.ExternalCode,
+		daemonpb.ServiceCategory_SERVICE_CATEGORY_COMMANDER: listener.PrivilegedCode,
+		daemonpb.ServiceCategory_SERVICE_CATEGORY_SIMULATOR: listener.ExternalCode,
+		daemonpb.ServiceCategory_SERVICE_CATEGORY_EXTRA:     listener.UnknownCode,
+		daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE:    listener.ExternalCode,
+	}
+	for category, code := range want {
+		services := d.services[category]
+		if len(services) != 1 {
+			t.Fatalf("%s: expected one service, got %d", category, len(services))
+		}
+		if got := services[0].plugin.Code(); got != code {
+			t.Errorf("%s: expected code %s, got %s", category, code, got)
+		}
+	}
+}
+

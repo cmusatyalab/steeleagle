@@ -1,11 +1,16 @@
 package daemon
 
 import (
+	"context"
 	"errors"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
 	"testing"
+	"time"
+
+	daemonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon"
 
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc/codes"
@@ -164,4 +169,55 @@ func TestRemovePackage(t *testing.T) {
 		t.Fatalf("commit failed: %v", err)
 	}
 	assertPackages(t, d.PkgDir)
+}
+
+// TestListPackages ensures that pending packages are listed with their
+// metadata and the plugin files at their root, and that packages without
+// metadata are skipped.
+func TestListPackages(t *testing.T) {
+	d := newTestPackageDaemon(t, "bare")
+	pkg := filepath.Join(d.pendingDir(), "github_com_org_repo")
+	writeTestPackage(t, d.pendingDir(), "github_com_org_repo", "1")
+	files := map[string]string{
+		PackageInfoFileName:         "url = 'github.com/org/repo'\ntag = 'v1'\n",
+		"driver.plugin.toml":        "name = 'driver'",
+		"engine.plugin.toml":        "name = 'engine'",
+		"notes.toml":                "not a plugin",
+		"sub/nested.plugin.toml":    "not at the root",
+		"dir.plugin.toml/inner.txt": "a directory, not a plugin",
+	}
+	modified := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
+	for name, content := range files {
+		path := filepath.Join(pkg, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err := os.Chtimes(pkg, modified, modified); err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err := d.ListPackages(context.Background(), &daemonpb.ListPackagesRequest{})
+	if err != nil {
+		t.Fatalf("list failed: %v", err)
+	}
+	if len(resp.GetPackages()) != 1 {
+		t.Fatalf("expected 1 package, got %v", resp.GetPackages())
+	}
+	p := resp.GetPackages()[0]
+	if p.GetUrl() != "github.com/org/repo" || p.GetTag() != "v1" || !p.GetModified().AsTime().Equal(modified) {
+		t.Errorf("unexpected package metadata: %v", p)
+	}
+	want := map[string]string{"driver": "name = 'driver'", "engine": "name = 'engine'"}
+	got := map[string]string{}
+	for name, content := range p.GetPlugins() {
+		got[name] = string(content)
+	}
+	if !maps.Equal(got, want) {
+		t.Errorf("expected plugins %v, got %v", want, got)
+	}
 }

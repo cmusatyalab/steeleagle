@@ -46,15 +46,6 @@ service DaemonService {
     returns (GetConfigurationResponse) {}
 
   /*
-   * Resets the current TOML config.
-   *
-   * Deletes the current TOML config and replaces it with the default config
-   * (base backend services, but no vehicles or engines).
-   */
-  rpc ResetConfiguration (ResetConfigurationRequest)
-    returns (ResetConfigurationResponse) {}
-
-  /*
    * List active services.
    *
    * List services lists all active daemon services, whether they are running or
@@ -72,6 +63,16 @@ service DaemonService {
    */
   rpc RestartServices (RestartServicesRequest)
     returns (RestartServicesResponse) {}
+
+  /*
+   * Restart the daemon.
+   *
+   * Restarts the whole daemon and all of its services, including core services
+   * that have died. The config is reloaded and pending package changes are
+   * applied, like after a `Configure` call.
+   */
+  rpc Restart (RestartRequest)
+    returns (RestartResponse) {}
 
   /*
    * Install a package.
@@ -100,7 +101,8 @@ service DaemonService {
 }
 
 message RegisterOrchestratorRequest {
-  repeated string vehicles = 1; // vehicle names
+  repeated string vehicles = 1; // vehicles, as "{daemon IP}/{vehicle name}"
+  int32 port = 2;               // port of the registering daemon
 }
 
 message RegisterOrchestratorResponse {
@@ -159,6 +161,10 @@ message RestartServicesRequest {
 
 message RestartServicesResponse {}
 
+message RestartRequest {}
+
+message RestartResponse {}
+
 message InstallPackageRequest {
   string url = 1;               // package url 
   optional string tag = 2;      // branch or commit tag
@@ -166,17 +172,18 @@ message InstallPackageRequest {
 
 message InstallPackageResponse {}
 
-// Package installed on the daemon
+// Package installed on the daemon.
 message Package {
   string url = 1;                           // package url
   string tag = 2;                           // branch or commit tag
-  map<string, ServiceCategory> plugins = 3; // plugins in this package 
-  google.protobuf.Timestamp installed = 4;  // install time
+  map<string, bytes> plugins = 3;           // plugin tomls in this package 
+  google.protobuf.Timestamp modified = 4;   // last modified time
 }
 
 message ListPackagesRequest {}
 
 message ListPackagesResponse {
+  repeated Package packages = 1; // installed packages
 }
 
 message RemovePackageRequest {
@@ -184,7 +191,3 @@ message RemovePackageRequest {
 }
 
 message RemovePackageResponse {}
-
-message ResetConfigurationRequest {}
-
-message ResetConfigurationResponse {}

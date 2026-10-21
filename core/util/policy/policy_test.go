@@ -100,7 +100,7 @@ func TestNewPolicyErrors(t *testing.T) {
 func TestWithLogger(t *testing.T) {
 	var buf bytes.Buffer
 	p := loadTestPolicy(t, WithLogger(zerolog.New(&buf)))
-	if _, _, err := p.SafeCheckAndTransit(context.Background(), "server/steeleagle.MissionService/StartMission"); err != nil {
+	if _, _, err := p.SafeCheckAndTransit(context.Background(), "admin/steeleagle.MissionService/StartMission"); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if buf.Len() == 0 {
@@ -122,16 +122,16 @@ func TestSafeCheckAndTransit(t *testing.T) {
 		allowed bool
 		state   string
 	}{
-		{"server allowed in REMOTE", "server/steeleagle.ControlService/TakeOff", true, "REMOTE"},
-		{"mission denied in REMOTE", "mission/steeleagle.ControlService/Land", false, "REMOTE"},
+		{"admin allowed in REMOTE", "admin/steeleagle.ControlService/TakeOff", true, "REMOTE"},
+		{"user denied in REMOTE", "user/steeleagle.ControlService/Land", false, "REMOTE"},
 		{"external denied in REMOTE", "external/steeleagle.ControlService/Land", false, "REMOTE"},
-		{"mission start transits to LOCAL", "server/steeleagle.MissionService/StartMission", true, "LOCAL"},
-		{"mission control allowed in LOCAL", "mission/steeleagle.ControlService/Land", true, "LOCAL"},
-		{"mission data allowed in LOCAL", "mission/steeleagle.DataService/GetTelemetry", true, "LOCAL"},
-		{"mission other service denied in LOCAL", "mission/steeleagle.MissionService/StopMission", false, "LOCAL"},
+		{"admin start transits to LOCAL", "admin/steeleagle.MissionService/StartMission", true, "LOCAL"},
+		{"user control allowed in LOCAL", "user/steeleagle.ControlService/Land", true, "LOCAL"},
+		{"user data allowed in LOCAL", "user/steeleagle.DataService/GetTelemetry", true, "LOCAL"},
+		{"user other service denied in LOCAL", "user/steeleagle.MissionService/StopMission", false, "LOCAL"},
 		{"unknown denied in LOCAL", "unknown/steeleagle.ControlService/Land", false, "LOCAL"},
-		{"server control transits to REMOTE", "server/steeleagle.ControlService/Hold", true, "REMOTE"},
-		{"mission denied after return to REMOTE", "mission/steeleagle.ControlService/Land", false, "REMOTE"},
+		{"admin control transits to REMOTE", "admin/steeleagle.ControlService/Hold", true, "REMOTE"},
+		{"user denied after return to REMOTE", "user/steeleagle.ControlService/Land", false, "REMOTE"},
 		{"admin start transits to LOCAL", "admin/steeleagle.MissionService/StartMission", true, "LOCAL"},
 		{"admin stop transits to REMOTE", "admin/steeleagle.MissionService/StopMission", true, "REMOTE"},
 	}
@@ -167,12 +167,12 @@ func TestSafeTransit(t *testing.T) {
 		t.Errorf("expected state LOCAL, got %s", p.currentState)
 	}
 	// Commands are now checked against the new state
-	allowed, _, err := p.SafeCheckAndTransit(ctx, "mission/steeleagle.ControlService/Land")
+	allowed, _, err := p.SafeCheckAndTransit(ctx, "user/steeleagle.ControlService/Land")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if !allowed {
-		t.Errorf("expected mission control to be allowed in LOCAL")
+		t.Errorf("expected user control to be allowed in LOCAL")
 	}
 
 	if err := p.SafeTransit("MISSING"); err == nil {
@@ -199,7 +199,7 @@ next_state := "MISSING"
 		t.Fatalf("couldn't create policy: %v", err)
 	}
 
-	allowed, state, err := p.SafeCheckAndTransit(context.Background(), "server/foo.Service/Bar")
+	allowed, state, err := p.SafeCheckAndTransit(context.Background(), "admin/foo.Service/Bar")
 	if err == nil {
 		t.Errorf("expected error transiting to missing state")
 	}
@@ -229,7 +229,7 @@ allowed := true
 		t.Fatalf("couldn't create policy: %v", err)
 	}
 
-	allowed, state, err := p.SafeCheckAndTransit(context.Background(), "server/foo.Service/Bar")
+	allowed, state, err := p.SafeCheckAndTransit(context.Background(), "admin/foo.Service/Bar")
 	if err == nil {
 		t.Errorf("expected error for empty rego results")
 	}
@@ -254,7 +254,7 @@ allowed := false if input.command
 		t.Fatalf("couldn't create policy: %v", err)
 	}
 
-	allowed, _, err := p.SafeCheckAndTransit(context.Background(), "server/foo.Service/Bar")
+	allowed, _, err := p.SafeCheckAndTransit(context.Background(), "admin/foo.Service/Bar")
 	if err == nil {
 		t.Fatalf("expected error for failed rego evaluation")
 	}
@@ -281,7 +281,7 @@ allowed := "yes"
 		t.Fatalf("couldn't create policy: %v", err)
 	}
 
-	allowed, _, err := p.SafeCheckAndTransit(context.Background(), "server/foo.Service/Bar")
+	allowed, _, err := p.SafeCheckAndTransit(context.Background(), "admin/foo.Service/Bar")
 	if err == nil {
 		t.Errorf("expected error for malformed decision")
 	}
@@ -297,9 +297,9 @@ func TestSafeCheckAndTransitConcurrent(t *testing.T) {
 	ctx := context.Background()
 
 	commands := []string{
-		"server/steeleagle.MissionService/StartMission",
-		"server/steeleagle.ControlService/Hold",
-		"mission/steeleagle.ControlService/Land",
+		"admin/steeleagle.MissionService/StartMission",
+		"admin/steeleagle.ControlService/Hold",
+		"user/steeleagle.ControlService/Land",
 	}
 
 	var wg sync.WaitGroup

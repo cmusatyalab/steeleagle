@@ -26,9 +26,9 @@ const (
 	DaemonService_RegisterOrchestrator_FullMethodName = "/steeleagle_protocol.v1.services.daemon.DaemonService/RegisterOrchestrator"
 	DaemonService_Configure_FullMethodName            = "/steeleagle_protocol.v1.services.daemon.DaemonService/Configure"
 	DaemonService_GetConfiguration_FullMethodName     = "/steeleagle_protocol.v1.services.daemon.DaemonService/GetConfiguration"
-	DaemonService_ResetConfiguration_FullMethodName   = "/steeleagle_protocol.v1.services.daemon.DaemonService/ResetConfiguration"
 	DaemonService_ListServices_FullMethodName         = "/steeleagle_protocol.v1.services.daemon.DaemonService/ListServices"
 	DaemonService_RestartServices_FullMethodName      = "/steeleagle_protocol.v1.services.daemon.DaemonService/RestartServices"
+	DaemonService_Restart_FullMethodName              = "/steeleagle_protocol.v1.services.daemon.DaemonService/Restart"
 	DaemonService_InstallPackage_FullMethodName       = "/steeleagle_protocol.v1.services.daemon.DaemonService/InstallPackage"
 	DaemonService_ListPackages_FullMethodName         = "/steeleagle_protocol.v1.services.daemon.DaemonService/ListPackages"
 	DaemonService_RemovePackage_FullMethodName        = "/steeleagle_protocol.v1.services.daemon.DaemonService/RemovePackage"
@@ -59,11 +59,6 @@ type DaemonServiceClient interface {
 	//
 	// Returns the current TOML config as TOML bytes.
 	GetConfiguration(ctx context.Context, in *GetConfigurationRequest, opts ...grpc.CallOption) (*GetConfigurationResponse, error)
-	// Resets the current TOML config.
-	//
-	// Deletes the current TOML config and replaces it with the default config
-	// (base backend services, but no vehicles or engines).
-	ResetConfiguration(ctx context.Context, in *ResetConfigurationRequest, opts ...grpc.CallOption) (*ResetConfigurationResponse, error)
 	// List active services.
 	//
 	// List services lists all active daemon services, whether they are running or
@@ -75,6 +70,12 @@ type DaemonServiceClient interface {
 	// engines. Restarts of other services, like GCS or simulator, must be done
 	// through a `Configure` call and will return an error if included.
 	RestartServices(ctx context.Context, in *RestartServicesRequest, opts ...grpc.CallOption) (*RestartServicesResponse, error)
+	// Restart the daemon.
+	//
+	// Restarts the whole daemon and all of its services, including core services
+	// that have died. The config is reloaded and pending package changes are
+	// applied, like after a `Configure` call.
+	Restart(ctx context.Context, in *RestartRequest, opts ...grpc.CallOption) (*RestartResponse, error)
 	// Install a package.
 	//
 	// Installs a new package locally. A package can host several plugins which
@@ -128,16 +129,6 @@ func (c *daemonServiceClient) GetConfiguration(ctx context.Context, in *GetConfi
 	return out, nil
 }
 
-func (c *daemonServiceClient) ResetConfiguration(ctx context.Context, in *ResetConfigurationRequest, opts ...grpc.CallOption) (*ResetConfigurationResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ResetConfigurationResponse)
-	err := c.cc.Invoke(ctx, DaemonService_ResetConfiguration_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *daemonServiceClient) ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListServicesResponse)
@@ -152,6 +143,16 @@ func (c *daemonServiceClient) RestartServices(ctx context.Context, in *RestartSe
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RestartServicesResponse)
 	err := c.cc.Invoke(ctx, DaemonService_RestartServices_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *daemonServiceClient) Restart(ctx context.Context, in *RestartRequest, opts ...grpc.CallOption) (*RestartResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RestartResponse)
+	err := c.cc.Invoke(ctx, DaemonService_Restart_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -213,11 +214,6 @@ type DaemonServiceServer interface {
 	//
 	// Returns the current TOML config as TOML bytes.
 	GetConfiguration(context.Context, *GetConfigurationRequest) (*GetConfigurationResponse, error)
-	// Resets the current TOML config.
-	//
-	// Deletes the current TOML config and replaces it with the default config
-	// (base backend services, but no vehicles or engines).
-	ResetConfiguration(context.Context, *ResetConfigurationRequest) (*ResetConfigurationResponse, error)
 	// List active services.
 	//
 	// List services lists all active daemon services, whether they are running or
@@ -229,6 +225,12 @@ type DaemonServiceServer interface {
 	// engines. Restarts of other services, like GCS or simulator, must be done
 	// through a `Configure` call and will return an error if included.
 	RestartServices(context.Context, *RestartServicesRequest) (*RestartServicesResponse, error)
+	// Restart the daemon.
+	//
+	// Restarts the whole daemon and all of its services, including core services
+	// that have died. The config is reloaded and pending package changes are
+	// applied, like after a `Configure` call.
+	Restart(context.Context, *RestartRequest) (*RestartResponse, error)
 	// Install a package.
 	//
 	// Installs a new package locally. A package can host several plugins which
@@ -261,14 +263,14 @@ func (UnimplementedDaemonServiceServer) Configure(context.Context, *ConfigureReq
 func (UnimplementedDaemonServiceServer) GetConfiguration(context.Context, *GetConfigurationRequest) (*GetConfigurationResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetConfiguration not implemented")
 }
-func (UnimplementedDaemonServiceServer) ResetConfiguration(context.Context, *ResetConfigurationRequest) (*ResetConfigurationResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method ResetConfiguration not implemented")
-}
 func (UnimplementedDaemonServiceServer) ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListServices not implemented")
 }
 func (UnimplementedDaemonServiceServer) RestartServices(context.Context, *RestartServicesRequest) (*RestartServicesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RestartServices not implemented")
+}
+func (UnimplementedDaemonServiceServer) Restart(context.Context, *RestartRequest) (*RestartResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Restart not implemented")
 }
 func (UnimplementedDaemonServiceServer) InstallPackage(context.Context, *InstallPackageRequest) (*InstallPackageResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method InstallPackage not implemented")
@@ -354,24 +356,6 @@ func _DaemonService_GetConfiguration_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DaemonService_ResetConfiguration_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ResetConfigurationRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DaemonServiceServer).ResetConfiguration(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DaemonService_ResetConfiguration_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DaemonServiceServer).ResetConfiguration(ctx, req.(*ResetConfigurationRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _DaemonService_ListServices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListServicesRequest)
 	if err := dec(in); err != nil {
@@ -404,6 +388,24 @@ func _DaemonService_RestartServices_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DaemonServiceServer).RestartServices(ctx, req.(*RestartServicesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DaemonService_Restart_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RestartRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DaemonServiceServer).Restart(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DaemonService_Restart_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DaemonServiceServer).Restart(ctx, req.(*RestartRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -482,16 +484,16 @@ var DaemonService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _DaemonService_GetConfiguration_Handler,
 		},
 		{
-			MethodName: "ResetConfiguration",
-			Handler:    _DaemonService_ResetConfiguration_Handler,
-		},
-		{
 			MethodName: "ListServices",
 			Handler:    _DaemonService_ListServices_Handler,
 		},
 		{
 			MethodName: "RestartServices",
 			Handler:    _DaemonService_RestartServices_Handler,
+		},
+		{
+			MethodName: "Restart",
+			Handler:    _DaemonService_Restart_Handler,
 		},
 		{
 			MethodName: "InstallPackage",

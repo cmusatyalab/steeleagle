@@ -55,6 +55,17 @@ func (i *Server) Resolve(ctx context.Context, host string) ([]netip.Addr, error)
 	return addrs, nil
 }
 
+// LocalAddr returns the host IP address that traffic to remote is sourced
+// from. No packets are sent; connecting a UDP socket only picks the route.
+func (i *Server) LocalAddr(ctx context.Context, remote netip.Addr) (netip.Addr, error) {
+	conn, err := i.dialer.DialContext(ctx, "udp", netip.AddrPortFrom(remote, 9).String())
+	if err != nil {
+		return netip.Addr{}, err
+	}
+	defer conn.Close()
+	return conn.LocalAddr().(*net.UDPAddr).AddrPort().Addr().Unmap(), nil
+}
+
 // Close is a no-op: listeners and connections handed out are owned by the
 // caller, and the host network has nothing to tear down.
 func (i *Server) Close() {}

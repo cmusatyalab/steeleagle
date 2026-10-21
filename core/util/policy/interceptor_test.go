@@ -44,9 +44,9 @@ func TestQualifyCommand(t *testing.T) {
 		ctx      context.Context
 		expected string
 	}{
-		{"server code", codedContext(listener.ServerCode), "server" + method},
 		{"admin code", codedContext(listener.AdminCode), "admin" + method},
-		{"mission code", codedContext(listener.MissionCode), "mission" + method},
+		{"privileged code", codedContext(listener.PrivilegedCode), "privileged" + method},
+		{"user code", codedContext(listener.UserCode), "user" + method},
 		{"external code", codedContext(listener.ExternalCode), "external" + method},
 		{"no peer", context.Background(), "unknown" + method},
 		{
@@ -80,12 +80,12 @@ func TestPolicyInterceptor(t *testing.T) {
 		status codes.Code
 		state  string
 	}{
-		{"server allowed", listener.ServerCode, "/steeleagle.ControlService/TakeOff", true, codes.OK, "REMOTE"},
-		{"mission denied in REMOTE", listener.MissionCode, "/steeleagle.ControlService/Land", false, codes.PermissionDenied, "REMOTE"},
-		{"start mission transits", listener.ServerCode, "/steeleagle.MissionService/StartMission", true, codes.OK, "LOCAL"},
-		{"mission allowed in LOCAL", listener.MissionCode, "/steeleagle.ControlService/Land", true, codes.OK, "LOCAL"},
+		{"admin allowed", listener.AdminCode, "/steeleagle.ControlService/TakeOff", true, codes.OK, "REMOTE"},
+		{"user denied in REMOTE", listener.UserCode, "/steeleagle.ControlService/Land", false, codes.PermissionDenied, "REMOTE"},
+		{"start mission transits", listener.AdminCode, "/steeleagle.MissionService/StartMission", true, codes.OK, "LOCAL"},
+		{"user allowed in LOCAL", listener.UserCode, "/steeleagle.ControlService/Land", true, codes.OK, "LOCAL"},
 		{"external denied in LOCAL", listener.ExternalCode, "/steeleagle.ControlService/Land", false, codes.PermissionDenied, "LOCAL"},
-		{"server control transits back", listener.ServerCode, "/steeleagle.ControlService/Hold", true, codes.OK, "REMOTE"},
+		{"admin control transits back", listener.AdminCode, "/steeleagle.ControlService/Hold", true, codes.OK, "REMOTE"},
 	}
 
 	for _, s := range steps {
@@ -141,7 +141,7 @@ func TestPolicyInterceptorHandlerError(t *testing.T) {
 	handler := func(srv any, stream grpc.ServerStream) error {
 		return expected
 	}
-	ss := &fakeStream{ctx: codedContext(listener.ServerCode)}
+	ss := &fakeStream{ctx: codedContext(listener.AdminCode)}
 	err := interceptor(nil, ss, &grpc.StreamServerInfo{FullMethod: "/steeleagle.ControlService/TakeOff"}, handler)
 
 	if !errors.Is(err, expected) {
@@ -170,7 +170,7 @@ allowed := true
 		called = true
 		return nil
 	}
-	ss := &fakeStream{ctx: codedContext(listener.ServerCode)}
+	ss := &fakeStream{ctx: codedContext(listener.AdminCode)}
 	err = interceptor(nil, ss, &grpc.StreamServerInfo{FullMethod: "/steeleagle.ControlService/TakeOff"}, handler)
 
 	if called {
@@ -203,7 +203,7 @@ next_state := "MISSING"
 		called = true
 		return nil
 	}
-	ss := &fakeStream{ctx: codedContext(listener.ServerCode)}
+	ss := &fakeStream{ctx: codedContext(listener.AdminCode)}
 	err = interceptor(nil, ss, &grpc.StreamServerInfo{FullMethod: "/steeleagle.ControlService/TakeOff"}, handler)
 
 	if called {
@@ -228,9 +228,9 @@ func TestUnaryPolicyInterceptor(t *testing.T) {
 		status codes.Code
 		state  string
 	}{
-		{"server allowed", listener.ServerCode, "/steeleagle.ControlService/TakeOff", true, codes.OK, "REMOTE"},
-		{"mission denied in REMOTE", listener.MissionCode, "/steeleagle.ControlService/Land", false, codes.PermissionDenied, "REMOTE"},
-		{"start mission transits", listener.ServerCode, "/steeleagle.MissionService/StartMission", true, codes.OK, "LOCAL"},
+		{"admin allowed", listener.AdminCode, "/steeleagle.ControlService/TakeOff", true, codes.OK, "REMOTE"},
+		{"user denied in REMOTE", listener.UserCode, "/steeleagle.ControlService/Land", false, codes.PermissionDenied, "REMOTE"},
+		{"start mission transits", listener.AdminCode, "/steeleagle.MissionService/StartMission", true, codes.OK, "LOCAL"},
 		{"unknown peer denied", listener.UnknownCode, "/steeleagle.ControlService/Land", false, codes.PermissionDenied, "LOCAL"},
 	}
 

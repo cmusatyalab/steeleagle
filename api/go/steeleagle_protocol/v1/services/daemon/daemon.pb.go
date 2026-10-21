@@ -86,6 +86,7 @@ func (x ServiceCategory) Number() protoreflect.EnumNumber {
 type RegisterOrchestratorRequest struct {
 	state               protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Vehicles []string               `protobuf:"bytes,1,rep,name=vehicles,proto3"`
+	xxx_hidden_Port     int32                  `protobuf:"varint,2,opt,name=port,proto3"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -122,14 +123,26 @@ func (x *RegisterOrchestratorRequest) GetVehicles() []string {
 	return nil
 }
 
+func (x *RegisterOrchestratorRequest) GetPort() int32 {
+	if x != nil {
+		return x.xxx_hidden_Port
+	}
+	return 0
+}
+
 func (x *RegisterOrchestratorRequest) SetVehicles(v []string) {
 	x.xxx_hidden_Vehicles = v
+}
+
+func (x *RegisterOrchestratorRequest) SetPort(v int32) {
+	x.xxx_hidden_Port = v
 }
 
 type RegisterOrchestratorRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Vehicles []string
+	Port     int32
 }
 
 func (b0 RegisterOrchestratorRequest_builder) Build() *RegisterOrchestratorRequest {
@@ -137,6 +150,7 @@ func (b0 RegisterOrchestratorRequest_builder) Build() *RegisterOrchestratorReque
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Vehicles = b.Vehicles
+	x.xxx_hidden_Port = b.Port
 	return m0
 }
 
@@ -840,6 +854,92 @@ func (b0 RestartServicesResponse_builder) Build() *RestartServicesResponse {
 	return m0
 }
 
+type RestartRequest struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RestartRequest) Reset() {
+	*x = RestartRequest{}
+	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RestartRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RestartRequest) ProtoMessage() {}
+
+func (x *RestartRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type RestartRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 RestartRequest_builder) Build() *RestartRequest {
+	m0 := &RestartRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
+type RestartResponse struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RestartResponse) Reset() {
+	*x = RestartResponse{}
+	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RestartResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RestartResponse) ProtoMessage() {}
+
+func (x *RestartResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type RestartResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 RestartResponse_builder) Build() *RestartResponse {
+	m0 := &RestartResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
 type InstallPackageRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Url         string                 `protobuf:"bytes,1,opt,name=url,proto3"`
@@ -852,7 +952,7 @@ type InstallPackageRequest struct {
 
 func (x *InstallPackageRequest) Reset() {
 	*x = InstallPackageRequest{}
-	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[12]
+	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -864,7 +964,7 @@ func (x *InstallPackageRequest) String() string {
 func (*InstallPackageRequest) ProtoMessage() {}
 
 func (x *InstallPackageRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[12]
+	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -940,7 +1040,7 @@ type InstallPackageResponse struct {
 
 func (x *InstallPackageResponse) Reset() {
 	*x = InstallPackageResponse{}
-	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[13]
+	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -952,7 +1052,7 @@ func (x *InstallPackageResponse) String() string {
 func (*InstallPackageResponse) ProtoMessage() {}
 
 func (x *InstallPackageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[13]
+	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -975,20 +1075,20 @@ func (b0 InstallPackageResponse_builder) Build() *InstallPackageResponse {
 	return m0
 }
 
-// Package installed on the daemon
+// Package installed on the daemon.
 type Package struct {
-	state                protoimpl.MessageState     `protogen:"opaque.v1"`
-	xxx_hidden_Url       string                     `protobuf:"bytes,1,opt,name=url,proto3"`
-	xxx_hidden_Tag       string                     `protobuf:"bytes,2,opt,name=tag,proto3"`
-	xxx_hidden_Plugins   map[string]ServiceCategory `protobuf:"bytes,3,rep,name=plugins,proto3" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value,enum=steeleagle_protocol.v1.services.daemon.ServiceCategory"`
-	xxx_hidden_Installed *timestamppb.Timestamp     `protobuf:"bytes,4,opt,name=installed,proto3"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Url      string                 `protobuf:"bytes,1,opt,name=url,proto3"`
+	xxx_hidden_Tag      string                 `protobuf:"bytes,2,opt,name=tag,proto3"`
+	xxx_hidden_Plugins  map[string][]byte      `protobuf:"bytes,3,rep,name=plugins,proto3" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_Modified *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=modified,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *Package) Reset() {
 	*x = Package{}
-	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[14]
+	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1000,7 +1100,7 @@ func (x *Package) String() string {
 func (*Package) ProtoMessage() {}
 
 func (x *Package) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[14]
+	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1025,16 +1125,16 @@ func (x *Package) GetTag() string {
 	return ""
 }
 
-func (x *Package) GetPlugins() map[string]ServiceCategory {
+func (x *Package) GetPlugins() map[string][]byte {
 	if x != nil {
 		return x.xxx_hidden_Plugins
 	}
 	return nil
 }
 
-func (x *Package) GetInstalled() *timestamppb.Timestamp {
+func (x *Package) GetModified() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_Installed
+		return x.xxx_hidden_Modified
 	}
 	return nil
 }
@@ -1047,32 +1147,32 @@ func (x *Package) SetTag(v string) {
 	x.xxx_hidden_Tag = v
 }
 
-func (x *Package) SetPlugins(v map[string]ServiceCategory) {
+func (x *Package) SetPlugins(v map[string][]byte) {
 	x.xxx_hidden_Plugins = v
 }
 
-func (x *Package) SetInstalled(v *timestamppb.Timestamp) {
-	x.xxx_hidden_Installed = v
+func (x *Package) SetModified(v *timestamppb.Timestamp) {
+	x.xxx_hidden_Modified = v
 }
 
-func (x *Package) HasInstalled() bool {
+func (x *Package) HasModified() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_Installed != nil
+	return x.xxx_hidden_Modified != nil
 }
 
-func (x *Package) ClearInstalled() {
-	x.xxx_hidden_Installed = nil
+func (x *Package) ClearModified() {
+	x.xxx_hidden_Modified = nil
 }
 
 type Package_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Url       string
-	Tag       string
-	Plugins   map[string]ServiceCategory
-	Installed *timestamppb.Timestamp
+	Url      string
+	Tag      string
+	Plugins  map[string][]byte
+	Modified *timestamppb.Timestamp
 }
 
 func (b0 Package_builder) Build() *Package {
@@ -1082,7 +1182,7 @@ func (b0 Package_builder) Build() *Package {
 	x.xxx_hidden_Url = b.Url
 	x.xxx_hidden_Tag = b.Tag
 	x.xxx_hidden_Plugins = b.Plugins
-	x.xxx_hidden_Installed = b.Installed
+	x.xxx_hidden_Modified = b.Modified
 	return m0
 }
 
@@ -1094,7 +1194,7 @@ type ListPackagesRequest struct {
 
 func (x *ListPackagesRequest) Reset() {
 	*x = ListPackagesRequest{}
-	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[15]
+	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1106,7 +1206,7 @@ func (x *ListPackagesRequest) String() string {
 func (*ListPackagesRequest) ProtoMessage() {}
 
 func (x *ListPackagesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[15]
+	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1130,14 +1230,15 @@ func (b0 ListPackagesRequest_builder) Build() *ListPackagesRequest {
 }
 
 type ListPackagesResponse struct {
-	state         protoimpl.MessageState `protogen:"opaque.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Packages *[]*Package            `protobuf:"bytes,1,rep,name=packages,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *ListPackagesResponse) Reset() {
 	*x = ListPackagesResponse{}
-	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[16]
+	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1149,7 +1250,7 @@ func (x *ListPackagesResponse) String() string {
 func (*ListPackagesResponse) ProtoMessage() {}
 
 func (x *ListPackagesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[16]
+	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1160,15 +1261,30 @@ func (x *ListPackagesResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
+func (x *ListPackagesResponse) GetPackages() []*Package {
+	if x != nil {
+		if x.xxx_hidden_Packages != nil {
+			return *x.xxx_hidden_Packages
+		}
+	}
+	return nil
+}
+
+func (x *ListPackagesResponse) SetPackages(v []*Package) {
+	x.xxx_hidden_Packages = &v
+}
+
 type ListPackagesResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
+	Packages []*Package
 }
 
 func (b0 ListPackagesResponse_builder) Build() *ListPackagesResponse {
 	m0 := &ListPackagesResponse{}
 	b, x := &b0, m0
 	_, _ = b, x
+	x.xxx_hidden_Packages = &b.Packages
 	return m0
 }
 
@@ -1181,7 +1297,7 @@ type RemovePackageRequest struct {
 
 func (x *RemovePackageRequest) Reset() {
 	*x = RemovePackageRequest{}
-	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[17]
+	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1193,7 +1309,7 @@ func (x *RemovePackageRequest) String() string {
 func (*RemovePackageRequest) ProtoMessage() {}
 
 func (x *RemovePackageRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[17]
+	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1237,7 +1353,7 @@ type RemovePackageResponse struct {
 
 func (x *RemovePackageResponse) Reset() {
 	*x = RemovePackageResponse{}
-	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[18]
+	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1249,7 +1365,7 @@ func (x *RemovePackageResponse) String() string {
 func (*RemovePackageResponse) ProtoMessage() {}
 
 func (x *RemovePackageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[18]
+	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1272,99 +1388,14 @@ func (b0 RemovePackageResponse_builder) Build() *RemovePackageResponse {
 	return m0
 }
 
-type ResetConfigurationRequest struct {
-	state         protoimpl.MessageState `protogen:"opaque.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ResetConfigurationRequest) Reset() {
-	*x = ResetConfigurationRequest{}
-	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[19]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ResetConfigurationRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ResetConfigurationRequest) ProtoMessage() {}
-
-func (x *ResetConfigurationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[19]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-type ResetConfigurationRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-}
-
-func (b0 ResetConfigurationRequest_builder) Build() *ResetConfigurationRequest {
-	m0 := &ResetConfigurationRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	return m0
-}
-
-type ResetConfigurationResponse struct {
-	state         protoimpl.MessageState `protogen:"opaque.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ResetConfigurationResponse) Reset() {
-	*x = ResetConfigurationResponse{}
-	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[20]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ResetConfigurationResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ResetConfigurationResponse) ProtoMessage() {}
-
-func (x *ResetConfigurationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[20]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-type ResetConfigurationResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-}
-
-func (b0 ResetConfigurationResponse_builder) Build() *ResetConfigurationResponse {
-	m0 := &ResetConfigurationResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
-	return m0
-}
-
 var File_steeleagle_protocol_v1_services_daemon_daemon_proto protoreflect.FileDescriptor
 
 const file_steeleagle_protocol_v1_services_daemon_daemon_proto_rawDesc = "" +
 	"\n" +
-	"3steeleagle_protocol/v1/services/daemon/daemon.proto\x12&steeleagle_protocol.v1.services.daemon\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/duration.proto\"9\n" +
+	"3steeleagle_protocol/v1/services/daemon/daemon.proto\x12&steeleagle_protocol.v1.services.daemon\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/duration.proto\"M\n" +
 	"\x1bRegisterOrchestratorRequest\x12\x1a\n" +
-	"\bvehicles\x18\x01 \x03(\tR\bvehicles\"F\n" +
+	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12\x12\n" +
+	"\x04port\x18\x02 \x01(\x05R\x04port\"F\n" +
 	"\x1cRegisterOrchestratorResponse\x12\x12\n" +
 	"\x04cert\x18\x01 \x01(\tR\x04cert\x12\x12\n" +
 	"\x04port\x18\x02 \x01(\x05R\x04port\"3\n" +
@@ -1394,27 +1425,28 @@ const file_steeleagle_protocol_v1_services_daemon_daemon_proto_rawDesc = "" +
 	"\bservices\x18\x01 \x03(\v25.steeleagle_protocol.v1.services.daemon.ActiveServiceR\bservices\"e\n" +
 	"\x16RestartServicesRequest\x12K\n" +
 	"\bservices\x18\x01 \x03(\v2/.steeleagle_protocol.v1.services.daemon.ServiceR\bservices\"\x19\n" +
-	"\x17RestartServicesResponse\"H\n" +
+	"\x17RestartServicesResponse\"\x10\n" +
+	"\x0eRestartRequest\"\x11\n" +
+	"\x0fRestartResponse\"H\n" +
 	"\x15InstallPackageRequest\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12\x15\n" +
 	"\x03tag\x18\x02 \x01(\tH\x00R\x03tag\x88\x01\x01B\x06\n" +
 	"\x04_tag\"\x18\n" +
-	"\x16InstallPackageResponse\"\xb4\x02\n" +
+	"\x16InstallPackageResponse\"\xf9\x01\n" +
 	"\aPackage\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12\x10\n" +
 	"\x03tag\x18\x02 \x01(\tR\x03tag\x12V\n" +
-	"\aplugins\x18\x03 \x03(\v2<.steeleagle_protocol.v1.services.daemon.Package.PluginsEntryR\aplugins\x128\n" +
-	"\tinstalled\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tinstalled\x1as\n" +
+	"\aplugins\x18\x03 \x03(\v2<.steeleagle_protocol.v1.services.daemon.Package.PluginsEntryR\aplugins\x126\n" +
+	"\bmodified\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\bmodified\x1a:\n" +
 	"\fPluginsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12M\n" +
-	"\x05value\x18\x02 \x01(\x0e27.steeleagle_protocol.v1.services.daemon.ServiceCategoryR\x05value:\x028\x01\"\x15\n" +
-	"\x13ListPackagesRequest\"\x16\n" +
-	"\x14ListPackagesResponse\"(\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\fR\x05value:\x028\x01\"\x15\n" +
+	"\x13ListPackagesRequest\"c\n" +
+	"\x14ListPackagesResponse\x12K\n" +
+	"\bpackages\x18\x01 \x03(\v2/.steeleagle_protocol.v1.services.daemon.PackageR\bpackages\"(\n" +
 	"\x14RemovePackageRequest\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\"\x17\n" +
-	"\x15RemovePackageResponse\"\x1b\n" +
-	"\x19ResetConfigurationRequest\"\x1c\n" +
-	"\x1aResetConfigurationResponse*\xe8\x01\n" +
+	"\x15RemovePackageResponse*\xe8\x01\n" +
 	"\x0fServiceCategory\x12 \n" +
 	"\x1cSERVICE_CATEGORY_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18SERVICE_CATEGORY_VEHICLE\x10\x01\x12\x1b\n" +
@@ -1422,15 +1454,15 @@ const file_steeleagle_protocol_v1_services_daemon_daemon_proto_rawDesc = "" +
 	"\x18SERVICE_CATEGORY_MONITOR\x10\x03\x12\x1e\n" +
 	"\x1aSERVICE_CATEGORY_COMMANDER\x10\x04\x12\x1e\n" +
 	"\x1aSERVICE_CATEGORY_SIMULATOR\x10\x05\x12\x1a\n" +
-	"\x16SERVICE_CATEGORY_EXTRA\x10\x062\xcc\n" +
+	"\x16SERVICE_CATEGORY_EXTRA\x10\x062\xaa\n" +
 	"\n" +
 	"\rDaemonService\x12\xa3\x01\n" +
 	"\x14RegisterOrchestrator\x12C.steeleagle_protocol.v1.services.daemon.RegisterOrchestratorRequest\x1aD.steeleagle_protocol.v1.services.daemon.RegisterOrchestratorResponse\"\x00\x12\x82\x01\n" +
 	"\tConfigure\x128.steeleagle_protocol.v1.services.daemon.ConfigureRequest\x1a9.steeleagle_protocol.v1.services.daemon.ConfigureResponse\"\x00\x12\x97\x01\n" +
-	"\x10GetConfiguration\x12?.steeleagle_protocol.v1.services.daemon.GetConfigurationRequest\x1a@.steeleagle_protocol.v1.services.daemon.GetConfigurationResponse\"\x00\x12\x9d\x01\n" +
-	"\x12ResetConfiguration\x12A.steeleagle_protocol.v1.services.daemon.ResetConfigurationRequest\x1aB.steeleagle_protocol.v1.services.daemon.ResetConfigurationResponse\"\x00\x12\x8b\x01\n" +
+	"\x10GetConfiguration\x12?.steeleagle_protocol.v1.services.daemon.GetConfigurationRequest\x1a@.steeleagle_protocol.v1.services.daemon.GetConfigurationResponse\"\x00\x12\x8b\x01\n" +
 	"\fListServices\x12;.steeleagle_protocol.v1.services.daemon.ListServicesRequest\x1a<.steeleagle_protocol.v1.services.daemon.ListServicesResponse\"\x00\x12\x94\x01\n" +
-	"\x0fRestartServices\x12>.steeleagle_protocol.v1.services.daemon.RestartServicesRequest\x1a?.steeleagle_protocol.v1.services.daemon.RestartServicesResponse\"\x00\x12\x91\x01\n" +
+	"\x0fRestartServices\x12>.steeleagle_protocol.v1.services.daemon.RestartServicesRequest\x1a?.steeleagle_protocol.v1.services.daemon.RestartServicesResponse\"\x00\x12|\n" +
+	"\aRestart\x126.steeleagle_protocol.v1.services.daemon.RestartRequest\x1a7.steeleagle_protocol.v1.services.daemon.RestartResponse\"\x00\x12\x91\x01\n" +
 	"\x0eInstallPackage\x12=.steeleagle_protocol.v1.services.daemon.InstallPackageRequest\x1a>.steeleagle_protocol.v1.services.daemon.InstallPackageResponse\"\x00\x12\x8b\x01\n" +
 	"\fListPackages\x12;.steeleagle_protocol.v1.services.daemon.ListPackagesRequest\x1a<.steeleagle_protocol.v1.services.daemon.ListPackagesResponse\"\x00\x12\x8e\x01\n" +
 	"\rRemovePackage\x12<.steeleagle_protocol.v1.services.daemon.RemovePackageRequest\x1a=.steeleagle_protocol.v1.services.daemon.RemovePackageResponse\"\x00B\xc2\x02\n" +
@@ -1452,15 +1484,15 @@ var file_steeleagle_protocol_v1_services_daemon_daemon_proto_goTypes = []any{
 	(*ListServicesResponse)(nil),         // 10: steeleagle_protocol.v1.services.daemon.ListServicesResponse
 	(*RestartServicesRequest)(nil),       // 11: steeleagle_protocol.v1.services.daemon.RestartServicesRequest
 	(*RestartServicesResponse)(nil),      // 12: steeleagle_protocol.v1.services.daemon.RestartServicesResponse
-	(*InstallPackageRequest)(nil),        // 13: steeleagle_protocol.v1.services.daemon.InstallPackageRequest
-	(*InstallPackageResponse)(nil),       // 14: steeleagle_protocol.v1.services.daemon.InstallPackageResponse
-	(*Package)(nil),                      // 15: steeleagle_protocol.v1.services.daemon.Package
-	(*ListPackagesRequest)(nil),          // 16: steeleagle_protocol.v1.services.daemon.ListPackagesRequest
-	(*ListPackagesResponse)(nil),         // 17: steeleagle_protocol.v1.services.daemon.ListPackagesResponse
-	(*RemovePackageRequest)(nil),         // 18: steeleagle_protocol.v1.services.daemon.RemovePackageRequest
-	(*RemovePackageResponse)(nil),        // 19: steeleagle_protocol.v1.services.daemon.RemovePackageResponse
-	(*ResetConfigurationRequest)(nil),    // 20: steeleagle_protocol.v1.services.daemon.ResetConfigurationRequest
-	(*ResetConfigurationResponse)(nil),   // 21: steeleagle_protocol.v1.services.daemon.ResetConfigurationResponse
+	(*RestartRequest)(nil),               // 13: steeleagle_protocol.v1.services.daemon.RestartRequest
+	(*RestartResponse)(nil),              // 14: steeleagle_protocol.v1.services.daemon.RestartResponse
+	(*InstallPackageRequest)(nil),        // 15: steeleagle_protocol.v1.services.daemon.InstallPackageRequest
+	(*InstallPackageResponse)(nil),       // 16: steeleagle_protocol.v1.services.daemon.InstallPackageResponse
+	(*Package)(nil),                      // 17: steeleagle_protocol.v1.services.daemon.Package
+	(*ListPackagesRequest)(nil),          // 18: steeleagle_protocol.v1.services.daemon.ListPackagesRequest
+	(*ListPackagesResponse)(nil),         // 19: steeleagle_protocol.v1.services.daemon.ListPackagesResponse
+	(*RemovePackageRequest)(nil),         // 20: steeleagle_protocol.v1.services.daemon.RemovePackageRequest
+	(*RemovePackageResponse)(nil),        // 21: steeleagle_protocol.v1.services.daemon.RemovePackageResponse
 	nil,                                  // 22: steeleagle_protocol.v1.services.daemon.GetConfigurationResponse.PluginTomlsEntry
 	nil,                                  // 23: steeleagle_protocol.v1.services.daemon.Package.PluginsEntry
 	(*durationpb.Duration)(nil),          // 24: google.protobuf.Duration
@@ -1474,26 +1506,26 @@ var file_steeleagle_protocol_v1_services_daemon_daemon_proto_depIdxs = []int32{
 	8,  // 4: steeleagle_protocol.v1.services.daemon.ListServicesResponse.services:type_name -> steeleagle_protocol.v1.services.daemon.ActiveService
 	7,  // 5: steeleagle_protocol.v1.services.daemon.RestartServicesRequest.services:type_name -> steeleagle_protocol.v1.services.daemon.Service
 	23, // 6: steeleagle_protocol.v1.services.daemon.Package.plugins:type_name -> steeleagle_protocol.v1.services.daemon.Package.PluginsEntry
-	25, // 7: steeleagle_protocol.v1.services.daemon.Package.installed:type_name -> google.protobuf.Timestamp
-	0,  // 8: steeleagle_protocol.v1.services.daemon.Package.PluginsEntry.value:type_name -> steeleagle_protocol.v1.services.daemon.ServiceCategory
+	25, // 7: steeleagle_protocol.v1.services.daemon.Package.modified:type_name -> google.protobuf.Timestamp
+	17, // 8: steeleagle_protocol.v1.services.daemon.ListPackagesResponse.packages:type_name -> steeleagle_protocol.v1.services.daemon.Package
 	1,  // 9: steeleagle_protocol.v1.services.daemon.DaemonService.RegisterOrchestrator:input_type -> steeleagle_protocol.v1.services.daemon.RegisterOrchestratorRequest
 	3,  // 10: steeleagle_protocol.v1.services.daemon.DaemonService.Configure:input_type -> steeleagle_protocol.v1.services.daemon.ConfigureRequest
 	5,  // 11: steeleagle_protocol.v1.services.daemon.DaemonService.GetConfiguration:input_type -> steeleagle_protocol.v1.services.daemon.GetConfigurationRequest
-	20, // 12: steeleagle_protocol.v1.services.daemon.DaemonService.ResetConfiguration:input_type -> steeleagle_protocol.v1.services.daemon.ResetConfigurationRequest
-	9,  // 13: steeleagle_protocol.v1.services.daemon.DaemonService.ListServices:input_type -> steeleagle_protocol.v1.services.daemon.ListServicesRequest
-	11, // 14: steeleagle_protocol.v1.services.daemon.DaemonService.RestartServices:input_type -> steeleagle_protocol.v1.services.daemon.RestartServicesRequest
-	13, // 15: steeleagle_protocol.v1.services.daemon.DaemonService.InstallPackage:input_type -> steeleagle_protocol.v1.services.daemon.InstallPackageRequest
-	16, // 16: steeleagle_protocol.v1.services.daemon.DaemonService.ListPackages:input_type -> steeleagle_protocol.v1.services.daemon.ListPackagesRequest
-	18, // 17: steeleagle_protocol.v1.services.daemon.DaemonService.RemovePackage:input_type -> steeleagle_protocol.v1.services.daemon.RemovePackageRequest
+	9,  // 12: steeleagle_protocol.v1.services.daemon.DaemonService.ListServices:input_type -> steeleagle_protocol.v1.services.daemon.ListServicesRequest
+	11, // 13: steeleagle_protocol.v1.services.daemon.DaemonService.RestartServices:input_type -> steeleagle_protocol.v1.services.daemon.RestartServicesRequest
+	13, // 14: steeleagle_protocol.v1.services.daemon.DaemonService.Restart:input_type -> steeleagle_protocol.v1.services.daemon.RestartRequest
+	15, // 15: steeleagle_protocol.v1.services.daemon.DaemonService.InstallPackage:input_type -> steeleagle_protocol.v1.services.daemon.InstallPackageRequest
+	18, // 16: steeleagle_protocol.v1.services.daemon.DaemonService.ListPackages:input_type -> steeleagle_protocol.v1.services.daemon.ListPackagesRequest
+	20, // 17: steeleagle_protocol.v1.services.daemon.DaemonService.RemovePackage:input_type -> steeleagle_protocol.v1.services.daemon.RemovePackageRequest
 	2,  // 18: steeleagle_protocol.v1.services.daemon.DaemonService.RegisterOrchestrator:output_type -> steeleagle_protocol.v1.services.daemon.RegisterOrchestratorResponse
 	4,  // 19: steeleagle_protocol.v1.services.daemon.DaemonService.Configure:output_type -> steeleagle_protocol.v1.services.daemon.ConfigureResponse
 	6,  // 20: steeleagle_protocol.v1.services.daemon.DaemonService.GetConfiguration:output_type -> steeleagle_protocol.v1.services.daemon.GetConfigurationResponse
-	21, // 21: steeleagle_protocol.v1.services.daemon.DaemonService.ResetConfiguration:output_type -> steeleagle_protocol.v1.services.daemon.ResetConfigurationResponse
-	10, // 22: steeleagle_protocol.v1.services.daemon.DaemonService.ListServices:output_type -> steeleagle_protocol.v1.services.daemon.ListServicesResponse
-	12, // 23: steeleagle_protocol.v1.services.daemon.DaemonService.RestartServices:output_type -> steeleagle_protocol.v1.services.daemon.RestartServicesResponse
-	14, // 24: steeleagle_protocol.v1.services.daemon.DaemonService.InstallPackage:output_type -> steeleagle_protocol.v1.services.daemon.InstallPackageResponse
-	17, // 25: steeleagle_protocol.v1.services.daemon.DaemonService.ListPackages:output_type -> steeleagle_protocol.v1.services.daemon.ListPackagesResponse
-	19, // 26: steeleagle_protocol.v1.services.daemon.DaemonService.RemovePackage:output_type -> steeleagle_protocol.v1.services.daemon.RemovePackageResponse
+	10, // 21: steeleagle_protocol.v1.services.daemon.DaemonService.ListServices:output_type -> steeleagle_protocol.v1.services.daemon.ListServicesResponse
+	12, // 22: steeleagle_protocol.v1.services.daemon.DaemonService.RestartServices:output_type -> steeleagle_protocol.v1.services.daemon.RestartServicesResponse
+	14, // 23: steeleagle_protocol.v1.services.daemon.DaemonService.Restart:output_type -> steeleagle_protocol.v1.services.daemon.RestartResponse
+	16, // 24: steeleagle_protocol.v1.services.daemon.DaemonService.InstallPackage:output_type -> steeleagle_protocol.v1.services.daemon.InstallPackageResponse
+	19, // 25: steeleagle_protocol.v1.services.daemon.DaemonService.ListPackages:output_type -> steeleagle_protocol.v1.services.daemon.ListPackagesResponse
+	21, // 26: steeleagle_protocol.v1.services.daemon.DaemonService.RemovePackage:output_type -> steeleagle_protocol.v1.services.daemon.RemovePackageResponse
 	18, // [18:27] is the sub-list for method output_type
 	9,  // [9:18] is the sub-list for method input_type
 	9,  // [9:9] is the sub-list for extension type_name
@@ -1506,7 +1538,7 @@ func file_steeleagle_protocol_v1_services_daemon_daemon_proto_init() {
 	if File_steeleagle_protocol_v1_services_daemon_daemon_proto != nil {
 		return
 	}
-	file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[12].OneofWrappers = []any{}
+	file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[14].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

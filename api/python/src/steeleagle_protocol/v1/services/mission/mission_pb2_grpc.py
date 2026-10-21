@@ -9,7 +9,7 @@ class MissionServiceStub:
     """
     Used to start a new mission or stop an active mission.
 
-    This service is hosted by the driver module and represents the
+    This service is hosted by the vehicle module and represents the
     mission interface for the vehicle. All missions must implement
     both StartMission and StopMission, and may optionally publish
     mission status updates to the URI provided over a Gabriel producer.
@@ -37,7 +37,7 @@ class MissionServiceServicer:
     """
     Used to start a new mission or stop an active mission.
 
-    This service is hosted by the driver module and represents the
+    This service is hosted by the vehicle module and represents the
     mission interface for the vehicle. All missions must implement
     both StartMission and StopMission, and may optionally publish
     mission status updates to the URI provided over a Gabriel producer.
@@ -92,7 +92,7 @@ class MissionService:
     """
     Used to start a new mission or stop an active mission.
 
-    This service is hosted by the driver module and represents the
+    This service is hosted by the vehicle module and represents the
     mission interface for the vehicle. All missions must implement
     both StartMission and StopMission, and may optionally publish
     mission status updates to the URI provided over a Gabriel producer.

@@ -17,6 +17,7 @@ func TestPluginConfigParsesExample(t *testing.T) {
 		Plugin: PluginRoot{
 			Name:         "Logdy",
 			Description:  "Runs the Logdy logging service",
+			Type:         "extra",
 			Dependencies: []string{"logdy"},
 		},
 		Args: []ArgsField{{
@@ -39,7 +40,7 @@ func TestPluginConfigParsesCapExamples(t *testing.T) {
 		args []ArgsField
 	}{
 		"examples/driver.plugin.toml": {
-			root: PluginRoot{Name: "Parrot Anafi 4K", Description: "Parrot Anafi 4K quadcopter driver"},
+			root: PluginRoot{Name: "Parrot Anafi 4K", Description: "Parrot Anafi 4K quadcopter driver", Type: "driver"},
 			args: []ArgsField{{
 				Name:        "ip",
 				Type:        "string",
@@ -48,7 +49,7 @@ func TestPluginConfigParsesCapExamples(t *testing.T) {
 			}},
 		},
 		"examples/engine.plugin.toml": {
-			root: PluginRoot{Name: "YOLO Qualcomm", Description: "YOLO detection on QNN-enabled hardware"},
+			root: PluginRoot{Name: "YOLO Qualcomm", Description: "YOLO detection on QNN-enabled hardware", Type: "engine"},
 			args: []ArgsField{{
 				Name:        "confidence",
 				Type:        "number",

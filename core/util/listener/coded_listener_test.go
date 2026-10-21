@@ -21,7 +21,7 @@ func TestAuthCode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to listen: %v", err)
 	}
-	ln := newTestCodedListener(t, sock, NewAcl(nil, map[int]AuthCode{os.Getpid(): MissionCode}, false))
+	ln := newTestCodedListener(t, sock, NewAcl(nil, map[int]AuthCode{os.Getpid(): UserCode}, false))
 
 	conn, err := grpc.NewClient("unix:///tmp/listener.sock", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -44,7 +44,7 @@ func TestAuthCode(t *testing.T) {
 		if !ok {
 			return nil, fmt.Errorf("couldn't get auth code from peer")
 		}
-		if a.Code != MissionCode {
+		if a.Code != UserCode {
 			return nil, fmt.Errorf("cannot call this RPC without code: mission")
 		}
 		return handler(ctx, req)

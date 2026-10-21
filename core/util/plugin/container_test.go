@@ -160,7 +160,7 @@ func TestContainerPluginWrongAuthCode(t *testing.T) {
 	plugin, err := newTestContainerPlugin(t,
 		"alpine",
 		WithPath(path),
-		WithAuthCode(listener.MissionCode),
+		WithAuthCode(listener.UserCode),
 		WithRunnerArgs([]string{"--rm"}),
 	)
 	if err != nil {

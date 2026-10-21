@@ -5,10 +5,6 @@ import rego.v1
 default allowed := false
 
 allowed if {
-    startswith(input.command, "server/")
-}
-
-allowed if {
     startswith(input.command, "admin/")
 }
 

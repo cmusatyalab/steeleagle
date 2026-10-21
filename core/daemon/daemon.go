@@ -2,41 +2,71 @@ package daemon
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"net"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	daemonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon"
 	"github.com/cmusatyalab/steeleagle/config"
 	"github.com/cmusatyalab/steeleagle/v4/core/util"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/network"
+	"github.com/cmusatyalab/steeleagle/v4/core/util/plugin"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/policy"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/router"
+	"github.com/cmusatyalab/steeleagle/v4/core/vehicle"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 )
 
+type serviceInfo struct {
+	name       string                   // service name, unique within its category
+	category   daemonpb.ServiceCategory // service category
+	pluginName string                   // name of the plugin within its package
+	url        string                   // normalized package url
+	config     *config.PluginConfig     // parsed .plugin.toml
+	ln         net.Listener             // listener for calls from the plugin, if any
+	conn       *grpc.ClientConn         // client connection to the plugin or vehicle, if any
+	endpoint   string                   // iceoryx endpoint, for engines only
+	plugin     plugin.Plugin            // plugin, the driver for vehicles
+	vehicle    *vehicle.Vehicle         // vehicle, for vehicles only
+	started    time.Time                // start time of the current run
+	cancel     context.CancelFunc       // stop the service, nil if not started
+}
+
 type Daemon struct {
 	daemonpb.UnimplementedDaemonServiceServer
 	daemonpb.UnimplementedTransferServiceServer
-	Config     *config.DaemonConfig // daemon config
-	RunDir     string               // path to daemon runtime directory
-	PkgDir     string               // path to daemon package directory
-	pkgMu      sync.Mutex           // mutex to protect package directory updates
-	Running    atomic.Bool          // whether or not the daemon is currently running
-	configPath string               // path to daemon config.toml
-	authKey    string               // VPN auth key, if any
-	policy     *policy.Policy       // policy for command authorization
-	router     *router.Router       // router to external daemons/internal vehicles
-	network    *network.Server      // network server (VPN or host)
-	netLn      net.Listener         // main network listener
-	server     *grpc.Server         // gRPC server
-	cancel     context.CancelFunc   // cancel function for active contexts
-	log        zerolog.Logger       // logger object
+	Config     *config.DaemonConfig                        // daemon config
+	RunDir     string                                      // path to daemon runtime directory
+	PkgDir     string                                      // path to daemon package directory
+	pkgMu      sync.Mutex                                  // mutex to protect package directory updates
+	Running    atomic.Bool                                 // whether or not the daemon is currently running
+	configPath string                                      // path to daemon config.toml
+	authKey    string                                      // VPN auth key, if any
+	policy     *policy.Policy                              // policy for command authorization
+	router     *router.Router                              // router to external daemons/internal vehicles
+	network    *network.Server                             // network server (VPN or host)
+	netLn      net.Listener                                // main network listener
+	server     *grpc.Server                                // gRPC server
+	services   map[daemonpb.ServiceCategory][]*serviceInfo // available services, in config order
+	svcMu      sync.Mutex                                  // mutex to protect services
+	rcsAddr    string                                      // orchestrator remote compute service address, if any
+	rcsCert    string                                      // orchestrator remote compute service cert, if any
+	selfAddr   netip.Addr                                  // address of this daemon as seen by the orchestrator, if registered
+	certMu     sync.Mutex                                  // mutex to protect the local compute cert files
+	remotes    map[string]*grpc.ClientConn                 // connections to registered remote daemons, by address
+	remotesMu  sync.Mutex                                  // mutex to protect remotes
+	ctx        context.Context                             // context for the daemon
+	cancel     context.CancelFunc                          // cancel function for active contexts
+	log        zerolog.Logger                              // logger object
 }
 
 // Creates a new daemon from the config in the data directory.
@@ -58,10 +88,18 @@ func NewDaemon(options ...DaemonOption) (*Daemon, error) {
 		}
 		daemon.configPath = filepath.Join(dataDir, ConfigFileName)
 	}
-	if _, err := os.Stat(daemon.configPath); err != nil {
+	if _, err := os.Stat(daemon.configPath); errors.Is(err, fs.ErrNotExist) {
+		daemon.log.Warn().Str("path", daemon.configPath).
+			Msg("no daemon config found, using default")
+		if err := daemon.writeConfig(DefaultConfig); err != nil {
+			daemon.log.Error().Err(err).Str("path", daemon.configPath).
+				Msg("could not write default daemon config")
+			return nil, err
+		}
+	} else if err != nil {
 		daemon.log.Error().Err(err).Str("path", daemon.configPath).
-			Msg("no daemon config found")
-		return nil, fmt.Errorf("no daemon config found at %s: %w", daemon.configPath, err)
+			Msg("could not access daemon config")
+		return nil, err
 	}
 	var err error
 	daemon.Config, err = config.ParseDaemonConfigFromFilepath(daemon.configPath)
@@ -141,7 +179,7 @@ func (d *Daemon) Run(ctx context.Context) (err error) {
 
 	// Set up new context
 	ctx, cancel := context.WithCancel(ctx)
-	d.cancel = cancel
+	d.ctx, d.cancel = ctx, cancel
 	defer cancel()
 
 	// Join the network; under the notailscale build tag this is the host network
@@ -186,35 +224,40 @@ func (d *Daemon) Run(ctx context.Context) (err error) {
 	}()
 	d.log.Info().Int("port", d.Config.Daemon.Port).Msg("daemon started")
 
+	// Gather services, then register vehicles with the orchestrator, which
+	// provides the remote compute service the vehicles are started with
+	if err := d.gatherServices(); err != nil {
+		d.log.Error().Err(err).Msg("could not set up some services")
+	}
+	if d.Config.Daemon.Orchestrator != "" {
+		if err := d.registerWithOrchestrator(ctx); err != nil {
+			d.log.Error().Err(err).Str("orchestrator", d.Config.Daemon.Orchestrator).
+				Msg("could not register with orchestrator, starting vehicles without remote compute")
+		}
+	}
+	if err := d.startServices(d.allServices()); err != nil {
+		d.log.Error().Err(err).Msg("could not start some services")
+	}
+
+	serverDone := false
 	select {
 	case <-ctx.Done():
 		d.log.Info().Msg("context canceled, shutting down")
-		d.server.GracefulStop()
-		<-errChan
 	case err = <-errChan:
+		serverDone = true
 		if err != nil {
 			d.log.Error().Err(err).Msg("server exited with error, shutting down")
 		}
 	}
+
+	// Stop services before the server, since plugins hold connections to it
+	cancel()
+	d.stopServices(d.allServices())
+	d.closeRemotes()
+	if !serverDone {
+		d.server.GracefulStop()
+		<-errChan
+	}
 	d.log.Info().Msg("shutdown complete")
 	return err
-}
-
-// addOrchestratorToAcl grants AdminCode to the orchestrator's IP addresses on
-// the daemon network.
-func (d *Daemon) addOrchestratorToAcl(ctx context.Context, acl *listener.Acl) error {
-	host := d.Config.Daemon.Orchestrator
-	if h, _, err := net.SplitHostPort(host); err == nil {
-		host = h
-	}
-	addrs, err := d.network.Resolve(ctx, host)
-	if err != nil {
-		return err
-	}
-	for _, addr := range addrs {
-		if err := acl.AddIp(addr.String(), listener.AdminCode); err != nil {
-			return err
-		}
-	}
-	return nil
 }

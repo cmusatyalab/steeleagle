@@ -10,12 +10,10 @@ match = [
 [[states]]
 name = 'LOCAL'
 allowed = [
-    'mission/**.ControlService/*',
-    'mission/**.DataService/*',
+    'user/**.ControlService/*',
+    'user/**.DataService/*',
 ]
 match = [
-    ['server/**.ControlService/*', 'REMOTE'],
-    ['server/**.MissionService/StopMission', 'REMOTE'],
     ['admin/**.ControlService/*', 'REMOTE'],
     ['admin/**.MissionService/StopMission', 'REMOTE'],
 ]

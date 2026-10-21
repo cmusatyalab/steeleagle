@@ -128,7 +128,7 @@ func TestSandboxPluginWrongAuthCode(t *testing.T) {
 	}
 	plugin, err := newTestSandboxPlugin(t,
 		WithPath(path),
-		WithAuthCode(listener.MissionCode),
+		WithAuthCode(listener.UserCode),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)

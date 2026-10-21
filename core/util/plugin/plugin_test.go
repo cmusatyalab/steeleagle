@@ -193,7 +193,7 @@ func TestPluginWrongAuthCode(t *testing.T) {
 	}
 	plugin, err := newTestBasePlugin(t,
 		WithPath(path),
-		WithAuthCode(listener.MissionCode),
+		WithAuthCode(listener.UserCode),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)

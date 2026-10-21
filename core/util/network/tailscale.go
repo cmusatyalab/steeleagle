@@ -94,6 +94,19 @@ func (i *Server) Resolve(ctx context.Context, host string) ([]netip.Addr, error)
 	return nil, fmt.Errorf("no tailnet peer found for %q", host)
 }
 
+// LocalAddr returns this node's tailnet IP address, preferring IPv4 unless
+// remote is an IPv6 address. Every peer reaches this node at the same address.
+func (i *Server) LocalAddr(ctx context.Context, remote netip.Addr) (netip.Addr, error) {
+	ip4, ip6 := i.server.TailscaleIPs()
+	if (remote.Is6() || !ip4.IsValid()) && ip6.IsValid() {
+		return ip6, nil
+	}
+	if ip4.IsValid() {
+		return ip4, nil
+	}
+	return netip.Addr{}, fmt.Errorf("tailscale node has no addresses")
+}
+
 func (i *Server) Close() {
 	i.server.Close()
 }

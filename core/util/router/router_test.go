@@ -174,8 +174,8 @@ func TestHeaderRouting(t *testing.T) {
 	}
 }
 
-// TestMetadataForwarding ensures that caller metadata is forwarded to the
-// backend intact, without the routing header or the caller's :authority.
+// TestMetadataForwarding ensures that caller metadata, including the routing
+// header, is forwarded to the backend intact, without the caller's :authority.
 func TestMetadataForwarding(t *testing.T) {
 	b, addr := startBackend(t, "a")
 	r := newRouter(t, map[string]string{"a": addr}, nil)
@@ -192,8 +192,8 @@ func TestMetadataForwarding(t *testing.T) {
 	}
 
 	md := b.metadata()
-	if got := md.Get(routeHeader); len(got) != 0 {
-		t.Errorf("routing key leaked to backend: %v", got)
+	if got := md.Get(routeHeader); len(got) != 1 || got[0] != "a" {
+		t.Errorf("routing key not forwarded to backend: %v", got)
 	}
 	if got := md.Get("x-custom"); len(got) != 2 || got[0] != "one" || got[1] != "two" {
 		t.Errorf("multi-value metadata not forwarded intact: %v", got)
@@ -575,5 +575,33 @@ func TestMixedServer(t *testing.T) {
 	}
 	if !bytes.Equal(resp.GetPayload().GetBody(), body) {
 		t.Errorf("payload mangled: got %q, want %q", resp.GetPayload().GetBody(), body)
+	}
+}
+
+// TestChainedRouting ensures that a call routed by its key to a backend that
+// is itself a router, like an orchestrator forwarding to a remote daemon, is
+// routed on by the same key.
+func TestChainedRouting(t *testing.T) {
+	const key = "100.64.0.7/harpy"
+	_, harpy := startBackend(t, "harpy")
+	_, other := startBackend(t, "other")
+	remote := newRouter(t, map[string]string{key: harpy, "other": other}, nil)
+
+	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("couldn't listen on localhost: %v", err)
+	}
+	s := grpc.NewServer(grpc.UnknownServiceHandler(remote.Handle), grpc.ForceServerCodec(RawCodec{}))
+	go s.Serve(lis)
+	t.Cleanup(s.Stop)
+
+	client := startProxy(t, newRouter(t, map[string]string{key: lis.Addr().String()}, nil))
+	ctx := metadata.AppendToOutgoingContext(testContext(t), routeHeader, key)
+	resp, err := client.UnaryCall(ctx, &testgrpc.SimpleRequest{})
+	if err != nil {
+		t.Fatalf("chained call failed: %v", err)
+	}
+	if resp.GetServerId() != "harpy" {
+		t.Errorf("expected call routed to harpy, got %q", resp.GetServerId())
 	}
 }

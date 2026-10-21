@@ -3,10 +3,18 @@ first = 'ONLINE'
 [[states]]
 name = 'ONLINE'
 allowed = [
-    'external/**.DaemonService/*',
-    'external/**.TransferService/*',
+    'privileged/**.DaemonService/*',
+    'privileged/**.TransferService/*',
     # Proxied calls to vehicles and remote daemons; vehicle laws apply downstream
-    'external/steeleagle_protocol.v1.services.**',
+    'privileged/**',
+    'external/**.DaemonService/ListServices',
+    'external/**.DaemonService/ListPackages',
+    'external/**.DaemonService/GetConfiguration',
+    # Allows engines to upload models for other engines
+    'external/**.TransferService/TransferModel' ,
+    # Remote daemons register with their orchestrator; the handler only lets
+    # them register vehicles at their own IP
+    'external/**.DaemonService/RegisterOrchestrator',
 ]
 match = []
 
@@ -14,7 +22,11 @@ match = []
 name = 'LOCKED'
 # The orchestrator has AuthCode admin; everyone else is read-only
 allowed = [
+    'privileged/**.DaemonService/ListServices',
+    'privileged/**.DaemonService/ListPackages',
+    'privileged/**.DaemonService/GetConfiguration',
     'external/**.DaemonService/ListServices',
     'external/**.DaemonService/ListPackages',
     'external/**.DaemonService/GetConfiguration',
 ]
+match = []

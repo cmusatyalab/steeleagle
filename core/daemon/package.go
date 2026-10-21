@@ -13,11 +13,12 @@ import (
 	"regexp"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/BurntSushi/toml"
+	daemonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Validation patterns for package urls and tags; urls come from remote callers
@@ -40,10 +41,14 @@ type packageUrl struct {
 
 // packageInfo is the metadata stored with each installed package.
 type packageInfo struct {
-	Url       string    `toml:"url"`       // normalized package url
-	Tag       string    `toml:"tag"`       // requested branch or commit tag, empty for the default branch
-	Commit    string    `toml:"commit"`    // checked out commit hash
-	Installed time.Time `toml:"installed"` // install time
+	Url    string `toml:"url"`    // normalized package url
+	Tag    string `toml:"tag"`    // requested branch or commit tag, empty for the default branch
+	Commit string `toml:"commit"` // checked out commit hash
+}
+
+// pendingDir returns the path of the pending package directory.
+func (d *Daemon) pendingDir() string {
+	return filepath.Join(d.PkgDir, PendingDirName)
 }
 
 // parsePackageUrl validates and normalizes a package url. The url may omit
@@ -115,11 +120,6 @@ func runGit(ctx context.Context, args ...string) (string, error) {
 	return strings.TrimSpace(stdout.String()), nil
 }
 
-// pendingDir returns the path of the pending package directory.
-func (d *Daemon) pendingDir() string {
-	return filepath.Join(d.PkgDir, PendingDirName)
-}
-
 // installPackage sparse checks out the package at url on tag (the default
 // branch if empty) into the pending package directory, replacing any pending
 // copy of the same package. It takes effect on the next daemon restart.
@@ -185,7 +185,7 @@ func (d *Daemon) installPackage(ctx context.Context, url, tag string) error {
 	} else if err != nil {
 		return status.Error(codes.Internal, err.Error())
 	}
-	info := packageInfo{Url: u.url, Tag: tag, Commit: commit, Installed: time.Now().UTC()}
+	info := packageInfo{Url: u.url, Tag: tag, Commit: commit}
 	var buf bytes.Buffer
 	if err := toml.NewEncoder(&buf).Encode(info); err != nil {
 		return status.Error(codes.Internal, err.Error())
@@ -228,6 +228,65 @@ func (d *Daemon) removePackage(url string) error {
 	return d.markPendingDirty()
 }
 
+// listPackages returns the packages in the pending package directory, so that
+// installs and removals show up before the next restart. Each package maps its
+// plugin names to the bytes of their plugin files.
+func (d *Daemon) listPackages() ([]*daemonpb.Package, error) {
+	d.pkgMu.Lock()
+	defer d.pkgMu.Unlock()
+	entries, err := os.ReadDir(d.pendingDir())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	var packages []*daemonpb.Package
+	for _, e := range entries {
+		if !e.IsDir() || strings.HasPrefix(e.Name(), ".") {
+			continue
+		}
+		pkg, err := readPackage(filepath.Join(d.pendingDir(), e.Name()))
+		if err != nil {
+			d.log.Warn().Err(err).Str("package", e.Name()).Msg("skipping unreadable package")
+			continue
+		}
+		packages = append(packages, pkg)
+	}
+	return packages, nil
+}
+
+// readPackage reads the metadata and plugin files of the package in dir.
+func readPackage(dir string) (*daemonpb.Package, error) {
+	var info packageInfo
+	if _, err := toml.DecodeFile(filepath.Join(dir, PackageInfoFileName), &info); err != nil {
+		return nil, err
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	plugins := make(map[string][]byte)
+	for _, e := range entries {
+		name, ok := strings.CutSuffix(e.Name(), PluginFileSuffix)
+		if !ok || name == "" || !e.Type().IsRegular() {
+			continue
+		}
+		content, err := os.ReadFile(filepath.Join(dir, e.Name()))
+		if err != nil {
+			return nil, err
+		}
+		plugins[name] = content
+	}
+	stat, err := os.Stat(dir)
+	if err != nil {
+		return nil, err
+	}
+	return daemonpb.Package_builder{
+		Url:      info.Url,
+		Tag:      info.Tag,
+		Plugins:  plugins,
+		Modified: timestamppb.New(stat.ModTime()),
+	}.Build(), nil
+}
+
 // markPendingDirty marks the pending directory as changed, so that it is
 // applied on the next restart. The caller must hold pkgMu.
 func (d *Daemon) markPendingDirty() error {
@@ -239,10 +298,7 @@ func (d *Daemon) markPendingDirty() error {
 
 // commitPendingPackages applies a changed pending directory to the package
 // directory, so that installs and removals take effect without disrupting
-// services running on the old packages. If the pending directory doesn't
-// exist yet, it is created as a copy of the package directory. The pending
-// directory is never modified here, so an interrupted commit is redone on the
-// next call.
+// services running on the old packages.
 func (d *Daemon) commitPendingPackages() error {
 	d.pkgMu.Lock()
 	defer d.pkgMu.Unlock()

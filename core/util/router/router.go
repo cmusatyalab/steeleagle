@@ -84,11 +84,12 @@ func (r *Router) Handle(_ any, down grpc.ServerStream) error {
 		return err
 	}
 
-	// Forward caller metadata, minus pseudo-headers and the routing key
+	// Forward caller metadata, minus pseudo-headers; the routing key is kept,
+	// so that a backend which is itself a router can route the call on
 	inMD, _ := metadata.FromIncomingContext(ctx)
 	outMD := metadata.MD{}
 	for k, v := range inMD {
-		if strings.HasPrefix(k, ":") || k == routeHeader {
+		if strings.HasPrefix(k, ":") {
 			continue
 		}
 		outMD[k] = v
