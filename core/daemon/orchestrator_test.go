@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/pem"
-	"net"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,12 +12,11 @@ import (
 	"github.com/adrg/xdg"
 	daemonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon"
 	"github.com/cmusatyalab/steeleagle/config"
-	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/policy"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/router"
-	"github.com/rs/zerolog"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/peer"
+	"google.golang.org/grpc/connectivity"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -30,17 +29,17 @@ func newTestOrchestrator(t *testing.T) *Daemon {
 	t.Cleanup(xdg.Reload)
 	d := &Daemon{
 		Config: &config.DaemonConfig{Daemon: config.DaemonRoot{Port: 9000, Lcs: 9001, Hostname: "homebase"}},
-		router: router.NewRouter(nil, nil, router.WithLogger(zerolog.Nop())),
-		log:    zerolog.Nop(),
+		router: router.NewRouter(nil, nil, router.WithLogger(testLogger())),
+		log:    testLogger(),
 	}
 	t.Cleanup(d.closeRemotes)
 	return d
 }
 
-// callerContext returns a context for a call from ip through a coded listener.
+// callerContext returns a context for a call from ip, with the caller address
+// recorded by the relay.
 func callerContext(ip string) context.Context {
-	addr := &listener.Addr{Addr: &net.TCPAddr{IP: net.ParseIP(ip), Port: 41234}, Code: listener.ExternalCode}
-	return peer.NewContext(context.Background(), &peer.Peer{Addr: addr})
+	return metadata.NewIncomingContext(context.Background(), metadata.Pairs(callerHeader, ip+":41234"))
 }
 
 // TestLcsCert ensures that a cert is generated for the daemon hostname and
@@ -77,8 +76,9 @@ func TestLcsCert(t *testing.T) {
 }
 
 // TestRegisterOrchestrator ensures that a daemon registering its vehicles gets
-// the local compute cert and port back, sharing one connection to it, and that
-// vehicles that aren't on the calling daemon are rejected.
+// the local compute cert and port back, sharing one connection to it that is
+// replaced when it registers on another port, and that vehicles that aren't on
+// the calling daemon are rejected.
 func TestRegisterOrchestrator(t *testing.T) {
 	d := newTestOrchestrator(t)
 	ctx := callerContext("100.64.0.7")
@@ -97,8 +97,21 @@ func TestRegisterOrchestrator(t *testing.T) {
 	if _, err := d.RegisterOrchestrator(ctx, req); err != nil {
 		t.Fatalf("second register failed: %v", err)
 	}
-	if _, ok := d.remotes["100.64.0.7:9100"]; !ok || len(d.remotes) != 1 {
+	ip := netip.MustParseAddr("100.64.0.7")
+	first, ok := d.remotes[ip]
+	if !ok || len(d.remotes) != 1 || first.Target() != "passthrough:///100.64.0.7:9100" {
 		t.Errorf("expected one connection to 100.64.0.7:9100, got %v", d.remotes)
+	}
+	// Registering on another port replaces the connection to the daemon
+	moved := daemonpb.RegisterOrchestratorRequest_builder{Vehicles: req.GetVehicles(), Port: 9200}.Build()
+	if _, err := d.RegisterOrchestrator(ctx, moved); err != nil {
+		t.Fatalf("register on new port failed: %v", err)
+	}
+	if conn := d.remotes[ip]; len(d.remotes) != 1 || conn.Target() != "passthrough:///100.64.0.7:9200" {
+		t.Errorf("expected the connection replaced by one to 100.64.0.7:9200, got %v", d.remotes)
+	}
+	if first.GetState() != connectivity.Shutdown {
+		t.Errorf("expected the old connection closed, got %v", first.GetState())
 	}
 
 	bad := map[string]struct {
@@ -129,7 +142,7 @@ func TestRegisterOrchestratorLaw(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := policy.NewPolicy(law, policy.WithLogger(zerolog.Nop()))
+	p, err := policy.NewPolicy(law, policy.WithLogger(testLogger()))
 	if err != nil {
 		t.Fatal(err)
 	}

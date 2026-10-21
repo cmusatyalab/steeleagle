@@ -38,14 +38,18 @@ const (
 type TransferServiceClient interface {
 	// Transfer a file.
 	//
-	// Transfers a file to the daemon. Saved by default to the steeleagle/files/
-	// directory under XDG data home.
+	// Transfers a file to the daemon. Saved to the steeleagle/files/ directory
+	// under XDG data home, replacing any file with the same name. Chunks are
+	// numbered from 1 to total and sent in order; the file is only saved once
+	// the last chunk is received.
 	TransferFile(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[TransferFileRequest, TransferFileResponse], error)
 	// Transfer a model.
 	//
-	// Transfers a model to the daemon. Saved by default to the steeleagle/models/
-	// directory under XDG data home. This directory is shared read-only with all
-	// engine plugins by default.
+	// Transfers a model to the daemon. Saved to the steeleagle/models/ directory
+	// under XDG data home, replacing any model with the same name. This directory
+	// is shared read-only with all engine plugins by default. Chunks are numbered
+	// from 1 to total and sent in order; the model is only saved once the last
+	// chunk is received.
 	TransferModel(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[TransferModelRequest, TransferModelResponse], error)
 }
 
@@ -94,14 +98,18 @@ type TransferService_TransferModelClient = grpc.BidiStreamingClient[TransferMode
 type TransferServiceServer interface {
 	// Transfer a file.
 	//
-	// Transfers a file to the daemon. Saved by default to the steeleagle/files/
-	// directory under XDG data home.
+	// Transfers a file to the daemon. Saved to the steeleagle/files/ directory
+	// under XDG data home, replacing any file with the same name. Chunks are
+	// numbered from 1 to total and sent in order; the file is only saved once
+	// the last chunk is received.
 	TransferFile(grpc.BidiStreamingServer[TransferFileRequest, TransferFileResponse]) error
 	// Transfer a model.
 	//
-	// Transfers a model to the daemon. Saved by default to the steeleagle/models/
-	// directory under XDG data home. This directory is shared read-only with all
-	// engine plugins by default.
+	// Transfers a model to the daemon. Saved to the steeleagle/models/ directory
+	// under XDG data home, replacing any model with the same name. This directory
+	// is shared read-only with all engine plugins by default. Chunks are numbered
+	// from 1 to total and sent in order; the model is only saved once the last
+	// chunk is received.
 	TransferModel(grpc.BidiStreamingServer[TransferModelRequest, TransferModelResponse]) error
 	mustEmbedUnimplementedTransferServiceServer()
 }

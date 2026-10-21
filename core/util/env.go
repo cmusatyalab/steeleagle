@@ -39,7 +39,7 @@ func GetVpnDir() (string, error) {
 	return vpnPath, nil
 }
 
-// GetPackageDir returns the persistent directory installed packages.
+// GetPackageDir returns the persistent directory for installed packages.
 func GetPackageDir(category string) (string, error) {
 	dir := filepath.Join(GetDataHome(), projectDir, packageDir)
 	err := os.MkdirAll(dir, 0755)
@@ -47,6 +47,26 @@ func GetPackageDir(category string) (string, error) {
 		return "", err
 	}
 	return dir, nil
+}
+
+// GetModelDir returns the persistent directory for models.
+func GetModelDir() (string, error) {
+	modelPath := filepath.Join(GetDataHome(), projectDir, modelDir)
+	err := os.MkdirAll(modelPath, 0755)
+	if err != nil {
+		return "", err
+	}
+	return modelPath, nil
+}
+
+// GetFileDir returns the persistent directory for transferred files.
+func GetFileDir() (string, error) {
+	filePath := filepath.Join(GetDataHome(), projectDir, fileDir)
+	err := os.MkdirAll(filePath, 0755)
+	if err != nil {
+		return "", err
+	}
+	return filePath, nil
 }
 
 // GetPluginDir returns the runtime directory for all plugins.

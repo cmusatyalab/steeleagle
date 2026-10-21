@@ -25,12 +25,13 @@ const (
 )
 
 type TransferFileRequest struct {
-	state             protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Chunk  []byte                 `protobuf:"bytes,1,opt,name=chunk,proto3"`
-	xxx_hidden_Number int32                  `protobuf:"varint,2,opt,name=number,proto3"`
-	xxx_hidden_Total  int32                  `protobuf:"varint,3,opt,name=total,proto3"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Chunk    []byte                 `protobuf:"bytes,1,opt,name=chunk,proto3"`
+	xxx_hidden_Number   int32                  `protobuf:"varint,2,opt,name=number,proto3"`
+	xxx_hidden_Total    int32                  `protobuf:"varint,3,opt,name=total,proto3"`
+	xxx_hidden_Filename string                 `protobuf:"bytes,4,opt,name=filename,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *TransferFileRequest) Reset() {
@@ -79,6 +80,13 @@ func (x *TransferFileRequest) GetTotal() int32 {
 	return 0
 }
 
+func (x *TransferFileRequest) GetFilename() string {
+	if x != nil {
+		return x.xxx_hidden_Filename
+	}
+	return ""
+}
+
 func (x *TransferFileRequest) SetChunk(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -94,12 +102,17 @@ func (x *TransferFileRequest) SetTotal(v int32) {
 	x.xxx_hidden_Total = v
 }
 
+func (x *TransferFileRequest) SetFilename(v string) {
+	x.xxx_hidden_Filename = v
+}
+
 type TransferFileRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Chunk  []byte
-	Number int32
-	Total  int32
+	Chunk    []byte
+	Number   int32
+	Total    int32
+	Filename string
 }
 
 func (b0 TransferFileRequest_builder) Build() *TransferFileRequest {
@@ -109,6 +122,7 @@ func (b0 TransferFileRequest_builder) Build() *TransferFileRequest {
 	x.xxx_hidden_Chunk = b.Chunk
 	x.xxx_hidden_Number = b.Number
 	x.xxx_hidden_Total = b.Total
+	x.xxx_hidden_Filename = b.Filename
 	return m0
 }
 
@@ -170,12 +184,13 @@ func (b0 TransferFileResponse_builder) Build() *TransferFileResponse {
 }
 
 type TransferModelRequest struct {
-	state             protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Chunk  []byte                 `protobuf:"bytes,1,opt,name=chunk,proto3"`
-	xxx_hidden_Number int32                  `protobuf:"varint,2,opt,name=number,proto3"`
-	xxx_hidden_Total  int32                  `protobuf:"varint,3,opt,name=total,proto3"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Chunk    []byte                 `protobuf:"bytes,1,opt,name=chunk,proto3"`
+	xxx_hidden_Number   int32                  `protobuf:"varint,2,opt,name=number,proto3"`
+	xxx_hidden_Total    int32                  `protobuf:"varint,3,opt,name=total,proto3"`
+	xxx_hidden_Filename string                 `protobuf:"bytes,4,opt,name=filename,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *TransferModelRequest) Reset() {
@@ -224,6 +239,13 @@ func (x *TransferModelRequest) GetTotal() int32 {
 	return 0
 }
 
+func (x *TransferModelRequest) GetFilename() string {
+	if x != nil {
+		return x.xxx_hidden_Filename
+	}
+	return ""
+}
+
 func (x *TransferModelRequest) SetChunk(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -239,12 +261,17 @@ func (x *TransferModelRequest) SetTotal(v int32) {
 	x.xxx_hidden_Total = v
 }
 
+func (x *TransferModelRequest) SetFilename(v string) {
+	x.xxx_hidden_Filename = v
+}
+
 type TransferModelRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Chunk  []byte
-	Number int32
-	Total  int32
+	Chunk    []byte
+	Number   int32
+	Total    int32
+	Filename string
 }
 
 func (b0 TransferModelRequest_builder) Build() *TransferModelRequest {
@@ -254,6 +281,7 @@ func (b0 TransferModelRequest_builder) Build() *TransferModelRequest {
 	x.xxx_hidden_Chunk = b.Chunk
 	x.xxx_hidden_Number = b.Number
 	x.xxx_hidden_Total = b.Total
+	x.xxx_hidden_Filename = b.Filename
 	return m0
 }
 
@@ -318,17 +346,19 @@ var File_steeleagle_protocol_v1_services_daemon_transfer_proto protoreflect.File
 
 const file_steeleagle_protocol_v1_services_daemon_transfer_proto_rawDesc = "" +
 	"\n" +
-	"5steeleagle_protocol/v1/services/daemon/transfer.proto\x12&steeleagle_protocol.v1.services.daemon\"Y\n" +
+	"5steeleagle_protocol/v1/services/daemon/transfer.proto\x12&steeleagle_protocol.v1.services.daemon\"u\n" +
 	"\x13TransferFileRequest\x12\x14\n" +
 	"\x05chunk\x18\x01 \x01(\fR\x05chunk\x12\x16\n" +
 	"\x06number\x18\x02 \x01(\x05R\x06number\x12\x14\n" +
-	"\x05total\x18\x03 \x01(\x05R\x05total\"2\n" +
+	"\x05total\x18\x03 \x01(\x05R\x05total\x12\x1a\n" +
+	"\bfilename\x18\x04 \x01(\tR\bfilename\"2\n" +
 	"\x14TransferFileResponse\x12\x1a\n" +
-	"\breceived\x18\x01 \x01(\x05R\breceived\"Z\n" +
+	"\breceived\x18\x01 \x01(\x05R\breceived\"v\n" +
 	"\x14TransferModelRequest\x12\x14\n" +
 	"\x05chunk\x18\x01 \x01(\fR\x05chunk\x12\x16\n" +
 	"\x06number\x18\x02 \x01(\x05R\x06number\x12\x14\n" +
-	"\x05total\x18\x03 \x01(\x05R\x05total\"3\n" +
+	"\x05total\x18\x03 \x01(\x05R\x05total\x12\x1a\n" +
+	"\bfilename\x18\x04 \x01(\tR\bfilename\"3\n" +
 	"\x15TransferModelResponse\x12\x1a\n" +
 	"\breceived\x18\x01 \x01(\x05R\breceived2\xb8\x02\n" +
 	"\x0fTransferService\x12\x8f\x01\n" +

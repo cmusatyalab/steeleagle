@@ -138,8 +138,9 @@ func (v *Vehicle) Start(ctx context.Context, daemonLn net.Listener) (err error) 
 		return err
 	}
 
-	// Create the router
-	v.router = router.NewRouter(nil, nil, router.WithLogger(v.log))
+	// Create the router; the vehicle is the end of a route, so the key a call
+	// is routed here by names the vehicle itself
+	v.router = router.NewRouter(nil, nil, router.WithHeaderFallback(), router.WithLogger(v.log))
 
 	// Set up gRPC servers and set up auth interceptor chain; a stopped server
 	// can't serve again, so each run gets a new one

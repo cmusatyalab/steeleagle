@@ -19,11 +19,13 @@ const routeHeader = "x-route-key"
 
 // Router is a proxy router that sends messages to the correct backend
 // by header (uses "x-route-key" as the routing key) or by service if
-// no header is provided.
+// no header is provided. A call with a routing key the router doesn't know is
+// rejected, unless the router falls back to service routes for it.
 type Router struct {
 	mu       sync.RWMutex                // mutex for atomic updates
 	headers  map[string]*grpc.ClientConn // x-route-key value
 	services map[string]*grpc.ClientConn // "pkg.Service"
+	fallback bool                        // route calls with unknown keys by service
 	log      zerolog.Logger              // logger object
 }
 
@@ -197,6 +199,12 @@ func (r *Router) resolve(ctx context.Context, fullMethod string) (*grpc.ClientCo
 		if c, ok := r.headers[v[0]]; ok {
 			r.log.Debug().Str("method", fullMethod).Str("addr", c.Target()).Msg("dispatching method")
 			return c, nil
+		}
+		// A call for a backend the router doesn't know must not be handled by
+		// another one instead
+		if !r.fallback {
+			r.log.Error().Str("method", fullMethod).Str("key", v[0]).Msg("no route for key")
+			return nil, status.Errorf(codes.NotFound, "no route for key %q", v[0])
 		}
 	}
 	// fullMethod looks like "/pkg.Service/Method"

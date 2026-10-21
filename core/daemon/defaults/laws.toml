@@ -10,8 +10,10 @@ allowed = [
     'external/**.DaemonService/ListServices',
     'external/**.DaemonService/ListPackages',
     'external/**.DaemonService/GetConfiguration',
-    # Allows engines to upload models for other engines
-    'external/**.TransferService/TransferModel' ,
+    # Allows engines to upload models for other engines, and orchestrators to
+    # relay transfers to their remote daemons
+    'external/**.TransferService/TransferModel',
+    'external/**.TransferService/TransferFile',
     # Remote daemons register with their orchestrator; the handler only lets
     # them register vehicles at their own IP
     'external/**.DaemonService/RegisterOrchestrator',

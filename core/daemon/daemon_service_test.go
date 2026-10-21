@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	daemonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon"
-	"github.com/rs/zerolog"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -26,7 +25,7 @@ func TestConfiguration(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	d := &Daemon{configPath: path, cancel: cancel, log: zerolog.Nop()}
+	d := &Daemon{configPath: path, cancel: cancel, log: testLogger()}
 
 	resp, err := d.GetConfiguration(ctx, &daemonpb.GetConfigurationRequest{})
 	if err != nil || string(resp.GetConfigToml()) != string(original) {
@@ -62,7 +61,7 @@ func TestConfiguration(t *testing.T) {
 func TestRestart(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	d := &Daemon{cancel: cancel, log: zerolog.Nop()}
+	d := &Daemon{cancel: cancel, log: testLogger()}
 	if _, err := d.Restart(ctx, &daemonpb.RestartRequest{}); err != nil {
 		t.Fatalf("restart failed: %v", err)
 	}

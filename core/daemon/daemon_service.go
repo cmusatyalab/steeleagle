@@ -40,7 +40,7 @@ func (d *Daemon) Configure(
 		d.log.Error().Err(err).Str("path", d.configPath).Msg("could not write daemon config")
 		return nil, err
 	}
-	// Stopping is graceful, so this call returns before the server shuts down
+	// Stopping is graceful, so this call returns before the relay shuts down
 	d.log.Info().Str("path", d.configPath).Msg("daemon config replaced, stopping")
 	d.cancel()
 	return &daemonpb.ConfigureResponse{}, nil
@@ -56,7 +56,7 @@ func (d *Daemon) GetConfiguration(
 		d.log.Error().Err(err).Str("path", d.configPath).Msg("could not read daemon config")
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	return daemonpb.GetConfigurationResponse_builder{ConfigToml: content}.Build(), nil
+	return daemonpb.GetConfigurationResponse_builder{ConfigToml: content, PluginTomls: d.pluginTomls()}.Build(), nil
 }
 
 // ListServices lists all services from the config, whether they are running
@@ -89,7 +89,7 @@ func (d *Daemon) RestartServices(
 }
 
 // Restart stops the daemon, so that it is restarted with all of its services.
-// Stopping is graceful, so this call returns before the server shuts down.
+// Stopping is graceful, so this call returns before the relay shuts down.
 func (d *Daemon) Restart(
 	ctx context.Context,
 	req *daemonpb.RestartRequest,

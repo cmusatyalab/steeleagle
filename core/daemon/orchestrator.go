@@ -12,17 +12,17 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 )
 
 // registerOrchestrator registers this daemon as the orchestrator for the
-// calling daemon at port. Its vehicles, given as "{daemon IP}/{vehicle name}",
-// become header routes to it, and the cert of this daemon's local compute
-// service is returned. The IP of every vehicle must be the IP of the caller,
-// so that a daemon can only register its own vehicles.
+// calling daemon at port. The daemon's IP and its vehicles, given as
+// "{daemon IP}/{vehicle name}", become header routes to it, and the cert of
+// this daemon's local compute service is returned. The IP of every vehicle
+// must be the IP of the caller, so that a daemon can only register its own
+// vehicles.
 func (d *Daemon) registerOrchestrator(ctx context.Context, vehicles []string, port int32) (string, error) {
-	caller, err := peerIp(ctx)
+	caller, err := callerIp(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -43,10 +43,12 @@ func (d *Daemon) registerOrchestrator(ctx context.Context, vehicles []string, po
 		return "", status.Errorf(codes.Internal, "could not get local compute cert: %v", err)
 	}
 
-	conn, err := d.remoteConn(net.JoinHostPort(caller.String(), strconv.Itoa(int(port))))
+	conn, err := d.remoteConn(caller, port)
 	if err != nil {
 		return "", status.Error(codes.Internal, err.Error())
 	}
+	// The daemon is addressed by its IP, and each vehicle by its name
+	d.router.AddHeaderRoute(caller.String(), conn)
 	for _, v := range vehicles {
 		d.router.AddHeaderRoute(v, conn)
 	}
@@ -73,6 +75,10 @@ func (d *Daemon) registerWithOrchestrator(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	// Calls the orchestrator routes here by this daemon's IP are for its own
+	// services; the route is added first, so that none are rejected once the
+	// orchestrator has the route back here
+	d.router.AddHeaderRoute(self.String(), d.serverConn)
 	var vehicles []string
 	for _, name := range d.vehicleNames() {
 		vehicles = append(vehicles, self.String()+"/"+name)
@@ -129,33 +135,22 @@ func (d *Daemon) addOrchestratorToAcl(ctx context.Context, acl *listener.Acl) er
 	return nil
 }
 
-// peerIp returns the IP address of the caller.
-func peerIp(ctx context.Context) (netip.Addr, error) {
-	p, ok := peer.FromContext(ctx)
-	if !ok {
-		return netip.Addr{}, status.Error(codes.Internal, "no peer in context")
-	}
-	addr := p.Addr
-	if coded, ok := addr.(*listener.Addr); ok {
-		addr = coded.Addr
-	}
-	ap, err := netip.ParseAddrPort(addr.String())
-	if err != nil {
-		return netip.Addr{}, status.Errorf(codes.InvalidArgument, "caller %s has no IP address", addr)
-	}
-	return ap.Addr().Unmap(), nil
-}
-
-// remoteConn returns the client connection to the remote daemon at addr,
-// creating it on first use. Connections are dialed through the daemon network.
-func (d *Daemon) remoteConn(addr string) (*grpc.ClientConn, error) {
+// remoteConn returns the client connection to the remote daemon at ip and
+// port, creating it on first use. There is one connection per IP, so a daemon
+// that registers again on another port replaces its old connection.
+// Connections are dialed through the daemon network.
+func (d *Daemon) remoteConn(ip netip.Addr, port int32) (*grpc.ClientConn, error) {
 	d.remotesMu.Lock()
 	defer d.remotesMu.Unlock()
-	if conn, ok := d.remotes[addr]; ok {
-		return conn, nil
+	target := "passthrough:///" + net.JoinHostPort(ip.String(), strconv.Itoa(int(port)))
+	if conn, ok := d.remotes[ip]; ok {
+		if conn.Target() == target {
+			return conn, nil
+		}
+		conn.Close()
 	}
 	conn, err := grpc.NewClient(
-		"passthrough:///"+addr,
+		target,
 		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
 			return d.network.Dial(ctx, "tcp", addr)
 		}),
@@ -165,9 +160,9 @@ func (d *Daemon) remoteConn(addr string) (*grpc.ClientConn, error) {
 		return nil, err
 	}
 	if d.remotes == nil {
-		d.remotes = make(map[string]*grpc.ClientConn)
+		d.remotes = make(map[netip.Addr]*grpc.ClientConn)
 	}
-	d.remotes[addr] = conn
+	d.remotes[ip] = conn
 	return conn, nil
 }
 
@@ -175,8 +170,8 @@ func (d *Daemon) remoteConn(addr string) (*grpc.ClientConn, error) {
 func (d *Daemon) closeRemotes() {
 	d.remotesMu.Lock()
 	defer d.remotesMu.Unlock()
-	for addr, conn := range d.remotes {
+	for ip, conn := range d.remotes {
 		conn.Close()
-		delete(d.remotes, addr)
+		delete(d.remotes, ip)
 	}
 }

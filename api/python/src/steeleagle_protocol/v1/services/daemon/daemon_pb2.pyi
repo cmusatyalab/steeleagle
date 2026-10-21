@@ -82,18 +82,20 @@ class Service(_message.Message):
     def __init__(self, name: _Optional[str] = ..., category: _Optional[_Union[ServiceCategory, str]] = ...) -> None: ...
 
 class ActiveService(_message.Message):
-    __slots__ = ("srv", "plugin", "url", "running", "uptime")
+    __slots__ = ("srv", "plugin", "url", "running", "uptime", "error")
     SRV_FIELD_NUMBER: _ClassVar[int]
     PLUGIN_FIELD_NUMBER: _ClassVar[int]
     URL_FIELD_NUMBER: _ClassVar[int]
     RUNNING_FIELD_NUMBER: _ClassVar[int]
     UPTIME_FIELD_NUMBER: _ClassVar[int]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
     srv: Service
     plugin: str
     url: str
     running: bool
     uptime: _duration_pb2.Duration
-    def __init__(self, srv: _Optional[_Union[Service, _Mapping]] = ..., plugin: _Optional[str] = ..., url: _Optional[str] = ..., running: _Optional[bool] = ..., uptime: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ...) -> None: ...
+    error: str
+    def __init__(self, srv: _Optional[_Union[Service, _Mapping]] = ..., plugin: _Optional[str] = ..., url: _Optional[str] = ..., running: _Optional[bool] = ..., uptime: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ..., error: _Optional[str] = ...) -> None: ...
 
 class ListServicesRequest(_message.Message):
     __slots__ = ()

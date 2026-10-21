@@ -169,7 +169,7 @@ func dial(t *testing.T, addr string) *grpc.ClientConn {
 
 // newRouter creates a Router with routes dialed from the given addresses, and
 // pipes its logs to a testLogger.
-func newRouter(t *testing.T, headers, services map[string]string) *Router {
+func newRouter(t *testing.T, headers, services map[string]string, opts ...RouterOption) *Router {
 	t.Helper()
 	conns := func(addrs map[string]string) map[string]*grpc.ClientConn {
 		m := map[string]*grpc.ClientConn{}
@@ -178,7 +178,7 @@ func newRouter(t *testing.T, headers, services map[string]string) *Router {
 		}
 		return m
 	}
-	return NewRouter(conns(headers), conns(services), WithLogger(newTestLogger(t)))
+	return NewRouter(conns(headers), conns(services), append([]RouterOption{WithLogger(newTestLogger(t))}, opts...)...)
 }
 
 // startProxy serves r on a random localhost port and returns a TestService

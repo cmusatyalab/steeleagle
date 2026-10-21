@@ -429,7 +429,9 @@ func (x *GetConfigurationResponse) SetPluginTomls(v map[string][]byte) {
 type GetConfigurationResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	ConfigToml  []byte
+	ConfigToml []byte
+	// plugin toml of each service that was set up, keyed by "{category}/{name}"
+	// with the category in lowercase, like "engine/detector"
 	PluginTomls map[string][]byte
 }
 
@@ -522,6 +524,7 @@ type ActiveService struct {
 	xxx_hidden_Url     string                 `protobuf:"bytes,3,opt,name=url,proto3"`
 	xxx_hidden_Running bool                   `protobuf:"varint,4,opt,name=running,proto3"`
 	xxx_hidden_Uptime  *durationpb.Duration   `protobuf:"bytes,5,opt,name=uptime,proto3"`
+	xxx_hidden_Error   string                 `protobuf:"bytes,6,opt,name=error,proto3"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -586,6 +589,13 @@ func (x *ActiveService) GetUptime() *durationpb.Duration {
 	return nil
 }
 
+func (x *ActiveService) GetError() string {
+	if x != nil {
+		return x.xxx_hidden_Error
+	}
+	return ""
+}
+
 func (x *ActiveService) SetSrv(v *Service) {
 	x.xxx_hidden_Srv = v
 }
@@ -604,6 +614,10 @@ func (x *ActiveService) SetRunning(v bool) {
 
 func (x *ActiveService) SetUptime(v *durationpb.Duration) {
 	x.xxx_hidden_Uptime = v
+}
+
+func (x *ActiveService) SetError(v string) {
+	x.xxx_hidden_Error = v
 }
 
 func (x *ActiveService) HasSrv() bool {
@@ -636,6 +650,7 @@ type ActiveService_builder struct {
 	Url     string
 	Running bool
 	Uptime  *durationpb.Duration
+	Error   string
 }
 
 func (b0 ActiveService_builder) Build() *ActiveService {
@@ -647,6 +662,7 @@ func (b0 ActiveService_builder) Build() *ActiveService {
 	x.xxx_hidden_Url = b.Url
 	x.xxx_hidden_Running = b.Running
 	x.xxx_hidden_Uptime = b.Uptime
+	x.xxx_hidden_Error = b.Error
 	return m0
 }
 
@@ -1413,13 +1429,14 @@ const file_steeleagle_protocol_v1_services_daemon_daemon_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\fR\x05value:\x028\x01\"r\n" +
 	"\aService\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12S\n" +
-	"\bcategory\x18\x02 \x01(\x0e27.steeleagle_protocol.v1.services.daemon.ServiceCategoryR\bcategory\"\xc9\x01\n" +
+	"\bcategory\x18\x02 \x01(\x0e27.steeleagle_protocol.v1.services.daemon.ServiceCategoryR\bcategory\"\xdf\x01\n" +
 	"\rActiveService\x12A\n" +
 	"\x03srv\x18\x01 \x01(\v2/.steeleagle_protocol.v1.services.daemon.ServiceR\x03srv\x12\x16\n" +
 	"\x06plugin\x18\x02 \x01(\tR\x06plugin\x12\x10\n" +
 	"\x03url\x18\x03 \x01(\tR\x03url\x12\x18\n" +
 	"\arunning\x18\x04 \x01(\bR\arunning\x121\n" +
-	"\x06uptime\x18\x05 \x01(\v2\x19.google.protobuf.DurationR\x06uptime\"\x15\n" +
+	"\x06uptime\x18\x05 \x01(\v2\x19.google.protobuf.DurationR\x06uptime\x12\x14\n" +
+	"\x05error\x18\x06 \x01(\tR\x05error\"\x15\n" +
 	"\x13ListServicesRequest\"i\n" +
 	"\x14ListServicesResponse\x12Q\n" +
 	"\bservices\x18\x01 \x03(\v25.steeleagle_protocol.v1.services.daemon.ActiveServiceR\bservices\"e\n" +

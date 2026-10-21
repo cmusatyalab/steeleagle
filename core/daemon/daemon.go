@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"net"
 	"net/netip"
@@ -32,6 +33,7 @@ type serviceInfo struct {
 	pluginName string                   // name of the plugin within its package
 	url        string                   // normalized package url
 	config     *config.PluginConfig     // parsed .plugin.toml
+	toml       []byte                   // raw .plugin.toml
 	ln         net.Listener             // listener for calls from the plugin, if any
 	conn       *grpc.ClientConn         // client connection to the plugin or vehicle, if any
 	endpoint   string                   // iceoryx endpoint, for engines only
@@ -39,6 +41,7 @@ type serviceInfo struct {
 	vehicle    *vehicle.Vehicle         // vehicle, for vehicles only
 	started    time.Time                // start time of the current run
 	cancel     context.CancelFunc       // stop the service, nil if not started
+	err        error                    // why the service couldn\'t be set up, or why its last start failed
 }
 
 type Daemon struct {
@@ -55,14 +58,18 @@ type Daemon struct {
 	router     *router.Router                              // router to external daemons/internal vehicles
 	network    *network.Server                             // network server (VPN or host)
 	netLn      net.Listener                                // main network listener
-	server     *grpc.Server                                // gRPC server
+	relay      *grpc.Server                                // gRPC relay, which checks and routes every call
+	server     *grpc.Server                                // in-process gRPC server for the daemon's own services
+	serverLn   *listener.LocalListener                     // listener for the server
+	serverConn *grpc.ClientConn                            // router connection to the server
+	pluginOut  io.Writer                                   // output of plugin processes, stdout if nil
 	services   map[daemonpb.ServiceCategory][]*serviceInfo // available services, in config order
 	svcMu      sync.Mutex                                  // mutex to protect services
 	rcsAddr    string                                      // orchestrator remote compute service address, if any
 	rcsCert    string                                      // orchestrator remote compute service cert, if any
 	selfAddr   netip.Addr                                  // address of this daemon as seen by the orchestrator, if registered
 	certMu     sync.Mutex                                  // mutex to protect the local compute cert files
-	remotes    map[string]*grpc.ClientConn                 // connections to registered remote daemons, by address
+	remotes    map[netip.Addr]*grpc.ClientConn             // connections to registered remote daemons, by IP
 	remotesMu  sync.Mutex                                  // mutex to protect remotes
 	ctx        context.Context                             // context for the daemon
 	cancel     context.CancelFunc                          // cancel function for active contexts
@@ -150,27 +157,17 @@ func NewDaemon(options ...DaemonOption) (*Daemon, error) {
 		return nil, err
 	}
 
-	// Create the router
-	daemon.router = router.NewRouter(nil, nil, router.WithLogger(daemon.log))
-
-	// Set up gRPC server and set up auth interceptor chain; calls to services
-	// not hosted by the daemon are proxied through the router
-	daemon.server = grpc.NewServer(
-		grpc.ChainUnaryInterceptor(daemon.policy.NewUnaryPolicyInterceptor()),
-		grpc.ChainStreamInterceptor(daemon.policy.NewStreamPolicyInterceptor()),
-		grpc.ForceServerCodec(router.RawCodec{}),
-		grpc.UnknownServiceHandler(daemon.router.Handle),
-	)
-
-	// Register local services
-	daemonpb.RegisterDaemonServiceServer(daemon.server, daemon)
-	daemonpb.RegisterTransferServiceServer(daemon.server, daemon)
+	// Set up the router, relay and server
+	if err := daemon.setupRelay(); err != nil {
+		daemon.log.Error().Err(err).Msg("could not set up relay")
+		return nil, err
+	}
 
 	return daemon, nil
 }
 
 // Runs the daemon, blocking until the provided context is canceled or the
-// server exits with an error.
+// relay exits with an error.
 func (d *Daemon) Run(ctx context.Context) (err error) {
 	if !d.Running.CompareAndSwap(false, true) {
 		return fmt.Errorf("daemon already running")
@@ -217,10 +214,12 @@ func (d *Daemon) Run(ctx context.Context) (err error) {
 	}
 	d.netLn = listener.NewCodedListener(ln, acl, listener.WithLogger(d.log))
 
-	// Serve until the server exits or the context is canceled
+	// Serve until the relay exits or the context is canceled; the server
+	// stops on its own once its listener closes
+	go d.server.Serve(d.serverLn)
 	errChan := make(chan error, 1)
 	go func() {
-		errChan <- d.server.Serve(d.netLn)
+		errChan <- d.relay.Serve(d.netLn)
 	}()
 	d.log.Info().Int("port", d.Config.Daemon.Port).Msg("daemon started")
 
@@ -239,25 +238,28 @@ func (d *Daemon) Run(ctx context.Context) (err error) {
 		d.log.Error().Err(err).Msg("could not start some services")
 	}
 
-	serverDone := false
+	relayDone := false
 	select {
 	case <-ctx.Done():
 		d.log.Info().Msg("context canceled, shutting down")
 	case err = <-errChan:
-		serverDone = true
+		relayDone = true
 		if err != nil {
-			d.log.Error().Err(err).Msg("server exited with error, shutting down")
+			d.log.Error().Err(err).Msg("relay exited with error, shutting down")
 		}
 	}
 
-	// Stop services before the server, since plugins hold connections to it
+	// Stop services before the relay, since plugins hold connections to it
 	cancel()
 	d.stopServices(d.allServices())
 	d.closeRemotes()
-	if !serverDone {
-		d.server.GracefulStop()
+	if !relayDone {
+		d.relay.GracefulStop()
 		<-errChan
 	}
+	// The relay has finished its calls, so none are left to the server
+	d.serverConn.Close()
+	d.server.GracefulStop()
 	d.log.Info().Msg("shutdown complete")
 	return err
 }

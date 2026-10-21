@@ -17,8 +17,10 @@ service TransferService {
   /*
    * Transfer a file.
    *
-   * Transfers a file to the daemon. Saved by default to the steeleagle/files/
-   * directory under XDG data home.
+   * Transfers a file to the daemon. Saved to the steeleagle/files/ directory
+   * under XDG data home, replacing any file with the same name. Chunks are
+   * numbered from 1 to total and sent in order; the file is only saved once
+   * the last chunk is received.
    */
   rpc TransferFile (stream TransferFileRequest)
     returns (stream TransferFileResponse) {}
@@ -26,18 +28,21 @@ service TransferService {
   /*
    * Transfer a model.
    *
-   * Transfers a model to the daemon. Saved by default to the steeleagle/models/
-   * directory under XDG data home. This directory is shared read-only with all
-   * engine plugins by default.
+   * Transfers a model to the daemon. Saved to the steeleagle/models/ directory
+   * under XDG data home, replacing any model with the same name. This directory
+   * is shared read-only with all engine plugins by default. Chunks are numbered
+   * from 1 to total and sent in order; the model is only saved once the last
+   * chunk is received.
    */
   rpc TransferModel (stream TransferModelRequest)
     returns (stream TransferModelResponse) {}
 }
 
 message TransferFileRequest {
-  bytes chunk = 1;  // file chunk
-  int32 number = 2; // chunk number
-  int32 total = 3;  // total chunks
+  bytes chunk = 1;     // file chunk
+  int32 number = 2;    // chunk number
+  int32 total = 3;     // total chunks
+  string filename = 4; // name to save the file as, without directories; read from the first chunk
 }
 
 message TransferFileResponse {
@@ -45,9 +50,10 @@ message TransferFileResponse {
 }
 
 message TransferModelRequest {
-  bytes chunk = 1;  // file chunk
-  int32 number = 2; // chunk number
-  int32 total = 3;  // total chunks
+  bytes chunk = 1;     // file chunk
+  int32 number = 2;    // chunk number
+  int32 total = 3;     // total chunks
+  string filename = 4; // name to save the model as, without directories; read from the first chunk
 }
 
 message TransferModelResponse {

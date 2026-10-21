@@ -57,12 +57,14 @@ type DaemonServiceClient interface {
 	Configure(ctx context.Context, in *ConfigureRequest, opts ...grpc.CallOption) (*ConfigureResponse, error)
 	// Gets the current TOML config.
 	//
-	// Returns the current TOML config as TOML bytes.
+	// Returns the current TOML config as TOML bytes, along with the plugin TOML
+	// of each service that was set up.
 	GetConfiguration(ctx context.Context, in *GetConfigurationRequest, opts ...grpc.CallOption) (*GetConfigurationResponse, error)
 	// List active services.
 	//
-	// List services lists all active daemon services, whether they are running or
-	// stopped, and their cap files, if applicable.
+	// List services lists all daemon services from the config, whether they are
+	// running or stopped, along with why each couldn't be set up, failed to
+	// start, or exited, if it did.
 	ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error)
 	// Restart daemon services.
 	//
@@ -212,12 +214,14 @@ type DaemonServiceServer interface {
 	Configure(context.Context, *ConfigureRequest) (*ConfigureResponse, error)
 	// Gets the current TOML config.
 	//
-	// Returns the current TOML config as TOML bytes.
+	// Returns the current TOML config as TOML bytes, along with the plugin TOML
+	// of each service that was set up.
 	GetConfiguration(context.Context, *GetConfigurationRequest) (*GetConfigurationResponse, error)
 	// List active services.
 	//
-	// List services lists all active daemon services, whether they are running or
-	// stopped, and their cap files, if applicable.
+	// List services lists all daemon services from the config, whether they are
+	// running or stopped, along with why each couldn't be set up, failed to
+	// start, or exited, if it did.
 	ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error)
 	// Restart daemon services.
 	//

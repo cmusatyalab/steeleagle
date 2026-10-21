@@ -43,9 +43,7 @@ func TestResolve(t *testing.T) {
 		{"service", context.Background(), "/pkg.Service/Method", r.services["pkg.Service"]},
 		{"header", withHeader("vehicle-a"), "/pkg.Service/Method", r.headers["vehicle-a"]},
 		{"header wins over service", withHeader("vehicle-a"), "/other.Service/Method", r.headers["vehicle-a"]},
-		{"unknown header falls back to service", withHeader("nope"), "/pkg.Service/Method", r.services["pkg.Service"]},
 		{"no route", context.Background(), "/other.Service/Method", nil},
-		{"unknown header and no service", withHeader("nope"), "/other.Service/Method", nil},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -142,8 +140,9 @@ func TestUnary(t *testing.T) {
 	}
 }
 
-// TestHeaderRouting ensures that calls are routed by the routing header, and
-// fall back to the service route when the header is missing or unknown.
+// TestHeaderRouting ensures that calls are routed by the routing header, fall
+// back to the service route when the header is missing, and are rejected when
+// the header is unknown, unless the router falls back for unknown headers.
 func TestHeaderRouting(t *testing.T) {
 	_, addrA := startBackend(t, "a")
 	_, addrB := startBackend(t, "b")
@@ -157,7 +156,6 @@ func TestHeaderRouting(t *testing.T) {
 	for _, tc := range []struct{ key, want string }{
 		{"a", "a"},
 		{"b", "b"},
-		{"unknown", "default"},
 		{"", "default"},
 	} {
 		ctx := testContext(t)
@@ -171,6 +169,27 @@ func TestHeaderRouting(t *testing.T) {
 		if resp.GetServerId() != tc.want {
 			t.Errorf("key %q routed to %q, want %q", tc.key, resp.GetServerId(), tc.want)
 		}
+	}
+}
+
+// TestUnknownHeader ensures that a call with an unknown routing key is rejected
+// with NotFound, even when its service has a route, unless the router falls
+// back to service routes for unknown keys.
+func TestUnknownHeader(t *testing.T) {
+	_, addrA := startBackend(t, "a")
+	_, addrDefault := startBackend(t, "default")
+	headers := map[string]string{"a": addrA}
+	services := map[string]string{testService: addrDefault}
+
+	ctx := metadata.AppendToOutgoingContext(testContext(t), routeHeader, "unknown")
+	strict := startProxy(t, newRouter(t, headers, services))
+	if _, err := strict.UnaryCall(ctx, &testgrpc.SimpleRequest{}); status.Code(err) != codes.NotFound {
+		t.Errorf("expected NotFound for an unknown key, got %v", err)
+	}
+	fallback := startProxy(t, newRouter(t, headers, services, WithHeaderFallback()))
+	resp, err := fallback.UnaryCall(ctx, &testgrpc.SimpleRequest{})
+	if err != nil || resp.GetServerId() != "default" {
+		t.Errorf("expected an unknown key routed by service with fallback, got %v, %v", resp, err)
 	}
 }
 

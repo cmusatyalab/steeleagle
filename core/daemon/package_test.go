@@ -12,7 +12,6 @@ import (
 
 	daemonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon"
 
-	"github.com/rs/zerolog"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -21,7 +20,7 @@ import (
 // after its first commit has created the pending directory.
 func newTestPackageDaemon(t *testing.T, packages ...string) *Daemon {
 	t.Helper()
-	d := &Daemon{PkgDir: t.TempDir(), log: zerolog.Nop()}
+	d := &Daemon{PkgDir: t.TempDir(), log: testLogger()}
 	for _, name := range packages {
 		writeTestPackage(t, d.PkgDir, name, "1")
 	}

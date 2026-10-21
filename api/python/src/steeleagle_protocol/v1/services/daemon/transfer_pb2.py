@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n5steeleagle_protocol/v1/services/daemon/transfer.proto\x12&steeleagle_protocol.v1.services.daemon\"Y\n\x13TransferFileRequest\x12\x14\n\x05\x63hunk\x18\x01 \x01(\x0cR\x05\x63hunk\x12\x16\n\x06number\x18\x02 \x01(\x05R\x06number\x12\x14\n\x05total\x18\x03 \x01(\x05R\x05total\"2\n\x14TransferFileResponse\x12\x1a\n\x08received\x18\x01 \x01(\x05R\x08received\"Z\n\x14TransferModelRequest\x12\x14\n\x05\x63hunk\x18\x01 \x01(\x0cR\x05\x63hunk\x12\x16\n\x06number\x18\x02 \x01(\x05R\x06number\x12\x14\n\x05total\x18\x03 \x01(\x05R\x05total\"3\n\x15TransferModelResponse\x12\x1a\n\x08received\x18\x01 \x01(\x05R\x08received2\xb8\x02\n\x0fTransferService\x12\x8f\x01\n\x0cTransferFile\x12;.steeleagle_protocol.v1.services.daemon.TransferFileRequest\x1a<.steeleagle_protocol.v1.services.daemon.TransferFileResponse\"\x00(\x01\x30\x01\x12\x92\x01\n\rTransferModel\x12<.steeleagle_protocol.v1.services.daemon.TransferModelRequest\x1a=.steeleagle_protocol.v1.services.daemon.TransferModelResponse\"\x00(\x01\x30\x01\x42\xc4\x02\n*com.steeleagle_protocol.v1.services.daemonB\rTransferProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon\xa2\x02\x04SVSD\xaa\x02%SteeleagleProtocol.V1.Services.Daemon\xca\x02%SteeleagleProtocol\\V1\\Services\\Daemon\xe2\x02\x31SteeleagleProtocol\\V1\\Services\\Daemon\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Services::Daemonb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n5steeleagle_protocol/v1/services/daemon/transfer.proto\x12&steeleagle_protocol.v1.services.daemon\"u\n\x13TransferFileRequest\x12\x14\n\x05\x63hunk\x18\x01 \x01(\x0cR\x05\x63hunk\x12\x16\n\x06number\x18\x02 \x01(\x05R\x06number\x12\x14\n\x05total\x18\x03 \x01(\x05R\x05total\x12\x1a\n\x08\x66ilename\x18\x04 \x01(\tR\x08\x66ilename\"2\n\x14TransferFileResponse\x12\x1a\n\x08received\x18\x01 \x01(\x05R\x08received\"v\n\x14TransferModelRequest\x12\x14\n\x05\x63hunk\x18\x01 \x01(\x0cR\x05\x63hunk\x12\x16\n\x06number\x18\x02 \x01(\x05R\x06number\x12\x14\n\x05total\x18\x03 \x01(\x05R\x05total\x12\x1a\n\x08\x66ilename\x18\x04 \x01(\tR\x08\x66ilename\"3\n\x15TransferModelResponse\x12\x1a\n\x08received\x18\x01 \x01(\x05R\x08received2\xb8\x02\n\x0fTransferService\x12\x8f\x01\n\x0cTransferFile\x12;.steeleagle_protocol.v1.services.daemon.TransferFileRequest\x1a<.steeleagle_protocol.v1.services.daemon.TransferFileResponse\"\x00(\x01\x30\x01\x12\x92\x01\n\rTransferModel\x12<.steeleagle_protocol.v1.services.daemon.TransferModelRequest\x1a=.steeleagle_protocol.v1.services.daemon.TransferModelResponse\"\x00(\x01\x30\x01\x42\xc4\x02\n*com.steeleagle_protocol.v1.services.daemonB\rTransferProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon\xa2\x02\x04SVSD\xaa\x02%SteeleagleProtocol.V1.Services.Daemon\xca\x02%SteeleagleProtocol\\V1\\Services\\Daemon\xe2\x02\x31SteeleagleProtocol\\V1\\Services\\Daemon\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Services::Daemonb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,13 +33,13 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'\n*com.steeleagle_protocol.v1.services.daemonB\rTransferProtoP\001ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon\242\002\004SVSD\252\002%SteeleagleProtocol.V1.Services.Daemon\312\002%SteeleagleProtocol\\V1\\Services\\Daemon\342\0021SteeleagleProtocol\\V1\\Services\\Daemon\\GPBMetadata\352\002(SteeleagleProtocol::V1::Services::Daemon'
   _globals['_TRANSFERFILEREQUEST']._serialized_start=97
-  _globals['_TRANSFERFILEREQUEST']._serialized_end=186
-  _globals['_TRANSFERFILERESPONSE']._serialized_start=188
-  _globals['_TRANSFERFILERESPONSE']._serialized_end=238
-  _globals['_TRANSFERMODELREQUEST']._serialized_start=240
-  _globals['_TRANSFERMODELREQUEST']._serialized_end=330
-  _globals['_TRANSFERMODELRESPONSE']._serialized_start=332
-  _globals['_TRANSFERMODELRESPONSE']._serialized_end=383
-  _globals['_TRANSFERSERVICE']._serialized_start=386
-  _globals['_TRANSFERSERVICE']._serialized_end=698
+  _globals['_TRANSFERFILEREQUEST']._serialized_end=214
+  _globals['_TRANSFERFILERESPONSE']._serialized_start=216
+  _globals['_TRANSFERFILERESPONSE']._serialized_end=266
+  _globals['_TRANSFERMODELREQUEST']._serialized_start=268
+  _globals['_TRANSFERMODELREQUEST']._serialized_end=386
+  _globals['_TRANSFERMODELRESPONSE']._serialized_start=388
+  _globals['_TRANSFERMODELRESPONSE']._serialized_end=439
+  _globals['_TRANSFERSERVICE']._serialized_start=442
+  _globals['_TRANSFERSERVICE']._serialized_end=754
 # @@protoc_insertion_point(module_scope)

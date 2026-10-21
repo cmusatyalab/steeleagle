@@ -40,7 +40,8 @@ service DaemonService {
   /*
    * Gets the current TOML config.
    *
-   * Returns the current TOML config as TOML bytes. 
+   * Returns the current TOML config as TOML bytes, along with the plugin TOML
+   * of each service that was set up.
    */
   rpc GetConfiguration (GetConfigurationRequest)
     returns (GetConfigurationResponse) {}
@@ -48,8 +49,9 @@ service DaemonService {
   /*
    * List active services.
    *
-   * List services lists all active daemon services, whether they are running or
-   * stopped, and their cap files, if applicable.
+   * List services lists all daemon services from the config, whether they are
+   * running or stopped, along with why each couldn't be set up, failed to
+   * start, or exited, if it did.
    */
   rpc ListServices (ListServicesRequest)
     returns (ListServicesResponse) {}
@@ -119,8 +121,11 @@ message ConfigureResponse {}
 message GetConfigurationRequest {}
 
 message GetConfigurationResponse {
-  bytes config_toml = 1;               // eagled config.toml
-  map<string, bytes> plugin_tomls = 2; // plugin toml mapping (service name -> plugin toml bytes)
+  // eagled config.toml
+  bytes config_toml = 1;
+  // plugin toml of each service that was set up, keyed by "{category}/{name}"
+  // with the category in lowercase, like "engine/detector"
+  map<string, bytes> plugin_tomls = 2;
 }
 
 // Types of daemon services.
@@ -147,6 +152,7 @@ message ActiveService {
   string url = 3;                      // package url
   bool running = 4;                    // whether or not the service is running
   google.protobuf.Duration uptime = 5; // service uptime
+  string error = 6;                    // why the service couldn't be set up, failed to start, or exited, if it did
 }
 
 message ListServicesRequest {}

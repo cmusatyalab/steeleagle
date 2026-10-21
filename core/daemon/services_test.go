@@ -13,8 +13,6 @@ import (
 	"github.com/cmusatyalab/steeleagle/config"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/policy"
-	"github.com/rs/zerolog"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -25,8 +23,8 @@ const testPackageUrl = "github.com/org/plugins"
 // newTestServiceDaemon returns a daemon with a package directory holding a
 // fake package with an engine plugin "detector", and a plugin for every other
 // category of service named after its type. The start task records its
-// environment in run.txt and runs until it is killed. The daemon's gRPC server
-// enforces the daemon law, like a real daemon's. If the TEST_SERVICE_CLIENT
+// environment in run.txt and runs until it is killed. The daemon's relay, server
+// and router are set up like a real daemon's. If the TEST_SERVICE_CLIENT
 // environment variable is set, the start task runs it in place of recording
 // its environment, recording its calls in calls-{plugin}.txt.
 func newTestServiceDaemon(t *testing.T) *Daemon {
@@ -34,18 +32,23 @@ func newTestServiceDaemon(t *testing.T) *Daemon {
 	t.Setenv("XDG_RUNTIME_DIR", t.TempDir())
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
-	d := &Daemon{PkgDir: t.TempDir(), Config: &config.DaemonConfig{}, ctx: ctx, log: zerolog.Nop()}
+	d := &Daemon{PkgDir: t.TempDir(), Config: &config.DaemonConfig{}, ctx: ctx, log: testLogger(), pluginOut: testOutput()}
 	law, err := config.ParseControlLawFromBytes(DefaultLaw)
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := policy.NewPolicy(law, policy.WithLogger(zerolog.Nop()))
-	if err != nil {
+	if d.policy, err = policy.NewPolicy(law, policy.WithLogger(testLogger())); err != nil {
 		t.Fatal(err)
 	}
-	d.server = grpc.NewServer(grpc.ChainUnaryInterceptor(p.NewUnaryPolicyInterceptor()))
-	daemonpb.RegisterDaemonServiceServer(d.server, d)
-	t.Cleanup(d.server.Stop)
+	if err := d.setupRelay(); err != nil {
+		t.Fatal(err)
+	}
+	go d.server.Serve(d.serverLn)
+	t.Cleanup(func() {
+		d.relay.Stop()
+		d.serverConn.Close()
+		d.server.Stop()
+	})
 	u, err := parsePackageUrl(testPackageUrl)
 	if err != nil {
 		t.Fatal(err)
@@ -55,7 +58,7 @@ func newTestServiceDaemon(t *testing.T) *Daemon {
 		"pixi.toml": "[workspace]\nname = 'plugins'\nchannels = []\nplatforms = ['linux-64', 'linux-aarch64', 'osx-arm64']\n\n" +
 			"[tasks]\nstart = \"sh run.sh\"\n",
 		"run.sh": "[ -n \"$TEST_SERVICE_CLIENT\" ] && exec \"$TEST_SERVICE_CLIENT\" \"calls-$STEELEAGLE_PLUGIN.txt\"\n" +
-			"env > run.txt\nexec sleep 60\n",
+			"env > run.txt\necho $$ > \"pid-$STEELEAGLE_PLUGIN.txt\"\nexec sleep 60\n",
 		"detector" + PluginFileSuffix: "[plugin]\nname = 'Detector'\ntype = 'engine'\n",
 	}
 	for _, kind := range []string{"monitor", "commander", "simulator", "extra"} {
@@ -73,8 +76,9 @@ func newTestServiceDaemon(t *testing.T) *Daemon {
 }
 
 // TestGatherServices ensures that services are gathered from the config
-// without being started, and that broken services are left out and reported
-// without affecting the rest.
+// without being started, that broken services are reported without affecting
+// the rest, and are listed with their errors but never started or registered,
+// and that only services that were set up have their plugin toml.
 func TestGatherServices(t *testing.T) {
 	d := newTestServiceDaemon(t)
 	detector := config.PluginField{Plugin: "detector", Package: testPackageUrl}
@@ -104,6 +108,66 @@ func TestGatherServices(t *testing.T) {
 	}
 	if si := d.findService(daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE, "yolo"); si.running() {
 		t.Error("expected gathered service not to be running")
+	}
+	if names := d.vehicleNames(); len(names) != 0 {
+		t.Errorf("expected no vehicles to register, got %v", names)
+	}
+
+	// Broken services are listed with their errors, in start order
+	resp, err := d.ListServices(context.Background(), &daemonpb.ListServicesRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var listed []string
+	for _, s := range resp.GetServices() {
+		listed = append(listed, s.GetSrv().GetName()+": "+s.GetError())
+		if s.GetRunning() {
+			t.Errorf("expected %s not running", s.GetSrv().GetName())
+		}
+	}
+	want := []string{
+		"yolo: ",
+		"yolo: duplicate service name",
+		"harpy: simulated vehicles are not supported yet",
+		`watch: plugin "detector" is a "engine" plugin, not "monitor"`,
+		"missing: could not read plugin",
+	}
+	if len(listed) != len(want) {
+		t.Fatalf("expected services %q, got %q", want, listed)
+	}
+	for i := range want {
+		if !strings.HasPrefix(listed[i], want[i]) {
+			t.Errorf("expected service %q, got %q", want[i], listed[i])
+		}
+	}
+	if missing := resp.GetServices()[4]; missing.GetUrl() != "github.com/org/missing" || missing.GetPlugin() != "detector" {
+		t.Errorf("expected the broken service's package and plugin listed, got %v", missing)
+	}
+
+	// Broken services can't be restarted
+	harpy := []*daemonpb.Service{daemonpb.Service_builder{
+		Name: "harpy", Category: daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE,
+	}.Build()}
+	if _, err := d.RestartServices(context.Background(), daemonpb.RestartServicesRequest_builder{Services: harpy}.Build()); status.Code(err) != codes.FailedPrecondition {
+		t.Errorf("expected FailedPrecondition restarting a broken service, got %v", err)
+	}
+
+	// Only services that were set up have their plugin toml
+	d.configPath = filepath.Join(t.TempDir(), ConfigFileName)
+	if err := os.WriteFile(d.configPath, []byte("[daemon]\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := d.GetConfiguration(context.Background(), &daemonpb.GetConfigurationRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	detectorToml, err := os.ReadFile(filepath.Join(d.PkgDir, "github_com_org_plugins", "detector"+PluginFileSuffix))
+	if err != nil {
+		t.Fatal(err)
+	}
+	tomls := cfg.GetPluginTomls()
+	if len(tomls) != 1 || string(tomls["engine/yolo"]) != string(detectorToml) {
+		t.Errorf("expected only engine/yolo with the detector toml, got %q", tomls)
 	}
 }
 
@@ -184,8 +248,8 @@ func TestServiceHandlers(t *testing.T) {
 		if s.GetSrv().GetName() != "yolo" || s.GetPlugin() != "detector" || s.GetUrl() != testPackageUrl {
 			t.Errorf("%s: unexpected service description: %v", step, s)
 		}
-		if s.GetRunning() != want || s.HasUptime() != want {
-			t.Errorf("%s: expected running=%v with uptime, got %v", step, want, s)
+		if s.GetRunning() != want || s.HasUptime() != want || s.GetError() != "" {
+			t.Errorf("%s: expected running=%v with uptime and no error, got %v", step, want, s)
 		}
 	}
 
@@ -203,13 +267,38 @@ func TestServiceHandlers(t *testing.T) {
 	}
 	assertRunning("stopped", false)
 	// Restarting a stopped service starts it
+	pidFile := filepath.Join(d.PkgDir, "github_com_org_plugins", "pid-detector.txt")
+	os.Remove(pidFile)
 	if _, err := d.RestartServices(ctx, daemonpb.RestartServicesRequest_builder{Services: yolo}.Build()); err != nil {
 		t.Fatalf("restart of a stopped service failed: %v", err)
 	}
 	assertRunning("restarted from stopped", true)
+
+	// A service that exits on its own is listed as exited
+	var pid []byte
+	for deadline := time.Now().Add(time.Minute); time.Now().Before(deadline); time.Sleep(50 * time.Millisecond) {
+		if pid, _ = os.ReadFile(pidFile); strings.HasSuffix(string(pid), "\n") {
+			break
+		}
+	}
+	if out, err := exec.Command("kill", strings.TrimSpace(string(pid))).CombinedOutput(); err != nil {
+		t.Fatalf("couldn't kill plugin: %v\n%s", err, out)
+	}
+	deadline := time.Now().Add(10 * time.Second)
+	for d.findService(daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE, "yolo").running() && time.Now().Before(deadline) {
+		time.Sleep(50 * time.Millisecond)
+	}
+	resp, err := d.ListServices(ctx, &daemonpb.ListServicesRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s := resp.GetServices()[0]; s.GetRunning() || !strings.HasPrefix(s.GetError(), "exited") {
+		t.Errorf("expected yolo listed as exited, got %v", s)
+	}
 	if err := d.stopServices(d.allServices()); err != nil {
 		t.Fatalf("stop failed: %v", err)
 	}
+	assertRunning("stopped after exiting", false)
 
 	// A bad entry rejects the whole request, so yolo stays stopped
 	bad := map[string]struct {
@@ -318,4 +407,3 @@ func TestServiceCodes(t *testing.T) {
 		}
 	}
 }
-

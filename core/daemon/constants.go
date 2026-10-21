@@ -85,3 +85,7 @@ const (
 	LcsKeyFileName  = "lcs.key"
 	lcsCertValidity = 10 * 365 * 24 * time.Hour
 )
+
+// Metadata key that the relay records the caller address in, for the daemon's
+// own services.
+const callerHeader = "x-caller-addr"

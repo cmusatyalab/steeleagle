@@ -5,11 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	daemonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon"
 	"github.com/cmusatyalab/steeleagle/config"
+	"github.com/cmusatyalab/steeleagle/v4/core/util"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/plugin"
 	"github.com/cmusatyalab/steeleagle/v4/core/vehicle"
@@ -29,8 +32,9 @@ type categoryInfo struct {
 
 // gatherServices reads the services used by the config into d.services
 // without starting them. A service that can't be set up, like one whose
-// package isn't installed, is left out and reported in the returned error, so
-// that the rest of the config can still run.
+// package isn't installed, is kept as broken with its error, so that it is
+// listed but never started, and is reported in the returned error, so that the
+// rest of the config can still run.
 func (d *Daemon) gatherServices() error {
 	d.svcMu.Lock()
 	defer d.svcMu.Unlock()
@@ -40,7 +44,10 @@ func (d *Daemon) gatherServices() error {
 		s, err := d.newService(name, category, field)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("%s %q: %w", categories[category].pluginType, name, err))
-			return
+			s = &serviceInfo{name: name, category: category, pluginName: field.Plugin, url: field.Package, err: err}
+			if u, err := parsePackageUrl(field.Package); err == nil {
+				s.url = u.url
+			}
 		}
 		d.services[category] = append(d.services[category], s)
 	}
@@ -56,7 +63,12 @@ func (d *Daemon) gatherServices() error {
 		if v.Simulate {
 			// Running the real driver in place of a simulated vehicle could fly
 			// real hardware, so a simulated vehicle is never started
-			errs = append(errs, fmt.Errorf("vehicle %q: simulated vehicles are not supported yet", v.Name))
+			err := fmt.Errorf("simulated vehicles are not supported yet")
+			errs = append(errs, fmt.Errorf("vehicle %q: %w", v.Name, err))
+			d.services[daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE] = append(
+				d.services[daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE],
+				&serviceInfo{name: v.Name, category: daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE,
+					pluginName: v.Plugin.Plugin, url: v.Plugin.Package, err: err})
 			continue
 		}
 		add(v.Name, daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE, v.Plugin)
@@ -92,7 +104,11 @@ func (d *Daemon) newService(
 		return nil, err
 	}
 	dir := filepath.Join(d.PkgDir, u.name)
-	cfg, err := config.ParsePluginConfigFromFilepath(filepath.Join(dir, field.Plugin+PluginFileSuffix))
+	content, err := os.ReadFile(filepath.Join(dir, field.Plugin+PluginFileSuffix))
+	if err != nil {
+		return nil, fmt.Errorf("could not read plugin %q from %s: %w", field.Plugin, u.url, err)
+	}
+	cfg, err := config.ParsePluginConfigFromBytes(content)
 	if err != nil {
 		return nil, fmt.Errorf("could not read plugin %q from %s: %w", field.Plugin, u.url, err)
 	}
@@ -115,12 +131,21 @@ func (d *Daemon) newService(
 		plugin.WithEnvironment(PluginNameEnv, field.Plugin),
 		plugin.WithEnvironment(PluginArgsEnv, string(argsJson)),
 	}
+	if d.pluginOut != nil {
+		options = append(options, plugin.WithProcessOutputStream(d.pluginOut))
+	}
 	switch category {
 	case daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE:
 		// Engines serve over iceoryx, so the daemon has no client connection to
-		// them, but they can call the daemon through their listener
+		// them, but they can call the daemon through their listener. They can
+		// read, but not change, the models transferred to the daemon
+		models, err := util.GetModelDir()
+		if err != nil {
+			return nil, fmt.Errorf("could not get model directory: %w", err)
+		}
 		options = append(options, plugin.WithoutClient(), plugin.WithAuthCode(cat.code),
-			plugin.WithParentDir(cat.dir), plugin.WithEnvironment(IceoryxServiceEnv, name))
+			plugin.WithParentDir(cat.dir), plugin.WithEnvironment(IceoryxServiceEnv, name),
+			plugin.WithReadOnlyFiles([]string{models}))
 	case daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE:
 		// Drivers are pure servers for their vehicle, and run within its
 		// runtime directory
@@ -143,6 +168,7 @@ func (d *Daemon) newService(
 		pluginName: field.Plugin,
 		url:        u.url,
 		config:     cfg,
+		toml:       content,
 		plugin:     p,
 	}, nil
 }
@@ -161,6 +187,11 @@ func (d *Daemon) startServices(services map[daemonpb.ServiceCategory][]string) e
 				errs = append(errs, status.Errorf(codes.NotFound, "no %s service %q", categories[category].pluginType, name))
 				continue
 			}
+			if s.broken() {
+				errs = append(errs, status.Errorf(codes.FailedPrecondition, "%s %q couldn't be set up: %v",
+					categories[category].pluginType, name, s.err))
+				continue
+			}
 			if s.running() {
 				continue
 			}
@@ -175,6 +206,7 @@ func (d *Daemon) startServices(services map[daemonpb.ServiceCategory][]string) e
 			default:
 				err = d.startGenericService(s)
 			}
+			s.err = err
 			if err != nil {
 				d.log.Error().Err(err).Str("service", name).Msg("could not start service")
 				errs = append(errs, fmt.Errorf("%s %q: %w", categories[category].pluginType, name, err))
@@ -224,7 +256,7 @@ func (d *Daemon) startGenericService(s *serviceInfo) error {
 	s.ln, s.conn, s.cancel = ln, conn, cancel
 	if ln != nil {
 		go func() {
-			if err := d.server.Serve(ln); err != nil {
+			if err := d.relay.Serve(ln); err != nil {
 				d.log.Debug().Err(err).Str("service", s.name).Msg("plugin listener closed")
 			}
 		}()
@@ -302,6 +334,7 @@ func (d *Daemon) listServices() []*daemonpb.ActiveService {
 				Url:     s.url,
 				Running: running,
 				Uptime:  uptime,
+				Error:   s.errorString(),
 			}.Build())
 		}
 	}
@@ -319,13 +352,17 @@ func (d *Daemon) findService(category daemonpb.ServiceCategory, name string) *se
 	return nil
 }
 
-// allServices returns the names of all gathered services by category.
+// allServices returns the names of all gathered services that were set up, by
+// category.
 func (d *Daemon) allServices() map[daemonpb.ServiceCategory][]string {
 	d.svcMu.Lock()
 	defer d.svcMu.Unlock()
 	all := make(map[daemonpb.ServiceCategory][]string)
 	for category, services := range d.services {
 		for _, s := range services {
+			if s.broken() {
+				continue
+			}
 			all[category] = append(all[category], s.name)
 		}
 	}
@@ -347,9 +384,14 @@ func (d *Daemon) controllableServices(services []*daemonpb.Service) (map[daemonp
 				"service %q has category %s, only vehicles, monitors and engines can be restarted; use Configure for the rest",
 				s.GetName(), s.GetCategory())
 		}
-		if d.findService(s.GetCategory(), s.GetName()) == nil {
+		found := d.findService(s.GetCategory(), s.GetName())
+		if found == nil {
 			return nil, status.Errorf(codes.NotFound, "no %s service %q",
 				categories[s.GetCategory()].pluginType, s.GetName())
+		}
+		if found.broken() {
+			return nil, status.Errorf(codes.FailedPrecondition, "%s %q couldn't be set up: %v",
+				categories[s.GetCategory()].pluginType, s.GetName(), found.err)
 		}
 		targets[s.GetCategory()] = append(targets[s.GetCategory()], s.GetName())
 	}
@@ -361,7 +403,52 @@ func (s *serviceInfo) running() bool {
 	if s.vehicle != nil {
 		return s.vehicle.Running.Load()
 	}
+	if s.broken() {
+		return false
+	}
 	return s.plugin.Running()
+}
+
+// broken reports whether the service couldn't be set up, so it can't be
+// started.
+func (s *serviceInfo) broken() bool {
+	return s.plugin == nil
+}
+
+// errorString describes why the service couldn't be set up, failed to start,
+// or exited on its own, or is empty if it didn't. The caller must hold svcMu.
+func (s *serviceInfo) errorString() string {
+	if s.err != nil {
+		return s.err.Error()
+	}
+	if s.cancel == nil || s.running() {
+		return ""
+	}
+	// Started, but no longer running, so the run has already ended and the
+	// vehicle doesn't block for its error
+	if s.vehicle != nil {
+		if err := s.vehicle.Wait(); err != nil {
+			return "exited: " + err.Error()
+		}
+	}
+	return "exited"
+}
+
+// pluginTomls returns the plugin toml of each service that was set up, keyed
+// by "{category}/{name}" with the category in lowercase.
+func (d *Daemon) pluginTomls() map[string][]byte {
+	d.svcMu.Lock()
+	defer d.svcMu.Unlock()
+	tomls := make(map[string][]byte)
+	for category, services := range d.services {
+		prefix := strings.ToLower(strings.TrimPrefix(category.String(), "SERVICE_CATEGORY_"))
+		for _, s := range services {
+			if s.toml != nil {
+				tomls[prefix+"/"+s.name] = s.toml
+			}
+		}
+	}
+	return tomls
 }
 
 // vehicleNames returns the names of all gathered vehicles.
@@ -370,7 +457,9 @@ func (d *Daemon) vehicleNames() []string {
 	defer d.svcMu.Unlock()
 	var names []string
 	for _, s := range d.services[daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE] {
-		names = append(names, s.name)
+		if !s.broken() {
+			names = append(names, s.name)
+		}
 	}
 	return names
 }
