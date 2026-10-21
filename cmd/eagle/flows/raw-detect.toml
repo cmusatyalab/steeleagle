@@ -1,0 +1,47 @@
+# Flow D, raw detect: YOLO on the vehicle's NPU takes the driver's raw RGB
+# frames straight from shared memory, with no JPEG encoding or decoding on
+# the way. Its detections stay on the vehicle, in eagled's log, since passing
+# on raw frames would flood the network. Telemetry and JPEG frames go to the
+# cloudlet as in the baseline, so the GCS still shows the vehicle and its
+# video.
+#
+#   {vehicle}.raw_frames ──▶ {vehicle}.yolo (local)
+#   {vehicle}.telemetry  ──▶ telemetry (remote)
+#   {vehicle}.frames     ──▶ telemetry (remote)
+#
+# {vehicle}.raw_frames is published by the driver itself, which needs Gabriel's
+# wheel: start eagled with -gabriel-wheel before installing the driver.
+#
+# {vehicle}.yolo is the Tachyon inference server run as a Gabriel engine, with
+# the vehicle's name in place of {vehicle}, e.g. for harpy:
+#
+#   qnn-sample-app --model <yolo> --backend libQnnHtp.so \
+#       --gabriel_engine harpy.yolo --gabriel_forward detections
+
+[[gabriel.flow.producers]]
+name = "{vehicle}.raw_frames"
+[[gabriel.flow.producers]]
+name = "{vehicle}.telemetry"
+[[gabriel.flow.producers]]
+name = "{vehicle}.frames"
+
+[[gabriel.flow.engines]]
+name = "{vehicle}.yolo"
+location = "local"
+[[gabriel.flow.engines]]
+name = "telemetry"
+location = "remote"
+
+[[gabriel.flow.edges]]
+from = "{vehicle}.raw_frames"
+to = "{vehicle}.yolo"
+timeout = "1s"
+# Remote edges allow for a slow cellular link.
+[[gabriel.flow.edges]]
+from = "{vehicle}.telemetry"
+to = "telemetry"
+timeout = "2s"
+[[gabriel.flow.edges]]
+from = "{vehicle}.frames"
+to = "telemetry"
+timeout = "2s"
