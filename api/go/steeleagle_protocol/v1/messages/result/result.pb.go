@@ -687,6 +687,7 @@ type ComputeResult struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Timestamp   *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=timestamp,proto3"`
 	xxx_hidden_SequenceNum uint64                 `protobuf:"varint,2,opt,name=sequence_num,json=sequenceNum,proto3"`
+	xxx_hidden_Local       bool                   `protobuf:"varint,3,opt,name=local,proto3"`
 	xxx_hidden_Type        isComputeResult_Type   `protobuf_oneof:"type"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -729,6 +730,13 @@ func (x *ComputeResult) GetSequenceNum() uint64 {
 		return x.xxx_hidden_SequenceNum
 	}
 	return 0
+}
+
+func (x *ComputeResult) GetLocal() bool {
+	if x != nil {
+		return x.xxx_hidden_Local
+	}
+	return false
 }
 
 func (x *ComputeResult) GetDetectionResult() *DetectionResult {
@@ -782,6 +790,10 @@ func (x *ComputeResult) SetTimestamp(v *timestamppb.Timestamp) {
 
 func (x *ComputeResult) SetSequenceNum(v uint64) {
 	x.xxx_hidden_SequenceNum = v
+}
+
+func (x *ComputeResult) SetLocal(v bool) {
+	x.xxx_hidden_Local = v
 }
 
 func (x *ComputeResult) SetDetectionResult(v *DetectionResult) {
@@ -917,11 +929,11 @@ func (x *ComputeResult) ClearGenericResult() {
 }
 
 const ComputeResult_Type_not_set_case case_ComputeResult_Type = 0
-const ComputeResult_DetectionResult_case case_ComputeResult_Type = 3
-const ComputeResult_ClassificationResult_case case_ComputeResult_Type = 4
-const ComputeResult_GuidanceResult_case case_ComputeResult_Type = 5
-const ComputeResult_PositionResult_case case_ComputeResult_Type = 6
-const ComputeResult_GenericResult_case case_ComputeResult_Type = 7
+const ComputeResult_DetectionResult_case case_ComputeResult_Type = 4
+const ComputeResult_ClassificationResult_case case_ComputeResult_Type = 5
+const ComputeResult_GuidanceResult_case case_ComputeResult_Type = 6
+const ComputeResult_PositionResult_case case_ComputeResult_Type = 7
+const ComputeResult_GenericResult_case case_ComputeResult_Type = 8
 
 func (x *ComputeResult) WhichType() case_ComputeResult_Type {
 	if x == nil {
@@ -948,6 +960,7 @@ type ComputeResult_builder struct {
 
 	Timestamp   *timestamppb.Timestamp
 	SequenceNum uint64
+	Local       bool
 	// Fields of oneof xxx_hidden_Type:
 	DetectionResult      *DetectionResult
 	ClassificationResult *ClassificationResult
@@ -963,6 +976,7 @@ func (b0 ComputeResult_builder) Build() *ComputeResult {
 	_, _ = b, x
 	x.xxx_hidden_Timestamp = b.Timestamp
 	x.xxx_hidden_SequenceNum = b.SequenceNum
+	x.xxx_hidden_Local = b.Local
 	if b.DetectionResult != nil {
 		x.xxx_hidden_Type = &computeResult_DetectionResult{b.DetectionResult}
 	}
@@ -996,23 +1010,23 @@ type isComputeResult_Type interface {
 }
 
 type computeResult_DetectionResult struct {
-	DetectionResult *DetectionResult `protobuf:"bytes,3,opt,name=detection_result,json=detectionResult,proto3,oneof"` // object detection
+	DetectionResult *DetectionResult `protobuf:"bytes,4,opt,name=detection_result,json=detectionResult,proto3,oneof"` // object detection
 }
 
 type computeResult_ClassificationResult struct {
-	ClassificationResult *ClassificationResult `protobuf:"bytes,4,opt,name=classification_result,json=classificationResult,proto3,oneof"` // classification
+	ClassificationResult *ClassificationResult `protobuf:"bytes,5,opt,name=classification_result,json=classificationResult,proto3,oneof"` // classification
 }
 
 type computeResult_GuidanceResult struct {
-	GuidanceResult *GuidanceResult `protobuf:"bytes,5,opt,name=guidance_result,json=guidanceResult,proto3,oneof"` // guidance directive
+	GuidanceResult *GuidanceResult `protobuf:"bytes,6,opt,name=guidance_result,json=guidanceResult,proto3,oneof"` // guidance directive
 }
 
 type computeResult_PositionResult struct {
-	PositionResult *PositionResult `protobuf:"bytes,6,opt,name=position_result,json=positionResult,proto3,oneof"` // position estimate
+	PositionResult *PositionResult `protobuf:"bytes,7,opt,name=position_result,json=positionResult,proto3,oneof"` // position estimate
 }
 
 type computeResult_GenericResult struct {
-	GenericResult *GenericResult `protobuf:"bytes,7,opt,name=generic_result,json=genericResult,proto3,oneof"` // generic result
+	GenericResult *GenericResult `protobuf:"bytes,8,opt,name=generic_result,json=genericResult,proto3,oneof"` // generic result
 }
 
 func (*computeResult_DetectionResult) isComputeResult_Type() {}
@@ -1058,15 +1072,16 @@ const file_steeleagle_protocol_v1_messages_result_result_proto_rawDesc = "" +
 	"\n" +
 	"\bposition\")\n" +
 	"\rGenericResult\x12\x18\n" +
-	"\apayload\x18\x01 \x01(\fR\apayload\"\xf5\x04\n" +
+	"\apayload\x18\x01 \x01(\fR\apayload\"\x8b\x05\n" +
 	"\rComputeResult\x128\n" +
 	"\ttimestamp\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12!\n" +
-	"\fsequence_num\x18\x02 \x01(\x04R\vsequenceNum\x12d\n" +
-	"\x10detection_result\x18\x03 \x01(\v27.steeleagle_protocol.v1.messages.result.DetectionResultH\x00R\x0fdetectionResult\x12s\n" +
-	"\x15classification_result\x18\x04 \x01(\v2<.steeleagle_protocol.v1.messages.result.ClassificationResultH\x00R\x14classificationResult\x12a\n" +
-	"\x0fguidance_result\x18\x05 \x01(\v26.steeleagle_protocol.v1.messages.result.GuidanceResultH\x00R\x0eguidanceResult\x12a\n" +
-	"\x0fposition_result\x18\x06 \x01(\v26.steeleagle_protocol.v1.messages.result.PositionResultH\x00R\x0epositionResult\x12^\n" +
-	"\x0egeneric_result\x18\a \x01(\v25.steeleagle_protocol.v1.messages.result.GenericResultH\x00R\rgenericResultB\x06\n" +
+	"\fsequence_num\x18\x02 \x01(\x04R\vsequenceNum\x12\x14\n" +
+	"\x05local\x18\x03 \x01(\bR\x05local\x12d\n" +
+	"\x10detection_result\x18\x04 \x01(\v27.steeleagle_protocol.v1.messages.result.DetectionResultH\x00R\x0fdetectionResult\x12s\n" +
+	"\x15classification_result\x18\x05 \x01(\v2<.steeleagle_protocol.v1.messages.result.ClassificationResultH\x00R\x14classificationResult\x12a\n" +
+	"\x0fguidance_result\x18\x06 \x01(\v26.steeleagle_protocol.v1.messages.result.GuidanceResultH\x00R\x0eguidanceResult\x12a\n" +
+	"\x0fposition_result\x18\a \x01(\v26.steeleagle_protocol.v1.messages.result.PositionResultH\x00R\x0epositionResult\x12^\n" +
+	"\x0egeneric_result\x18\b \x01(\v25.steeleagle_protocol.v1.messages.result.GenericResultH\x00R\rgenericResultB\x06\n" +
 	"\x04typeB\xc2\x02\n" +
 	"*com.steeleagle_protocol.v1.messages.resultB\vResultProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/result\xa2\x02\x04SVMR\xaa\x02%SteeleagleProtocol.V1.Messages.Result\xca\x02%SteeleagleProtocol\\V1\\Messages\\Result\xe2\x021SteeleagleProtocol\\V1\\Messages\\Result\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Messages::Resultb\x06proto3"
 

@@ -8,28 +8,25 @@ import (
 
 	daemonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon"
 	"github.com/cmusatyalab/steeleagle/config"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 // RegisterOrchestrator is called by a daemon that has this daemon as its
-// orchestrator. Its vehicles become addressable through this daemon's router,
-// and it gets back the cert and port of this daemon's local compute service,
-// along with the engines that are default flow targets.
+// orchestrator, and stays open as a heartbeat. Its vehicles become addressable
+// through this daemon's router, and it gets back the cert and port of this
+// daemon's local compute service, along with the plugin toml of each engine it
+// serves, which become remote engines for its vehicles.
 func (d *Daemon) RegisterOrchestrator(
-	ctx context.Context,
-	req *daemonpb.RegisterOrchestratorRequest,
-) (*daemonpb.RegisterOrchestratorResponse, error) {
-	cert, err := d.registerOrchestrator(ctx, req.GetVehicles(), req.GetPort())
-	if err != nil {
-		d.log.Error().Err(err).Strs("vehicles", req.GetVehicles()).Msg("could not register as orchestrator")
-		return nil, err
+	stream grpc.BidiStreamingServer[daemonpb.RegisterOrchestratorRequest, daemonpb.RegisterOrchestratorResponse],
+) error {
+	if err := d.serveRegistration(stream); err != nil {
+		d.log.Error().Err(err).Msg("registration stream failed")
+		return err
 	}
-	return daemonpb.RegisterOrchestratorResponse_builder{
-		Cert: cert,
-		Port: int32(d.Config.Daemon.Lcs),
-	}.Build(), nil
+	return nil
 }
 
 // Configure replaces the config.toml on disk and stops the daemon, so that it
@@ -43,9 +40,8 @@ func (d *Daemon) Configure(
 		d.log.Error().Err(err).Str("path", d.configPath).Msg("could not write daemon config")
 		return nil, err
 	}
-	// Stopping is graceful, so this call returns before the relay shuts down
-	d.log.Info().Str("path", d.configPath).Msg("daemon config replaced, stopping")
-	d.cancel()
+	d.log.Info().Str("path", d.configPath).Msg("daemon config replaced")
+	d.stopForRestart()
 	return &daemonpb.ConfigureResponse{}, nil
 }
 
@@ -70,7 +66,9 @@ func (d *Daemon) GetConfiguration(
 }
 
 // ListServices lists all services from the config, whether they are running
-// or stopped.
+// or stopped, followed by the services of every registered remote daemon on an
+// orchestrator. Services are listed by their qualified names, so those of
+// different daemons never collide.
 func (d *Daemon) ListServices(
 	ctx context.Context,
 	req *daemonpb.ListServicesRequest,
@@ -91,7 +89,9 @@ func (d *Daemon) ListServices(
 			Error:   s.errorString(),
 		}.Build())
 	})
-	return daemonpb.ListServicesResponse_builder{Services: services}.Build(), nil
+	remote, unavailable := d.listRemoteServices(ctx)
+	services = append(services, remote...)
+	return daemonpb.ListServicesResponse_builder{Services: services, Unavailable: unavailable}.Build(), nil
 }
 
 // RestartServices restarts a list of vehicle, monitor, or engine services. A
@@ -133,15 +133,24 @@ func (d *Daemon) restartTargets(services []*daemonpb.Service) ([]*serviceInfo, e
 	return targets, nil
 }
 
-// Restart stops the daemon, so that it is restarted with all of its services.
-// Stopping is graceful, so this call returns before the relay shuts down.
+// Restart stops the daemon, closing all of its services, so that it is
+// restarted with all of them by its supervisor.
 func (d *Daemon) Restart(
 	ctx context.Context,
 	req *daemonpb.RestartRequest,
 ) (*daemonpb.RestartResponse, error) {
-	d.log.Info().Msg("restart requested, stopping")
-	d.cancel()
+	d.log.Info().Msg("restart requested")
+	d.stopForRestart()
 	return &daemonpb.RestartResponse{}, nil
+}
+
+// stopForRestart stops the daemon, so that Run returns ErrRestart once
+// everything is closed. Stopping is graceful, so the calling RPC returns
+// before the relay shuts down.
+func (d *Daemon) stopForRestart() {
+	d.log.Info().Msg("stopping for restart")
+	d.restart.Store(true)
+	d.cancel()
 }
 
 // InstallPackage installs a new package of plugins locally. The package is

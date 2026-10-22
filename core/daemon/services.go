@@ -48,16 +48,19 @@ func authCode(auth config.Auth) (listener.AuthCode, error) {
 }
 
 // gatherServices reads the services used by the config into d.services
-// without starting them. A service that can't be set up, like one whose
-// package isn't installed, is kept as broken with its error, so that it is
-// listed but never started, and is reported in the returned error, so that the
-// rest of the config can still run.
+// without starting them. Each service is named by its qualified name, so that
+// its plugin, and the vehicle or engine it runs, are unique across the
+// network. A service that can't be set up, like one whose package isn't
+// installed, is kept as broken with its error, so that it is listed but never
+// started, and is reported in the returned error, so that the rest of the
+// config can still run.
 func (d *Daemon) gatherServices() error {
 	d.svcMu.Lock()
 	defer d.svcMu.Unlock()
 	d.services = make(map[daemonpb.ServiceCategory][]*serviceInfo)
 	var errs []error
 	add := func(name string, category daemonpb.ServiceCategory, auth config.Auth, field config.PluginField) {
+		name = d.qualify(name)
 		s, err := d.newService(name, category, auth, field)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("%s %q: %w", categories[category].pluginType, name, err))
@@ -183,11 +186,12 @@ func (d *Daemon) newService(
 	}, nil
 }
 
-// findService returns the named service in a category, or nil if there is
-// none. The caller must hold svcMu.
+// findService returns the service in a category named by its qualified name,
+// or by its name in the config, or nil if there is none. The caller must hold
+// svcMu.
 func (d *Daemon) findService(category daemonpb.ServiceCategory, name string) *serviceInfo {
 	for _, s := range d.services[category] {
-		if s.name == name {
+		if s.name == name || s.name == d.qualify(name) {
 			return s
 		}
 	}
@@ -305,10 +309,12 @@ func (d *Daemon) startService(s *serviceInfo) error {
 
 	if s.vehicle == nil {
 		options := []vehicle.VehicleOption{vehicle.WithName(s.name), vehicle.WithLogger(d.log),
-			vehicle.WithLcs(d.Config.Daemon.Hostname)}
+			vehicle.WithLcs(d.Config.Daemon.Hostname), vehicle.WithAvailableEngines(d.availableEngines())}
+		d.rcsMu.Lock()
 		if d.rcsAddr != "" {
 			options = append(options, vehicle.WithRcs(d.rcsAddr, d.rcsCert))
 		}
+		d.rcsMu.Unlock()
 		v, err := vehicle.NewVehicle(s.plugin, s.config, options...)
 		if err != nil {
 			cancel()
@@ -334,11 +340,23 @@ func (d *Daemon) startService(s *serviceInfo) error {
 		return err
 	}
 	d.router.AddHeaderRoute(s.name, conn)
-	if d.selfAddr.IsValid() {
-		d.router.AddHeaderRoute(d.selfAddr.String()+"/"+s.name, conn)
-	}
 	s.conn, s.cancel = conn, cancel
 	return nil
+}
+
+// closeServices releases what services hold beyond their runs, like the Uriel
+// client of each vehicle and the dataflow installed on it. The services must
+// be stopped, and their vehicles are created again if they are started.
+func (d *Daemon) closeServices() {
+	d.eachService(func(s *serviceInfo) {
+		if s.vehicle == nil {
+			return
+		}
+		if err := s.vehicle.Close(); err != nil {
+			d.log.Warn().Err(err).Str("service", s.name).Msg("could not close vehicle")
+		}
+		s.vehicle = nil
+	})
 }
 
 // release stops the current run of the service, if any, waits for it to

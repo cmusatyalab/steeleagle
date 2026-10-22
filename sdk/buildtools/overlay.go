@@ -38,7 +38,7 @@ func (c *Config) OverlayConfig() (preprocess.OverlayConfig, []*CompileError) {
 
 // constTypes returns the constants to generate in the params package, by
 // type name, named by the manifest and GeoJSON: roles and squawks from the
-// manifest, flow names (typed by their result message), and GeoJSON
+// manifest, engine names (typed by their result message), and GeoJSON
 // feature names (typed by their geometry). A name may only be declared
 // once per type.
 func (c *Config) constTypes() (map[string][]string, []*CompileError) {
@@ -60,21 +60,21 @@ func (c *Config) constTypes() (map[string][]string, []*CompileError) {
 		for _, s := range c.Manifest.Info.Squawks {
 			add("Squawk", s, "squawk")
 		}
-		flows := map[string]bool{}
-		for _, f := range c.Manifest.Flows {
-			typeName := f.Result[strings.LastIndex(f.Result, "/")+1:]
+		engines := map[string]bool{}
+		for _, e := range c.Manifest.Engines {
+			typeName := e.Result[strings.LastIndex(e.Result, "/")+1:]
 			if typeName == "" {
 				errs = append(errs, &CompileError{
-					Err: fmt.Errorf("flow %s has malformed result proto message id %q", f.Name, f.Result),
+					Err: fmt.Errorf("engine %s has malformed result proto message id %q", e.Name, e.Result),
 				})
 				continue
 			}
-			if flows[f.Name] {
-				errs = append(errs, &CompileError{Err: fmt.Errorf("flow %q is declared more than once", f.Name)})
+			if engines[e.Name] {
+				errs = append(errs, &CompileError{Err: fmt.Errorf("engine %q is declared more than once", e.Name)})
 				continue
 			}
-			flows[f.Name] = true
-			add(typeName, f.Name, "flow")
+			engines[e.Name] = true
+			add(typeName, e.Name, "engine")
 		}
 	}
 	if c.GeoJson != nil {

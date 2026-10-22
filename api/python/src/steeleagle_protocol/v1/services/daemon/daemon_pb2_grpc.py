@@ -20,7 +20,7 @@ class DaemonServiceStub:
         Args:
             channel: A grpc.Channel.
         """
-        self.RegisterOrchestrator = channel.unary_unary(
+        self.RegisterOrchestrator = channel.stream_stream(
                 '/steeleagle_protocol.v1.services.daemon.DaemonService/RegisterOrchestrator',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RegisterOrchestratorRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RegisterOrchestratorResponse.FromString,
@@ -76,13 +76,19 @@ class DaemonServiceServicer:
     plugins and vehicles.
     """
 
-    def RegisterOrchestrator(self, request, context):
+    def RegisterOrchestrator(self, request_iterator, context):
         """
         Register this daemon as an orchestrator.
 
         RegisterOrchestrator is called by other daemons that have set this daemon as
         their orchestrator. The vehicles on other daemons will be addressable through
-        the daemon gRPC proxy.
+        the daemon gRPC proxy. The stream opens with a handshake: the registering
+        daemon sends its registration, and the orchestrator answers with the remote
+        compute service details and the engines it serves, which become available
+        to the registering daemon's vehicles as remote engines. After that, the
+        stream is a heartbeat: the registering daemon sends empty requests, each
+        answered with an empty response. The registering daemon registers again,
+        with backoff, whenever the stream dies.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -116,7 +122,11 @@ class DaemonServiceServicer:
 
         List services lists all daemon services from the config, whether they are
         running or stopped, along with why each couldn't be set up, failed to
-        start, or exited, if it did.
+        start, or exited, if it did. On an orchestrator, the services of every
+        registered remote daemon are listed too. Services are named by their
+        qualified names, "{daemon IP}.{name}", so they are unique across daemons;
+        a remote daemon that can't be reached is left out, and listed as
+        unavailable.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -180,7 +190,7 @@ class DaemonServiceServicer:
 
 def add_DaemonServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'RegisterOrchestrator': grpc.unary_unary_rpc_method_handler(
+            'RegisterOrchestrator': grpc.stream_stream_rpc_method_handler(
                     servicer.RegisterOrchestrator,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RegisterOrchestratorRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RegisterOrchestratorResponse.SerializeToString,
@@ -243,7 +253,7 @@ class DaemonService:
     """
 
     @staticmethod
-    def RegisterOrchestrator(request,
+    def RegisterOrchestrator(request_iterator,
             target,
             options=(),
             channel_credentials=None,
@@ -253,8 +263,8 @@ class DaemonService:
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
+        return grpc.experimental.stream_stream(
+            request_iterator,
             target,
             '/steeleagle_protocol.v1.services.daemon.DaemonService/RegisterOrchestrator',
             steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RegisterOrchestratorRequest.SerializeToString,

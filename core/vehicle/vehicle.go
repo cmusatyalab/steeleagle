@@ -35,7 +35,6 @@ type pluginInfo struct {
 
 type Vehicle struct {
 	vehiclepb.UnimplementedDataServiceServer
-	vehiclepb.UnimplementedSafetyServiceServer
 	vehiclepb.UnimplementedLoaderServiceServer
 	missionpb.UnimplementedMissionServiceServer
 	Name       string               // vehicle name
@@ -53,6 +52,7 @@ type Vehicle struct {
 	lcsName    string               // local compute service name
 	rcsAddr    string               // remote compute service address, if any
 	rcsCert    []byte               // remote compute service cert in DER, if any
+	engines    map[string]Engine    // engines available to dataflows, by qualified name
 	uriel      *uriel.Client        // Uriel client for the vehicle's dataflows
 	db         *bolt.DB             // data database, open while running
 	runCtx     context.Context      // context of the current run
@@ -202,7 +202,6 @@ func (v *Vehicle) Start(ctx context.Context, daemonLn net.Listener) (err error) 
 
 	// Register services
 	vehiclepb.RegisterDataServiceServer(v.server, v)
-	vehiclepb.RegisterSafetyServiceServer(v.server, v)
 	vehiclepb.RegisterLoaderServiceServer(v.server, v)
 	missionpb.RegisterMissionServiceServer(v.server, v)
 

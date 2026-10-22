@@ -27,6 +27,12 @@ SERVICE_CATEGORY_SIMULATOR: ServiceCategory
 SERVICE_CATEGORY_EXTRA: ServiceCategory
 
 class RegisterOrchestratorRequest(_message.Message):
+    __slots__ = ("registration",)
+    REGISTRATION_FIELD_NUMBER: _ClassVar[int]
+    registration: DaemonRegistration
+    def __init__(self, registration: _Optional[_Union[DaemonRegistration, _Mapping]] = ...) -> None: ...
+
+class DaemonRegistration(_message.Message):
     __slots__ = ("vehicles", "port")
     VEHICLES_FIELD_NUMBER: _ClassVar[int]
     PORT_FIELD_NUMBER: _ClassVar[int]
@@ -35,12 +41,27 @@ class RegisterOrchestratorRequest(_message.Message):
     def __init__(self, vehicles: _Optional[_Iterable[str]] = ..., port: _Optional[int] = ...) -> None: ...
 
 class RegisterOrchestratorResponse(_message.Message):
-    __slots__ = ("cert", "port")
+    __slots__ = ("compute",)
+    COMPUTE_FIELD_NUMBER: _ClassVar[int]
+    compute: RemoteCompute
+    def __init__(self, compute: _Optional[_Union[RemoteCompute, _Mapping]] = ...) -> None: ...
+
+class RemoteCompute(_message.Message):
+    __slots__ = ("cert", "port", "engines")
+    class EnginesEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: bytes
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[bytes] = ...) -> None: ...
     CERT_FIELD_NUMBER: _ClassVar[int]
     PORT_FIELD_NUMBER: _ClassVar[int]
+    ENGINES_FIELD_NUMBER: _ClassVar[int]
     cert: str
     port: int
-    def __init__(self, cert: _Optional[str] = ..., port: _Optional[int] = ...) -> None: ...
+    engines: _containers.ScalarMap[str, bytes]
+    def __init__(self, cert: _Optional[str] = ..., port: _Optional[int] = ..., engines: _Optional[_Mapping[str, bytes]] = ...) -> None: ...
 
 class ConfigureRequest(_message.Message):
     __slots__ = ("config_toml",)
@@ -100,10 +121,12 @@ class ListServicesRequest(_message.Message):
     def __init__(self) -> None: ...
 
 class ListServicesResponse(_message.Message):
-    __slots__ = ("services",)
+    __slots__ = ("services", "unavailable")
     SERVICES_FIELD_NUMBER: _ClassVar[int]
+    UNAVAILABLE_FIELD_NUMBER: _ClassVar[int]
     services: _containers.RepeatedCompositeFieldContainer[ActiveService]
-    def __init__(self, services: _Optional[_Iterable[_Union[ActiveService, _Mapping]]] = ...) -> None: ...
+    unavailable: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, services: _Optional[_Iterable[_Union[ActiveService, _Mapping]]] = ..., unavailable: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class RestartServicesRequest(_message.Message):
     __slots__ = ("services",)

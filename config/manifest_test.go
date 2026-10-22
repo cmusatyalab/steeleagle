@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-// TestMissionManifestParsesExample checks that the info and flows sections are
-// parsed from the example manifest.toml.
+// TestMissionManifestParsesExample checks that the info and engines sections
+// are parsed from the example manifest.toml.
 func TestMissionManifestParsesExample(t *testing.T) {
 	m, err := ParseMissionManifestFromFilepath("examples/manifest.toml")
 	if err != nil {
@@ -20,7 +20,7 @@ func TestMissionManifestParsesExample(t *testing.T) {
 			Roles:   []string{"Patroller", "Tracker"},
 			Squawks: []string{"target_found", "done_with_mission"},
 		},
-		Flows: []FlowField{{
+		Engines: []MissionEngineField{{
 			Name:   "yolo",
 			Result: "messages/result/DetectionResult",
 		}},

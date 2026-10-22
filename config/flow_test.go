@@ -14,11 +14,11 @@ func TestFlowConfigParsesExample(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := FlowConfig{
-		Producers: []Producer{{Name: "{vehicle}.telemetry"}},
-		Engines:   []Engine{{Name: "{vehicle}.yolo", Location: "local"}},
+		Producers: []Producer{{Name: "telemetry"}},
+		Engines:   []Engine{{Name: "yolo", Location: "local"}},
 		Edges: []Edge{{
-			From:    "{vehicle}.telemetry",
-			To:      "telemetry",
+			From:    "telemetry",
+			To:      "yolo",
 			Timeout: "2s",
 		}},
 	}

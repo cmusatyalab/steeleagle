@@ -4,14 +4,14 @@ version = "0.1.0"
 roles = ["Patroller", "Tracker"]
 squawks = ["target_found", "done_with_mission"]
 
-[[flows]]
+[[engines]]
 name = "yolo"
 result = "messages/result/DetectionResult"
 
-[[flows]]
+[[engines]]
 name = "yolo_q"
 result = "messages/result/DetectionResult"
 
-[[flows]]
+[[engines]]
 name = "swiftmap"
 result = "messages/result/GenericResult"

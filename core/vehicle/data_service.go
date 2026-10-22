@@ -1,6 +1,7 @@
 package vehicle
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"time"
@@ -16,27 +17,49 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// Engine is an engine that the vehicle's dataflows can use.
+type Engine struct {
+	Inputs []string // input types the engine accepts
+	Result string   // result type the engine generates
+	Local  bool     // whether the engine is served by the local compute service, rather than the remote one
+}
+
+// location is the engine's location, as dataflows give it.
+func (e Engine) location() string {
+	if e.Local {
+		return LocalLocation
+	}
+	return RemoteLocation
+}
+
 // dataflow is a dataflow installed on the vehicle's Uriel client, under the
 // vehicle's name.
 type dataflow struct {
+	toml      []byte                         // dataflow TOML, as it was given to SetDataflow
 	spec      string                         // Uriel flow spec TOML, with fully qualified producers
 	producers []string                       // fully qualified producers that feed the flow
 	cameras   *driverpb.StreamCamerasRequest // cameras the driver streams for the flow
 }
 
-// SetDataflow parses and executes a dataflow from TOML bytes.
+// SetDataflow parses and executes a dataflow from TOML bytes. A dataflow with
+// the same TOML as the current one is already set, so nothing is done.
 func (v *Vehicle) SetDataflow(
 	ctx context.Context,
 	req *vehiclepb.SetDataflowRequest,
 ) (*vehiclepb.SetDataflowResponse, error) {
+	v.flowMu.Lock()
+	defer v.flowMu.Unlock()
+
+	if v.flow != nil && bytes.Equal(v.flow.toml, req.GetToml()) {
+		v.log.Debug().Msg("dataflow unchanged")
+		return &vehiclepb.SetDataflowResponse{}, nil
+	}
 	flow, err := v.parseDataflow(req.GetToml())
 	if err != nil {
 		v.log.Error().Err(err).Msg("could not parse dataflow")
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-
-	v.flowMu.Lock()
-	defer v.flowMu.Unlock()
+	flow.toml = req.GetToml()
 
 	// The driver streams the flow's cameras before the flow is set, so a flow
 	// it can't stream is not set
@@ -79,6 +102,21 @@ func (v *Vehicle) SetDataflow(
 	}
 	v.log.Info().Strs("producers", flow.producers).Msg("dataflow set")
 	return &vehiclepb.SetDataflowResponse{}, nil
+}
+
+// GetFlow returns the TOML of the current dataflow, as it was given to
+// SetDataflow, or empty TOML if no dataflow is set.
+func (v *Vehicle) GetFlow(
+	ctx context.Context,
+	req *vehiclepb.GetFlowRequest,
+) (*vehiclepb.GetFlowResponse, error) {
+	v.flowMu.Lock()
+	defer v.flowMu.Unlock()
+	var toml []byte
+	if v.flow != nil {
+		toml = v.flow.toml
+	}
+	return vehiclepb.GetFlowResponse_builder{Toml: toml}.Build(), nil
 }
 
 // GetResult queries the results of an engine: the most recent one, or all

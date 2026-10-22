@@ -21,6 +21,16 @@ class SetDataflowResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
+class GetFlowRequest(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class GetFlowResponse(_message.Message):
+    __slots__ = ("toml",)
+    TOML_FIELD_NUMBER: _ClassVar[int]
+    toml: bytes
+    def __init__(self, toml: _Optional[bytes] = ...) -> None: ...
+
 class GetResultRequest(_message.Message):
     __slots__ = ("engine", "time_start", "time_end")
     ENGINE_FIELD_NUMBER: _ClassVar[int]

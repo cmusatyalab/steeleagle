@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	DataService_SetDataflow_FullMethodName  = "/steeleagle_protocol.v1.services.vehicle.DataService/SetDataflow"
+	DataService_GetFlow_FullMethodName      = "/steeleagle_protocol.v1.services.vehicle.DataService/GetFlow"
 	DataService_GetResult_FullMethodName    = "/steeleagle_protocol.v1.services.vehicle.DataService/GetResult"
 	DataService_GetTelemetry_FullMethodName = "/steeleagle_protocol.v1.services.vehicle.DataService/GetTelemetry"
 )
@@ -40,10 +41,17 @@ const (
 type DataServiceClient interface {
 	// Set the current flow.
 	//
-	// Parses and executes the current flow from TOML bytes. This becomes the
-	// new default dataflow for the vehicle. When missions are completed, it will
-	// revert back to this dataflow.
+	// Parses and executes the current flow from TOML bytes, replacing the
+	// vehicle's current dataflow; setting the current dataflow again does
+	// nothing. A mission may set the dataflow while the vehicle is in mission
+	// (user) mode, and the dataflow is not restored when it exits mission mode;
+	// setting it back is the responsibility of whoever needs another one.
 	SetDataflow(ctx context.Context, in *SetDataflowRequest, opts ...grpc.CallOption) (*SetDataflowResponse, error)
+	// Get the current flow.
+	//
+	// Returns the TOML bytes of the current dataflow, as they were given to
+	// `SetDataflow`, or empty bytes if no dataflow is set.
+	GetFlow(ctx context.Context, in *GetFlowRequest, opts ...grpc.CallOption) (*GetFlowResponse, error)
 	// Query a dataflow.
 	//
 	// Queries a dataflow for results, returning all results that match the query
@@ -70,6 +78,16 @@ func (c *dataServiceClient) SetDataflow(ctx context.Context, in *SetDataflowRequ
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SetDataflowResponse)
 	err := c.cc.Invoke(ctx, DataService_SetDataflow_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataServiceClient) GetFlow(ctx context.Context, in *GetFlowRequest, opts ...grpc.CallOption) (*GetFlowResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetFlowResponse)
+	err := c.cc.Invoke(ctx, DataService_GetFlow_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -108,10 +126,17 @@ func (c *dataServiceClient) GetTelemetry(ctx context.Context, in *GetTelemetryRe
 type DataServiceServer interface {
 	// Set the current flow.
 	//
-	// Parses and executes the current flow from TOML bytes. This becomes the
-	// new default dataflow for the vehicle. When missions are completed, it will
-	// revert back to this dataflow.
+	// Parses and executes the current flow from TOML bytes, replacing the
+	// vehicle's current dataflow; setting the current dataflow again does
+	// nothing. A mission may set the dataflow while the vehicle is in mission
+	// (user) mode, and the dataflow is not restored when it exits mission mode;
+	// setting it back is the responsibility of whoever needs another one.
 	SetDataflow(context.Context, *SetDataflowRequest) (*SetDataflowResponse, error)
+	// Get the current flow.
+	//
+	// Returns the TOML bytes of the current dataflow, as they were given to
+	// `SetDataflow`, or empty bytes if no dataflow is set.
+	GetFlow(context.Context, *GetFlowRequest) (*GetFlowResponse, error)
 	// Query a dataflow.
 	//
 	// Queries a dataflow for results, returning all results that match the query
@@ -136,6 +161,9 @@ type UnimplementedDataServiceServer struct{}
 
 func (UnimplementedDataServiceServer) SetDataflow(context.Context, *SetDataflowRequest) (*SetDataflowResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetDataflow not implemented")
+}
+func (UnimplementedDataServiceServer) GetFlow(context.Context, *GetFlowRequest) (*GetFlowResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetFlow not implemented")
 }
 func (UnimplementedDataServiceServer) GetResult(context.Context, *GetResultRequest) (*GetResultResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetResult not implemented")
@@ -178,6 +206,24 @@ func _DataService_SetDataflow_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DataServiceServer).SetDataflow(ctx, req.(*SetDataflowRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DataService_GetFlow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetFlowRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServiceServer).GetFlow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DataService_GetFlow_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServiceServer).GetFlow(ctx, req.(*GetFlowRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -228,6 +274,10 @@ var DataService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetDataflow",
 			Handler:    _DataService_SetDataflow_Handler,
+		},
+		{
+			MethodName: "GetFlow",
+			Handler:    _DataService_GetFlow_Handler,
 		},
 		{
 			MethodName: "GetResult",

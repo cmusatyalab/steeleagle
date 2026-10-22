@@ -27,7 +27,7 @@ from steeleagle_protocol.v1.messages.result import result_pb2 as steeleagle__pro
 from steeleagle_protocol.v1.messages.telemetry import telemetry_pb2 as steeleagle__protocol_dot_v1_dot_messages_dot_telemetry_dot_telemetry__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n2steeleagle_protocol/v1/services/vehicle/data.proto\x12\'steeleagle_protocol.v1.services.vehicle\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x33steeleagle_protocol/v1/messages/result/result.proto\x1a\x39steeleagle_protocol/v1/messages/telemetry/telemetry.proto\"(\n\x12SetDataflowRequest\x12\x12\n\x04toml\x18\x01 \x01(\x0cR\x04toml\"\x15\n\x13SetDataflowResponse\"\xc2\x01\n\x10GetResultRequest\x12\x16\n\x06\x65ngine\x18\x01 \x01(\tR\x06\x65ngine\x12>\n\ntime_start\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x00R\ttimeStart\x88\x01\x01\x12:\n\x08time_end\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x01R\x07timeEnd\x88\x01\x01\x42\r\n\x0b_time_startB\x0b\n\t_time_end\"b\n\x11GetResultResponse\x12M\n\x06result\x18\x01 \x03(\x0b\x32\x35.steeleagle_protocol.v1.messages.result.ComputeResultR\x06result\"\xad\x01\n\x13GetTelemetryRequest\x12>\n\ntime_start\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x00R\ttimeStart\x88\x01\x01\x12:\n\x08time_end\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x01R\x07timeEnd\x88\x01\x01\x42\r\n\x0b_time_startB\x0b\n\t_time_end\"j\n\x14GetTelemetryResponse\x12R\n\ttelemetry\x18\x01 \x03(\x0b\x32\x34.steeleagle_protocol.v1.messages.telemetry.TelemetryR\ttelemetry2\xb1\x03\n\x0b\x44\x61taService\x12\x8a\x01\n\x0bSetDataflow\x12;.steeleagle_protocol.v1.services.vehicle.SetDataflowRequest\x1a<.steeleagle_protocol.v1.services.vehicle.SetDataflowResponse\"\x00\x12\x84\x01\n\tGetResult\x12\x39.steeleagle_protocol.v1.services.vehicle.GetResultRequest\x1a:.steeleagle_protocol.v1.services.vehicle.GetResultResponse\"\x00\x12\x8d\x01\n\x0cGetTelemetry\x12<.steeleagle_protocol.v1.services.vehicle.GetTelemetryRequest\x1a=.steeleagle_protocol.v1.services.vehicle.GetTelemetryResponse\"\x00\x42\xc6\x02\n+com.steeleagle_protocol.v1.services.vehicleB\tDataProtoP\x01ZPgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle\xa2\x02\x04SVSV\xaa\x02&SteeleagleProtocol.V1.Services.Vehicle\xca\x02&SteeleagleProtocol\\V1\\Services\\Vehicle\xe2\x02\x32SteeleagleProtocol\\V1\\Services\\Vehicle\\GPBMetadata\xea\x02)SteeleagleProtocol::V1::Services::Vehicleb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n2steeleagle_protocol/v1/services/vehicle/data.proto\x12\'steeleagle_protocol.v1.services.vehicle\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x33steeleagle_protocol/v1/messages/result/result.proto\x1a\x39steeleagle_protocol/v1/messages/telemetry/telemetry.proto\"(\n\x12SetDataflowRequest\x12\x12\n\x04toml\x18\x01 \x01(\x0cR\x04toml\"\x15\n\x13SetDataflowResponse\"\x10\n\x0eGetFlowRequest\"%\n\x0fGetFlowResponse\x12\x12\n\x04toml\x18\x01 \x01(\x0cR\x04toml\"\xc2\x01\n\x10GetResultRequest\x12\x16\n\x06\x65ngine\x18\x01 \x01(\tR\x06\x65ngine\x12>\n\ntime_start\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x00R\ttimeStart\x88\x01\x01\x12:\n\x08time_end\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x01R\x07timeEnd\x88\x01\x01\x42\r\n\x0b_time_startB\x0b\n\t_time_end\"b\n\x11GetResultResponse\x12M\n\x06result\x18\x01 \x03(\x0b\x32\x35.steeleagle_protocol.v1.messages.result.ComputeResultR\x06result\"\xad\x01\n\x13GetTelemetryRequest\x12>\n\ntime_start\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x00R\ttimeStart\x88\x01\x01\x12:\n\x08time_end\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x01R\x07timeEnd\x88\x01\x01\x42\r\n\x0b_time_startB\x0b\n\t_time_end\"j\n\x14GetTelemetryResponse\x12R\n\ttelemetry\x18\x01 \x03(\x0b\x32\x34.steeleagle_protocol.v1.messages.telemetry.TelemetryR\ttelemetry2\xb1\x04\n\x0b\x44\x61taService\x12\x8a\x01\n\x0bSetDataflow\x12;.steeleagle_protocol.v1.services.vehicle.SetDataflowRequest\x1a<.steeleagle_protocol.v1.services.vehicle.SetDataflowResponse\"\x00\x12~\n\x07GetFlow\x12\x37.steeleagle_protocol.v1.services.vehicle.GetFlowRequest\x1a\x38.steeleagle_protocol.v1.services.vehicle.GetFlowResponse\"\x00\x12\x84\x01\n\tGetResult\x12\x39.steeleagle_protocol.v1.services.vehicle.GetResultRequest\x1a:.steeleagle_protocol.v1.services.vehicle.GetResultResponse\"\x00\x12\x8d\x01\n\x0cGetTelemetry\x12<.steeleagle_protocol.v1.services.vehicle.GetTelemetryRequest\x1a=.steeleagle_protocol.v1.services.vehicle.GetTelemetryResponse\"\x00\x42\xc6\x02\n+com.steeleagle_protocol.v1.services.vehicleB\tDataProtoP\x01ZPgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle\xa2\x02\x04SVSV\xaa\x02&SteeleagleProtocol.V1.Services.Vehicle\xca\x02&SteeleagleProtocol\\V1\\Services\\Vehicle\xe2\x02\x32SteeleagleProtocol\\V1\\Services\\Vehicle\\GPBMetadata\xea\x02)SteeleagleProtocol::V1::Services::Vehicleb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -39,14 +39,18 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_SETDATAFLOWREQUEST']._serialized_end=280
   _globals['_SETDATAFLOWRESPONSE']._serialized_start=282
   _globals['_SETDATAFLOWRESPONSE']._serialized_end=303
-  _globals['_GETRESULTREQUEST']._serialized_start=306
-  _globals['_GETRESULTREQUEST']._serialized_end=500
-  _globals['_GETRESULTRESPONSE']._serialized_start=502
-  _globals['_GETRESULTRESPONSE']._serialized_end=600
-  _globals['_GETTELEMETRYREQUEST']._serialized_start=603
-  _globals['_GETTELEMETRYREQUEST']._serialized_end=776
-  _globals['_GETTELEMETRYRESPONSE']._serialized_start=778
-  _globals['_GETTELEMETRYRESPONSE']._serialized_end=884
-  _globals['_DATASERVICE']._serialized_start=887
-  _globals['_DATASERVICE']._serialized_end=1320
+  _globals['_GETFLOWREQUEST']._serialized_start=305
+  _globals['_GETFLOWREQUEST']._serialized_end=321
+  _globals['_GETFLOWRESPONSE']._serialized_start=323
+  _globals['_GETFLOWRESPONSE']._serialized_end=360
+  _globals['_GETRESULTREQUEST']._serialized_start=363
+  _globals['_GETRESULTREQUEST']._serialized_end=557
+  _globals['_GETRESULTRESPONSE']._serialized_start=559
+  _globals['_GETRESULTRESPONSE']._serialized_end=657
+  _globals['_GETTELEMETRYREQUEST']._serialized_start=660
+  _globals['_GETTELEMETRYREQUEST']._serialized_end=833
+  _globals['_GETTELEMETRYRESPONSE']._serialized_start=835
+  _globals['_GETTELEMETRYRESPONSE']._serialized_end=941
+  _globals['_DATASERVICE']._serialized_start=944
+  _globals['_DATASERVICE']._serialized_end=1505
 # @@protoc_insertion_point(module_scope)

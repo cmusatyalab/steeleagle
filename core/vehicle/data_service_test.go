@@ -26,9 +26,9 @@ import (
 
 // newDataTestVehicle creates a running vehicle with a fake driver that
 // streams the cameras "front" and "rear", both primary, and "down", and whose
-// local compute service is a Uriel server serving engine. Uriel names are
-// shared by every process on the machine, so they are made unique to this
-// one.
+// local compute service is a Uriel server serving engine, a local detection
+// engine. Uriel names are shared by every process on the machine, so they are
+// made unique to this one.
 func newDataTestVehicle(t *testing.T, engine string) *Vehicle {
 	t.Helper()
 	t.Setenv("XDG_RUNTIME_DIR", t.TempDir())
@@ -60,8 +60,9 @@ func newDataTestVehicle(t *testing.T, engine string) *Vehicle {
 		},
 	}
 	driver := &fakeDriver{streams: &fakeStreams{sock: filepath.Join(t.TempDir(), "driver.sock")}}
+	engines := map[string]Engine{engine: {Result: DetectionResultType, Local: true}}
 	v, err := NewVehicle(driver, cfg, WithName(fmt.Sprintf("vehicle-%d", os.Getpid())),
-		WithLcs(lcs), WithLogger(zerolog.Nop()))
+		WithLcs(lcs), WithAvailableEngines(engines), WithLogger(zerolog.Nop()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,8 +131,9 @@ func TestTelemetryStored(t *testing.T) {
 }
 
 // TestDataflowResultsStored ensures that the results of a dataflow's engines
-// are stored under their name as ComputeResults, with the sequence number of
-// the input they are about, and that a dataflow can be replaced.
+// are stored under their name as ComputeResults of the engine's result type,
+// with the sequence number of the input they are about and whether the engine
+// is local, and that a dataflow can be replaced.
 func TestDataflowResultsStored(t *testing.T) {
 	engineName := fmt.Sprintf("detector-%d", os.Getpid())
 	v := newDataTestVehicle(t, engineName)
@@ -146,7 +148,8 @@ func TestDataflowResultsStored(t *testing.T) {
 	}
 	defer producer.Close()
 
-	spec := fmt.Sprintf(`
+	spec := func(timeout string) string {
+		return fmt.Sprintf(`
 [[producers]]
 name = %q
 
@@ -157,11 +160,12 @@ location = "local"
 [[edges]]
 from = %q
 to = %q
-timeout = "5s"
-`, "front", engineName, "front", engineName)
-	// Setting it twice replaces the first
-	for i := range 2 {
-		req := vehiclepb.SetDataflowRequest_builder{Toml: []byte(spec)}.Build()
+timeout = %q
+`, "front", engineName, "front", engineName, timeout)
+	}
+	// The second dataflow replaces the first
+	for i, timeout := range []string{"4s", "5s"} {
+		req := vehiclepb.SetDataflowRequest_builder{Toml: []byte(spec(timeout))}.Build()
 		if _, err := v.SetDataflow(context.Background(), req); err != nil {
 			t.Fatalf("set dataflow %d: %v", i, err)
 		}
@@ -202,6 +206,9 @@ timeout = "5s"
 	}
 	if result.GetSequenceNum() != seq {
 		t.Errorf("got sequence number %d, want %d", result.GetSequenceNum(), seq)
+	}
+	if !result.GetLocal() {
+		t.Error("got a remote result, want a local one")
 	}
 	if at := result.GetTimestamp().AsTime(); at.Before(before.Add(-time.Second)) || at.After(time.Now()) {
 		t.Errorf("got timestamp %v, want one during the test", at)
@@ -247,12 +254,17 @@ func TestGetTelemetryNone(t *testing.T) {
 	}
 }
 
-// TestSetDataflowInvalid ensures that an invalid dataflow is rejected.
+// TestSetDataflowInvalid ensures that an invalid dataflow, including one with
+// an engine that isn't available or isn't at its location, is rejected.
 func TestSetDataflowInvalid(t *testing.T) {
-	v := newDataTestVehicle(t, fmt.Sprintf("unused-%d", os.Getpid()))
+	engine := fmt.Sprintf("unused-%d", os.Getpid())
+	v := newDataTestVehicle(t, engine)
 	for _, spec := range []string{
 		"not toml [",
+		"[[engines]]\nname = \"e\"\nlocation = \"local\"",
 		"[[engines]]\nname = \"e\"\nlocation = \"elsewhere\"",
+		fmt.Sprintf("[[engines]]\nname = %q\nlocation = \"remote\"", engine),
+		fmt.Sprintf("[[engines]]\nname = %q", engine),
 		"[[edges]]\nfrom = \"nothing\"\nto = \"nowhere\"\ntimeout = \"1s\"",
 		"[[producers]]\nname = \"missing\"",
 		"[[producers]]\nname = \"front\"\n[[producers]]\nname = \"rear\"",
@@ -267,7 +279,8 @@ func TestSetDataflowInvalid(t *testing.T) {
 
 // TestDataflowStreams ensures that the driver is asked to stream telemetry
 // when the vehicle starts, and the cameras of a dataflow, by their fully
-// qualified names, when it is set.
+// qualified names, when it is set, that setting the same dataflow again does
+// nothing, and that GetFlow returns the current dataflow as it was set.
 func TestDataflowStreams(t *testing.T) {
 	engineName := fmt.Sprintf("detector-%d", os.Getpid())
 	v := newDataTestVehicle(t, engineName)
@@ -280,6 +293,14 @@ func TestDataflowStreams(t *testing.T) {
 	if _, telemetry := streams.requests(); !slices.Equal(telemetry, []string{v.Name + ".telemetry"}) {
 		t.Errorf("got telemetry streams %v, want %s.telemetry", telemetry, v.Name)
 	}
+	assertFlow := func(step, want string) {
+		t.Helper()
+		resp, err := v.GetFlow(context.Background(), &vehiclepb.GetFlowRequest{})
+		if err != nil || string(resp.GetToml()) != want {
+			t.Errorf("%s: got flow %q, %v, want %q", step, resp.GetToml(), err, want)
+		}
+	}
+	assertFlow("no dataflow", "")
 
 	spec := fmt.Sprintf(`
 [[producers]]
@@ -318,6 +339,16 @@ timeout = "1s"
 	if got := v.flow.producers; !slices.Equal(got, []string{v.Name + ".front", v.Name + ".down"}) {
 		t.Errorf("got producers %v, want the cameras' fully qualified names", got)
 	}
+	assertFlow("dataflow set", spec)
+
+	// Setting the same dataflow again does nothing, so the driver isn't asked
+	// to stream again
+	if _, err := v.SetDataflow(context.Background(), req); err != nil {
+		t.Fatal(err)
+	}
+	if cameras, _ := streams.requests(); len(cameras) != 1 {
+		t.Errorf("got %d camera streams after setting the same dataflow, want 1", len(cameras))
+	}
 
 	// A dataflow that fails to be set leaves the cameras of the current one
 	invalid := "[[producers]]\nname = \"rear\""
@@ -328,4 +359,5 @@ timeout = "1s"
 	if cameras, _ := streams.requests(); len(cameras) != 3 || !proto.Equal(cameras[2], want) {
 		t.Errorf("got camera streams %v, want the current dataflow's restored", cameras)
 	}
+	assertFlow("invalid dataflow", spec)
 }

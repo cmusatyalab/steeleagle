@@ -8,8 +8,8 @@ roles = ["Patroller", "Tracker"]
 # Mission squawks (optional)
 squawks = ["target_found", "done_with_mission"]
 
-[[flows]] # List of flows (can be empty)
-# Name of the flow
+[[engines]] # List of engines (can be empty)
+# Name of the engine
 name = "yolo"
 # Type of the result
 result = "messages/result/DetectionResult"

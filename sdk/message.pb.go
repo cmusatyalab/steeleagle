@@ -803,6 +803,10 @@ func (w *computeResultWrapper) GetSequenceNum() uint64 {
 	return w.inner.GetSequenceNum()
 }
 
+func (w *computeResultWrapper) GetLocal() bool {
+	return w.inner.GetLocal()
+}
+
 func (w *computeResultWrapper) GetDetectionResult() (DetectionResult, error) {
 	if !w.hasDetectionResult() {
 		return nil, ErrFieldNotPresent

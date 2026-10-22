@@ -130,6 +130,109 @@ func (b0 SetDataflowResponse_builder) Build() *SetDataflowResponse {
 	return m0
 }
 
+type GetFlowRequest struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetFlowRequest) Reset() {
+	*x = GetFlowRequest{}
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetFlowRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetFlowRequest) ProtoMessage() {}
+
+func (x *GetFlowRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type GetFlowRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 GetFlowRequest_builder) Build() *GetFlowRequest {
+	m0 := &GetFlowRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
+type GetFlowResponse struct {
+	state           protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Toml []byte                 `protobuf:"bytes,1,opt,name=toml,proto3"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *GetFlowResponse) Reset() {
+	*x = GetFlowResponse{}
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetFlowResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetFlowResponse) ProtoMessage() {}
+
+func (x *GetFlowResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GetFlowResponse) GetToml() []byte {
+	if x != nil {
+		return x.xxx_hidden_Toml
+	}
+	return nil
+}
+
+func (x *GetFlowResponse) SetToml(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Toml = v
+}
+
+type GetFlowResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Toml []byte
+}
+
+func (b0 GetFlowResponse_builder) Build() *GetFlowResponse {
+	m0 := &GetFlowResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Toml = b.Toml
+	return m0
+}
+
 type GetResultRequest struct {
 	state                protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Engine    string                 `protobuf:"bytes,1,opt,name=engine,proto3"`
@@ -141,7 +244,7 @@ type GetResultRequest struct {
 
 func (x *GetResultRequest) Reset() {
 	*x = GetResultRequest{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[2]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -153,7 +256,7 @@ func (x *GetResultRequest) String() string {
 func (*GetResultRequest) ProtoMessage() {}
 
 func (x *GetResultRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[2]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -246,7 +349,7 @@ type GetResultResponse struct {
 
 func (x *GetResultResponse) Reset() {
 	*x = GetResultResponse{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[3]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -258,7 +361,7 @@ func (x *GetResultResponse) String() string {
 func (*GetResultResponse) ProtoMessage() {}
 
 func (x *GetResultResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[3]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -306,7 +409,7 @@ type GetTelemetryRequest struct {
 
 func (x *GetTelemetryRequest) Reset() {
 	*x = GetTelemetryRequest{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[4]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -318,7 +421,7 @@ func (x *GetTelemetryRequest) String() string {
 func (*GetTelemetryRequest) ProtoMessage() {}
 
 func (x *GetTelemetryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[4]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -398,7 +501,7 @@ type GetTelemetryResponse struct {
 
 func (x *GetTelemetryResponse) Reset() {
 	*x = GetTelemetryResponse{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[5]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -410,7 +513,7 @@ func (x *GetTelemetryResponse) String() string {
 func (*GetTelemetryResponse) ProtoMessage() {}
 
 func (x *GetTelemetryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[5]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -455,7 +558,10 @@ const file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDesc = "" +
 	"2steeleagle_protocol/v1/services/vehicle/data.proto\x12'steeleagle_protocol.v1.services.vehicle\x1a\x1fgoogle/protobuf/timestamp.proto\x1a3steeleagle_protocol/v1/messages/result/result.proto\x1a9steeleagle_protocol/v1/messages/telemetry/telemetry.proto\"(\n" +
 	"\x12SetDataflowRequest\x12\x12\n" +
 	"\x04toml\x18\x01 \x01(\fR\x04toml\"\x15\n" +
-	"\x13SetDataflowResponse\"\xc2\x01\n" +
+	"\x13SetDataflowResponse\"\x10\n" +
+	"\x0eGetFlowRequest\"%\n" +
+	"\x0fGetFlowResponse\x12\x12\n" +
+	"\x04toml\x18\x01 \x01(\fR\x04toml\"\xc2\x01\n" +
 	"\x10GetResultRequest\x12\x16\n" +
 	"\x06engine\x18\x01 \x01(\tR\x06engine\x12>\n" +
 	"\n" +
@@ -472,43 +578,48 @@ const file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDesc = "" +
 	"\v_time_startB\v\n" +
 	"\t_time_end\"j\n" +
 	"\x14GetTelemetryResponse\x12R\n" +
-	"\ttelemetry\x18\x01 \x03(\v24.steeleagle_protocol.v1.messages.telemetry.TelemetryR\ttelemetry2\xb1\x03\n" +
+	"\ttelemetry\x18\x01 \x03(\v24.steeleagle_protocol.v1.messages.telemetry.TelemetryR\ttelemetry2\xb1\x04\n" +
 	"\vDataService\x12\x8a\x01\n" +
-	"\vSetDataflow\x12;.steeleagle_protocol.v1.services.vehicle.SetDataflowRequest\x1a<.steeleagle_protocol.v1.services.vehicle.SetDataflowResponse\"\x00\x12\x84\x01\n" +
+	"\vSetDataflow\x12;.steeleagle_protocol.v1.services.vehicle.SetDataflowRequest\x1a<.steeleagle_protocol.v1.services.vehicle.SetDataflowResponse\"\x00\x12~\n" +
+	"\aGetFlow\x127.steeleagle_protocol.v1.services.vehicle.GetFlowRequest\x1a8.steeleagle_protocol.v1.services.vehicle.GetFlowResponse\"\x00\x12\x84\x01\n" +
 	"\tGetResult\x129.steeleagle_protocol.v1.services.vehicle.GetResultRequest\x1a:.steeleagle_protocol.v1.services.vehicle.GetResultResponse\"\x00\x12\x8d\x01\n" +
 	"\fGetTelemetry\x12<.steeleagle_protocol.v1.services.vehicle.GetTelemetryRequest\x1a=.steeleagle_protocol.v1.services.vehicle.GetTelemetryResponse\"\x00B\xc6\x02\n" +
 	"+com.steeleagle_protocol.v1.services.vehicleB\tDataProtoP\x01ZPgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle\xa2\x02\x04SVSV\xaa\x02&SteeleagleProtocol.V1.Services.Vehicle\xca\x02&SteeleagleProtocol\\V1\\Services\\Vehicle\xe2\x022SteeleagleProtocol\\V1\\Services\\Vehicle\\GPBMetadata\xea\x02)SteeleagleProtocol::V1::Services::Vehicleb\x06proto3"
 
-var file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_steeleagle_protocol_v1_services_vehicle_data_proto_goTypes = []any{
 	(*SetDataflowRequest)(nil),    // 0: steeleagle_protocol.v1.services.vehicle.SetDataflowRequest
 	(*SetDataflowResponse)(nil),   // 1: steeleagle_protocol.v1.services.vehicle.SetDataflowResponse
-	(*GetResultRequest)(nil),      // 2: steeleagle_protocol.v1.services.vehicle.GetResultRequest
-	(*GetResultResponse)(nil),     // 3: steeleagle_protocol.v1.services.vehicle.GetResultResponse
-	(*GetTelemetryRequest)(nil),   // 4: steeleagle_protocol.v1.services.vehicle.GetTelemetryRequest
-	(*GetTelemetryResponse)(nil),  // 5: steeleagle_protocol.v1.services.vehicle.GetTelemetryResponse
-	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
-	(*result.ComputeResult)(nil),  // 7: steeleagle_protocol.v1.messages.result.ComputeResult
-	(*telemetry.Telemetry)(nil),   // 8: steeleagle_protocol.v1.messages.telemetry.Telemetry
+	(*GetFlowRequest)(nil),        // 2: steeleagle_protocol.v1.services.vehicle.GetFlowRequest
+	(*GetFlowResponse)(nil),       // 3: steeleagle_protocol.v1.services.vehicle.GetFlowResponse
+	(*GetResultRequest)(nil),      // 4: steeleagle_protocol.v1.services.vehicle.GetResultRequest
+	(*GetResultResponse)(nil),     // 5: steeleagle_protocol.v1.services.vehicle.GetResultResponse
+	(*GetTelemetryRequest)(nil),   // 6: steeleagle_protocol.v1.services.vehicle.GetTelemetryRequest
+	(*GetTelemetryResponse)(nil),  // 7: steeleagle_protocol.v1.services.vehicle.GetTelemetryResponse
+	(*timestamppb.Timestamp)(nil), // 8: google.protobuf.Timestamp
+	(*result.ComputeResult)(nil),  // 9: steeleagle_protocol.v1.messages.result.ComputeResult
+	(*telemetry.Telemetry)(nil),   // 10: steeleagle_protocol.v1.messages.telemetry.Telemetry
 }
 var file_steeleagle_protocol_v1_services_vehicle_data_proto_depIdxs = []int32{
-	6, // 0: steeleagle_protocol.v1.services.vehicle.GetResultRequest.time_start:type_name -> google.protobuf.Timestamp
-	6, // 1: steeleagle_protocol.v1.services.vehicle.GetResultRequest.time_end:type_name -> google.protobuf.Timestamp
-	7, // 2: steeleagle_protocol.v1.services.vehicle.GetResultResponse.result:type_name -> steeleagle_protocol.v1.messages.result.ComputeResult
-	6, // 3: steeleagle_protocol.v1.services.vehicle.GetTelemetryRequest.time_start:type_name -> google.protobuf.Timestamp
-	6, // 4: steeleagle_protocol.v1.services.vehicle.GetTelemetryRequest.time_end:type_name -> google.protobuf.Timestamp
-	8, // 5: steeleagle_protocol.v1.services.vehicle.GetTelemetryResponse.telemetry:type_name -> steeleagle_protocol.v1.messages.telemetry.Telemetry
-	0, // 6: steeleagle_protocol.v1.services.vehicle.DataService.SetDataflow:input_type -> steeleagle_protocol.v1.services.vehicle.SetDataflowRequest
-	2, // 7: steeleagle_protocol.v1.services.vehicle.DataService.GetResult:input_type -> steeleagle_protocol.v1.services.vehicle.GetResultRequest
-	4, // 8: steeleagle_protocol.v1.services.vehicle.DataService.GetTelemetry:input_type -> steeleagle_protocol.v1.services.vehicle.GetTelemetryRequest
-	1, // 9: steeleagle_protocol.v1.services.vehicle.DataService.SetDataflow:output_type -> steeleagle_protocol.v1.services.vehicle.SetDataflowResponse
-	3, // 10: steeleagle_protocol.v1.services.vehicle.DataService.GetResult:output_type -> steeleagle_protocol.v1.services.vehicle.GetResultResponse
-	5, // 11: steeleagle_protocol.v1.services.vehicle.DataService.GetTelemetry:output_type -> steeleagle_protocol.v1.services.vehicle.GetTelemetryResponse
-	9, // [9:12] is the sub-list for method output_type
-	6, // [6:9] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	8,  // 0: steeleagle_protocol.v1.services.vehicle.GetResultRequest.time_start:type_name -> google.protobuf.Timestamp
+	8,  // 1: steeleagle_protocol.v1.services.vehicle.GetResultRequest.time_end:type_name -> google.protobuf.Timestamp
+	9,  // 2: steeleagle_protocol.v1.services.vehicle.GetResultResponse.result:type_name -> steeleagle_protocol.v1.messages.result.ComputeResult
+	8,  // 3: steeleagle_protocol.v1.services.vehicle.GetTelemetryRequest.time_start:type_name -> google.protobuf.Timestamp
+	8,  // 4: steeleagle_protocol.v1.services.vehicle.GetTelemetryRequest.time_end:type_name -> google.protobuf.Timestamp
+	10, // 5: steeleagle_protocol.v1.services.vehicle.GetTelemetryResponse.telemetry:type_name -> steeleagle_protocol.v1.messages.telemetry.Telemetry
+	0,  // 6: steeleagle_protocol.v1.services.vehicle.DataService.SetDataflow:input_type -> steeleagle_protocol.v1.services.vehicle.SetDataflowRequest
+	2,  // 7: steeleagle_protocol.v1.services.vehicle.DataService.GetFlow:input_type -> steeleagle_protocol.v1.services.vehicle.GetFlowRequest
+	4,  // 8: steeleagle_protocol.v1.services.vehicle.DataService.GetResult:input_type -> steeleagle_protocol.v1.services.vehicle.GetResultRequest
+	6,  // 9: steeleagle_protocol.v1.services.vehicle.DataService.GetTelemetry:input_type -> steeleagle_protocol.v1.services.vehicle.GetTelemetryRequest
+	1,  // 10: steeleagle_protocol.v1.services.vehicle.DataService.SetDataflow:output_type -> steeleagle_protocol.v1.services.vehicle.SetDataflowResponse
+	3,  // 11: steeleagle_protocol.v1.services.vehicle.DataService.GetFlow:output_type -> steeleagle_protocol.v1.services.vehicle.GetFlowResponse
+	5,  // 12: steeleagle_protocol.v1.services.vehicle.DataService.GetResult:output_type -> steeleagle_protocol.v1.services.vehicle.GetResultResponse
+	7,  // 13: steeleagle_protocol.v1.services.vehicle.DataService.GetTelemetry:output_type -> steeleagle_protocol.v1.services.vehicle.GetTelemetryResponse
+	10, // [10:14] is the sub-list for method output_type
+	6,  // [6:10] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_steeleagle_protocol_v1_services_vehicle_data_proto_init() }
@@ -516,15 +627,15 @@ func file_steeleagle_protocol_v1_services_vehicle_data_proto_init() {
 	if File_steeleagle_protocol_v1_services_vehicle_data_proto != nil {
 		return
 	}
-	file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[2].OneofWrappers = []any{}
 	file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[4].OneofWrappers = []any{}
+	file_steeleagle_protocol_v1_services_vehicle_data_proto_msgTypes[6].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDesc), len(file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

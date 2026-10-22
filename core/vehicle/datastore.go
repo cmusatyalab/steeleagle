@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -21,7 +20,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -35,7 +33,8 @@ type subscribers struct {
 // vehicle's cameras. They are renamed to their fully qualified names, {vehicle
 // name}.{camera name}, in the producers and the edges that start at them, and
 // the cameras to stream are worked out; at most one may be a primary camera.
-// Uriel checks the rest when the flow is added.
+// Every engine must be an available engine, at its location. Uriel checks the
+// rest when the flow is added.
 func (v *Vehicle) parseDataflow(spec []byte) (*dataflow, error) {
 	var parsed map[string]any
 	if _, err := toml.Decode(string(spec), &parsed); err != nil {
@@ -56,9 +55,24 @@ func (v *Vehicle) parseDataflow(spec []byte) (*dataflow, error) {
 	if err != nil {
 		return nil, err
 	}
+	engines, err := tables("engines")
+	if err != nil {
+		return nil, err
+	}
 	edges, err := tables("edges")
 	if err != nil {
 		return nil, err
+	}
+	for _, e := range engines {
+		name, _ := e["name"].(string)
+		engine, ok := v.engines[name]
+		if !ok {
+			return nil, fmt.Errorf("engine %q is not an available engine", name)
+		}
+		location, _ := e["location"].(string)
+		if want := engine.location(); location != want {
+			return nil, fmt.Errorf("engine %q is at location %q, not %q", name, want, location)
+		}
 	}
 
 	cameras := make(map[string]config.DriverCamera)
@@ -218,14 +232,16 @@ func (v *Vehicle) storeResults(
 			if !event.ReceivedAt.IsZero() {
 				t = time.Now().Add(-uriel.Now().Sub(event.ReceivedAt))
 			}
+			// The engine is available, since the dataflow was checked
+			engine := v.engines[event.Engine]
 			result := &resultpb.ComputeResult{}
-			name := protoreflect.FullName(strings.ReplaceAll(event.PayloadType, "/", "."))
-			if !setResult(result, name, event.Result) {
-				result = resultpb.ComputeResult_builder{
-					GenericResult: resultpb.GenericResult_builder{Payload: event.Result}.Build(),
-				}.Build()
+			if err := setResult(result, engine.Result, event.Result); err != nil {
+				v.log.Warn().Err(err).Str("engine", event.Engine).Str("type", engine.Result).
+					Msg("result is not of the engine's result type, storing it as generic")
+				result.SetGenericResult(resultpb.GenericResult_builder{Payload: event.Result}.Build())
 			}
 			result.SetSequenceNum(event.ID.Seq)
+			result.SetLocal(engine.Local)
 			result.SetTimestamp(timestamppb.New(t))
 			value, err := proto.Marshal(result)
 			if err == nil {
@@ -245,27 +261,33 @@ func (v *Vehicle) storeResults(
 	}
 }
 
-// setResult unmarshals data as the result type name into result, and reports
-// whether it is a known type that data is valid for.
-func setResult(result *resultpb.ComputeResult, name protoreflect.FullName, data []byte) bool {
-	set := func(m proto.Message, assign func()) bool {
-		if m.ProtoReflect().Descriptor().FullName() != name || proto.Unmarshal(data, m) != nil {
-			return false
-		}
-		assign()
-		return true
+// setResult unmarshals data as resultType, the result type of the engine
+// that generated it, into result. A result of an unknown type is set as a
+// generic result.
+func setResult(result *resultpb.ComputeResult, resultType string, data []byte) error {
+	switch resultType {
+	case DetectionResultType:
+		return unmarshalResult(data, &resultpb.DetectionResult{}, result.SetDetectionResult)
+	case ClassificationResultType:
+		return unmarshalResult(data, &resultpb.ClassificationResult{}, result.SetClassificationResult)
+	case GuidanceResultType:
+		return unmarshalResult(data, &resultpb.GuidanceResult{}, result.SetGuidanceResult)
+	case PositionResultType:
+		return unmarshalResult(data, &resultpb.PositionResult{}, result.SetPositionResult)
+	case GenericResultType:
+		return unmarshalResult(data, &resultpb.GenericResult{}, result.SetGenericResult)
 	}
-	detection := &resultpb.DetectionResult{}
-	classification := &resultpb.ClassificationResult{}
-	guidance := &resultpb.GuidanceResult{}
-	position := &resultpb.PositionResult{}
-	generic := &resultpb.GenericResult{}
-	return set(result, func() {}) ||
-		set(detection, func() { result.SetDetectionResult(detection) }) ||
-		set(classification, func() { result.SetClassificationResult(classification) }) ||
-		set(guidance, func() { result.SetGuidanceResult(guidance) }) ||
-		set(position, func() { result.SetPositionResult(position) }) ||
-		set(generic, func() { result.SetGenericResult(generic) })
+	result.SetGenericResult(resultpb.GenericResult_builder{Payload: data}.Build())
+	return nil
+}
+
+// unmarshalResult unmarshals data into m, and sets it with set.
+func unmarshalResult[T proto.Message](data []byte, m T, set func(T)) error {
+	if err := proto.Unmarshal(data, m); err != nil {
+		return err
+	}
+	set(m)
+	return nil
 }
 
 // store writes value to bucket under time at. Keys are the time in Unix

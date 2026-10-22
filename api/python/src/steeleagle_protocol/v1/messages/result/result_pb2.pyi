@@ -66,9 +66,10 @@ class GenericResult(_message.Message):
     def __init__(self, payload: _Optional[bytes] = ...) -> None: ...
 
 class ComputeResult(_message.Message):
-    __slots__ = ("timestamp", "sequence_num", "detection_result", "classification_result", "guidance_result", "position_result", "generic_result")
+    __slots__ = ("timestamp", "sequence_num", "local", "detection_result", "classification_result", "guidance_result", "position_result", "generic_result")
     TIMESTAMP_FIELD_NUMBER: _ClassVar[int]
     SEQUENCE_NUM_FIELD_NUMBER: _ClassVar[int]
+    LOCAL_FIELD_NUMBER: _ClassVar[int]
     DETECTION_RESULT_FIELD_NUMBER: _ClassVar[int]
     CLASSIFICATION_RESULT_FIELD_NUMBER: _ClassVar[int]
     GUIDANCE_RESULT_FIELD_NUMBER: _ClassVar[int]
@@ -76,9 +77,10 @@ class ComputeResult(_message.Message):
     GENERIC_RESULT_FIELD_NUMBER: _ClassVar[int]
     timestamp: _timestamp_pb2.Timestamp
     sequence_num: int
+    local: bool
     detection_result: DetectionResult
     classification_result: ClassificationResult
     guidance_result: GuidanceResult
     position_result: PositionResult
     generic_result: GenericResult
-    def __init__(self, timestamp: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., sequence_num: _Optional[int] = ..., detection_result: _Optional[_Union[DetectionResult, _Mapping]] = ..., classification_result: _Optional[_Union[ClassificationResult, _Mapping]] = ..., guidance_result: _Optional[_Union[GuidanceResult, _Mapping]] = ..., position_result: _Optional[_Union[PositionResult, _Mapping]] = ..., generic_result: _Optional[_Union[GenericResult, _Mapping]] = ...) -> None: ...
+    def __init__(self, timestamp: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., sequence_num: _Optional[int] = ..., local: _Optional[bool] = ..., detection_result: _Optional[_Union[DetectionResult, _Mapping]] = ..., classification_result: _Optional[_Union[ClassificationResult, _Mapping]] = ..., guidance_result: _Optional[_Union[GuidanceResult, _Mapping]] = ..., position_result: _Optional[_Union[PositionResult, _Mapping]] = ..., generic_result: _Optional[_Union[GenericResult, _Mapping]] = ...) -> None: ...

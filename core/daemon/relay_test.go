@@ -5,8 +5,10 @@ import (
 	"errors"
 	"io"
 	"net"
+	"net/netip"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync"
 	"testing"
 
@@ -35,7 +37,8 @@ func startRoutingDaemon(t *testing.T, content string) (*Daemon, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	d := &Daemon{configPath: path, log: testLogger()}
+	ctx, cancel := context.WithCancel(context.Background())
+	d := &Daemon{configPath: path, ctx: ctx, cancel: cancel, log: testLogger()}
 	if d.policy, err = policy.NewPolicy(law, policy.WithLogger(testLogger())); err != nil {
 		t.Fatal(err)
 	}
@@ -49,6 +52,7 @@ func startRoutingDaemon(t *testing.T, content string) (*Daemon, string) {
 	go d.server.Serve(d.serverLn)
 	go d.relay.Serve(listener.NewCodedListener(ln, listener.NewAcl(nil, nil, true), listener.WithLogger(testLogger())))
 	t.Cleanup(func() {
+		cancel()
 		d.relay.Stop()
 		d.serverConn.Close()
 		d.server.Stop()
@@ -109,6 +113,53 @@ func TestDaemonServiceRouting(t *testing.T) {
 	// configure the remote daemon through it either
 	if _, err := client.Configure(withRouteKey("100.64.0.7"), &daemonpb.ConfigureRequest{}); status.Code(err) != codes.PermissionDenied {
 		t.Errorf("expected PermissionDenied for a routed configure, got %v", err)
+	}
+}
+
+// TestListRemoteServices ensures that an orchestrator lists its own services
+// followed by those of its connected remote daemons, by their qualified
+// names, and that remote daemons that are disconnected or can't be reached are
+// listed as unavailable without failing the call.
+func TestListRemoteServices(t *testing.T) {
+	orchestrator, addr := startRoutingDaemon(t, "[daemon]\nhostname = 'homebase'\n")
+	remote, remoteAddr := startRoutingDaemon(t, "[daemon]\nhostname = 'remote'\n")
+	remote.router.AddHeaderRoute("100.64.0.7", remote.serverConn)
+	orchestrator.services = map[daemonpb.ServiceCategory][]*serviceInfo{
+		daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE: {
+			{name: "100.64.0.1.yolo", category: daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE, err: errors.New("broken")},
+		},
+	}
+	remote.services = map[daemonpb.ServiceCategory][]*serviceInfo{
+		daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE: {
+			{name: "100.64.0.7.harpy", category: daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE, err: errors.New("broken")},
+		},
+	}
+	// A listener that is closed at once stands in for an unreachable daemon
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ln.Close()
+	// The disconnected daemon would answer, but isn't called
+	orchestrator.remotes = map[netip.Addr]*remoteInfo{
+		netip.MustParseAddr("100.64.0.7"): {conn: dial(t, remoteAddr), streams: 1},
+		netip.MustParseAddr("100.64.0.8"): {conn: dial(t, remoteAddr)},
+		netip.MustParseAddr("100.64.0.9"): {conn: dial(t, ln.Addr().String()), streams: 1},
+	}
+
+	resp, err := daemonpb.NewDaemonServiceClient(dial(t, addr)).ListServices(context.Background(), &daemonpb.ListServicesRequest{})
+	if err != nil {
+		t.Fatalf("list services failed: %v", err)
+	}
+	var names []string
+	for _, s := range resp.GetServices() {
+		names = append(names, s.GetSrv().GetName())
+	}
+	if want := []string{"100.64.0.1.yolo", "100.64.0.7.harpy"}; !slices.Equal(names, want) {
+		t.Errorf("expected services %q, got %q", want, names)
+	}
+	if want := []string{"100.64.0.8", "100.64.0.9"}; !slices.Equal(resp.GetUnavailable(), want) {
+		t.Errorf("expected unavailable daemons %q, got %q", want, resp.GetUnavailable())
 	}
 }
 

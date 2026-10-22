@@ -22,12 +22,23 @@ service DataService {
   /*
    * Set the current flow.
    *
-   * Parses and executes the current flow from TOML bytes. This becomes the
-   * new default dataflow for the vehicle. When missions are completed, it will
-   * revert back to this dataflow.
+   * Parses and executes the current flow from TOML bytes, replacing the
+   * vehicle's current dataflow; setting the current dataflow again does
+   * nothing. A mission may set the dataflow while the vehicle is in mission
+   * (user) mode, and the dataflow is not restored when it exits mission mode;
+   * setting it back is the responsibility of whoever needs another one.
    */
   rpc SetDataflow (SetDataflowRequest)
 	returns (SetDataflowResponse) {}
+
+  /*
+   * Get the current flow.
+   *
+   * Returns the TOML bytes of the current dataflow, as they were given to
+   * `SetDataflow`, or empty bytes if no dataflow is set.
+   */
+  rpc GetFlow (GetFlowRequest)
+    returns (GetFlowResponse) {}
 
   /*
    * Query a dataflow.
@@ -55,6 +66,12 @@ message SetDataflowRequest {
 }
 
 message SetDataflowResponse {}
+
+message GetFlowRequest {}
+
+message GetFlowResponse {
+  bytes toml = 1;  // current dataflow TOML bytes, empty if no dataflow is set
+}
 
 message GetResultRequest {
   string engine = 1;                                 // name of the engine to query

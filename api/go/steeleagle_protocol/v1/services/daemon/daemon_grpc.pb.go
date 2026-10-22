@@ -48,8 +48,14 @@ type DaemonServiceClient interface {
 	//
 	// RegisterOrchestrator is called by other daemons that have set this daemon as
 	// their orchestrator. The vehicles on other daemons will be addressable through
-	// the daemon gRPC proxy.
-	RegisterOrchestrator(ctx context.Context, in *RegisterOrchestratorRequest, opts ...grpc.CallOption) (*RegisterOrchestratorResponse, error)
+	// the daemon gRPC proxy. The stream opens with a handshake: the registering
+	// daemon sends its registration, and the orchestrator answers with the remote
+	// compute service details and the engines it serves, which become available
+	// to the registering daemon's vehicles as remote engines. After that, the
+	// stream is a heartbeat: the registering daemon sends empty requests, each
+	// answered with an empty response. The registering daemon registers again,
+	// with backoff, whenever the stream dies.
+	RegisterOrchestrator(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[RegisterOrchestratorRequest, RegisterOrchestratorResponse], error)
 	// Load a TOML config.
 	//
 	// Configures the daemon with a TOML config according to eagled specification.
@@ -64,7 +70,11 @@ type DaemonServiceClient interface {
 	//
 	// List services lists all daemon services from the config, whether they are
 	// running or stopped, along with why each couldn't be set up, failed to
-	// start, or exited, if it did.
+	// start, or exited, if it did. On an orchestrator, the services of every
+	// registered remote daemon are listed too. Services are named by their
+	// qualified names, "{daemon IP}.{name}", so they are unique across daemons;
+	// a remote daemon that can't be reached is left out, and listed as
+	// unavailable.
 	ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error)
 	// Restart daemon services.
 	//
@@ -101,15 +111,18 @@ func NewDaemonServiceClient(cc grpc.ClientConnInterface) DaemonServiceClient {
 	return &daemonServiceClient{cc}
 }
 
-func (c *daemonServiceClient) RegisterOrchestrator(ctx context.Context, in *RegisterOrchestratorRequest, opts ...grpc.CallOption) (*RegisterOrchestratorResponse, error) {
+func (c *daemonServiceClient) RegisterOrchestrator(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[RegisterOrchestratorRequest, RegisterOrchestratorResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(RegisterOrchestratorResponse)
-	err := c.cc.Invoke(ctx, DaemonService_RegisterOrchestrator_FullMethodName, in, out, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &DaemonService_ServiceDesc.Streams[0], DaemonService_RegisterOrchestrator_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &grpc.GenericClientStream[RegisterOrchestratorRequest, RegisterOrchestratorResponse]{ClientStream: stream}
+	return x, nil
 }
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type DaemonService_RegisterOrchestratorClient = grpc.BidiStreamingClient[RegisterOrchestratorRequest, RegisterOrchestratorResponse]
 
 func (c *daemonServiceClient) Configure(ctx context.Context, in *ConfigureRequest, opts ...grpc.CallOption) (*ConfigureResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -205,8 +218,14 @@ type DaemonServiceServer interface {
 	//
 	// RegisterOrchestrator is called by other daemons that have set this daemon as
 	// their orchestrator. The vehicles on other daemons will be addressable through
-	// the daemon gRPC proxy.
-	RegisterOrchestrator(context.Context, *RegisterOrchestratorRequest) (*RegisterOrchestratorResponse, error)
+	// the daemon gRPC proxy. The stream opens with a handshake: the registering
+	// daemon sends its registration, and the orchestrator answers with the remote
+	// compute service details and the engines it serves, which become available
+	// to the registering daemon's vehicles as remote engines. After that, the
+	// stream is a heartbeat: the registering daemon sends empty requests, each
+	// answered with an empty response. The registering daemon registers again,
+	// with backoff, whenever the stream dies.
+	RegisterOrchestrator(grpc.BidiStreamingServer[RegisterOrchestratorRequest, RegisterOrchestratorResponse]) error
 	// Load a TOML config.
 	//
 	// Configures the daemon with a TOML config according to eagled specification.
@@ -221,7 +240,11 @@ type DaemonServiceServer interface {
 	//
 	// List services lists all daemon services from the config, whether they are
 	// running or stopped, along with why each couldn't be set up, failed to
-	// start, or exited, if it did.
+	// start, or exited, if it did. On an orchestrator, the services of every
+	// registered remote daemon are listed too. Services are named by their
+	// qualified names, "{daemon IP}.{name}", so they are unique across daemons;
+	// a remote daemon that can't be reached is left out, and listed as
+	// unavailable.
 	ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error)
 	// Restart daemon services.
 	//
@@ -258,8 +281,8 @@ type DaemonServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedDaemonServiceServer struct{}
 
-func (UnimplementedDaemonServiceServer) RegisterOrchestrator(context.Context, *RegisterOrchestratorRequest) (*RegisterOrchestratorResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method RegisterOrchestrator not implemented")
+func (UnimplementedDaemonServiceServer) RegisterOrchestrator(grpc.BidiStreamingServer[RegisterOrchestratorRequest, RegisterOrchestratorResponse]) error {
+	return status.Error(codes.Unimplemented, "method RegisterOrchestrator not implemented")
 }
 func (UnimplementedDaemonServiceServer) Configure(context.Context, *ConfigureRequest) (*ConfigureResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Configure not implemented")
@@ -306,23 +329,12 @@ func RegisterDaemonServiceServer(s grpc.ServiceRegistrar, srv DaemonServiceServe
 	s.RegisterService(&DaemonService_ServiceDesc, srv)
 }
 
-func _DaemonService_RegisterOrchestrator_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RegisterOrchestratorRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DaemonServiceServer).RegisterOrchestrator(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DaemonService_RegisterOrchestrator_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DaemonServiceServer).RegisterOrchestrator(ctx, req.(*RegisterOrchestratorRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+func _DaemonService_RegisterOrchestrator_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(DaemonServiceServer).RegisterOrchestrator(&grpc.GenericServerStream[RegisterOrchestratorRequest, RegisterOrchestratorResponse]{ServerStream: stream})
 }
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type DaemonService_RegisterOrchestratorServer = grpc.BidiStreamingServer[RegisterOrchestratorRequest, RegisterOrchestratorResponse]
 
 func _DaemonService_Configure_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ConfigureRequest)
@@ -476,10 +488,6 @@ var DaemonService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*DaemonServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "RegisterOrchestrator",
-			Handler:    _DaemonService_RegisterOrchestrator_Handler,
-		},
-		{
 			MethodName: "Configure",
 			Handler:    _DaemonService_Configure_Handler,
 		},
@@ -512,6 +520,13 @@ var DaemonService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _DaemonService_RemovePackage_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "RegisterOrchestrator",
+			Handler:       _DaemonService_RegisterOrchestrator_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "steeleagle_protocol/v1/services/daemon/daemon.proto",
 }

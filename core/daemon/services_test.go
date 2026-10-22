@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"net/netip"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 	"github.com/cmusatyalab/steeleagle/config"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/policy"
+	"github.com/cmusatyalab/steeleagle/v4/core/vehicle"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -172,6 +174,78 @@ func TestGatherServices(t *testing.T) {
 	tomls := cfg.GetPluginTomls()
 	if len(tomls) != 1 || string(tomls["engine/yolo"]) != string(detectorToml) {
 		t.Errorf("expected only engine/yolo with the detector toml, got %q", tomls)
+	}
+}
+
+// TestQualifiedServiceNames ensures that services are named by their names
+// qualified with the daemon's address, that they can still be found by their
+// names in the config, and that the engines available to vehicles are the
+// local engines with an engine cap, along with the remote engines this daemon
+// doesn't have.
+func TestQualifiedServiceNames(t *testing.T) {
+	d := newTestServiceDaemon(t)
+	d.selfAddr = netip.MustParseAddr("192.168.42.1")
+	typed := "[plugin]\nname = 'Typed'\ntype = 'engine'\n\n[engine]\ntype = 'detection'\n" +
+		"inputs = ['steeleagle_protocol/v1/messages/frame/RawFrame']\n" +
+		"result = 'steeleagle_protocol/v1/messages/result/DetectionResult'\n"
+	if err := os.WriteFile(filepath.Join(d.PkgDir, "github_com_org_plugins", "typed"+PluginFileSuffix), []byte(typed), 0644); err != nil {
+		t.Fatal(err)
+	}
+	d.Config.Engines = []config.EngineField{
+		{Name: "yolo", Plugin: config.PluginField{Plugin: "typed", Package: testPackageUrl}},
+		{Name: "untyped", Plugin: config.PluginField{Plugin: "detector", Package: testPackageUrl}},
+	}
+	d.Config.Monitors = []config.ServiceField{{Name: "watch", Plugin: config.PluginField{Plugin: "monitor", Package: testPackageUrl}}}
+	d.Config.Extras = []config.ServiceField{{Name: "missing", Plugin: config.PluginField{Plugin: "extra", Package: "github.com/org/missing"}}}
+	if err := d.gatherServices(); err == nil {
+		t.Fatal("expected an error for the missing extra")
+	}
+	want := []string{"192.168.42.1.yolo", "192.168.42.1.untyped", "192.168.42.1.watch", "192.168.42.1.missing"}
+	var names []string
+	for _, s := range d.selectServices(nil) {
+		names = append(names, s.name)
+	}
+	if !reflect.DeepEqual(names, want) {
+		t.Errorf("expected services %q, got %q", want, names)
+	}
+	// Every service is listed by its qualified name, even one that is broken
+	resp, err := d.ListServices(context.Background(), &daemonpb.ListServicesRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var listed []string
+	for _, s := range resp.GetServices() {
+		listed = append(listed, s.GetSrv().GetName())
+	}
+	if !reflect.DeepEqual(listed, want) {
+		t.Errorf("expected listed services %q, got %q", want, listed)
+	}
+	for _, name := range []string{"yolo", "192.168.42.1.yolo"} {
+		if s := d.findService(daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE, name); s == nil || s.name != "192.168.42.1.yolo" {
+			t.Errorf("expected %q to find 192.168.42.1.yolo, got %v", name, s)
+		}
+	}
+
+	d.rcsEngines = map[string]config.EngineCap{
+		"100.64.0.1.segmenter": {Inputs: []string{"steeleagle_protocol/v1/messages/frame/RawFrame"}, Result: "steeleagle_protocol/v1/messages/result/GenericResult"},
+		"192.168.42.1.yolo":    {Result: "steeleagle_protocol/v1/messages/result/GenericResult"},
+	}
+	d.svcMu.Lock()
+	engines := d.availableEngines()
+	d.svcMu.Unlock()
+	wantEngines := map[string]vehicle.Engine{
+		"192.168.42.1.yolo": {
+			Inputs: []string{"steeleagle_protocol/v1/messages/frame/RawFrame"},
+			Result: "steeleagle_protocol/v1/messages/result/DetectionResult",
+			Local:  true,
+		},
+		"100.64.0.1.segmenter": {
+			Inputs: []string{"steeleagle_protocol/v1/messages/frame/RawFrame"},
+			Result: "steeleagle_protocol/v1/messages/result/GenericResult",
+		},
+	}
+	if !reflect.DeepEqual(engines, wantEngines) {
+		t.Errorf("expected available engines %v, got %v", wantEngines, engines)
 	}
 }
 

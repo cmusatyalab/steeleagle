@@ -6,7 +6,7 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-type FlowField struct {
+type MissionEngineField struct {
 	// Name of the engine
 	Name string `toml:"name"`
 	// Result proto message id of the engine's output (e.g.
@@ -28,8 +28,8 @@ type InfoField struct {
 type MissionManifest struct {
 	// Basic mission information
 	Info InfoField `toml:"info"`
-	// List of mission flows
-	Flows []FlowField `toml:"flows"`
+	// List of mission engines
+	Engines []MissionEngineField `toml:"engines"`
 }
 
 // ParseMissionManifestFromBytes parses a mission manifest from a TOML byte slice.

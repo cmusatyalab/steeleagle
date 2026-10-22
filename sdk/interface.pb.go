@@ -360,6 +360,8 @@ type ComputeResult interface {
 	hasTimestamp() bool
 	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/sequence_num
 	GetSequenceNum() uint64
+	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/local
+	GetLocal() bool
 	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/detection_result
 	GetDetectionResult() (DetectionResult, error)
 	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/detection_result

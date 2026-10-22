@@ -2,6 +2,7 @@ package daemon
 
 import (
 	_ "embed"
+	"net/netip"
 	"time"
 
 	daemonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon"
@@ -50,8 +51,30 @@ const (
 // serve on.
 const IceoryxServiceEnv = "ICEORYX_SERVICE"
 
-// Timeout for registering with the orchestrator.
+// Timeout for the orchestrator to answer a registration.
 const orchestratorTimeout = 30 * time.Second
+
+// Registration with the orchestrator: how long vehicles wait for the first
+// registration before starting without remote compute, how often heartbeats
+// are sent on the registration stream, how long either side waits for the
+// other before the stream is dead, and the bounds of the backoff between
+// attempts to register. They are variables so that tests can shorten them.
+var (
+	registerWait       = 10 * time.Second
+	heartbeatInterval  = 5 * time.Second
+	heartbeatTimeout   = 15 * time.Second
+	registerBackoffMin = time.Second
+	registerBackoffMax = 30 * time.Second
+)
+
+// Timeout for each remote daemon to list its services, when an orchestrator
+// lists the services of its remote daemons.
+const remoteListTimeout = 5 * time.Second
+
+// Address that a daemon without an orchestrator finds the route to, to learn
+// its own address from its default route. It is in TEST-NET-1, so no traffic
+// is ever sent to it.
+var defaultRouteProbe = netip.MustParseAddr("192.0.2.1")
 
 // startOrder is the order in which service categories are started; services
 // are stopped in reverse.

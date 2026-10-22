@@ -33,6 +33,15 @@ func WithLcs(server string) VehicleOption {
 	}
 }
 
+// WithAvailableEngines sets the engines that the vehicle's dataflows can use,
+// by qualified name. A dataflow with any other engine is rejected, and the
+// results of each engine are stored as its result type.
+func WithAvailableEngines(engines map[string]Engine) VehicleOption {
+	return func(v *Vehicle) {
+		v.engines = engines
+	}
+}
+
 // WithRcs sets the address and DER encoded cert of the remote compute service
 // provided by the orchestrator.
 func WithRcs(address string, cert []byte) VehicleOption {

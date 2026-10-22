@@ -25,6 +25,11 @@ class DataServiceStub:
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.SetDataflowRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.SetDataflowResponse.FromString,
                 _registered_method=True)
+        self.GetFlow = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.vehicle.DataService/GetFlow',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetFlowRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetFlowResponse.FromString,
+                _registered_method=True)
         self.GetResult = channel.unary_unary(
                 '/steeleagle_protocol.v1.services.vehicle.DataService/GetResult',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetResultRequest.SerializeToString,
@@ -50,9 +55,22 @@ class DataServiceServicer:
         """
         Set the current flow.
 
-        Parses and executes the current flow from TOML bytes. This becomes the
-        new default dataflow for the vehicle. When missions are completed, it will
-        revert back to this dataflow.
+        Parses and executes the current flow from TOML bytes, replacing the
+        vehicle's current dataflow; setting the current dataflow again does
+        nothing. A mission may set the dataflow while the vehicle is in mission
+        (user) mode, and the dataflow is not restored when it exits mission mode;
+        setting it back is the responsibility of whoever needs another one.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetFlow(self, request, context):
+        """
+        Get the current flow.
+
+        Returns the TOML bytes of the current dataflow, as they were given to
+        `SetDataflow`, or empty bytes if no dataflow is set.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -89,6 +107,11 @@ def add_DataServiceServicer_to_server(servicer, server):
                     servicer.SetDataflow,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.SetDataflowRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.SetDataflowResponse.SerializeToString,
+            ),
+            'GetFlow': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetFlow,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetFlowRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetFlowResponse.SerializeToString,
             ),
             'GetResult': grpc.unary_unary_rpc_method_handler(
                     servicer.GetResult,
@@ -134,6 +157,33 @@ class DataService:
             '/steeleagle_protocol.v1.services.vehicle.DataService/SetDataflow',
             steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.SetDataflowRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.SetDataflowResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetFlow(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/steeleagle_protocol.v1.services.vehicle.DataService/GetFlow',
+            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetFlowRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetFlowResponse.FromString,
             options,
             channel_credentials,
             insecure,

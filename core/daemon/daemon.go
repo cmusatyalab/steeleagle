@@ -67,13 +67,16 @@ type Daemon struct {
 	svcMu      sync.Mutex                                  // mutex to protect services
 	rcsAddr    string                                      // orchestrator remote compute service address, if any
 	rcsCert    []byte                                      // orchestrator remote compute service cert in DER, if any
-	selfAddr   netip.Addr                                  // address of this daemon as seen by the orchestrator, if registered
+	rcsEngines map[string]config.EngineCap                 // engines of the orchestrator remote compute service by qualified name, if any
+	rcsMu      sync.Mutex                                  // mutex to protect the orchestrator remote compute service, which changes on each registration
+	selfAddr   netip.Addr                                  // address of this daemon on the network, which qualifies service names
 	certMu     sync.Mutex                                  // mutex to protect the local compute cert files
-	remotes    map[netip.Addr]*grpc.ClientConn             // connections to registered remote daemons, by IP
+	remotes    map[netip.Addr]*remoteInfo                  // registered remote daemons, by IP
 	remotesMu  sync.Mutex                                  // mutex to protect remotes
 	uriel      *uriel.Server                               // local compute service, if started
 	ctx        context.Context                             // context for the daemon
 	cancel     context.CancelFunc                          // cancel function for active contexts
+	restart    atomic.Bool                                 // whether the daemon is stopping for a restart
 	log        zerolog.Logger                              // logger object
 }
 
@@ -176,8 +179,14 @@ func NewDaemon(options ...DaemonOption) (*Daemon, error) {
 	return daemon, nil
 }
 
-// Runs the daemon, blocking until the provided context is canceled or the
-// relay exits with an error.
+// ErrRestart is returned by Run when the daemon stopped for a restart, after
+// a Restart or Configure call, so that the caller exits for its supervisor
+// (systemd) to start the daemon again.
+var ErrRestart = errors.New("daemon restart requested")
+
+// Runs the daemon, blocking until the provided context is canceled, the relay
+// exits with an error, or the daemon is stopped for a restart. Everything the
+// daemon started is closed by the time it returns.
 func (d *Daemon) Run(ctx context.Context) (err error) {
 	if !d.Running.CompareAndSwap(false, true) {
 		return fmt.Errorf("daemon already running")
@@ -200,15 +209,11 @@ func (d *Daemon) Run(ctx context.Context) (err error) {
 	defer d.network.Close()
 
 	// The main network listener has an open ACL so remote entities not on it get
-	// AuthCode ExternalCode; however, a daemon with an orchestrator adds an admin
-	// IP for its orchestrator and locks external codes from write access
+	// AuthCode ExternalCode; however, a daemon with an orchestrator locks
+	// external codes from write access, and its orchestrator's IPs get AdminCode
+	// once they are resolved, which registering retries until they are
 	acl := listener.NewAcl(nil, nil, true)
 	if d.Config.Daemon.Orchestrator != "" {
-		if err = d.addOrchestratorToAcl(ctx, acl); err != nil {
-			d.log.Error().Err(err).Str("orchestrator", d.Config.Daemon.Orchestrator).
-				Msg("could not resolve orchestrator")
-			return err
-		}
 		if err = d.policy.SafeTransit(LockedState); err != nil {
 			d.log.Error().Err(err).Msg("could not lock daemon")
 			return err
@@ -224,6 +229,11 @@ func (d *Daemon) Run(ctx context.Context) (err error) {
 	}
 	d.netLn = listener.NewCodedListener(ln, acl, listener.WithLogger(d.log))
 
+	// Service names are qualified with the daemon's address, so they are
+	// unique across the network
+	d.selfAddr = d.localAddr(ctx)
+	d.log.Info().Str("address", d.selfAddr.String()).Msg("daemon address found")
+
 	// Serve until the relay exits or the context is canceled; the server
 	// stops on its own once its listener closes
 	go d.server.Serve(d.serverLn)
@@ -233,15 +243,26 @@ func (d *Daemon) Run(ctx context.Context) (err error) {
 	}()
 	d.log.Info().Int("port", d.Config.Daemon.Port).Msg("daemon started")
 
-	// Gather services, then register vehicles with the orchestrator, which
-	// provides the remote compute service the vehicles are started with
+	// Gather services, then keep the vehicles registered with the orchestrator,
+	// which provides the remote compute service the vehicles are started with;
+	// vehicles wait for the first registration for up to registerWait
 	if err := d.gatherServices(); err != nil {
 		d.log.Error().Err(err).Msg("could not set up some services")
 	}
+	var registering sync.WaitGroup
 	if d.Config.Daemon.Orchestrator != "" {
-		if err := d.registerWithOrchestrator(ctx); err != nil {
-			d.log.Error().Err(err).Str("orchestrator", d.Config.Daemon.Orchestrator).
-				Msg("could not register with orchestrator, starting vehicles without remote compute")
+		// Calls the orchestrator routes here by this daemon's IP are for its
+		// own services; the route is added first, so that none are rejected
+		// once the orchestrator has the route back here
+		d.router.AddHeaderRoute(d.selfAddr.String(), d.serverConn)
+		r := newRegistration(acl)
+		registering.Go(func() { d.maintainRegistration(ctx, r) })
+		select {
+		case <-r.registered:
+		case <-ctx.Done():
+		case <-time.After(registerWait):
+			d.log.Warn().Str("orchestrator", d.Config.Daemon.Orchestrator).
+				Msg("not registered with orchestrator yet, starting vehicles without remote compute")
 		}
 	}
 	if err := d.startServices(d.selectServices((*serviceInfo).setUp)); err != nil {
@@ -263,10 +284,13 @@ func (d *Daemon) Run(ctx context.Context) (err error) {
 		}
 	}
 
-	// Stop services before the relay, since plugins hold connections to it
+	// Stop services before the relay, since plugins hold connections to it;
+	// registration streams end with the daemon context
 	cancel()
+	registering.Wait()
 	d.stopUrielServer()
 	d.stopServices(d.selectServices(nil))
+	d.closeServices()
 	d.closeRemotes()
 	if !relayDone {
 		d.relay.GracefulStop()
@@ -276,5 +300,41 @@ func (d *Daemon) Run(ctx context.Context) (err error) {
 	d.serverConn.Close()
 	d.server.GracefulStop()
 	d.log.Info().Msg("shutdown complete")
+	if err == nil && d.restart.Load() {
+		err = ErrRestart
+	}
 	return err
+}
+
+// localAddr returns the address of this daemon on the network: the one it
+// reaches its orchestrator from, if it has one, or else the one its default
+// route uses. If neither can be found, as on a daemon without a network, it is
+// the loopback address.
+func (d *Daemon) localAddr(ctx context.Context) netip.Addr {
+	remote := defaultRouteProbe
+	if d.Config.Daemon.Orchestrator != "" {
+		host := d.Config.Daemon.Orchestrator
+		if h, _, err := net.SplitHostPort(host); err == nil {
+			host = h
+		}
+		if addrs, err := d.network.Resolve(ctx, host); err == nil {
+			remote = addrs[0]
+		}
+	}
+	addr, err := d.network.LocalAddr(ctx, remote)
+	if err != nil {
+		d.log.Warn().Err(err).Msg("could not find daemon address, using loopback")
+		return netip.AddrFrom4([4]byte{127, 0, 0, 1})
+	}
+	return addr
+}
+
+// qualify returns name qualified with the daemon's address, as "{daemon
+// IP}.{name}", so that it is unique across the network. An empty name, or
+// any name before the daemon has an address, is returned as it is.
+func (d *Daemon) qualify(name string) string {
+	if name == "" || !d.selfAddr.IsValid() {
+		return name
+	}
+	return d.selfAddr.String() + "." + name
 }

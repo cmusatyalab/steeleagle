@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	resultpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/result"
 	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -57,5 +58,29 @@ func TestQueryRange(t *testing.T) {
 	req := vehiclepb.GetTelemetryRequest_builder{TimeStart: at(2), TimeEnd: at(1)}.Build()
 	if _, err := v.GetTelemetry(context.Background(), req); status.Code(err) != codes.InvalidArgument {
 		t.Errorf("end before start: got %v, want InvalidArgument", err)
+	}
+}
+
+// TestSetResult ensures that results are set as the result type of their
+// engine, that a result of an unknown type is kept as a generic result, and
+// that a result that isn't of its engine's type is an error.
+func TestSetResult(t *testing.T) {
+	detection := resultpb.DetectionResult_builder{Detections: []*resultpb.Detection{
+		resultpb.Detection_builder{ClassName: "person"}.Build(),
+	}}.Build()
+	data, _ := proto.Marshal(detection)
+	result := &resultpb.ComputeResult{}
+	if err := setResult(result, DetectionResultType, data); err != nil || !proto.Equal(result.GetDetectionResult(), detection) {
+		t.Errorf("detection: got %v, %v, want %v", result, err, detection)
+	}
+
+	result = &resultpb.ComputeResult{}
+	if err := setResult(result, "steeleagle_protocol/v1/messages/frame/RawFrame", []byte("raw")); err != nil ||
+		string(result.GetGenericResult().GetPayload()) != "raw" {
+		t.Errorf("unknown type: got %v, %v, want a generic result", result, err)
+	}
+
+	if err := setResult(&resultpb.ComputeResult{}, DetectionResultType, []byte{0xff}); err == nil {
+		t.Error("invalid detection: got no error")
 	}
 }

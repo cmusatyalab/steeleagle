@@ -22,7 +22,7 @@ const testGeoJson = `{"type":"FeatureCollection","features":[
 	{"type":"Feature","properties":{"name":"area"},"geometry":{"type":"Polygon","coordinates":[[[0,0],[0,1],[1,1],[1,0],[0,0]]]}}
 ]}`
 
-// testManifest declares two roles, one squawk and one detection flow.
+// testManifest declares two roles, one squawk and one detection engine.
 const testManifest = `
 [info]
 name = "test"
@@ -30,7 +30,7 @@ version = "0.1.0"
 roles = ["Patroller", "tracker"]
 squawks = ["found"]
 
-[[flows]]
+[[engines]]
 name = "yolo"
 result = "messages/result/DetectionResult"
 `
@@ -203,7 +203,7 @@ func TestBuildSdkErrors(t *testing.T) {
 }
 
 // TestOverlayConfig checks that OverlayConfig generates manifest roles,
-// squawks and flows and GeoJSON features into the params package, and
+// squawks and engines and GeoJSON features into the params package, and
 // overlays the SDK's module with the cap file's support.
 func TestOverlayConfig(t *testing.T) {
 	cap := "[driver.unsupported]\nmethods = [\"services/driver/ControlService/Kill\"]\n"
@@ -247,11 +247,11 @@ func TestOverlayConfig(t *testing.T) {
 // are reported.
 func TestOverlayConfigErrors(t *testing.T) {
 	tests := map[string]string{
-		"flow yolo has malformed result":        "[[flows]]\nname = \"yolo\"\nresult = \"messages/result/\"\n",
+		"engine yolo has malformed result":      "[[engines]]\nname = \"yolo\"\nresult = \"messages/result/\"\n",
 		`role "a" is declared more than once`:   "[info]\nroles = [\"a\", \"a\"]\n",
 		`squawk "s" is declared more than once`: "[info]\nsquawks = [\"s\", \"s\"]\n",
-		`flow "yolo" is declared more than once`: "[[flows]]\nname = \"yolo\"\nresult = \"messages/result/DetectionResult\"\n" +
-			"[[flows]]\nname = \"yolo\"\nresult = \"messages/result/GenericResult\"\n",
+		`engine "yolo" is declared more than once`: "[[engines]]\nname = \"yolo\"\nresult = \"messages/result/DetectionResult\"\n" +
+			"[[engines]]\nname = \"yolo\"\nresult = \"messages/result/GenericResult\"\n",
 	}
 	for want, manifest := range tests {
 		c, errs := NewConfig(WithManifest([]byte(manifest)))

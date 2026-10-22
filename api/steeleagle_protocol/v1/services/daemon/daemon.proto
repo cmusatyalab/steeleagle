@@ -23,10 +23,16 @@ service DaemonService {
    *
    * RegisterOrchestrator is called by other daemons that have set this daemon as
    * their orchestrator. The vehicles on other daemons will be addressable through
-   * the daemon gRPC proxy.
+   * the daemon gRPC proxy. The stream opens with a handshake: the registering
+   * daemon sends its registration, and the orchestrator answers with the remote
+   * compute service details and the engines it serves, which become available
+   * to the registering daemon's vehicles as remote engines. After that, the
+   * stream is a heartbeat: the registering daemon sends empty requests, each
+   * answered with an empty response. The registering daemon registers again,
+   * with backoff, whenever the stream dies.
    */
-  rpc RegisterOrchestrator (RegisterOrchestratorRequest)
-    returns (RegisterOrchestratorResponse) {}
+  rpc RegisterOrchestrator (stream RegisterOrchestratorRequest)
+    returns (stream RegisterOrchestratorResponse) {}
 
   /*
    * Load a TOML config.
@@ -51,7 +57,11 @@ service DaemonService {
    *
    * List services lists all daemon services from the config, whether they are
    * running or stopped, along with why each couldn't be set up, failed to
-   * start, or exited, if it did.
+   * start, or exited, if it did. On an orchestrator, the services of every
+   * registered remote daemon are listed too. Services are named by their
+   * qualified names, "{daemon IP}.{name}", so they are unique across daemons;
+   * a remote daemon that can't be reached is left out, and listed as
+   * unavailable.
    */
   rpc ListServices (ListServicesRequest)
     returns (ListServicesResponse) {}
@@ -103,13 +113,24 @@ service DaemonService {
 }
 
 message RegisterOrchestratorRequest {
-  repeated string vehicles = 1; // vehicles, as "{daemon IP}/{vehicle name}"
+  optional DaemonRegistration registration = 1; // registration, only in the handshake; heartbeats are empty
+}
+
+// Registration a daemon sends its orchestrator in the handshake.
+message DaemonRegistration {
+  repeated string vehicles = 1; // qualified vehicle names, as "{daemon IP}.{vehicle name}"
   int32 port = 2;               // port of the registering daemon
 }
 
 message RegisterOrchestratorResponse {
-  string cert = 1; // cert key for the remote compute service
-  int32 port = 2;  // port for the remote compute service
+  optional RemoteCompute compute = 1; // remote compute service, only in the handshake; heartbeats are empty
+}
+
+// Remote compute service an orchestrator offers in the handshake.
+message RemoteCompute {
+  string cert = 1;                // cert key for the remote compute service
+  int32 port = 2;                 // port for the remote compute service
+  map<string, bytes> engines = 3; // plugin toml of each orchestrator engine, keyed by qualified engine name
 }
 
 message ConfigureRequest {
@@ -134,10 +155,8 @@ enum ServiceCategory {
   SERVICE_CATEGORY_VEHICLE = 1;     // vehicle service
   SERVICE_CATEGORY_ENGINE = 2;      // engine service
   SERVICE_CATEGORY_MONITOR = 3;     // monitor service
-  reserved 4;                       // formerly commander service, now an engine
-  reserved "SERVICE_CATEGORY_COMMANDER";
-  SERVICE_CATEGORY_SIMULATOR = 5;   // simulator service
-  SERVICE_CATEGORY_EXTRA = 6;       // extra service
+  SERVICE_CATEGORY_SIMULATOR = 4;   // simulator service
+  SERVICE_CATEGORY_EXTRA = 5;       // extra service
 }
 
 // A service description.
@@ -160,6 +179,7 @@ message ListServicesRequest {}
 
 message ListServicesResponse {
   repeated ActiveService services = 1; // list of active services
+  repeated string unavailable = 2;     // IPs of remote daemons that couldn't be reached on this request, if any
 }
 
 message RestartServicesRequest {

@@ -64,11 +64,12 @@ message GenericResult {
 message ComputeResult {
   google.protobuf.Timestamp timestamp = 1;          // inference timestamp
   uint64 sequence_num = 2;                          // sequence number
+  bool local = 3;                                   // whether the result came from a local engine, rather than a remote one
   oneof type {
-    DetectionResult detection_result = 3;           // object detection
-    ClassificationResult classification_result = 4; // classification
-    GuidanceResult guidance_result = 5;             // guidance directive
-    PositionResult position_result = 6;             // position estimate
-    GenericResult generic_result = 7;               // generic result
+    DetectionResult detection_result = 4;           // object detection
+    ClassificationResult classification_result = 5; // classification
+    GuidanceResult guidance_result = 6;             // guidance directive
+    PositionResult position_result = 7;             // position estimate
+    GenericResult generic_result = 8;               // generic result
   }
 }

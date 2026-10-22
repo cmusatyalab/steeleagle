@@ -33,6 +33,24 @@ const (
 	StreamTimeout         = 10 * time.Second
 )
 
+// Locations of engines in a dataflow: served by the local compute service, or
+// by the remote one.
+const (
+	LocalLocation  = "local"
+	RemoteLocation = "remote"
+)
+
+// Result types of engines, as their plugin tomls name them, that are stored as
+// their own type in a ComputeResult; results of any other type are stored as
+// generic results.
+const (
+	DetectionResultType      = "steeleagle_protocol/v1/messages/result/DetectionResult"
+	ClassificationResultType = "steeleagle_protocol/v1/messages/result/ClassificationResult"
+	GuidanceResultType       = "steeleagle_protocol/v1/messages/result/GuidanceResult"
+	PositionResultType       = "steeleagle_protocol/v1/messages/result/PositionResult"
+	GenericResultType        = "steeleagle_protocol/v1/messages/result/GenericResult"
+)
+
 // Data database file, kept in the vehicle's persistent data directory, and its
 // buckets; results are kept in a bucket per engine, named after the engine.
 const (
