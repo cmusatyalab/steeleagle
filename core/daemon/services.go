@@ -23,11 +23,28 @@ import (
 
 // categoryInfo describes how the services of a category are run.
 type categoryInfo struct {
-	name        string            // lowercase category name, as in plugin toml keys
-	pluginType  string            // required plugin type in the .plugin.toml
-	dir         string            // runtime directory for the category's plugins
-	code        listener.AuthCode // AuthCode for calls from the plugin to the daemon
-	restartable bool              // whether RestartServices may restart the category's services
+	name        string // lowercase category name, as in plugin toml keys
+	pluginType  string // required plugin type in the .plugin.toml
+	dir         string // runtime directory for the category's plugins
+	restartable bool   // whether RestartServices may restart the category's services
+}
+
+// authCode returns the AuthCode that calls from a plugin with the given auth
+// level carry to the daemon.
+func authCode(auth config.Auth) (listener.AuthCode, error) {
+	switch auth.Level() {
+	case config.AuthAdmin:
+		return listener.AdminCode, nil
+	case config.AuthPrivileged:
+		return listener.PrivilegedCode, nil
+	case config.AuthUser:
+		return listener.UserCode, nil
+	case config.AuthExternal:
+		return listener.ExternalCode, nil
+	case config.AuthUnknown:
+		return listener.UnknownCode, nil
+	}
+	return 0, fmt.Errorf("invalid auth %q", auth)
 }
 
 // gatherServices reads the services used by the config into d.services
@@ -40,8 +57,8 @@ func (d *Daemon) gatherServices() error {
 	defer d.svcMu.Unlock()
 	d.services = make(map[daemonpb.ServiceCategory][]*serviceInfo)
 	var errs []error
-	add := func(name string, category daemonpb.ServiceCategory, field config.PluginField) {
-		s, err := d.newService(name, category, field)
+	add := func(name string, category daemonpb.ServiceCategory, auth config.Auth, field config.PluginField) {
+		s, err := d.newService(name, category, auth, field)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("%s %q: %w", categories[category].pluginType, name, err))
 			s = &serviceInfo{name: name, category: category, pluginName: field.Plugin, url: field.Package, err: err}
@@ -54,22 +71,19 @@ func (d *Daemon) gatherServices() error {
 
 	c := d.Config
 	if c.Simulator.Name != "" {
-		add(c.Simulator.Name, daemonpb.ServiceCategory_SERVICE_CATEGORY_SIMULATOR, c.Simulator.Plugin)
+		add(c.Simulator.Name, daemonpb.ServiceCategory_SERVICE_CATEGORY_SIMULATOR, c.Simulator.Auth, c.Simulator.Plugin)
 	}
 	for _, s := range c.Engines {
-		add(s.Name, daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE, s.Plugin)
+		add(s.Name, daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE, s.Auth, s.Plugin)
 	}
 	for _, v := range c.Vehicles {
-		add(v.Name, daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE, v.Plugin)
-	}
-	for _, s := range c.Commanders {
-		add(s.Name, daemonpb.ServiceCategory_SERVICE_CATEGORY_COMMANDER, s.Plugin)
+		add(v.Name, daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE, v.Auth, v.Plugin)
 	}
 	for _, s := range c.Monitors {
-		add(s.Name, daemonpb.ServiceCategory_SERVICE_CATEGORY_MONITOR, s.Plugin)
+		add(s.Name, daemonpb.ServiceCategory_SERVICE_CATEGORY_MONITOR, s.Auth, s.Plugin)
 	}
 	for _, s := range c.Extras {
-		add(s.Name, daemonpb.ServiceCategory_SERVICE_CATEGORY_EXTRA, s.Plugin)
+		add(s.Name, daemonpb.ServiceCategory_SERVICE_CATEGORY_EXTRA, s.Auth, s.Plugin)
 	}
 	return errors.Join(errs...)
 }
@@ -79,6 +93,7 @@ func (d *Daemon) gatherServices() error {
 func (d *Daemon) newService(
 	name string,
 	category daemonpb.ServiceCategory,
+	auth config.Auth,
 	field config.PluginField,
 ) (*serviceInfo, error) {
 	cat := categories[category]
@@ -87,6 +102,10 @@ func (d *Daemon) newService(
 	}
 	if d.findService(category, name) != nil {
 		return nil, fmt.Errorf("duplicate service name")
+	}
+	code, err := authCode(auth)
+	if err != nil {
+		return nil, err
 	}
 	u, err := parsePackageUrl(field.Package)
 	if err != nil {
@@ -133,12 +152,13 @@ func (d *Daemon) newService(
 		if err != nil {
 			return nil, fmt.Errorf("could not get model directory: %w", err)
 		}
-		options = append(options, plugin.WithoutClient(), plugin.WithAuthCode(cat.code),
+		options = append(options, plugin.WithoutClient(), plugin.WithAuthCode(code),
 			plugin.WithParentDir(cat.dir), plugin.WithEnvironment(IceoryxServiceEnv, name),
 			plugin.WithReadOnlyFiles([]string{models}))
 	case daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE:
 		// Drivers are pure servers for their vehicle, and run within its
-		// runtime directory
+		// runtime directory, so they have no listener for their auth to apply
+		// to
 		if cfg.Driver == nil {
 			return nil, fmt.Errorf("plugin %q has no driver cap", field.Plugin)
 		}
@@ -146,7 +166,7 @@ func (d *Daemon) newService(
 			plugin.WithParentDir(filepath.Join(cat.dir, name)))
 	default:
 		options = append(options, plugin.WithoutClient(),
-			plugin.WithAuthCode(cat.code), plugin.WithParentDir(cat.dir))
+			plugin.WithAuthCode(code), plugin.WithParentDir(cat.dir))
 	}
 	p, err := plugin.NewBasePlugin(options...)
 	if err != nil {
@@ -212,7 +232,7 @@ func (d *Daemon) selectServices(keep func(*serviceInfo) bool) []*serviceInfo {
 }
 
 // startServices starts services in category order: simulator, engines,
-// vehicles, commanders, monitors, then extras. A service that fails to start
+// vehicles, monitors, then extras. A service that fails to start
 // is reported in the returned error, and the rest are still started.
 func (d *Daemon) startServices(services []*serviceInfo) error {
 	d.svcMu.Lock()
@@ -262,8 +282,8 @@ func (d *Daemon) stopServices(services []*serviceInfo) {
 // and is created on its first start; each run gets a new in-process daemon
 // listener, and the router sends calls with the vehicle's name as their route
 // key to a client connection on it. Any other plugin hosts a service, and the
-// daemon serves its listener, so the plugin can call the daemon with its
-// category's AuthCode. The caller must hold svcMu.
+// daemon serves its listener, so the plugin can call the daemon with the
+// AuthCode of its configured auth. The caller must hold svcMu.
 func (d *Daemon) startService(s *serviceInfo) error {
 	ctx, cancel := context.WithCancel(d.ctx)
 	if s.category != daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE {
@@ -284,9 +304,10 @@ func (d *Daemon) startService(s *serviceInfo) error {
 	}
 
 	if s.vehicle == nil {
-		options := []vehicle.VehicleOption{vehicle.WithName(s.name), vehicle.WithLogger(d.log)}
+		options := []vehicle.VehicleOption{vehicle.WithName(s.name), vehicle.WithLogger(d.log),
+			vehicle.WithLcs(d.Config.Daemon.Hostname)}
 		if d.rcsAddr != "" {
-			options = append(options, vehicle.WithRemoteCompute(d.rcsAddr, d.rcsCert))
+			options = append(options, vehicle.WithRcs(d.rcsAddr, d.rcsCert))
 		}
 		v, err := vehicle.NewVehicle(s.plugin, s.config, options...)
 		if err != nil {

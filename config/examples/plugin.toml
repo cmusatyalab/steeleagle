@@ -1,7 +1,7 @@
 [plugin]
 # Name of the plugin
 name = "Logdy"
-# Plugin type: (driver, engine, commander, monitor, simulator, extra)
+# Plugin type: (driver, engine, monitor, simulator, extra)
 type = "extra"
 # Description of the plugin (optional)
 description = "Runs the Logdy logging service"

@@ -14,7 +14,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	gabriel "github.com/cmusatyalab/gabriel/go"
 	daemonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon"
 	"github.com/cmusatyalab/steeleagle/config"
 	"github.com/cmusatyalab/steeleagle/v4/core/util"
@@ -24,6 +23,7 @@ import (
 	"github.com/cmusatyalab/steeleagle/v4/core/util/policy"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/router"
 	"github.com/cmusatyalab/steeleagle/v4/core/vehicle"
+	"github.com/cmusatyalab/uriel/go"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 )
@@ -66,12 +66,12 @@ type Daemon struct {
 	services   map[daemonpb.ServiceCategory][]*serviceInfo // available services, in config order
 	svcMu      sync.Mutex                                  // mutex to protect services
 	rcsAddr    string                                      // orchestrator remote compute service address, if any
-	rcsCert    string                                      // orchestrator remote compute service cert, if any
+	rcsCert    []byte                                      // orchestrator remote compute service cert in DER, if any
 	selfAddr   netip.Addr                                  // address of this daemon as seen by the orchestrator, if registered
 	certMu     sync.Mutex                                  // mutex to protect the local compute cert files
 	remotes    map[netip.Addr]*grpc.ClientConn             // connections to registered remote daemons, by IP
 	remotesMu  sync.Mutex                                  // mutex to protect remotes
-	gabriel    *gabriel.Server                             // local compute service, if started
+	uriel      *uriel.Server                               // local compute service, if started
 	ctx        context.Context                             // context for the daemon
 	cancel     context.CancelFunc                          // cancel function for active contexts
 	log        zerolog.Logger                              // logger object
@@ -247,7 +247,7 @@ func (d *Daemon) Run(ctx context.Context) (err error) {
 	if err := d.startServices(d.selectServices((*serviceInfo).setUp)); err != nil {
 		d.log.Error().Err(err).Msg("could not start some services")
 	}
-	if err := d.startGabrielServer(); err != nil {
+	if err := d.startUrielServer(); err != nil {
 		d.log.Error().Err(err).Int("port", d.Config.Daemon.Lcs).
 			Msg("could not start local compute service")
 	}
@@ -265,7 +265,7 @@ func (d *Daemon) Run(ctx context.Context) (err error) {
 
 	// Stop services before the relay, since plugins hold connections to it
 	cancel()
-	d.stopGabrielServer()
+	d.stopUrielServer()
 	d.stopServices(d.selectServices(nil))
 	d.closeRemotes()
 	if !relayDone {

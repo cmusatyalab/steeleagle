@@ -218,8 +218,9 @@ func (v *vehicleContext) GetTelemetry() *Waiter[Telemetry] {
 	req := &vehiclepb.GetTelemetryRequest{}
 	resp, err := v.data.GetTelemetry(v.ctx, req)
 	wrapper := &telemetryWrapper{}
-	if resp != nil {
-		wrapper.inner = resp.GetTelemetry() // need to make sure resp is not nil
+	// Without a time range, only the most recent telemetry is returned
+	if telemetry := resp.GetTelemetry(); len(telemetry) > 0 {
+		wrapper.inner = telemetry[len(telemetry)-1]
 	}
 
 	return newWaiter[Telemetry](

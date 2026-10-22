@@ -6,10 +6,9 @@ require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/adrg/xdg v0.5.3
 	github.com/alecthomas/participle/v2 v2.1.4
-	github.com/cmusatyalab/gabriel/go-client v0.5.0
-	github.com/cmusatyalab/gabriel/protocol/go v0.3.0
 	github.com/cmusatyalab/steeleagle/api/go v0.3.0
 	github.com/cmusatyalab/steeleagle/config v0.0.0-20261020034212-353eb2969f61
+	github.com/cmusatyalab/uriel/go v0.1.0
 	github.com/go-git/go-git/v5 v5.19.2
 	github.com/google/uuid v1.6.0
 	github.com/looplab/fsm v1.0.3
@@ -42,7 +41,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cilium/ebpf v0.17.3 // indirect
 	github.com/cloudflare/circl v1.6.3 // indirect
-	github.com/cmusatyalab/gabriel/go v0.0.0-20261021224518-780126459e8e
 	github.com/coder/websocket v1.8.15 // indirect
 	github.com/creachadair/msync v0.10.0 // indirect
 	github.com/cyphar/filepath-securejoin v0.6.1 // indirect

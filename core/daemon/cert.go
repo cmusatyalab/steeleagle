@@ -29,8 +29,8 @@ func (d *Daemon) lcsCert() (string, error) {
 }
 
 // lcsIdentity returns the identity directory of the local compute service's
-// Gabriel server and the DER encoded cert in it. The cert and its key are kept
-// there in the format Gabriel expects; if there is no valid cert there, a new
+// Uriel server and the DER encoded cert in it. The cert and its key are kept
+// there in the format Uriel expects; if there is no valid cert there, a new
 // self-signed one is generated and saved.
 func (d *Daemon) lcsIdentity() (string, []byte, error) {
 	d.certMu.Lock()
@@ -51,7 +51,7 @@ func (d *Daemon) lcsIdentity() (string, []byte, error) {
 		d.log.Warn().Err(err).Str("path", certPath).Msg("replacing invalid local compute cert")
 	}
 
-	cert, key, err := generateCert()
+	cert, key, err := generateCert(lcsServerName)
 	if err != nil {
 		return "", nil, err
 	}
@@ -66,8 +66,8 @@ func (d *Daemon) lcsIdentity() (string, []byte, error) {
 	return dir, cert, nil
 }
 
-// readCert reads the DER cert at certPath, checking that its key exists and
-// that it hasn't expired.
+// readCert reads the DER cert at certPath, checking that its key exists, that
+// it hasn't expired and that it is for the local compute server name.
 func readCert(certPath, keyPath string) ([]byte, error) {
 	if _, err := os.Stat(keyPath); err != nil {
 		return nil, err
@@ -83,12 +83,16 @@ func readCert(certPath, keyPath string) ([]byte, error) {
 	if time.Now().After(cert.NotAfter) {
 		return nil, fmt.Errorf("cert in %s expired at %s", certPath, cert.NotAfter)
 	}
+	// A cert made for another name, e.g. by an older version, is refused by clients
+	if err := cert.VerifyHostname(lcsServerName); err != nil {
+		return nil, fmt.Errorf("cert in %s is not for %s: %w", certPath, lcsServerName, err)
+	}
 	return der, nil
 }
 
-// generateCert creates a self-signed ECDSA cert for the name Gabriel clients
+// generateCert creates a self-signed ECDSA cert for name, the name Uriel clients
 // connect with, returning the DER encoded cert and PKCS #8 key.
-func generateCert() ([]byte, []byte, error) {
+func generateCert(name string) ([]byte, []byte, error) {
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, nil, err
@@ -98,11 +102,11 @@ func generateCert() ([]byte, []byte, error) {
 		return nil, nil, err
 	}
 	now := time.Now()
-	// Gabriel clients trust the cert itself, so it must not be a CA cert
+	// Uriel clients trust the cert itself, so it must not be a CA cert
 	template := &x509.Certificate{
 		SerialNumber:          serial,
-		Subject:               pkix.Name{CommonName: lcsServerName},
-		DNSNames:              []string{lcsServerName},
+		Subject:               pkix.Name{CommonName: name},
+		DNSNames:              []string{name},
 		NotBefore:             now.Add(-time.Hour), // tolerate clock skew
 		NotAfter:              now.Add(lcsCertValidity),
 		KeyUsage:              x509.KeyUsageDigitalSignature,

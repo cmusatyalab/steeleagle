@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -21,8 +22,8 @@ import (
 const testPackageUrl = "github.com/org/plugins"
 
 // newTestServiceDaemon returns a daemon with a package directory holding a
-// fake package with an engine plugin "detector", and a plugin for every other
-// category of service named after its type. The start task records its
+// fake package with engine plugins "detector" and "gcs", and a plugin for
+// every other category of service named after its type. The start task records its
 // environment in run.txt and runs until it is killed. The daemon's relay, server
 // and router are set up like a real daemon's. If the TEST_SERVICE_CLIENT
 // environment variable is set, the start task runs it in place of recording
@@ -60,8 +61,9 @@ func newTestServiceDaemon(t *testing.T) *Daemon {
 		"run.sh": "[ -n \"$TEST_SERVICE_CLIENT\" ] && exec \"$TEST_SERVICE_CLIENT\" \"calls-$STEELEAGLE_PLUGIN.txt\"\n" +
 			"env > run.txt\necho $$ > \"pid-$STEELEAGLE_PLUGIN.txt\"\nexec sleep 60\n",
 		"detector" + PluginFileSuffix: "[plugin]\nname = 'Detector'\ntype = 'engine'\n",
+		"gcs" + PluginFileSuffix:      "[plugin]\nname = 'GCS'\ntype = 'engine'\n",
 	}
-	for _, kind := range []string{"monitor", "commander", "simulator", "extra"} {
+	for _, kind := range []string{"monitor", "simulator", "extra"} {
 		files[kind+PluginFileSuffix] = "[plugin]\nname = '" + kind + "'\ntype = '" + kind + "'\n"
 	}
 	if err := os.MkdirAll(pkg, 0755); err != nil {
@@ -301,7 +303,7 @@ func TestServiceHandlers(t *testing.T) {
 		service *daemonpb.Service
 		code    codes.Code
 	}{
-		"commander": {daemonpb.Service_builder{Name: "gcs", Category: daemonpb.ServiceCategory_SERVICE_CATEGORY_COMMANDER}.Build(), codes.InvalidArgument},
+		"simulator": {daemonpb.Service_builder{Name: "aviary", Category: daemonpb.ServiceCategory_SERVICE_CATEGORY_SIMULATOR}.Build(), codes.InvalidArgument},
 		"unknown":   {daemonpb.Service_builder{Name: "nope", Category: daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE}.Build(), codes.NotFound},
 	}
 	for name, tt := range bad {
@@ -314,21 +316,24 @@ func TestServiceHandlers(t *testing.T) {
 }
 
 // configureAllCategories configures one service of every category except
-// vehicles, each on the test package plugin for its category.
+// vehicles, plus a second, privileged engine, each on the test package plugin
+// for its category. The extra has no auth, so it defaults to unknown.
 func configureAllCategories(d *Daemon) {
 	field := func(plugin string) config.PluginField {
 		return config.PluginField{Plugin: plugin, Package: testPackageUrl}
 	}
-	d.Config.Simulator = config.ServiceField{Name: "aviary", Plugin: field("simulator")}
-	d.Config.Engines = []config.EngineField{{Name: "yolo", Plugin: field("detector")}}
-	d.Config.Commanders = []config.ServiceField{{Name: "gcs", Plugin: field("commander")}}
-	d.Config.Monitors = []config.ServiceField{{Name: "watch", Plugin: field("monitor")}}
+	d.Config.Simulator = config.ServiceField{Name: "aviary", Auth: config.AuthExternal, Plugin: field("simulator")}
+	d.Config.Engines = []config.EngineField{
+		{Name: "yolo", Auth: config.AuthExternal, Plugin: field("detector")},
+		{Name: "gcs", Auth: config.AuthPrivileged, Plugin: field("gcs")},
+	}
+	d.Config.Monitors = []config.ServiceField{{Name: "watch", Auth: config.AuthExternal, Plugin: field("monitor")}}
 	d.Config.Extras = []config.ServiceField{{Name: "logs", Plugin: field("extra")}}
 }
 
 // TestServiceCalls ensures that the daemon serves the listener of every
-// category of plugin, and that the law applies to each with its category's
-// AuthCode: external callers can only read, privileged callers can also
+// category of plugin, and that the law applies to each with the AuthCode of
+// its configured auth: external callers can only read, privileged callers can also
 // write, and unknown callers can do neither.
 func TestServiceCalls(t *testing.T) {
 	if _, err := exec.LookPath("pixi"); err != nil {
@@ -358,7 +363,7 @@ func TestServiceCalls(t *testing.T) {
 	want := map[string]string{
 		"simulator": readOnly,
 		"detector":  readOnly,
-		"commander": readWrite,
+		"gcs":       readWrite,
 		"monitor":   readOnly,
 		"extra":     denied,
 	}
@@ -377,8 +382,9 @@ func TestServiceCalls(t *testing.T) {
 	}
 }
 
-// TestServiceCodes ensures that each category of plugin is created with the
-// AuthCode its calls to the daemon carry.
+// TestServiceCodes ensures that each plugin is created with the AuthCode of
+// its configured auth, defaulting to unknown, and that a service with an
+// invalid auth is not set up.
 func TestServiceCodes(t *testing.T) {
 	d := newTestServiceDaemon(t)
 	configureAllCategories(d)
@@ -386,20 +392,47 @@ func TestServiceCodes(t *testing.T) {
 		t.Fatalf("gather failed: %v", err)
 	}
 
-	want := map[daemonpb.ServiceCategory]listener.AuthCode{
-		daemonpb.ServiceCategory_SERVICE_CATEGORY_MONITOR:   listener.ExternalCode,
-		daemonpb.ServiceCategory_SERVICE_CATEGORY_COMMANDER: listener.PrivilegedCode,
-		daemonpb.ServiceCategory_SERVICE_CATEGORY_SIMULATOR: listener.ExternalCode,
-		daemonpb.ServiceCategory_SERVICE_CATEGORY_EXTRA:     listener.UnknownCode,
-		daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE:    listener.ExternalCode,
+	want := map[string]listener.AuthCode{
+		"watch":  listener.ExternalCode,
+		"gcs":    listener.PrivilegedCode,
+		"aviary": listener.ExternalCode,
+		"logs":   listener.UnknownCode,
+		"yolo":   listener.ExternalCode,
 	}
-	for category, code := range want {
-		services := d.services[category]
-		if len(services) != 1 {
-			t.Fatalf("%s: expected one service, got %d", category, len(services))
+	got := map[string]listener.AuthCode{}
+	for _, s := range d.selectServices(nil) {
+		got[s.name] = s.plugin.Code()
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("expected codes %v, got %v", want, got)
+	}
+
+	d.Config.Extras[0].Auth = "root"
+	if err := d.gatherServices(); err == nil || !strings.Contains(err.Error(), `invalid auth "root"`) {
+		t.Errorf("expected invalid auth error, got %v", err)
+	}
+	if s := d.findService(daemonpb.ServiceCategory_SERVICE_CATEGORY_EXTRA, "logs"); s == nil || s.setUp() {
+		t.Errorf("expected extra with invalid auth listed but not set up, got %v", s)
+	}
+}
+
+// TestAuthCode ensures that every config auth level maps to its AuthCode,
+// with no auth mapping to unknown.
+func TestAuthCode(t *testing.T) {
+	want := map[config.Auth]listener.AuthCode{
+		"":                    listener.UnknownCode,
+		config.AuthAdmin:      listener.AdminCode,
+		config.AuthPrivileged: listener.PrivilegedCode,
+		config.AuthUser:       listener.UserCode,
+		config.AuthExternal:   listener.ExternalCode,
+		config.AuthUnknown:    listener.UnknownCode,
+	}
+	for auth, code := range want {
+		if got, err := authCode(auth); err != nil || got != code {
+			t.Errorf("authCode(%q) = %s, %v, want %s", auth, got, err, code)
 		}
-		if got := services[0].plugin.Code(); got != code {
-			t.Errorf("%s: expected code %s, got %s", category, code, got)
-		}
+	}
+	if _, err := authCode("root"); err == nil {
+		t.Error("authCode(\"root\") succeeded, want error")
 	}
 }

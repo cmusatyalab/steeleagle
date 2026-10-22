@@ -75,7 +75,6 @@ func TestDriverCapParsesCameras(t *testing.T) {
 		Gimbal:      true,
 		Primary:     true,
 		Encode:      true,
-		Default:     true,
 	}}
 	if !reflect.DeepEqual(p.Driver.Cameras, want) {
 		t.Errorf("Driver.Cameras = %+v, want %+v", p.Driver.Cameras, want)
@@ -160,31 +159,6 @@ func TestDriverCapBuildsSetsLazily(t *testing.T) {
 	}
 	if !d.Supports("steeleagle_protocol/v1/services/driver/ControlService/Hold") {
 		t.Error("Supports(ControlService/Hold) = false, want true")
-	}
-}
-
-// TestDriverCapDefaultCameras checks that only the first default primary
-// camera and every default secondary camera are streamed at startup, with
-// the primary first.
-func TestDriverCapDefaultCameras(t *testing.T) {
-	d := &DriverCap{Cameras: []DriverCamera{
-		{Name: "front", Default: true},
-		{Name: "rgb", Primary: true},
-		{Name: "thermal", Primary: true, Default: true},
-		{Name: "zoom", Primary: true, Default: true},
-		{Name: "rear", Default: true},
-		{Name: "down"},
-	}}
-	var got []string
-	for _, c := range d.DefaultCameras() {
-		got = append(got, c.Name)
-	}
-	want := []string{"thermal", "front", "rear"}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("DefaultCameras() = %v, want %v", got, want)
-	}
-	if cams := (&DriverCap{}).DefaultCameras(); len(cams) != 0 {
-		t.Errorf("DefaultCameras() on no cameras = %v, want none", cams)
 	}
 }
 

@@ -799,6 +799,10 @@ func (w *computeResultWrapper) hasTimestamp() bool {
 	return w.inner.HasTimestamp()
 }
 
+func (w *computeResultWrapper) GetSequenceNum() uint64 {
+	return w.inner.GetSequenceNum()
+}
+
 func (w *computeResultWrapper) GetDetectionResult() (DetectionResult, error) {
 	if !w.hasDetectionResult() {
 		return nil, ErrFieldNotPresent

@@ -14,6 +14,9 @@ orchestrator = "homebase:9000"
 [[vehicles]] # List of vehicles (can be empty)
 # Name of the vehicle
 name = "harpy"
+# Auth level of the service: (admin, privileged, user, external, unknown)
+# (optional, defaults to unknown)
+auth = "admin"
 [vehicles.plugin] # Driver plugin for this vehicle
 # Plugin to use
 plugin = "parrot_anafi"
@@ -25,8 +28,8 @@ ip = "10.202.0.1"
 [[engines]] # List of engines (can be empty)
 # Name of the engine
 name = "yolo"
-# Whether this engine is a default flow target for the vehicle (optional)
-default_target = true
+# Auth level of the service (optional, defaults to unknown)
+auth = "external"
 [engines.plugin] # Plugin for this engine
 # Plugin to use
 plugin = "yolo_qnn"
@@ -35,21 +38,21 @@ package = "github.com/cmusatyalab/steeleagle_plugins/engines/yolo"
 [engines.plugin.args] # Args for this plugin (can be empty)
 confidence = 0.0
 
-[[commanders]] # List of commanders (can be empty)
-# Name of the commander
+[[engines]]
 name = "gcs"
-[commanders.plugin] # Plugin for this commander
-# Plugin to use
+auth = "privileged"
+[engines.plugin]
 plugin = "gcs"
-# Package to search in 
 package = "github.com/cmusatyalab/steeleagle_plugins/commanders/gcs"
-[commanders.plugin.args] # Args for this plugin (can be empty)
+[engines.plugin.args]
 
-# [[monitors]] and [[extras]] follow the same format as [[commanders]] (can be empty)
+# [[monitors]] and [[extras]] follow the same format as [[engines]] (can be empty)
 
 [simulator] # Simulator for this daemon (can be empty)
 # Name of the simulator
 name = "aviary"
+# Auth level of the service (optional, defaults to unknown)
+auth = "external"
 [simulator.plugin] # Plugin for the simulator
 # Plugin to use
 plugin = "aviary"

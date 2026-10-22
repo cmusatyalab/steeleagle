@@ -7,7 +7,6 @@ package steeleagle_protocol.v1.services.vehicle;
 
 option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle;vehicle";
 
-import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "steeleagle_protocol/v1/messages/result/result.proto";
 import "steeleagle_protocol/v1/messages/telemetry/telemetry.proto";
@@ -23,20 +22,12 @@ service DataService {
   /*
    * Set the current flow.
    *
-   * Parses and executes the current flow from TOML bytes.
+   * Parses and executes the current flow from TOML bytes. This becomes the
+   * new default dataflow for the vehicle. When missions are completed, it will
+   * revert back to this dataflow.
    */
   rpc SetDataflow (SetDataflowRequest)
 	returns (SetDataflowResponse) {}
-
-  /*
-   * Set the current flow back to default.
-   *
-   * Sets the current flow to be the default flow, which relays streams from the
-   * driver to both the remote and local backends. Used to restore stream throughput
-   * for manual piloting.
-   */
-  rpc RevertToDefaultDataflow (RevertToDefaultDataflowRequest)
-    returns (RevertToDefaultDataflowResponse) {}
 
   /*
    * Query a dataflow.
@@ -57,32 +48,18 @@ service DataService {
    */
   rpc GetTelemetry (GetTelemetryRequest)
     returns (GetTelemetryResponse) {}
-
-  /*
-   * Get all active producers for this vehicle.
-   *
-   * Lists all the producer URIs for this vehicle that have been registered, and
-   * whether they are currently active.
-   */
-  rpc GetStreamInfo (GetStreamInfoRequest)
-    returns (GetStreamInfoResponse) {}
 }
 
 message SetDataflowRequest {
-  string name = 1; // dataflow name (how results will be indexed)
-  bytes toml = 2;  // dataflow TOML bytes according to Gabriel specifications
+  bytes toml = 1;  // dataflow TOML bytes according to Gabriel specifications
 }
 
 message SetDataflowResponse {}
 
-message RevertToDefaultDataflowRequest {}
-
-message RevertToDefaultDataflowResponse{}
-
 message GetResultRequest {
-  string name = 1;                                   // name of the dataflow to query
+  string engine = 1;                                 // name of the engine to query
   optional google.protobuf.Timestamp time_start = 2; // start time of the query 
-  optional google.protobuf.Duration time_end = 3;    // end time of the query 
+  optional google.protobuf.Timestamp time_end = 3;   // end time of the query 
 }
 
 message GetResultResponse {
@@ -91,31 +68,9 @@ message GetResultResponse {
 
 message GetTelemetryRequest {
   optional google.protobuf.Timestamp time_start = 1; // start time of the query 
-  optional google.protobuf.Duration time_end = 2;    // end time of the query 
+  optional google.protobuf.Timestamp time_end = 2;   // end time of the query 
 }
 
 message GetTelemetryResponse {
-  steeleagle_protocol.v1.messages.telemetry.Telemetry telemetry = 1; // telemetry query response
-}
-
-// Type of the stream.
-enum StreamType {
-  STREAM_TYPE_UNSPECIFIED = 0; // unknown
-  STREAM_TYPE_TELEMETRY = 1;   // telemetry stream (from driver)
-  STREAM_TYPE_VIDEO = 2;       // video stream (from driver)
-  STREAM_TYPE_SENSOR = 3;      // sensor stream (from driver), e.g. LIDAR
-  STREAM_TYPE_METRICS = 4;     // metrics stream (from vehicle)
-  STREAM_TYPE_MISSION = 5;     // mission info strema (from mission)
-}
-
-message StreamInfo {
-  string uri = 1;       // stream URI
-  StreamType type = 2;  // stream type
-  bool active = 3;      // whether or not the stream is active
-}
-
-message GetStreamInfoRequest {}
-
-message GetStreamInfoResponse {
-  repeated StreamInfo info = 1; // stream information list
+  repeated steeleagle_protocol.v1.messages.telemetry.Telemetry telemetry = 1; // telemetry query response
 }

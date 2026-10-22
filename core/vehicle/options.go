@@ -25,11 +25,19 @@ func WithLaw(lawToml []byte) VehicleOption {
 	}
 }
 
-// WithRemoteCompute sets the address and cert of the remote compute service
-// provided by the orchestrator.
-func WithRemoteCompute(address, cert string) VehicleOption {
+// WithLcs sets the name of the local compute service, the Uriel server on this
+// machine that the vehicle's dataflows reach local engines through.
+func WithLcs(server string) VehicleOption {
 	return func(v *Vehicle) {
-		v.remoteAddr = address
-		v.remoteCert = cert
+		v.lcsName = server
+	}
+}
+
+// WithRcs sets the address and DER encoded cert of the remote compute service
+// provided by the orchestrator.
+func WithRcs(address string, cert []byte) VehicleOption {
+	return func(v *Vehicle) {
+		v.rcsAddr = address
+		v.rcsCert = cert
 	}
 }

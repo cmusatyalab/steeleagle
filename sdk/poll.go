@@ -244,10 +244,12 @@ func fetchTelemetry(v *vehicleContext) (*telemetrypb.Telemetry, error) {
 	if err != nil {
 		return nil, ErrInternal
 	}
-	if !resp.HasTelemetry() {
+	// Without a time range, only the most recent telemetry is returned
+	telemetry := resp.GetTelemetry()
+	if len(telemetry) == 0 {
 		return nil, ErrInternal
 	}
-	return resp.GetTelemetry(), nil
+	return telemetry[len(telemetry)-1], nil
 }
 
 // anyMatches reports whether a holds a message of the same type as want,

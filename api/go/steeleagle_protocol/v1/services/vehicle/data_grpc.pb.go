@@ -23,11 +23,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	DataService_SetDataflow_FullMethodName             = "/steeleagle_protocol.v1.services.vehicle.DataService/SetDataflow"
-	DataService_RevertToDefaultDataflow_FullMethodName = "/steeleagle_protocol.v1.services.vehicle.DataService/RevertToDefaultDataflow"
-	DataService_GetResult_FullMethodName               = "/steeleagle_protocol.v1.services.vehicle.DataService/GetResult"
-	DataService_GetTelemetry_FullMethodName            = "/steeleagle_protocol.v1.services.vehicle.DataService/GetTelemetry"
-	DataService_GetStreamInfo_FullMethodName           = "/steeleagle_protocol.v1.services.vehicle.DataService/GetStreamInfo"
+	DataService_SetDataflow_FullMethodName  = "/steeleagle_protocol.v1.services.vehicle.DataService/SetDataflow"
+	DataService_GetResult_FullMethodName    = "/steeleagle_protocol.v1.services.vehicle.DataService/GetResult"
+	DataService_GetTelemetry_FullMethodName = "/steeleagle_protocol.v1.services.vehicle.DataService/GetTelemetry"
 )
 
 // DataServiceClient is the client API for DataService service.
@@ -42,14 +40,10 @@ const (
 type DataServiceClient interface {
 	// Set the current flow.
 	//
-	// Parses and executes the current flow from TOML bytes.
+	// Parses and executes the current flow from TOML bytes. This becomes the
+	// new default dataflow for the vehicle. When missions are completed, it will
+	// revert back to this dataflow.
 	SetDataflow(ctx context.Context, in *SetDataflowRequest, opts ...grpc.CallOption) (*SetDataflowResponse, error)
-	// Set the current flow back to default.
-	//
-	// Sets the current flow to be the default flow, which relays streams from the
-	// driver to both the remote and local backends. Used to restore stream throughput
-	// for manual piloting.
-	RevertToDefaultDataflow(ctx context.Context, in *RevertToDefaultDataflowRequest, opts ...grpc.CallOption) (*RevertToDefaultDataflowResponse, error)
 	// Query a dataflow.
 	//
 	// Queries a dataflow for results, returning all results that match the query
@@ -62,11 +56,6 @@ type DataServiceClient interface {
 	// timestamps. If no start timestamp or end timestamp is provided, this will
 	// return the most recent received telemetry.
 	GetTelemetry(ctx context.Context, in *GetTelemetryRequest, opts ...grpc.CallOption) (*GetTelemetryResponse, error)
-	// Get all active producers for this vehicle.
-	//
-	// Lists all the producer URIs for this vehicle that have been registered, and
-	// whether they are currently active.
-	GetStreamInfo(ctx context.Context, in *GetStreamInfoRequest, opts ...grpc.CallOption) (*GetStreamInfoResponse, error)
 }
 
 type dataServiceClient struct {
@@ -81,16 +70,6 @@ func (c *dataServiceClient) SetDataflow(ctx context.Context, in *SetDataflowRequ
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SetDataflowResponse)
 	err := c.cc.Invoke(ctx, DataService_SetDataflow_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *dataServiceClient) RevertToDefaultDataflow(ctx context.Context, in *RevertToDefaultDataflowRequest, opts ...grpc.CallOption) (*RevertToDefaultDataflowResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(RevertToDefaultDataflowResponse)
-	err := c.cc.Invoke(ctx, DataService_RevertToDefaultDataflow_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -117,16 +96,6 @@ func (c *dataServiceClient) GetTelemetry(ctx context.Context, in *GetTelemetryRe
 	return out, nil
 }
 
-func (c *dataServiceClient) GetStreamInfo(ctx context.Context, in *GetStreamInfoRequest, opts ...grpc.CallOption) (*GetStreamInfoResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetStreamInfoResponse)
-	err := c.cc.Invoke(ctx, DataService_GetStreamInfo_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // DataServiceServer is the server API for DataService service.
 // All implementations must embed UnimplementedDataServiceServer
 // for forward compatibility.
@@ -139,14 +108,10 @@ func (c *dataServiceClient) GetStreamInfo(ctx context.Context, in *GetStreamInfo
 type DataServiceServer interface {
 	// Set the current flow.
 	//
-	// Parses and executes the current flow from TOML bytes.
+	// Parses and executes the current flow from TOML bytes. This becomes the
+	// new default dataflow for the vehicle. When missions are completed, it will
+	// revert back to this dataflow.
 	SetDataflow(context.Context, *SetDataflowRequest) (*SetDataflowResponse, error)
-	// Set the current flow back to default.
-	//
-	// Sets the current flow to be the default flow, which relays streams from the
-	// driver to both the remote and local backends. Used to restore stream throughput
-	// for manual piloting.
-	RevertToDefaultDataflow(context.Context, *RevertToDefaultDataflowRequest) (*RevertToDefaultDataflowResponse, error)
 	// Query a dataflow.
 	//
 	// Queries a dataflow for results, returning all results that match the query
@@ -159,11 +124,6 @@ type DataServiceServer interface {
 	// timestamps. If no start timestamp or end timestamp is provided, this will
 	// return the most recent received telemetry.
 	GetTelemetry(context.Context, *GetTelemetryRequest) (*GetTelemetryResponse, error)
-	// Get all active producers for this vehicle.
-	//
-	// Lists all the producer URIs for this vehicle that have been registered, and
-	// whether they are currently active.
-	GetStreamInfo(context.Context, *GetStreamInfoRequest) (*GetStreamInfoResponse, error)
 	mustEmbedUnimplementedDataServiceServer()
 }
 
@@ -177,17 +137,11 @@ type UnimplementedDataServiceServer struct{}
 func (UnimplementedDataServiceServer) SetDataflow(context.Context, *SetDataflowRequest) (*SetDataflowResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetDataflow not implemented")
 }
-func (UnimplementedDataServiceServer) RevertToDefaultDataflow(context.Context, *RevertToDefaultDataflowRequest) (*RevertToDefaultDataflowResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method RevertToDefaultDataflow not implemented")
-}
 func (UnimplementedDataServiceServer) GetResult(context.Context, *GetResultRequest) (*GetResultResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetResult not implemented")
 }
 func (UnimplementedDataServiceServer) GetTelemetry(context.Context, *GetTelemetryRequest) (*GetTelemetryResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetTelemetry not implemented")
-}
-func (UnimplementedDataServiceServer) GetStreamInfo(context.Context, *GetStreamInfoRequest) (*GetStreamInfoResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetStreamInfo not implemented")
 }
 func (UnimplementedDataServiceServer) mustEmbedUnimplementedDataServiceServer() {}
 func (UnimplementedDataServiceServer) testEmbeddedByValue()                     {}
@@ -228,24 +182,6 @@ func _DataService_SetDataflow_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DataService_RevertToDefaultDataflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RevertToDefaultDataflowRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DataServiceServer).RevertToDefaultDataflow(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DataService_RevertToDefaultDataflow_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DataServiceServer).RevertToDefaultDataflow(ctx, req.(*RevertToDefaultDataflowRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _DataService_GetResult_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetResultRequest)
 	if err := dec(in); err != nil {
@@ -282,24 +218,6 @@ func _DataService_GetTelemetry_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DataService_GetStreamInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetStreamInfoRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DataServiceServer).GetStreamInfo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DataService_GetStreamInfo_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DataServiceServer).GetStreamInfo(ctx, req.(*GetStreamInfoRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // DataService_ServiceDesc is the grpc.ServiceDesc for DataService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -312,20 +230,12 @@ var DataService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _DataService_SetDataflow_Handler,
 		},
 		{
-			MethodName: "RevertToDefaultDataflow",
-			Handler:    _DataService_RevertToDefaultDataflow_Handler,
-		},
-		{
 			MethodName: "GetResult",
 			Handler:    _DataService_GetResult_Handler,
 		},
 		{
 			MethodName: "GetTelemetry",
 			Handler:    _DataService_GetTelemetry_Handler,
-		},
-		{
-			MethodName: "GetStreamInfo",
-			Handler:    _DataService_GetStreamInfo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

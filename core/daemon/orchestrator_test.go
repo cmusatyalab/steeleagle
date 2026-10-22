@@ -7,7 +7,6 @@ import (
 	"net/netip"
 	"os"
 	"path/filepath"
-	"slices"
 	"testing"
 
 	"github.com/adrg/xdg"
@@ -43,9 +42,9 @@ func callerContext(ip string) context.Context {
 	return metadata.NewIncomingContext(context.Background(), metadata.Pairs(callerHeader, ip+":41234"))
 }
 
-// TestLcsCert ensures that a cert is generated for the Gabriel server name and
-// saved with its key, that the saved cert is reused, and that an invalid cert
-// is replaced.
+// TestLcsCert ensures that a cert is generated for the Uriel server name and
+// saved with its key, that the saved cert is reused, and that an invalid cert,
+// or one for another name, is replaced.
 func TestLcsCert(t *testing.T) {
 	d := newTestOrchestrator(t)
 	first, err := d.lcsCert()
@@ -58,7 +57,7 @@ func TestLcsCert(t *testing.T) {
 	}
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil || cert.VerifyHostname(lcsServerName) != nil {
-		t.Errorf("expected a cert for gabriel, got %v, %v", cert, err)
+		t.Errorf("expected a cert for uriel, got %v, %v", cert, err)
 	}
 	dir := filepath.Join(xdg.DataHome, "steeleagle", LcsIdentityDirName)
 	if info, err := os.Stat(filepath.Join(dir, LcsKeyFileName)); err != nil || info.Mode().Perm() != 0600 {
@@ -71,23 +70,30 @@ func TestLcsCert(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, LcsCertFileName), []byte("garbage"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if replaced, err := d.lcsCert(); err != nil || replaced == first {
+	replaced, err := d.lcsCert()
+	if err != nil || replaced == first {
 		t.Errorf("expected invalid cert replaced, got %v", err)
+	}
+
+	// A cert for the name Gabriel clients connected with is replaced
+	old, _, err := generateCert("gabriel")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, LcsCertFileName), old, 0644); err != nil {
+		t.Fatal(err)
+	}
+	if renamed, err := d.lcsCert(); err != nil || renamed == replaced {
+		t.Errorf("expected cert for another name replaced, got %v", err)
 	}
 }
 
 // TestRegisterOrchestrator ensures that a daemon registering its vehicles gets
 // the local compute cert and port back, sharing one connection to it that is
-// replaced when it registers on another port, that only engines marked as
-// default targets are returned, and that vehicles that aren't on the calling
-// daemon are rejected.
+// replaced when it registers on another port, and that vehicles that aren't on
+// the calling daemon are rejected.
 func TestRegisterOrchestrator(t *testing.T) {
 	d := newTestOrchestrator(t)
-	d.Config.Engines = []config.EngineField{
-		{Name: "yolo", DefaultTarget: true},
-		{Name: "depth"},
-		{Name: "ocr", DefaultTarget: true},
-	}
 	ctx := callerContext("100.64.0.7")
 	req := daemonpb.RegisterOrchestratorRequest_builder{
 		Vehicles: []string{"100.64.0.7/harpy", "100.64.0.7/kestrel"},
@@ -99,9 +105,6 @@ func TestRegisterOrchestrator(t *testing.T) {
 	}
 	if resp.GetPort() != 9001 || resp.GetCert() == "" {
 		t.Errorf("expected cert and lcs port 9001, got %v", resp)
-	}
-	if got := resp.GetDefaultFlowTargets(); !slices.Equal(got, []string{"yolo", "ocr"}) {
-		t.Errorf("expected default flow targets [yolo ocr], got %v", got)
 	}
 	// Registering again reuses the connection to the daemon
 	if _, err := d.RegisterOrchestrator(ctx, req); err != nil {

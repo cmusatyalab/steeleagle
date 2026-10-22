@@ -1,7 +1,7 @@
 [plugin]
 # Name of the plugin
 name = "YOLO Qualcomm"
-# Plugin type: (driver, engine, commander, monitor, simulator, extra)
+# Plugin type: (driver, engine, monitor, simulator, extra)
 type = "engine"
 # Description of the plugin (optional)
 description = "YOLO detection on QNN-enabled hardware"
@@ -21,5 +21,5 @@ default = 0.75
 type = "detection"
 # Input types, enforced at dataflow creation
 inputs = ["steeleagle_protocol/v1/messages/frame/RawFrame"]
-# Result type, not type enforced
+# Result type, not type enforced (optional, if left blank this engine is a sink)
 result = "steeleagle_protocol/v1/messages/result/DetectionResult"

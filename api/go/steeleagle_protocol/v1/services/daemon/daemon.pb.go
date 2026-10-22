@@ -34,7 +34,6 @@ const (
 	ServiceCategory_SERVICE_CATEGORY_VEHICLE     ServiceCategory = 1 // vehicle service
 	ServiceCategory_SERVICE_CATEGORY_ENGINE      ServiceCategory = 2 // engine service
 	ServiceCategory_SERVICE_CATEGORY_MONITOR     ServiceCategory = 3 // monitor service
-	ServiceCategory_SERVICE_CATEGORY_COMMANDER   ServiceCategory = 4 // commander service
 	ServiceCategory_SERVICE_CATEGORY_SIMULATOR   ServiceCategory = 5 // simulator service
 	ServiceCategory_SERVICE_CATEGORY_EXTRA       ServiceCategory = 6 // extra service
 )
@@ -46,7 +45,6 @@ var (
 		1: "SERVICE_CATEGORY_VEHICLE",
 		2: "SERVICE_CATEGORY_ENGINE",
 		3: "SERVICE_CATEGORY_MONITOR",
-		4: "SERVICE_CATEGORY_COMMANDER",
 		5: "SERVICE_CATEGORY_SIMULATOR",
 		6: "SERVICE_CATEGORY_EXTRA",
 	}
@@ -55,7 +53,6 @@ var (
 		"SERVICE_CATEGORY_VEHICLE":     1,
 		"SERVICE_CATEGORY_ENGINE":      2,
 		"SERVICE_CATEGORY_MONITOR":     3,
-		"SERVICE_CATEGORY_COMMANDER":   4,
 		"SERVICE_CATEGORY_SIMULATOR":   5,
 		"SERVICE_CATEGORY_EXTRA":       6,
 	}
@@ -155,12 +152,11 @@ func (b0 RegisterOrchestratorRequest_builder) Build() *RegisterOrchestratorReque
 }
 
 type RegisterOrchestratorResponse struct {
-	state                         protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Cert               string                 `protobuf:"bytes,1,opt,name=cert,proto3"`
-	xxx_hidden_Port               int32                  `protobuf:"varint,2,opt,name=port,proto3"`
-	xxx_hidden_DefaultFlowTargets []string               `protobuf:"bytes,3,rep,name=default_flow_targets,json=defaultFlowTargets,proto3"`
-	unknownFields                 protoimpl.UnknownFields
-	sizeCache                     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Cert string                 `protobuf:"bytes,1,opt,name=cert,proto3"`
+	xxx_hidden_Port int32                  `protobuf:"varint,2,opt,name=port,proto3"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *RegisterOrchestratorResponse) Reset() {
@@ -202,13 +198,6 @@ func (x *RegisterOrchestratorResponse) GetPort() int32 {
 	return 0
 }
 
-func (x *RegisterOrchestratorResponse) GetDefaultFlowTargets() []string {
-	if x != nil {
-		return x.xxx_hidden_DefaultFlowTargets
-	}
-	return nil
-}
-
 func (x *RegisterOrchestratorResponse) SetCert(v string) {
 	x.xxx_hidden_Cert = v
 }
@@ -217,16 +206,11 @@ func (x *RegisterOrchestratorResponse) SetPort(v int32) {
 	x.xxx_hidden_Port = v
 }
 
-func (x *RegisterOrchestratorResponse) SetDefaultFlowTargets(v []string) {
-	x.xxx_hidden_DefaultFlowTargets = v
-}
-
 type RegisterOrchestratorResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Cert               string
-	Port               int32
-	DefaultFlowTargets []string
+	Cert string
+	Port int32
 }
 
 func (b0 RegisterOrchestratorResponse_builder) Build() *RegisterOrchestratorResponse {
@@ -235,7 +219,6 @@ func (b0 RegisterOrchestratorResponse_builder) Build() *RegisterOrchestratorResp
 	_, _ = b, x
 	x.xxx_hidden_Cert = b.Cert
 	x.xxx_hidden_Port = b.Port
-	x.xxx_hidden_DefaultFlowTargets = b.DefaultFlowTargets
 	return m0
 }
 
@@ -1426,11 +1409,10 @@ const file_steeleagle_protocol_v1_services_daemon_daemon_proto_rawDesc = "" +
 	"3steeleagle_protocol/v1/services/daemon/daemon.proto\x12&steeleagle_protocol.v1.services.daemon\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/duration.proto\"M\n" +
 	"\x1bRegisterOrchestratorRequest\x12\x1a\n" +
 	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12\x12\n" +
-	"\x04port\x18\x02 \x01(\x05R\x04port\"x\n" +
+	"\x04port\x18\x02 \x01(\x05R\x04port\"F\n" +
 	"\x1cRegisterOrchestratorResponse\x12\x12\n" +
 	"\x04cert\x18\x01 \x01(\tR\x04cert\x12\x12\n" +
-	"\x04port\x18\x02 \x01(\x05R\x04port\x120\n" +
-	"\x14default_flow_targets\x18\x03 \x03(\tR\x12defaultFlowTargets\"3\n" +
+	"\x04port\x18\x02 \x01(\x05R\x04port\"3\n" +
 	"\x10ConfigureRequest\x12\x1f\n" +
 	"\vconfig_toml\x18\x01 \x01(\tR\n" +
 	"configToml\"\x13\n" +
@@ -1479,15 +1461,14 @@ const file_steeleagle_protocol_v1_services_daemon_daemon_proto_rawDesc = "" +
 	"\bpackages\x18\x01 \x03(\v2/.steeleagle_protocol.v1.services.daemon.PackageR\bpackages\"(\n" +
 	"\x14RemovePackageRequest\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\"\x17\n" +
-	"\x15RemovePackageResponse*\xe8\x01\n" +
+	"\x15RemovePackageResponse*\xea\x01\n" +
 	"\x0fServiceCategory\x12 \n" +
 	"\x1cSERVICE_CATEGORY_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18SERVICE_CATEGORY_VEHICLE\x10\x01\x12\x1b\n" +
 	"\x17SERVICE_CATEGORY_ENGINE\x10\x02\x12\x1c\n" +
 	"\x18SERVICE_CATEGORY_MONITOR\x10\x03\x12\x1e\n" +
-	"\x1aSERVICE_CATEGORY_COMMANDER\x10\x04\x12\x1e\n" +
 	"\x1aSERVICE_CATEGORY_SIMULATOR\x10\x05\x12\x1a\n" +
-	"\x16SERVICE_CATEGORY_EXTRA\x10\x062\xaa\n" +
+	"\x16SERVICE_CATEGORY_EXTRA\x10\x06\"\x04\b\x04\x10\x04*\x1aSERVICE_CATEGORY_COMMANDER2\xaa\n" +
 	"\n" +
 	"\rDaemonService\x12\xa3\x01\n" +
 	"\x14RegisterOrchestrator\x12C.steeleagle_protocol.v1.services.daemon.RegisterOrchestratorRequest\x1aD.steeleagle_protocol.v1.services.daemon.RegisterOrchestratorResponse\"\x00\x12\x82\x01\n" +

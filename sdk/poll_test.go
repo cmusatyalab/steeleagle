@@ -155,7 +155,7 @@ func TestActionPollerModeMismatchRecoversWithinStall(t *testing.T) {
 			mode = telemetrypb.Mode_MODE_TAKEOFF
 		}
 		tel := telemetrypb.Telemetry_builder{Mode: modeP(mode), MotionStatus: motionStatusP(status)}.Build()
-		return vehiclepb.GetTelemetryResponse_builder{Telemetry: tel}.Build(), nil
+		return vehiclepb.GetTelemetryResponse_builder{Telemetry: []*telemetrypb.Telemetry{tel}}.Build(), nil
 	}
 	v := testVehicleContext(context.Background(), respond)
 
@@ -179,7 +179,7 @@ func TestActionPollerHonorsPollInterval(t *testing.T) {
 	calls := 0
 	v := testVehicleContext(context.Background(), func() (*vehiclepb.GetTelemetryResponse, error) {
 		calls++
-		return vehiclepb.GetTelemetryResponse_builder{Telemetry: tel}.Build(), nil
+		return vehiclepb.GetTelemetryResponse_builder{Telemetry: []*telemetrypb.Telemetry{tel}}.Build(), nil
 	})
 
 	const (
@@ -232,7 +232,7 @@ func TestActionPollerZeroTimeoutNeverTimesOut(t *testing.T) {
 			Mode:         modeP(telemetrypb.Mode_MODE_TAKEOFF),
 			MotionStatus: motionStatusP(status),
 		}.Build()
-		return vehiclepb.GetTelemetryResponse_builder{Telemetry: tel}.Build(), nil
+		return vehiclepb.GetTelemetryResponse_builder{Telemetry: []*telemetrypb.Telemetry{tel}}.Build(), nil
 	}
 	v := testVehicleContext(context.Background(), respond)
 
@@ -322,7 +322,7 @@ func TestGuidancePollerSetpointRecoversWithinStall(t *testing.T) {
 			reported = setpoint
 		}
 		tel := telemetryForGuidance(reported, setpoint, telemetrypb.MotionStatus_MOTION_STATUS_HOLDING)
-		return vehiclepb.GetTelemetryResponse_builder{Telemetry: tel}.Build(), nil
+		return vehiclepb.GetTelemetryResponse_builder{Telemetry: []*telemetrypb.Telemetry{tel}}.Build(), nil
 	}
 	v := testVehicleContext(context.Background(), respond)
 
@@ -350,7 +350,7 @@ func TestGuidancePollerTimeout(t *testing.T) {
 		lat := 1.0 - float64(time.Since(start))/float64(time.Second)*0.0000001
 		actual := commonpb.GlobalPosition_builder{Latitude: f64(lat), Longitude: f64(0)}.Build()
 		tel := telemetryForGuidance(setpoint, actual, telemetrypb.MotionStatus_MOTION_STATUS_IN_TRANSIT)
-		return vehiclepb.GetTelemetryResponse_builder{Telemetry: tel}.Build(), nil
+		return vehiclepb.GetTelemetryResponse_builder{Telemetry: []*telemetrypb.Telemetry{tel}}.Build(), nil
 	})
 
 	err := guidancePoller(v, resp)(WaitOptions{Timeout: 20 * time.Millisecond, Stall: time.Hour, Tolerances: tol})
@@ -412,7 +412,7 @@ func TestGuidancePollerStallDetected(t *testing.T) {
 			}
 			actual := commonpb.GlobalPosition_builder{Latitude: f64(lat), Longitude: f64(0)}.Build()
 			tel := telemetryForGuidance(setpoint, actual, telemetrypb.MotionStatus_MOTION_STATUS_IN_TRANSIT)
-			return vehiclepb.GetTelemetryResponse_builder{Telemetry: tel}.Build(), nil
+			return vehiclepb.GetTelemetryResponse_builder{Telemetry: []*telemetrypb.Telemetry{tel}}.Build(), nil
 		})
 
 		err := guidancePoller(v, resp)(WaitOptions{Timeout: 500 * time.Millisecond, Stall: stall, Tolerances: tol})
@@ -440,7 +440,7 @@ func TestGuidancePollerStallDetected(t *testing.T) {
 			call++
 			actual := commonpb.GlobalPosition_builder{Latitude: f64(lat), Longitude: f64(0)}.Build()
 			tel := telemetryForGuidance(setpoint, actual, telemetrypb.MotionStatus_MOTION_STATUS_IN_TRANSIT)
-			return vehiclepb.GetTelemetryResponse_builder{Telemetry: tel}.Build(), nil
+			return vehiclepb.GetTelemetryResponse_builder{Telemetry: []*telemetrypb.Telemetry{tel}}.Build(), nil
 		})
 
 		err := guidancePoller(v, resp)(WaitOptions{Timeout: time.Hour, Stall: 30 * time.Millisecond, Interval: time.Millisecond, Tolerances: tol})
@@ -540,7 +540,7 @@ func TestGimbalPollerSetpointRecoversWithinStall(t *testing.T) {
 			reported = setpoint
 		}
 		tel := telemetryForGimbal(reported, setpoint)
-		return vehiclepb.GetTelemetryResponse_builder{Telemetry: tel}.Build(), nil
+		return vehiclepb.GetTelemetryResponse_builder{Telemetry: []*telemetrypb.Telemetry{tel}}.Build(), nil
 	}
 	v := testVehicleContext(context.Background(), respond)
 

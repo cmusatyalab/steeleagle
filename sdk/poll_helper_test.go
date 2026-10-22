@@ -26,7 +26,7 @@ func (f *fakeDataClient) GetTelemetry(ctx context.Context, in *vehiclepb.GetTele
 
 // constantTelemetry always returns the same telemetry snapshot.
 func constantTelemetry(tel *telemetrypb.Telemetry) func() (*vehiclepb.GetTelemetryResponse, error) {
-	resp := vehiclepb.GetTelemetryResponse_builder{Telemetry: tel}.Build()
+	resp := vehiclepb.GetTelemetryResponse_builder{Telemetry: []*telemetrypb.Telemetry{tel}}.Build()
 	return func() (*vehiclepb.GetTelemetryResponse, error) { return resp, nil }
 }
 

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	daemonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon"
-	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
 )
 
 //go:embed defaults/laws.toml
@@ -60,33 +59,31 @@ var startOrder = []daemonpb.ServiceCategory{
 	daemonpb.ServiceCategory_SERVICE_CATEGORY_SIMULATOR,
 	daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE,
 	daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE,
-	daemonpb.ServiceCategory_SERVICE_CATEGORY_COMMANDER,
 	daemonpb.ServiceCategory_SERVICE_CATEGORY_MONITOR,
 	daemonpb.ServiceCategory_SERVICE_CATEGORY_EXTRA,
 }
 
 // categories describes how the services of each category are run.
 var categories = map[daemonpb.ServiceCategory]categoryInfo{
-	daemonpb.ServiceCategory_SERVICE_CATEGORY_SIMULATOR: {name: "simulator", pluginType: "simulator", dir: "simulators", code: listener.ExternalCode},
-	daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE:    {name: "engine", pluginType: "engine", dir: "engines", code: listener.ExternalCode, restartable: true},
-	daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE:   {name: "vehicle", pluginType: "driver", dir: "vehicles", code: listener.UnknownCode, restartable: true},
-	daemonpb.ServiceCategory_SERVICE_CATEGORY_COMMANDER: {name: "commander", pluginType: "commander", dir: "commanders", code: listener.PrivilegedCode},
-	daemonpb.ServiceCategory_SERVICE_CATEGORY_MONITOR:   {name: "monitor", pluginType: "monitor", dir: "monitors", code: listener.ExternalCode, restartable: true},
-	daemonpb.ServiceCategory_SERVICE_CATEGORY_EXTRA:     {name: "extra", pluginType: "extra", dir: "extras", code: listener.UnknownCode},
+	daemonpb.ServiceCategory_SERVICE_CATEGORY_SIMULATOR: {name: "simulator", pluginType: "simulator", dir: "simulators"},
+	daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE:    {name: "engine", pluginType: "engine", dir: "engines", restartable: true},
+	daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE:   {name: "vehicle", pluginType: "driver", dir: "vehicles", restartable: true},
+	daemonpb.ServiceCategory_SERVICE_CATEGORY_MONITOR:   {name: "monitor", pluginType: "monitor", dir: "monitors", restartable: true},
+	daemonpb.ServiceCategory_SERVICE_CATEGORY_EXTRA:     {name: "extra", pluginType: "extra", dir: "extras"},
 }
 
 // Names of the local compute service cert and key files within its identity
-// directory, as Gabriel expects them, the name Gabriel clients connect with,
+// directory, as Uriel expects them, the name Uriel clients connect with,
 // and how long a generated cert is valid.
 const (
 	LcsCertFileName = "certificate.der"
 	LcsKeyFileName  = "key.der"
-	lcsServerName   = "gabriel"
+	lcsServerName   = "uriel"
 	lcsCertValidity = 10 * 365 * 24 * time.Hour
 )
 
 // Directory within the data directory where the local compute service's
-// Gabriel server keeps its cert and key, and the host it binds on.
+// Uriel server keeps its cert and key, and the host it binds on.
 const (
 	LcsIdentityDirName = "lcs"
 	lcsBindHost        = "0.0.0.0"

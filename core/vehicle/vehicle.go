@@ -9,6 +9,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	missionpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/mission"
 	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
 	"github.com/cmusatyalab/steeleagle/config"
 	"github.com/cmusatyalab/steeleagle/v4/core/util"
@@ -16,22 +17,27 @@ import (
 	"github.com/cmusatyalab/steeleagle/v4/core/util/plugin"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/policy"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/router"
+	uriel "github.com/cmusatyalab/uriel/go"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
+	bolt "go.etcd.io/bbolt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
 type pluginInfo struct {
-	obj  plugin.Plugin    // plugin object
-	ln   net.Listener     // listener for plugin
-	conn *grpc.ClientConn // client connection to plugin
+	obj    plugin.Plugin      // plugin object
+	ln     net.Listener       // listener for plugin
+	conn   *grpc.ClientConn   // client connection to plugin
+	name   string             // name of what the plugin runs, e.g. the mission file
+	cancel context.CancelFunc // cancel function for the plugin's context, if it has its own
 }
 
 type Vehicle struct {
 	vehiclepb.UnimplementedDataServiceServer
 	vehiclepb.UnimplementedSafetyServiceServer
 	vehiclepb.UnimplementedLoaderServiceServer
+	missionpb.UnimplementedMissionServiceServer
 	Name       string               // vehicle name
 	RunDir     string               // path to vehicle runtime directory
 	MissionDir string               // path to vehicle saved mission directory
@@ -44,8 +50,17 @@ type Vehicle struct {
 	mission    *pluginInfo          // mission plugin reference
 	missionMu  sync.Mutex           // mutex to protect mission updates
 	daemonLn   net.Listener         // daemon listener, given on each start
-	remoteAddr string               // remote compute service address, if any
-	remoteCert string               // remote compute service cert, if any
+	lcsName    string               // local compute service name
+	rcsAddr    string               // remote compute service address, if any
+	rcsCert    []byte               // remote compute service cert in DER, if any
+	uriel      *uriel.Client        // Uriel client for the vehicle's dataflows
+	db         *bolt.DB             // data database, open while running
+	runCtx     context.Context      // context of the current run
+	dataWg     sync.WaitGroup       // telemetry reader of the current run
+	flow       *dataflow            // current dataflow, if any
+	flowSubs   *subscribers         // subscribers to the current dataflow, while running
+	producers  map[string]bool      // producers added to the Uriel client
+	flowMu     sync.Mutex           // mutex to protect dataflow updates
 	mainLn     net.Listener         // main socket listener
 	adminLn    net.Listener         // in-process admin listener
 	adminConn  *grpc.ClientConn     // admin client connection
@@ -64,11 +79,13 @@ func NewVehicle(
 	options ...VehicleOption,
 ) (*Vehicle, error) {
 	vehicle := &Vehicle{
-		Name:    uuid.New().String(),
-		Config:  driverConfig,
-		lawToml: DefaultLaw,
-		driver:  &pluginInfo{obj: driver},
-		log:     zerolog.New(os.Stderr).With().Timestamp().Logger(),
+		Name:      uuid.New().String(),
+		Config:    driverConfig,
+		lawToml:   DefaultLaw,
+		driver:    &pluginInfo{obj: driver},
+		lcsName:   DefaultLcsName,
+		producers: make(map[string]bool),
+		log:       zerolog.New(os.Stderr).With().Timestamp().Logger(),
 	}
 	for _, option := range options {
 		option(vehicle)
@@ -90,14 +107,38 @@ func NewVehicle(
 	}
 	vehicle.log.Debug().Str("directory", vehicle.MissionDir).
 		Msg("vehicle mission directory configured")
+
+	// The Uriel client lives as long as the vehicle, so its dataflow outlasts
+	// a run; both compute services may start after it
+	var urielOptions []uriel.ClientOption
+	if vehicle.rcsAddr != "" {
+		urielOptions = append(urielOptions, uriel.WithRemoteServer(vehicle.rcsAddr, vehicle.rcsCert))
+	}
+	vehicle.uriel, err = uriel.NewClient(vehicle.Name, vehicle.lcsName, urielOptions...)
+	if err != nil {
+		vehicle.log.Error().Err(err).Str("lcs", vehicle.lcsName).Str("rcs", vehicle.rcsAddr).
+			Msg("could not create uriel client")
+		return nil, err
+	}
+	vehicle.log.Debug().Str("lcs", vehicle.lcsName).Str("rcs", vehicle.rcsAddr).
+		Msg("uriel client created")
 	return vehicle, nil
+}
+
+// Close releases the vehicle's Uriel client, which removes its dataflow. The
+// vehicle must be stopped, and can't be started again.
+func (v *Vehicle) Close() error {
+	if v.Running.Load() {
+		return fmt.Errorf("vehicle still running")
+	}
+	return v.uriel.Close()
 }
 
 // Starts the vehicle but does not wait for it to stop. After a successful
 // call to Start, the vehicle will keep running until it encounters a fatal
 // error or the provided context is canceled. A stopped vehicle can be started
 // again. The vehicle serves daemonLn, if not nil, for the daemon's calls, and
-// closes it when the run stops; each start needs a new listener.
+// closes it when the run stops.
 func (v *Vehicle) Start(ctx context.Context, daemonLn net.Listener) (err error) {
 	if !v.Running.CompareAndSwap(false, true) {
 		return fmt.Errorf("vehicle already running")
@@ -106,9 +147,10 @@ func (v *Vehicle) Start(ctx context.Context, daemonLn net.Listener) (err error) 
 	// Set up new context
 	ctx, cancel := context.WithCancel(ctx)
 	v.cancel = cancel
+	v.runCtx = ctx
 
 	// Release anything acquired so far if startup fails part way through
-	v.mainLn, v.adminLn, v.adminConn, v.daemonLn = nil, nil, nil, daemonLn
+	v.mainLn, v.adminLn, v.adminConn, v.daemonLn, v.db = nil, nil, nil, daemonLn, nil
 	defer func() {
 		if err != nil {
 			v.release()
@@ -125,6 +167,13 @@ func (v *Vehicle) Start(ctx context.Context, daemonLn net.Listener) (err error) 
 	}
 	v.log.Debug().Str("directory", v.RunDir).
 		Msg("vehicle runtime directory configured")
+
+	// Open the data database and start recording telemetry and the results
+	// of the current dataflow, if any
+	if err = v.startData(ctx); err != nil {
+		v.log.Error().Err(err).Msg("could not start data service")
+		return err
+	}
 
 	// Policy and law setup; the policy starts each run in the law's initial state
 	law, err := config.ParseControlLawFromBytes(v.lawToml)
@@ -155,6 +204,7 @@ func (v *Vehicle) Start(ctx context.Context, daemonLn net.Listener) (err error) 
 	vehiclepb.RegisterDataServiceServer(v.server, v)
 	vehiclepb.RegisterSafetyServiceServer(v.server, v)
 	vehiclepb.RegisterLoaderServiceServer(v.server, v)
+	missionpb.RegisterMissionServiceServer(v.server, v)
 
 	// Create a main socket listener with AuthCode ExternalCode; the main
 	// socket is a general endpoint for arbitrary entities to make API calls to
@@ -192,6 +242,24 @@ func (v *Vehicle) Start(ctx context.Context, daemonLn net.Listener) (err error) 
 		v.router.AddServiceRoute(s, v.driver.conn)
 	}
 	v.log.Info().Str("driver", v.Config.Plugin.Name).Msg("driver plugin started")
+
+	// The driver streams telemetry on every run, and the current dataflow's
+	// cameras, if any, since a restarted driver streams nothing
+	err = v.streamTelemetry(ctx)
+	if err == nil {
+		v.flowMu.Lock()
+		if v.flow != nil {
+			err = v.streamCameras(ctx, v.flow.cameras)
+		}
+		v.flowMu.Unlock()
+	}
+	if err != nil {
+		v.log.Error().Err(err).Msg("could not start driver streams, aborting")
+		// Wait for the driver to stop, so the vehicle can be started again
+		v.cancel()
+		v.driver.obj.Wait()
+		return err
+	}
 
 	// Serve the main and admin sockets
 	server, main, admin, daemon := v.server, v.mainLn, v.adminLn, v.daemonLn
@@ -272,6 +340,10 @@ func (v *Vehicle) Wait() error {
 // cleanup releases any associated system resources once the driver has
 // exited, then marks the run as stopped with its fatal error, if any.
 func (v *Vehicle) cleanup(shutdown chan struct{}, err error) {
+	// The mission is stopped first, since its calls would hold up the server
+	v.missionMu.Lock()
+	v.stopMission()
+	v.missionMu.Unlock()
 	v.server.GracefulStop()
 	v.release()
 	v.mu.Lock()
@@ -299,6 +371,7 @@ func (v *Vehicle) release() {
 		v.daemonLn.Close()
 	}
 	v.cancel()
+	v.stopData()
 	if v.RunDir != "" {
 		if err := os.RemoveAll(v.RunDir); err != nil {
 			v.log.Error().Err(err).Str("directory", v.RunDir).

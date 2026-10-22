@@ -2,6 +2,8 @@ package daemon
 
 import (
 	"context"
+	"encoding/pem"
+	"fmt"
 	"net"
 	"net/netip"
 	"strconv"
@@ -109,10 +111,14 @@ func (d *Daemon) registerWithOrchestrator(ctx context.Context) error {
 		return err
 	}
 
-	// Set RCS information
+	// Set RCS information; the cert comes as PEM, but Uriel takes DER
+	block, _ := pem.Decode([]byte(resp.GetCert()))
+	if block == nil || block.Type != "CERTIFICATE" {
+		return fmt.Errorf("orchestrator returned an invalid remote compute cert")
+	}
 	d.selfAddr = self
 	d.rcsAddr = net.JoinHostPort(orchestrator.String(), strconv.Itoa(int(resp.GetPort())))
-	d.rcsCert = resp.GetCert()
+	d.rcsCert = block.Bytes
 	d.log.Info().Str("orchestrator", d.Config.Daemon.Orchestrator).Strs("vehicles", vehicles).
 		Str("rcs", d.rcsAddr).Msg("registered with orchestrator")
 	return nil

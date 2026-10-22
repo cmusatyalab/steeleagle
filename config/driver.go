@@ -32,10 +32,6 @@ type DriverCamera struct {
 	// Whether or not the camera stream is encodeable; some raw cameras
 	// do not output frames that can be encoded
 	Encode bool `toml:"encode"`
-	// Whether or not the camera is a default stream at startup (optional);
-	// the first default primary camera and all default secondary cameras
-	// are streamed when the vehicle starts
-	Default bool `toml:"default,omitempty"`
 }
 
 type DriverSupported struct {
@@ -126,27 +122,4 @@ func (d *DriverCap) HasService(name string) bool {
 	}
 	_, ok := d.supportedSet[name]
 	return ok
-}
-
-// DefaultCameras returns the cameras to stream at vehicle startup: the first
-// default primary camera, followed by every default secondary camera, in
-// config order.
-func (d *DriverCap) DefaultCameras() []DriverCamera {
-	var cams []DriverCamera
-	primary := false
-	for _, c := range d.Cameras {
-		if !c.Default {
-			continue
-		}
-		if c.Primary {
-			if primary {
-				continue
-			}
-			primary = true
-			cams = append([]DriverCamera{c}, cams...)
-			continue
-		}
-		cams = append(cams, c)
-	}
-	return cams
 }

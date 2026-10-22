@@ -17,14 +17,12 @@ class ServiceCategory(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     SERVICE_CATEGORY_VEHICLE: _ClassVar[ServiceCategory]
     SERVICE_CATEGORY_ENGINE: _ClassVar[ServiceCategory]
     SERVICE_CATEGORY_MONITOR: _ClassVar[ServiceCategory]
-    SERVICE_CATEGORY_COMMANDER: _ClassVar[ServiceCategory]
     SERVICE_CATEGORY_SIMULATOR: _ClassVar[ServiceCategory]
     SERVICE_CATEGORY_EXTRA: _ClassVar[ServiceCategory]
 SERVICE_CATEGORY_UNSPECIFIED: ServiceCategory
 SERVICE_CATEGORY_VEHICLE: ServiceCategory
 SERVICE_CATEGORY_ENGINE: ServiceCategory
 SERVICE_CATEGORY_MONITOR: ServiceCategory
-SERVICE_CATEGORY_COMMANDER: ServiceCategory
 SERVICE_CATEGORY_SIMULATOR: ServiceCategory
 SERVICE_CATEGORY_EXTRA: ServiceCategory
 
@@ -37,14 +35,12 @@ class RegisterOrchestratorRequest(_message.Message):
     def __init__(self, vehicles: _Optional[_Iterable[str]] = ..., port: _Optional[int] = ...) -> None: ...
 
 class RegisterOrchestratorResponse(_message.Message):
-    __slots__ = ("cert", "port", "default_flow_targets")
+    __slots__ = ("cert", "port")
     CERT_FIELD_NUMBER: _ClassVar[int]
     PORT_FIELD_NUMBER: _ClassVar[int]
-    DEFAULT_FLOW_TARGETS_FIELD_NUMBER: _ClassVar[int]
     cert: str
     port: int
-    default_flow_targets: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, cert: _Optional[str] = ..., port: _Optional[int] = ..., default_flow_targets: _Optional[_Iterable[str]] = ...) -> None: ...
+    def __init__(self, cert: _Optional[str] = ..., port: _Optional[int] = ...) -> None: ...
 
 class ConfigureRequest(_message.Message):
     __slots__ = ("config_toml",)

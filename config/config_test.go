@@ -26,6 +26,7 @@ func TestDaemonConfigParsesExample(t *testing.T) {
 
 	wantVehicles := []VehicleField{{
 		Name: "harpy",
+		Auth: AuthAdmin,
 		Plugin: PluginField{
 			Plugin:  "parrot_anafi",
 			Package: "github.com/cmusatyalab/steeleagle_plugins/drivers/parrot",
@@ -37,28 +38,24 @@ func TestDaemonConfigParsesExample(t *testing.T) {
 	}
 
 	wantEngines := []EngineField{{
-		Name:          "yolo",
-		DefaultTarget: true,
+		Name: "yolo",
+		Auth: AuthExternal,
 		Plugin: PluginField{
 			Plugin:  "yolo_qnn",
 			Package: "github.com/cmusatyalab/steeleagle_plugins/engines/yolo",
 			Args:    map[string]interface{}{"confidence": 0.0},
 		},
-	}}
-	if !reflect.DeepEqual(c.Engines, wantEngines) {
-		t.Errorf("Engines = %+v, want %+v", c.Engines, wantEngines)
-	}
-
-	wantCommanders := []ServiceField{{
+	}, {
 		Name: "gcs",
+		Auth: AuthPrivileged,
 		Plugin: PluginField{
 			Plugin:  "gcs",
 			Package: "github.com/cmusatyalab/steeleagle_plugins/commanders/gcs",
 			Args:    map[string]interface{}{},
 		},
 	}}
-	if !reflect.DeepEqual(c.Commanders, wantCommanders) {
-		t.Errorf("Commanders = %+v, want %+v", c.Commanders, wantCommanders)
+	if !reflect.DeepEqual(c.Engines, wantEngines) {
+		t.Errorf("Engines = %+v, want %+v", c.Engines, wantEngines)
 	}
 
 	if len(c.Monitors) != 0 {
@@ -70,6 +67,7 @@ func TestDaemonConfigParsesExample(t *testing.T) {
 
 	wantSimulator := ServiceField{
 		Name: "aviary",
+		Auth: AuthExternal,
 		Plugin: PluginField{
 			Plugin:  "aviary",
 			Package: "github.com/cmusatyalab/steeleagle_plugins/simulators/aviary",
@@ -132,24 +130,59 @@ func TestValidateServices(t *testing.T) {
 	}
 
 	cross := DaemonConfig{
-		Vehicles:   []VehicleField{{Name: "a"}},
-		Engines:    []EngineField{{Name: "a"}},
-		Commanders: []ServiceField{{Name: "a"}},
+		Vehicles: []VehicleField{{Name: "a"}},
+		Engines:  []EngineField{{Name: "a"}},
+		Monitors: []ServiceField{{Name: "a"}},
 	}
 	if err := cross.ValidateServices(); err != nil {
 		t.Errorf("ValidateServices() with names shared across lists = %v, want nil", err)
 	}
 
 	dupes := map[string]DaemonConfig{
-		"vehicles":   {Vehicles: []VehicleField{{Name: "a"}, {Name: "a"}}},
-		"engines":    {Engines: []EngineField{{Name: "a"}, {Name: "a"}}},
-		"commanders": {Commanders: []ServiceField{{Name: "a"}, {Name: "a"}}},
-		"monitors":   {Monitors: []ServiceField{{Name: "a"}, {Name: "a"}}},
-		"extras":     {Extras: []ServiceField{{Name: "a"}, {Name: "a"}}},
+		"vehicles": {Vehicles: []VehicleField{{Name: "a"}, {Name: "a"}}},
+		"engines":  {Engines: []EngineField{{Name: "a"}, {Name: "a"}}},
+		"monitors": {Monitors: []ServiceField{{Name: "a"}, {Name: "a"}}},
+		"extras":   {Extras: []ServiceField{{Name: "a"}, {Name: "a"}}},
 	}
 	for list, c := range dupes {
 		if err := c.ValidateServices(); err == nil {
 			t.Errorf("ValidateServices() with duplicate %s = nil, want error", list)
 		}
+	}
+}
+
+// TestValidateServicesAuth checks that every auth level, and no auth, is
+// accepted for each kind of service, and that any other auth is rejected.
+func TestValidateServicesAuth(t *testing.T) {
+	configs := func(auth Auth) map[string]DaemonConfig {
+		return map[string]DaemonConfig{
+			"vehicle":   {Vehicles: []VehicleField{{Name: "a", Auth: auth}}},
+			"engine":    {Engines: []EngineField{{Name: "a", Auth: auth}}},
+			"monitor":   {Monitors: []ServiceField{{Name: "a", Auth: auth}}},
+			"extra":     {Extras: []ServiceField{{Name: "a", Auth: auth}}},
+			"simulator": {Simulator: ServiceField{Name: "a", Auth: auth}},
+		}
+	}
+	for _, auth := range []Auth{"", AuthAdmin, AuthPrivileged, AuthUser, AuthExternal, AuthUnknown} {
+		for kind, c := range configs(auth) {
+			if err := c.ValidateServices(); err != nil {
+				t.Errorf("ValidateServices() with %s auth %q = %v, want nil", kind, auth, err)
+			}
+		}
+	}
+	for kind, c := range configs("root") {
+		if err := c.ValidateServices(); err == nil {
+			t.Errorf("ValidateServices() with %s auth %q = nil, want error", kind, "root")
+		}
+	}
+}
+
+// TestAuthLevel checks that an empty auth defaults to unknown.
+func TestAuthLevel(t *testing.T) {
+	if got := Auth("").Level(); got != AuthUnknown {
+		t.Errorf("Auth(\"\").Level() = %q, want %q", got, AuthUnknown)
+	}
+	if got := AuthUser.Level(); got != AuthUser {
+		t.Errorf("AuthUser.Level() = %q, want %q", got, AuthUser)
 	}
 }

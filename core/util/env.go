@@ -119,6 +119,17 @@ func GetVehicleRunDirByName(name string) (string, error) {
 	return vehiclePath, nil
 }
 
+// GetVehicleDataDirByName returns the persistent data directory for the vehicle
+// with the given name, creating it if it does not exist.
+func GetVehicleDataDirByName(name string) (string, error) {
+	dir := filepath.Join(GetDataHome(), projectDir, vehicleDir, name)
+	err := os.MkdirAll(dir, 0755)
+	if err != nil {
+		return "", err
+	}
+	return dir, nil
+}
+
 // GetVehicleMissionDirByName returns the persistent mission directory for the vehicle
 // with the given name, creating it if it does not exist.
 func GetVehicleMissionDirByName(name string) (string, error) {

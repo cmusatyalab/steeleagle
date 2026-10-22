@@ -25,11 +25,6 @@ class DataServiceStub:
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.SetDataflowRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.SetDataflowResponse.FromString,
                 _registered_method=True)
-        self.RevertToDefaultDataflow = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.vehicle.DataService/RevertToDefaultDataflow',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.RevertToDefaultDataflowRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.RevertToDefaultDataflowResponse.FromString,
-                _registered_method=True)
         self.GetResult = channel.unary_unary(
                 '/steeleagle_protocol.v1.services.vehicle.DataService/GetResult',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetResultRequest.SerializeToString,
@@ -39,11 +34,6 @@ class DataServiceStub:
                 '/steeleagle_protocol.v1.services.vehicle.DataService/GetTelemetry',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetTelemetryRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetTelemetryResponse.FromString,
-                _registered_method=True)
-        self.GetStreamInfo = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.vehicle.DataService/GetStreamInfo',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetStreamInfoRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetStreamInfoResponse.FromString,
                 _registered_method=True)
 
 
@@ -60,19 +50,9 @@ class DataServiceServicer:
         """
         Set the current flow.
 
-        Parses and executes the current flow from TOML bytes.
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def RevertToDefaultDataflow(self, request, context):
-        """
-        Set the current flow back to default.
-
-        Sets the current flow to be the default flow, which relays streams from the
-        driver to both the remote and local backends. Used to restore stream throughput
-        for manual piloting.
+        Parses and executes the current flow from TOML bytes. This becomes the
+        new default dataflow for the vehicle. When missions are completed, it will
+        revert back to this dataflow.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -102,17 +82,6 @@ class DataServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetStreamInfo(self, request, context):
-        """
-        Get all active producers for this vehicle.
-
-        Lists all the producer URIs for this vehicle that have been registered, and
-        whether they are currently active.
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
 
 def add_DataServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -120,11 +89,6 @@ def add_DataServiceServicer_to_server(servicer, server):
                     servicer.SetDataflow,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.SetDataflowRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.SetDataflowResponse.SerializeToString,
-            ),
-            'RevertToDefaultDataflow': grpc.unary_unary_rpc_method_handler(
-                    servicer.RevertToDefaultDataflow,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.RevertToDefaultDataflowRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.RevertToDefaultDataflowResponse.SerializeToString,
             ),
             'GetResult': grpc.unary_unary_rpc_method_handler(
                     servicer.GetResult,
@@ -135,11 +99,6 @@ def add_DataServiceServicer_to_server(servicer, server):
                     servicer.GetTelemetry,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetTelemetryRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetTelemetryResponse.SerializeToString,
-            ),
-            'GetStreamInfo': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetStreamInfo,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetStreamInfoRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetStreamInfoResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -175,33 +134,6 @@ class DataService:
             '/steeleagle_protocol.v1.services.vehicle.DataService/SetDataflow',
             steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.SetDataflowRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.SetDataflowResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def RevertToDefaultDataflow(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/steeleagle_protocol.v1.services.vehicle.DataService/RevertToDefaultDataflow',
-            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.RevertToDefaultDataflowRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.RevertToDefaultDataflowResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -256,33 +188,6 @@ class DataService:
             '/steeleagle_protocol.v1.services.vehicle.DataService/GetTelemetry',
             steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetTelemetryRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetTelemetryResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def GetStreamInfo(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/steeleagle_protocol.v1.services.vehicle.DataService/GetStreamInfo',
-            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetStreamInfoRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetStreamInfoResponse.FromString,
             options,
             channel_credentials,
             insecure,

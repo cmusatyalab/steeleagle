@@ -27,9 +27,8 @@ func (d *Daemon) RegisterOrchestrator(
 		return nil, err
 	}
 	return daemonpb.RegisterOrchestratorResponse_builder{
-		Cert:               cert,
-		Port:               int32(d.Config.Daemon.Lcs),
-		DefaultFlowTargets: d.Config.DefaultTargets(),
+		Cert: cert,
+		Port: int32(d.Config.Daemon.Lcs),
 	}.Build(), nil
 }
 

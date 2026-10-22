@@ -4,15 +4,15 @@ import (
 	"net"
 	"strconv"
 
-	gabriel "github.com/cmusatyalab/gabriel/go"
 	daemonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon"
+	"github.com/cmusatyalab/uriel/go"
 )
 
-// startGabrielServer starts the local compute service, a Gabriel server that
+// startUrielServer starts the local compute service, a Uriel server that
 // accepts remote clients on the LCS port and serves the running engines, each
 // at the endpoint named after it. An engine may start before or after the
 // server.
-func (d *Daemon) startGabrielServer() error {
+func (d *Daemon) startUrielServer() error {
 	// The identity is made before the server starts, so the server presents
 	// the same cert that remote daemons are given
 	identityDir, _, err := d.lcsIdentity()
@@ -20,8 +20,8 @@ func (d *Daemon) startGabrielServer() error {
 		return err
 	}
 	addr := net.JoinHostPort(lcsBindHost, strconv.Itoa(d.Config.Daemon.Lcs))
-	server, err := gabriel.NewServer(d.Config.Daemon.Hostname,
-		gabriel.WithBindAddr(addr), gabriel.WithIdentityDir(identityDir))
+	server, err := uriel.NewServer(d.Config.Daemon.Hostname,
+		uriel.WithBindAddr(addr), uriel.WithIdentityDir(identityDir))
 	if err != nil {
 		return err
 	}
@@ -37,19 +37,19 @@ func (d *Daemon) startGabrielServer() error {
 			return err
 		}
 	}
-	d.gabriel = server
+	d.uriel = server
 	d.log.Info().Str("address", addr).Strs("engines", endpoints).
 		Msg("local compute service started")
 	return nil
 }
 
-// stopGabrielServer stops the local compute service, if it was started.
-func (d *Daemon) stopGabrielServer() {
-	if d.gabriel == nil {
+// stopUrielServer stops the local compute service, if it was started.
+func (d *Daemon) stopUrielServer() {
+	if d.uriel == nil {
 		return
 	}
-	if err := d.gabriel.Close(); err != nil {
+	if err := d.uriel.Close(); err != nil {
 		d.log.Warn().Err(err).Msg("could not stop local compute service")
 	}
-	d.gabriel = nil
+	d.uriel = nil
 }

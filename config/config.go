@@ -29,9 +29,42 @@ type PluginField struct {
 	Args map[string]interface{} `toml:"args"`
 }
 
+// Auth is the privilege level that a service's calls to the daemon carry.
+type Auth string
+
+// Auth levels, from most to least privileged. A service with no auth is
+// AuthUnknown.
+const (
+	AuthAdmin      Auth = "admin"
+	AuthPrivileged Auth = "privileged"
+	AuthUser       Auth = "user"
+	AuthExternal   Auth = "external"
+	AuthUnknown    Auth = "unknown"
+)
+
+// Level returns the auth level, defaulting to AuthUnknown if none is set.
+func (a Auth) Level() Auth {
+	if a == "" {
+		return AuthUnknown
+	}
+	return a
+}
+
+// validate checks that the auth is empty or a known level.
+func (a Auth) validate() error {
+	switch a.Level() {
+	case AuthAdmin, AuthPrivileged, AuthUser, AuthExternal, AuthUnknown:
+		return nil
+	}
+	return fmt.Errorf("invalid auth %q, must be one of %q, %q, %q, %q or %q",
+		string(a), AuthAdmin, AuthPrivileged, AuthUser, AuthExternal, AuthUnknown)
+}
+
 type VehicleField struct {
 	// Name of the vehicle (must be unique within vehicle services)
 	Name string `toml:"name"`
+	// Auth level of the service (optional, defaults to "unknown")
+	Auth Auth `toml:"auth,omitempty"`
 	// Plugin details
 	Plugin PluginField `toml:"plugin"`
 }
@@ -39,8 +72,8 @@ type VehicleField struct {
 type EngineField struct {
 	// Name of the engine (must be unique within engine services)
 	Name string `toml:"name"`
-	// Whether this engine is a default flow target for the vehicle (optional)
-	DefaultTarget bool `toml:"default_target,omitempty"`
+	// Auth level of the service (optional, defaults to "unknown")
+	Auth Auth `toml:"auth,omitempty"`
 	// Plugin details
 	Plugin PluginField `toml:"plugin"`
 }
@@ -48,6 +81,8 @@ type EngineField struct {
 type ServiceField struct {
 	// Name of the service (must be unique within this service list)
 	Name string `toml:"name"`
+	// Auth level of the service (optional, defaults to "unknown")
+	Auth Auth `toml:"auth,omitempty"`
 	// Plugin details
 	Plugin PluginField `toml:"plugin"`
 }
@@ -59,8 +94,6 @@ type DaemonConfig struct {
 	Vehicles []VehicleField `toml:"vehicles"`
 	// List of daemon engines
 	Engines []EngineField `toml:"engines"`
-	// List of daemon commanders
-	Commanders []ServiceField `toml:"commanders"`
 	// List of daemon monitors
 	Monitors []ServiceField `toml:"monitors"`
 	// List of extra daemon services
@@ -69,41 +102,39 @@ type DaemonConfig struct {
 	Simulator ServiceField `toml:"simulator,omitempty"`
 }
 
-// DefaultTargets returns the names of the engines marked as default flow
-// targets.
-func (d *DaemonConfig) DefaultTargets() []string {
-	var targets []string
-	for _, e := range d.Engines {
-		if e.DefaultTarget {
-			targets = append(targets, e.Name)
-		}
-	}
-	return targets
-}
-
-// ValidateServices checks that the names within each service list are unique.
+// ValidateServices checks that the names within each service list are unique,
+// and that every service has a valid auth.
 func (d *DaemonConfig) ValidateServices() error {
-	if err := uniqueNames("vehicles", d.Vehicles, func(v VehicleField) string { return v.Name }); err != nil {
+	vehicle := func(v VehicleField) (string, Auth) { return v.Name, v.Auth }
+	if err := validateList("vehicles", d.Vehicles, vehicle); err != nil {
 		return err
 	}
-	if err := uniqueNames("engines", d.Engines, func(e EngineField) string { return e.Name }); err != nil {
+	engine := func(e EngineField) (string, Auth) { return e.Name, e.Auth }
+	if err := validateList("engines", d.Engines, engine); err != nil {
 		return err
 	}
-	serviceName := func(s ServiceField) string { return s.Name }
-	if err := uniqueNames("commanders", d.Commanders, serviceName); err != nil {
+	service := func(s ServiceField) (string, Auth) { return s.Name, s.Auth }
+	if err := validateList("monitors", d.Monitors, service); err != nil {
 		return err
 	}
-	if err := uniqueNames("monitors", d.Monitors, serviceName); err != nil {
+	if err := validateList("extras", d.Extras, service); err != nil {
 		return err
 	}
-	return uniqueNames("extras", d.Extras, serviceName)
+	if err := d.Simulator.Auth.validate(); err != nil {
+		return fmt.Errorf("simulator %q: %w", d.Simulator.Name, err)
+	}
+	return nil
 }
 
-// uniqueNames returns an error if any two fields in a list share a name.
-func uniqueNames[T any](list string, fields []T, name func(T) string) error {
+// validateList returns an error if any two fields in a list share a name, or
+// if any field has an invalid auth.
+func validateList[T any](list string, fields []T, info func(T) (string, Auth)) error {
 	seen := make(map[string]struct{}, len(fields))
 	for _, f := range fields {
-		n := name(f)
+		n, auth := info(f)
+		if err := auth.validate(); err != nil {
+			return fmt.Errorf("%q in %s: %w", n, list, err)
+		}
 		if _, ok := seen[n]; ok {
 			return fmt.Errorf("duplicate name %q in %s", n, list)
 		}
