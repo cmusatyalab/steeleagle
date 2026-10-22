@@ -41,6 +41,13 @@ gimbal = true
 # cannot be streamed alongside other primary cameras, enforced at
 # dataflow creation
 primary = true
+# Whether or not the camera stream is encodeable; some raw cameras
+# do not output encodeable frames
+encode = true
+# Whether or not the camera is a default stream at startup (optional);
+# the first default primary camera and all default secondary cameras
+# are streamed when the vehicle starts
+default = true
 
 [driver.supported]
 # Services hosted by this driver (optional)

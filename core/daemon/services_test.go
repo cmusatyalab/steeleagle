@@ -82,7 +82,7 @@ func newTestServiceDaemon(t *testing.T) *Daemon {
 func TestGatherServices(t *testing.T) {
 	d := newTestServiceDaemon(t)
 	detector := config.PluginField{Plugin: "detector", Package: testPackageUrl}
-	d.Config.Engines = []config.ServiceField{
+	d.Config.Engines = []config.EngineField{
 		{Name: "yolo", Plugin: detector},
 		{Name: "yolo", Plugin: detector},
 	}
@@ -90,27 +90,29 @@ func TestGatherServices(t *testing.T) {
 	d.Config.Extras = []config.ServiceField{
 		{Name: "missing", Plugin: config.PluginField{Plugin: "detector", Package: "github.com/org/missing"}},
 	}
-	d.Config.Vehicles = []config.VehicleField{{Name: "harpy", Simulate: true, Plugin: detector}}
+	d.Config.Vehicles = []config.VehicleField{{Name: "harpy", Plugin: detector}}
 
 	err := d.gatherServices()
 	if err == nil {
 		t.Fatal("expected errors for broken services")
 	}
 	for _, want := range []string{"duplicate service name", `is a "engine" plugin, not "monitor"`,
-		"could not read plugin", "simulated vehicles are not supported yet"} {
+		"could not read plugin", `is a "engine" plugin, not "driver"`} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("expected error to mention %q, got: %v", want, err)
 		}
 	}
-	all := d.allServices()
-	if len(all) != 1 || len(all[daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE]) != 1 {
+	all := d.selectServices((*serviceInfo).setUp)
+	if len(all) != 1 || all[0].name != "yolo" || all[0].category != daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE {
 		t.Fatalf("expected only engine yolo, got %v", all)
 	}
 	if si := d.findService(daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE, "yolo"); si.running() {
 		t.Error("expected gathered service not to be running")
 	}
-	if names := d.vehicleNames(); len(names) != 0 {
-		t.Errorf("expected no vehicles to register, got %v", names)
+	if vehicles := d.selectServices(func(s *serviceInfo) bool {
+		return s.category == daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE && s.setUp()
+	}); len(vehicles) != 0 {
+		t.Errorf("expected no vehicles to register, got %v", vehicles)
 	}
 
 	// Broken services are listed with their errors, in start order
@@ -128,7 +130,7 @@ func TestGatherServices(t *testing.T) {
 	want := []string{
 		"yolo: ",
 		"yolo: duplicate service name",
-		"harpy: simulated vehicles are not supported yet",
+		`harpy: plugin "detector" is a "engine" plugin, not "driver"`,
 		`watch: plugin "detector" is a "engine" plugin, not "monitor"`,
 		"missing: could not read plugin",
 	}
@@ -179,7 +181,7 @@ func TestStartStopServices(t *testing.T) {
 		t.Skip("pixi not installed")
 	}
 	d := newTestServiceDaemon(t)
-	d.Config.Engines = []config.ServiceField{{
+	d.Config.Engines = []config.EngineField{{
 		Name:   "yolo",
 		Plugin: config.PluginField{Plugin: "detector", Package: testPackageUrl, Args: map[string]any{"confidence": 0.5, "label": "a b's \"c\""}},
 	}}
@@ -191,7 +193,7 @@ func TestStartStopServices(t *testing.T) {
 
 	for i := range 2 {
 		os.Remove(runFile)
-		if err := d.startServices(d.allServices()); err != nil {
+		if err := d.startServices(d.selectServices((*serviceInfo).setUp)); err != nil {
 			t.Fatalf("run %d: start failed: %v", i, err)
 		}
 		var run []byte
@@ -209,12 +211,10 @@ func TestStartStopServices(t *testing.T) {
 				t.Errorf("run %d: expected %s in plugin environment", i, want)
 			}
 		}
-		if !si.running() || si.endpoint != "yolo" {
-			t.Errorf("run %d: expected engine running at endpoint yolo, got %v, %q", i, si.running(), si.endpoint)
+		if !si.running() {
+			t.Errorf("run %d: expected engine running", i)
 		}
-		if err := d.stopServices(d.allServices()); err != nil {
-			t.Fatalf("run %d: stop failed: %v", i, err)
-		}
+		d.stopServices(d.selectServices(nil))
 		if si.running() {
 			t.Errorf("run %d: expected engine stopped", i)
 		}
@@ -230,7 +230,7 @@ func TestServiceHandlers(t *testing.T) {
 	}
 	d := newTestServiceDaemon(t)
 	detector := config.PluginField{Plugin: "detector", Package: testPackageUrl}
-	d.Config.Engines = []config.ServiceField{{Name: "yolo", Plugin: detector}}
+	d.Config.Engines = []config.EngineField{{Name: "yolo", Plugin: detector}}
 	if err := d.gatherServices(); err != nil {
 		t.Fatalf("gather failed: %v", err)
 	}
@@ -254,7 +254,7 @@ func TestServiceHandlers(t *testing.T) {
 	}
 
 	assertRunning("gathered", false)
-	if err := d.startServices(d.allServices()); err != nil {
+	if err := d.startServices(d.selectServices((*serviceInfo).setUp)); err != nil {
 		t.Fatalf("start failed: %v", err)
 	}
 	assertRunning("started", true)
@@ -262,9 +262,7 @@ func TestServiceHandlers(t *testing.T) {
 		t.Fatalf("restart failed: %v", err)
 	}
 	assertRunning("restarted", true)
-	if err := d.stopServices(d.allServices()); err != nil {
-		t.Fatalf("stop failed: %v", err)
-	}
+	d.stopServices(d.selectServices(nil))
 	assertRunning("stopped", false)
 	// Restarting a stopped service starts it
 	pidFile := filepath.Join(d.PkgDir, "github_com_org_plugins", "pid-detector.txt")
@@ -295,9 +293,7 @@ func TestServiceHandlers(t *testing.T) {
 	if s := resp.GetServices()[0]; s.GetRunning() || !strings.HasPrefix(s.GetError(), "exited") {
 		t.Errorf("expected yolo listed as exited, got %v", s)
 	}
-	if err := d.stopServices(d.allServices()); err != nil {
-		t.Fatalf("stop failed: %v", err)
-	}
+	d.stopServices(d.selectServices(nil))
 	assertRunning("stopped after exiting", false)
 
 	// A bad entry rejects the whole request, so yolo stays stopped
@@ -324,7 +320,7 @@ func configureAllCategories(d *Daemon) {
 		return config.PluginField{Plugin: plugin, Package: testPackageUrl}
 	}
 	d.Config.Simulator = config.ServiceField{Name: "aviary", Plugin: field("simulator")}
-	d.Config.Engines = []config.ServiceField{{Name: "yolo", Plugin: field("detector")}}
+	d.Config.Engines = []config.EngineField{{Name: "yolo", Plugin: field("detector")}}
 	d.Config.Commanders = []config.ServiceField{{Name: "gcs", Plugin: field("commander")}}
 	d.Config.Monitors = []config.ServiceField{{Name: "watch", Plugin: field("monitor")}}
 	d.Config.Extras = []config.ServiceField{{Name: "logs", Plugin: field("extra")}}
@@ -348,10 +344,10 @@ func TestServiceCalls(t *testing.T) {
 	if err := d.gatherServices(); err != nil {
 		t.Fatalf("gather failed: %v", err)
 	}
-	if err := d.startServices(d.allServices()); err != nil {
+	if err := d.startServices(d.selectServices((*serviceInfo).setUp)); err != nil {
 		t.Fatalf("start failed: %v", err)
 	}
-	t.Cleanup(func() { d.stopServices(d.allServices()) })
+	t.Cleanup(func() { d.stopServices(d.selectServices(nil)) })
 
 	const (
 		readOnly = "list=OK\ninstall=PermissionDenied\n"

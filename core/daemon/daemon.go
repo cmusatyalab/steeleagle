@@ -14,6 +14,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	gabriel "github.com/cmusatyalab/gabriel/go"
 	daemonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon"
 	"github.com/cmusatyalab/steeleagle/config"
 	"github.com/cmusatyalab/steeleagle/v4/core/util"
@@ -36,7 +37,6 @@ type serviceInfo struct {
 	toml       []byte                   // raw .plugin.toml
 	ln         net.Listener             // listener for calls from the plugin, if any
 	conn       *grpc.ClientConn         // client connection to the plugin or vehicle, if any
-	endpoint   string                   // iceoryx endpoint, for engines only
 	plugin     plugin.Plugin            // plugin, the driver for vehicles
 	vehicle    *vehicle.Vehicle         // vehicle, for vehicles only
 	started    time.Time                // start time of the current run
@@ -71,6 +71,7 @@ type Daemon struct {
 	certMu     sync.Mutex                                  // mutex to protect the local compute cert files
 	remotes    map[netip.Addr]*grpc.ClientConn             // connections to registered remote daemons, by IP
 	remotesMu  sync.Mutex                                  // mutex to protect remotes
+	gabriel    *gabriel.Server                             // local compute service, if started
 	ctx        context.Context                             // context for the daemon
 	cancel     context.CancelFunc                          // cancel function for active contexts
 	log        zerolog.Logger                              // logger object
@@ -114,6 +115,15 @@ func NewDaemon(options ...DaemonOption) (*Daemon, error) {
 		daemon.log.Error().Err(err).Str("path", daemon.configPath).
 			Msg("could not parse daemon config")
 		return nil, err
+	}
+	if err := daemon.Config.ValidateServices(); err != nil {
+		daemon.log.Error().Err(err).Str("path", daemon.configPath).
+			Msg("invalid daemon config, using default")
+		daemon.Config, err = config.ParseDaemonConfigFromBytes(DefaultConfig)
+		if err != nil {
+			daemon.log.Error().Err(err).Msg("could not parse default daemon config")
+			return nil, err
+		}
 	}
 	if daemon.Config.Daemon.Hostname == "" {
 		daemon.Config.Daemon.Hostname = DefaultHostname
@@ -234,8 +244,12 @@ func (d *Daemon) Run(ctx context.Context) (err error) {
 				Msg("could not register with orchestrator, starting vehicles without remote compute")
 		}
 	}
-	if err := d.startServices(d.allServices()); err != nil {
+	if err := d.startServices(d.selectServices((*serviceInfo).setUp)); err != nil {
 		d.log.Error().Err(err).Msg("could not start some services")
+	}
+	if err := d.startGabrielServer(); err != nil {
+		d.log.Error().Err(err).Int("port", d.Config.Daemon.Lcs).
+			Msg("could not start local compute service")
 	}
 
 	relayDone := false
@@ -251,7 +265,8 @@ func (d *Daemon) Run(ctx context.Context) (err error) {
 
 	// Stop services before the relay, since plugins hold connections to it
 	cancel()
-	d.stopServices(d.allServices())
+	d.stopGabrielServer()
+	d.stopServices(d.selectServices(nil))
 	d.closeRemotes()
 	if !relayDone {
 		d.relay.GracefulStop()

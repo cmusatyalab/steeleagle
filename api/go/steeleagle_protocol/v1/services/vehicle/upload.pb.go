@@ -26,13 +26,13 @@ const (
 )
 
 type UploadMissionRequest struct {
-	state             protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Name   string                 `protobuf:"bytes,1,opt,name=name,proto3"`
-	xxx_hidden_Chunk  []byte                 `protobuf:"bytes,2,opt,name=chunk,proto3"`
-	xxx_hidden_Number int32                  `protobuf:"varint,3,opt,name=number,proto3"`
-	xxx_hidden_Total  int32                  `protobuf:"varint,4,opt,name=total,proto3"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Filename string                 `protobuf:"bytes,1,opt,name=filename,proto3"`
+	xxx_hidden_Chunk    []byte                 `protobuf:"bytes,2,opt,name=chunk,proto3"`
+	xxx_hidden_Number   int32                  `protobuf:"varint,3,opt,name=number,proto3"`
+	xxx_hidden_Total    int32                  `protobuf:"varint,4,opt,name=total,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *UploadMissionRequest) Reset() {
@@ -60,9 +60,9 @@ func (x *UploadMissionRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *UploadMissionRequest) GetName() string {
+func (x *UploadMissionRequest) GetFilename() string {
 	if x != nil {
-		return x.xxx_hidden_Name
+		return x.xxx_hidden_Filename
 	}
 	return ""
 }
@@ -88,8 +88,8 @@ func (x *UploadMissionRequest) GetTotal() int32 {
 	return 0
 }
 
-func (x *UploadMissionRequest) SetName(v string) {
-	x.xxx_hidden_Name = v
+func (x *UploadMissionRequest) SetFilename(v string) {
+	x.xxx_hidden_Filename = v
 }
 
 func (x *UploadMissionRequest) SetChunk(v []byte) {
@@ -110,17 +110,17 @@ func (x *UploadMissionRequest) SetTotal(v int32) {
 type UploadMissionRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Name   string
-	Chunk  []byte
-	Number int32
-	Total  int32
+	Filename string
+	Chunk    []byte
+	Number   int32
+	Total    int32
 }
 
 func (b0 UploadMissionRequest_builder) Build() *UploadMissionRequest {
 	m0 := &UploadMissionRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_Name = b.Name
+	x.xxx_hidden_Filename = b.Filename
 	x.xxx_hidden_Chunk = b.Chunk
 	x.xxx_hidden_Number = b.Number
 	x.xxx_hidden_Total = b.Total
@@ -515,9 +515,9 @@ var File_steeleagle_protocol_v1_services_vehicle_upload_proto protoreflect.FileD
 
 const file_steeleagle_protocol_v1_services_vehicle_upload_proto_rawDesc = "" +
 	"\n" +
-	"4steeleagle_protocol/v1/services/vehicle/upload.proto\x12'steeleagle_protocol.v1.services.vehicle\x1a\x1fgoogle/protobuf/timestamp.proto\"n\n" +
-	"\x14UploadMissionRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
+	"4steeleagle_protocol/v1/services/vehicle/upload.proto\x12'steeleagle_protocol.v1.services.vehicle\x1a\x1fgoogle/protobuf/timestamp.proto\"v\n" +
+	"\x14UploadMissionRequest\x12\x1a\n" +
+	"\bfilename\x18\x01 \x01(\tR\bfilename\x12\x14\n" +
 	"\x05chunk\x18\x02 \x01(\fR\x05chunk\x12\x16\n" +
 	"\x06number\x18\x03 \x01(\x05R\x06number\x12\x14\n" +
 	"\x05total\x18\x04 \x01(\x05R\x05total\"3\n" +

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	daemonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon"
@@ -20,14 +19,15 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 // categoryInfo describes how the services of a category are run.
 type categoryInfo struct {
-	pluginType string            // required plugin type in the .plugin.toml
-	dir        string            // runtime directory for the category's plugins
-	code       listener.AuthCode // AuthCode for calls from the plugin to the daemon
+	name        string            // lowercase category name, as in plugin toml keys
+	pluginType  string            // required plugin type in the .plugin.toml
+	dir         string            // runtime directory for the category's plugins
+	code        listener.AuthCode // AuthCode for calls from the plugin to the daemon
+	restartable bool              // whether RestartServices may restart the category's services
 }
 
 // gatherServices reads the services used by the config into d.services
@@ -60,17 +60,6 @@ func (d *Daemon) gatherServices() error {
 		add(s.Name, daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE, s.Plugin)
 	}
 	for _, v := range c.Vehicles {
-		if v.Simulate {
-			// Running the real driver in place of a simulated vehicle could fly
-			// real hardware, so a simulated vehicle is never started
-			err := fmt.Errorf("simulated vehicles are not supported yet")
-			errs = append(errs, fmt.Errorf("vehicle %q: %w", v.Name, err))
-			d.services[daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE] = append(
-				d.services[daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE],
-				&serviceInfo{name: v.Name, category: daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE,
-					pluginName: v.Plugin.Plugin, url: v.Plugin.Package, err: err})
-			continue
-		}
 		add(v.Name, daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE, v.Plugin)
 	}
 	for _, s := range c.Commanders {
@@ -136,9 +125,10 @@ func (d *Daemon) newService(
 	}
 	switch category {
 	case daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE:
-		// Engines serve over iceoryx, so the daemon has no client connection to
-		// them, but they can call the daemon through their listener. They can
-		// read, but not change, the models transferred to the daemon
+		// Engines serve over iceoryx at an endpoint named after them, so the
+		// daemon has no client connection to them, but they can call the
+		// daemon through their listener. They can read, but not change, the
+		// models transferred to the daemon
 		models, err := util.GetModelDir()
 		if err != nil {
 			return nil, fmt.Errorf("could not get model directory: %w", err)
@@ -173,113 +163,126 @@ func (d *Daemon) newService(
 	}, nil
 }
 
-// startServices starts the target services in category order: simulator,
-// engines, vehicles, commanders, monitors, then extras. A service that fails to
-// start is reported in the returned error, and the rest are still started.
-func (d *Daemon) startServices(services map[daemonpb.ServiceCategory][]string) error {
+// findService returns the named service in a category, or nil if there is
+// none. The caller must hold svcMu.
+func (d *Daemon) findService(category daemonpb.ServiceCategory, name string) *serviceInfo {
+	for _, s := range d.services[category] {
+		if s.name == name {
+			return s
+		}
+	}
+	return nil
+}
+
+// lookupService returns the named service in a category if it was set up, or
+// a status error saying why not. The caller must hold svcMu.
+func (d *Daemon) lookupService(category daemonpb.ServiceCategory, name string) (*serviceInfo, error) {
+	s := d.findService(category, name)
+	if s == nil {
+		return nil, status.Errorf(codes.NotFound, "no %s service %q", categories[category].pluginType, name)
+	}
+	if err := s.setupError(); err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+// eachService calls fn on each gathered service in start order, holding
+// svcMu.
+func (d *Daemon) eachService(fn func(*serviceInfo)) {
+	d.svcMu.Lock()
+	defer d.svcMu.Unlock()
+	for _, category := range startOrder {
+		for _, s := range d.services[category] {
+			fn(s)
+		}
+	}
+}
+
+// selectServices returns the gathered services that keep accepts, or all of
+// them if keep is nil, in start order. keep is called holding svcMu.
+func (d *Daemon) selectServices(keep func(*serviceInfo) bool) []*serviceInfo {
+	var selected []*serviceInfo
+	d.eachService(func(s *serviceInfo) {
+		if keep == nil || keep(s) {
+			selected = append(selected, s)
+		}
+	})
+	return selected
+}
+
+// startServices starts services in category order: simulator, engines,
+// vehicles, commanders, monitors, then extras. A service that fails to start
+// is reported in the returned error, and the rest are still started.
+func (d *Daemon) startServices(services []*serviceInfo) error {
 	d.svcMu.Lock()
 	defer d.svcMu.Unlock()
 	var errs []error
 	for _, category := range startOrder {
-		for _, name := range services[category] {
-			s := d.findService(category, name)
-			if s == nil {
-				errs = append(errs, status.Errorf(codes.NotFound, "no %s service %q", categories[category].pluginType, name))
+		for _, s := range services {
+			if s.category != category || s.running() {
 				continue
 			}
-			if s.broken() {
-				errs = append(errs, status.Errorf(codes.FailedPrecondition, "%s %q couldn't be set up: %v",
-					categories[category].pluginType, name, s.err))
-				continue
-			}
-			if s.running() {
+			if err := s.setupError(); err != nil {
+				errs = append(errs, err)
 				continue
 			}
 			// Release what is left of a run that exited on its own
 			s.release()
-			var err error
-			switch category {
-			case daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE:
-				err = d.startEngine(s)
-			case daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE:
-				err = d.startVehicle(s)
-			default:
-				err = d.startGenericService(s)
-			}
-			s.err = err
-			if err != nil {
-				d.log.Error().Err(err).Str("service", name).Msg("could not start service")
-				errs = append(errs, fmt.Errorf("%s %q: %w", categories[category].pluginType, name, err))
+			s.err = d.startService(s)
+			if s.err != nil {
+				d.log.Error().Err(s.err).Str("service", s.name).Msg("could not start service")
+				errs = append(errs, fmt.Errorf("%s %q: %w", categories[category].pluginType, s.name, s.err))
 				continue
 			}
 			s.started = time.Now()
-			d.log.Info().Str("service", name).Str("category", category.String()).Msg("service started")
+			d.log.Info().Str("service", s.name).Str("category", category.String()).Msg("service started")
 		}
 	}
 	return errors.Join(errs...)
 }
 
-// stopServices stops the target services in reverse category order, and waits
-// for them to exit. The services are kept, so they can be started again.
-func (d *Daemon) stopServices(services map[daemonpb.ServiceCategory][]string) error {
+// stopServices stops services in reverse category order, and waits for them
+// to exit. The services are kept, so they can be started again.
+func (d *Daemon) stopServices(services []*serviceInfo) {
 	d.svcMu.Lock()
 	defer d.svcMu.Unlock()
-	var errs []error
 	for i := len(startOrder) - 1; i >= 0; i-- {
-		category := startOrder[i]
-		for _, name := range services[category] {
-			s := d.findService(category, name)
-			if s == nil {
-				errs = append(errs, status.Errorf(codes.NotFound, "no %s service %q", categories[category].pluginType, name))
-				continue
-			}
-			if s.cancel == nil {
+		for _, s := range services {
+			if s.category != startOrder[i] || s.cancel == nil {
 				continue
 			}
 			s.release()
-			d.log.Info().Str("service", name).Str("category", category.String()).Msg("service stopped")
+			d.log.Info().Str("service", s.name).Str("category", s.category.String()).Msg("service stopped")
 		}
 	}
-	return errors.Join(errs...)
 }
 
-// startGenericService starts a plugin that hosts a service. The daemon serves
-// the plugin's listener, so the plugin can call the daemon with its category's
-// AuthCode. The caller must hold svcMu.
-func (d *Daemon) startGenericService(s *serviceInfo) error {
+// startService starts a run of a service. A vehicle runs on its driver plugin,
+// and is created on its first start; each run gets a new in-process daemon
+// listener, and the router sends calls with the vehicle's name as their route
+// key to a client connection on it. Any other plugin hosts a service, and the
+// daemon serves its listener, so the plugin can call the daemon with its
+// category's AuthCode. The caller must hold svcMu.
+func (d *Daemon) startService(s *serviceInfo) error {
 	ctx, cancel := context.WithCancel(d.ctx)
-	ln, conn, err := s.plugin.Start(ctx)
-	if err != nil {
-		cancel()
-		return err
+	if s.category != daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE {
+		ln, conn, err := s.plugin.Start(ctx)
+		if err != nil {
+			cancel()
+			return err
+		}
+		s.ln, s.conn, s.cancel = ln, conn, cancel
+		if ln != nil {
+			go func() {
+				if err := d.relay.Serve(ln); err != nil {
+					d.log.Debug().Err(err).Str("service", s.name).Msg("plugin listener closed")
+				}
+			}()
+		}
+		return nil
 	}
-	s.ln, s.conn, s.cancel = ln, conn, cancel
-	if ln != nil {
-		go func() {
-			if err := d.relay.Serve(ln); err != nil {
-				d.log.Debug().Err(err).Str("service", s.name).Msg("plugin listener closed")
-			}
-		}()
-	}
-	return nil
-}
 
-// startEngine starts an engine plugin, which serves at an iceoryx endpoint
-// named after the engine. Like other plugins, the daemon serves its listener.
-// The caller must hold svcMu.
-func (d *Daemon) startEngine(s *serviceInfo) error {
-	if err := d.startGenericService(s); err != nil {
-		return err
-	}
-	s.endpoint = s.name
-	return nil
-}
-
-// startVehicle starts a vehicle on its driver plugin. The vehicle is created
-// on its first start. Each run gets a new in-process daemon listener, and the
-// router sends calls with the vehicle's name as their route key to a client
-// connection on it.
-func (d *Daemon) startVehicle(s *serviceInfo) error {
 	if s.vehicle == nil {
 		options := []vehicle.VehicleOption{vehicle.WithName(s.name), vehicle.WithLogger(d.log)}
 		if d.rcsAddr != "" {
@@ -287,6 +290,7 @@ func (d *Daemon) startVehicle(s *serviceInfo) error {
 		}
 		v, err := vehicle.NewVehicle(s.plugin, s.config, options...)
 		if err != nil {
+			cancel()
 			return err
 		}
 		s.vehicle = v
@@ -298,10 +302,10 @@ func (d *Daemon) startVehicle(s *serviceInfo) error {
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
+		cancel()
 		ln.Close()
 		return err
 	}
-	ctx, cancel := context.WithCancel(d.ctx)
 	if err := s.vehicle.Start(ctx, ln); err != nil {
 		cancel()
 		conn.Close()
@@ -314,154 +318,6 @@ func (d *Daemon) startVehicle(s *serviceInfo) error {
 	}
 	s.conn, s.cancel = conn, cancel
 	return nil
-}
-
-// listServices describes all gathered services in start order.
-func (d *Daemon) listServices() []*daemonpb.ActiveService {
-	d.svcMu.Lock()
-	defer d.svcMu.Unlock()
-	var active []*daemonpb.ActiveService
-	for _, category := range startOrder {
-		for _, s := range d.services[category] {
-			running := s.running()
-			var uptime *durationpb.Duration
-			if running {
-				uptime = durationpb.New(time.Since(s.started))
-			}
-			active = append(active, daemonpb.ActiveService_builder{
-				Srv:     daemonpb.Service_builder{Name: s.name, Category: category}.Build(),
-				Plugin:  s.pluginName,
-				Url:     s.url,
-				Running: running,
-				Uptime:  uptime,
-				Error:   s.errorString(),
-			}.Build())
-		}
-	}
-	return active
-}
-
-// findService returns the named service in a category, or nil if there is
-// none. The caller must hold svcMu.
-func (d *Daemon) findService(category daemonpb.ServiceCategory, name string) *serviceInfo {
-	for _, s := range d.services[category] {
-		if s.name == name {
-			return s
-		}
-	}
-	return nil
-}
-
-// allServices returns the names of all gathered services that were set up, by
-// category.
-func (d *Daemon) allServices() map[daemonpb.ServiceCategory][]string {
-	d.svcMu.Lock()
-	defer d.svcMu.Unlock()
-	all := make(map[daemonpb.ServiceCategory][]string)
-	for category, services := range d.services {
-		for _, s := range services {
-			if s.broken() {
-				continue
-			}
-			all[category] = append(all[category], s.name)
-		}
-	}
-	return all
-}
-
-// controllableServices validates a request for services that can be restarted.
-func (d *Daemon) controllableServices(services []*daemonpb.Service) (map[daemonpb.ServiceCategory][]string, error) {
-	d.svcMu.Lock()
-	defer d.svcMu.Unlock()
-	targets := make(map[daemonpb.ServiceCategory][]string)
-	for _, s := range services {
-		switch s.GetCategory() {
-		case daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE,
-			daemonpb.ServiceCategory_SERVICE_CATEGORY_MONITOR,
-			daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE:
-		default:
-			return nil, status.Errorf(codes.InvalidArgument,
-				"service %q has category %s, only vehicles, monitors and engines can be restarted; use Configure for the rest",
-				s.GetName(), s.GetCategory())
-		}
-		found := d.findService(s.GetCategory(), s.GetName())
-		if found == nil {
-			return nil, status.Errorf(codes.NotFound, "no %s service %q",
-				categories[s.GetCategory()].pluginType, s.GetName())
-		}
-		if found.broken() {
-			return nil, status.Errorf(codes.FailedPrecondition, "%s %q couldn't be set up: %v",
-				categories[s.GetCategory()].pluginType, s.GetName(), found.err)
-		}
-		targets[s.GetCategory()] = append(targets[s.GetCategory()], s.GetName())
-	}
-	return targets, nil
-}
-
-// running reports whether the service is currently running.
-func (s *serviceInfo) running() bool {
-	if s.vehicle != nil {
-		return s.vehicle.Running.Load()
-	}
-	if s.broken() {
-		return false
-	}
-	return s.plugin.Running()
-}
-
-// broken reports whether the service couldn't be set up, so it can't be
-// started.
-func (s *serviceInfo) broken() bool {
-	return s.plugin == nil
-}
-
-// errorString describes why the service couldn't be set up, failed to start,
-// or exited on its own, or is empty if it didn't. The caller must hold svcMu.
-func (s *serviceInfo) errorString() string {
-	if s.err != nil {
-		return s.err.Error()
-	}
-	if s.cancel == nil || s.running() {
-		return ""
-	}
-	// Started, but no longer running, so the run has already ended and the
-	// vehicle doesn't block for its error
-	if s.vehicle != nil {
-		if err := s.vehicle.Wait(); err != nil {
-			return "exited: " + err.Error()
-		}
-	}
-	return "exited"
-}
-
-// pluginTomls returns the plugin toml of each service that was set up, keyed
-// by "{category}/{name}" with the category in lowercase.
-func (d *Daemon) pluginTomls() map[string][]byte {
-	d.svcMu.Lock()
-	defer d.svcMu.Unlock()
-	tomls := make(map[string][]byte)
-	for category, services := range d.services {
-		prefix := strings.ToLower(strings.TrimPrefix(category.String(), "SERVICE_CATEGORY_"))
-		for _, s := range services {
-			if s.toml != nil {
-				tomls[prefix+"/"+s.name] = s.toml
-			}
-		}
-	}
-	return tomls
-}
-
-// vehicleNames returns the names of all gathered vehicles.
-func (d *Daemon) vehicleNames() []string {
-	d.svcMu.Lock()
-	defer d.svcMu.Unlock()
-	var names []string
-	for _, s := range d.services[daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE] {
-		if !s.broken() {
-			names = append(names, s.name)
-		}
-	}
-	return names
 }
 
 // release stops the current run of the service, if any, waits for it to
@@ -482,4 +338,49 @@ func (s *serviceInfo) release() {
 		s.conn = nil
 	}
 	s.ln = nil
+}
+
+// setUp reports whether the service was set up, so it can be started.
+func (s *serviceInfo) setUp() bool {
+	return s.plugin != nil
+}
+
+// setupError returns why the service couldn't be set up, as a status error,
+// or nil if it was.
+func (s *serviceInfo) setupError() error {
+	if s.setUp() {
+		return nil
+	}
+	return status.Errorf(codes.FailedPrecondition, "%s %q couldn't be set up: %v",
+		categories[s.category].pluginType, s.name, s.err)
+}
+
+// running reports whether the service is currently running.
+func (s *serviceInfo) running() bool {
+	if s.vehicle != nil {
+		return s.vehicle.Running.Load()
+	}
+	if !s.setUp() {
+		return false
+	}
+	return s.plugin.Running()
+}
+
+// errorString describes why the service couldn't be set up, failed to start,
+// or exited on its own, or is empty if it didn't. The caller must hold svcMu.
+func (s *serviceInfo) errorString() string {
+	if s.err != nil {
+		return s.err.Error()
+	}
+	if s.cancel == nil || s.running() {
+		return ""
+	}
+	// Started, but no longer running, so the run has already ended and the
+	// vehicle doesn't block for its error
+	if s.vehicle != nil {
+		if err := s.vehicle.Wait(); err != nil {
+			return "exited: " + err.Error()
+		}
+	}
+	return "exited"
 }

@@ -42,6 +42,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cilium/ebpf v0.17.3 // indirect
 	github.com/cloudflare/circl v1.6.3 // indirect
+	github.com/cmusatyalab/gabriel/go v0.0.0-20261021224518-780126459e8e
 	github.com/coder/websocket v1.8.15 // indirect
 	github.com/creachadair/msync v0.10.0 // indirect
 	github.com/cyphar/filepath-securejoin v0.6.1 // indirect

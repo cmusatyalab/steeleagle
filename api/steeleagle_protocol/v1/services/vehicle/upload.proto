@@ -46,7 +46,7 @@ service LoaderService {
 }
 
 message UploadMissionRequest {
-  string name = 1;  // file name
+  string filename = 1; // file name
   bytes chunk = 2;  // file chunk
   int32 number = 3; // chunk number
   int32 total = 4;  // total chunks

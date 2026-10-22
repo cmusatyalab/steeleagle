@@ -65,22 +65,31 @@ var startOrder = []daemonpb.ServiceCategory{
 	daemonpb.ServiceCategory_SERVICE_CATEGORY_EXTRA,
 }
 
-// categories is the mapping from ServiceCategory to TOML field.
+// categories describes how the services of each category are run.
 var categories = map[daemonpb.ServiceCategory]categoryInfo{
-	daemonpb.ServiceCategory_SERVICE_CATEGORY_SIMULATOR: {"simulator", "simulators", listener.ExternalCode},
-	daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE:    {"engine", "engines", listener.ExternalCode},
-	daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE:   {"driver", "vehicles", listener.UnknownCode},
-	daemonpb.ServiceCategory_SERVICE_CATEGORY_COMMANDER: {"commander", "commanders", listener.PrivilegedCode},
-	daemonpb.ServiceCategory_SERVICE_CATEGORY_MONITOR:   {"monitor", "monitors", listener.ExternalCode},
-	daemonpb.ServiceCategory_SERVICE_CATEGORY_EXTRA:     {"extra", "extras", listener.UnknownCode},
+	daemonpb.ServiceCategory_SERVICE_CATEGORY_SIMULATOR: {name: "simulator", pluginType: "simulator", dir: "simulators", code: listener.ExternalCode},
+	daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE:    {name: "engine", pluginType: "engine", dir: "engines", code: listener.ExternalCode, restartable: true},
+	daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE:   {name: "vehicle", pluginType: "driver", dir: "vehicles", code: listener.UnknownCode, restartable: true},
+	daemonpb.ServiceCategory_SERVICE_CATEGORY_COMMANDER: {name: "commander", pluginType: "commander", dir: "commanders", code: listener.PrivilegedCode},
+	daemonpb.ServiceCategory_SERVICE_CATEGORY_MONITOR:   {name: "monitor", pluginType: "monitor", dir: "monitors", code: listener.ExternalCode, restartable: true},
+	daemonpb.ServiceCategory_SERVICE_CATEGORY_EXTRA:     {name: "extra", pluginType: "extra", dir: "extras", code: listener.UnknownCode},
 }
 
-// Names of the local compute service cert and key files within the data
-// directory, and how long a generated cert is valid.
+// Names of the local compute service cert and key files within its identity
+// directory, as Gabriel expects them, the name Gabriel clients connect with,
+// and how long a generated cert is valid.
 const (
-	LcsCertFileName = "lcs.crt"
-	LcsKeyFileName  = "lcs.key"
+	LcsCertFileName = "certificate.der"
+	LcsKeyFileName  = "key.der"
+	lcsServerName   = "gabriel"
 	lcsCertValidity = 10 * 365 * 24 * time.Hour
+)
+
+// Directory within the data directory where the local compute service's
+// Gabriel server keeps its cert and key, and the host it binds on.
+const (
+	LcsIdentityDirName = "lcs"
+	lcsBindHost        = "0.0.0.0"
 )
 
 // Metadata key that the relay records the caller address in, for the daemon's

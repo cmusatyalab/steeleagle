@@ -10,16 +10,16 @@ from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class UploadMissionRequest(_message.Message):
-    __slots__ = ("name", "chunk", "number", "total")
-    NAME_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("filename", "chunk", "number", "total")
+    FILENAME_FIELD_NUMBER: _ClassVar[int]
     CHUNK_FIELD_NUMBER: _ClassVar[int]
     NUMBER_FIELD_NUMBER: _ClassVar[int]
     TOTAL_FIELD_NUMBER: _ClassVar[int]
-    name: str
+    filename: str
     chunk: bytes
     number: int
     total: int
-    def __init__(self, name: _Optional[str] = ..., chunk: _Optional[bytes] = ..., number: _Optional[int] = ..., total: _Optional[int] = ...) -> None: ...
+    def __init__(self, filename: _Optional[str] = ..., chunk: _Optional[bytes] = ..., number: _Optional[int] = ..., total: _Optional[int] = ...) -> None: ...
 
 class UploadMissionResponse(_message.Message):
     __slots__ = ("received",)

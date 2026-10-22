@@ -25,9 +25,7 @@ func TestDaemonConfigParsesExample(t *testing.T) {
 	}
 
 	wantVehicles := []VehicleField{{
-		Name:     "harpy",
-		Simulate: false,
-		Origin:   []float64{40.413664, -79.949285},
+		Name: "harpy",
 		Plugin: PluginField{
 			Plugin:  "parrot_anafi",
 			Package: "github.com/cmusatyalab/steeleagle_plugins/drivers/parrot",
@@ -38,8 +36,9 @@ func TestDaemonConfigParsesExample(t *testing.T) {
 		t.Errorf("Vehicles = %+v, want %+v", c.Vehicles, wantVehicles)
 	}
 
-	wantEngines := []ServiceField{{
-		Name: "yolo",
+	wantEngines := []EngineField{{
+		Name:          "yolo",
+		DefaultTarget: true,
 		Plugin: PluginField{
 			Plugin:  "yolo_qnn",
 			Package: "github.com/cmusatyalab/steeleagle_plugins/engines/yolo",
@@ -118,5 +117,39 @@ func TestDaemonConfigToBytesRoundTrip(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, c) {
 		t.Errorf("round trip = %+v, want %+v", got, c)
+	}
+}
+
+// TestValidateServices checks that duplicate names within a service list are
+// rejected, while the same name across different lists is allowed.
+func TestValidateServices(t *testing.T) {
+	c, err := ParseDaemonConfigFromFilepath("examples/config.toml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := c.ValidateServices(); err != nil {
+		t.Errorf("ValidateServices() on example = %v, want nil", err)
+	}
+
+	cross := DaemonConfig{
+		Vehicles:   []VehicleField{{Name: "a"}},
+		Engines:    []EngineField{{Name: "a"}},
+		Commanders: []ServiceField{{Name: "a"}},
+	}
+	if err := cross.ValidateServices(); err != nil {
+		t.Errorf("ValidateServices() with names shared across lists = %v, want nil", err)
+	}
+
+	dupes := map[string]DaemonConfig{
+		"vehicles":   {Vehicles: []VehicleField{{Name: "a"}, {Name: "a"}}},
+		"engines":    {Engines: []EngineField{{Name: "a"}, {Name: "a"}}},
+		"commanders": {Commanders: []ServiceField{{Name: "a"}, {Name: "a"}}},
+		"monitors":   {Monitors: []ServiceField{{Name: "a"}, {Name: "a"}}},
+		"extras":     {Extras: []ServiceField{{Name: "a"}, {Name: "a"}}},
+	}
+	for list, c := range dupes {
+		if err := c.ValidateServices(); err == nil {
+			t.Errorf("ValidateServices() with duplicate %s = nil, want error", list)
+		}
 	}
 }

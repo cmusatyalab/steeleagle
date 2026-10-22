@@ -14,6 +14,8 @@ vfov = 43
 fps = 30
 latency = 280
 gimbal = true
+encode = true
+default = true
 
 [[driver.cameras]]
 name = "thermal"
@@ -25,6 +27,7 @@ vfov = 43
 fps = 30
 latency = 280
 gimbal = true
+encode = false
 
 [driver.supported]
 services = [

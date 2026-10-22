@@ -80,8 +80,10 @@ func (d *Daemon) registerWithOrchestrator(ctx context.Context) error {
 	// orchestrator has the route back here
 	d.router.AddHeaderRoute(self.String(), d.serverConn)
 	var vehicles []string
-	for _, name := range d.vehicleNames() {
-		vehicles = append(vehicles, self.String()+"/"+name)
+	for _, s := range d.selectServices(func(s *serviceInfo) bool {
+		return s.category == daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE && s.setUp()
+	}) {
+		vehicles = append(vehicles, self.String()+"/"+s.name)
 	}
 
 	// Dial through the current network

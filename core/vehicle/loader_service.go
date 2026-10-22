@@ -4,6 +4,7 @@ import (
 	"context"
 
 	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
+	"github.com/cmusatyalab/steeleagle/v4/core/util/download"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -13,8 +14,10 @@ import (
 func (v *Vehicle) UploadMission(
 	stream grpc.BidiStreamingServer[vehiclepb.UploadMissionRequest, vehiclepb.UploadMissionResponse],
 ) error {
-	// TODO: implement
-	return status.Error(codes.Unimplemented, "UploadMission not implemented")
+	return download.DownloadFile(v.log, stream, v.MissionDir,
+		func(number int32) *vehiclepb.UploadMissionResponse {
+			return vehiclepb.UploadMissionResponse_builder{Received: number}.Build()
+		})
 }
 
 // LoadMission loads a mission from MissionDir by exact name.

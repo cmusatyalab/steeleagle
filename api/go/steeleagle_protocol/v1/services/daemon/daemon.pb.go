@@ -155,11 +155,12 @@ func (b0 RegisterOrchestratorRequest_builder) Build() *RegisterOrchestratorReque
 }
 
 type RegisterOrchestratorResponse struct {
-	state           protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Cert string                 `protobuf:"bytes,1,opt,name=cert,proto3"`
-	xxx_hidden_Port int32                  `protobuf:"varint,2,opt,name=port,proto3"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state                         protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Cert               string                 `protobuf:"bytes,1,opt,name=cert,proto3"`
+	xxx_hidden_Port               int32                  `protobuf:"varint,2,opt,name=port,proto3"`
+	xxx_hidden_DefaultFlowTargets []string               `protobuf:"bytes,3,rep,name=default_flow_targets,json=defaultFlowTargets,proto3"`
+	unknownFields                 protoimpl.UnknownFields
+	sizeCache                     protoimpl.SizeCache
 }
 
 func (x *RegisterOrchestratorResponse) Reset() {
@@ -201,6 +202,13 @@ func (x *RegisterOrchestratorResponse) GetPort() int32 {
 	return 0
 }
 
+func (x *RegisterOrchestratorResponse) GetDefaultFlowTargets() []string {
+	if x != nil {
+		return x.xxx_hidden_DefaultFlowTargets
+	}
+	return nil
+}
+
 func (x *RegisterOrchestratorResponse) SetCert(v string) {
 	x.xxx_hidden_Cert = v
 }
@@ -209,11 +217,16 @@ func (x *RegisterOrchestratorResponse) SetPort(v int32) {
 	x.xxx_hidden_Port = v
 }
 
+func (x *RegisterOrchestratorResponse) SetDefaultFlowTargets(v []string) {
+	x.xxx_hidden_DefaultFlowTargets = v
+}
+
 type RegisterOrchestratorResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Cert string
-	Port int32
+	Cert               string
+	Port               int32
+	DefaultFlowTargets []string
 }
 
 func (b0 RegisterOrchestratorResponse_builder) Build() *RegisterOrchestratorResponse {
@@ -222,6 +235,7 @@ func (b0 RegisterOrchestratorResponse_builder) Build() *RegisterOrchestratorResp
 	_, _ = b, x
 	x.xxx_hidden_Cert = b.Cert
 	x.xxx_hidden_Port = b.Port
+	x.xxx_hidden_DefaultFlowTargets = b.DefaultFlowTargets
 	return m0
 }
 
@@ -429,6 +443,7 @@ func (x *GetConfigurationResponse) SetPluginTomls(v map[string][]byte) {
 type GetConfigurationResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
+	// eagled config.toml
 	ConfigToml []byte
 	// plugin toml of each service that was set up, keyed by "{category}/{name}"
 	// with the category in lowercase, like "engine/detector"
@@ -1411,10 +1426,11 @@ const file_steeleagle_protocol_v1_services_daemon_daemon_proto_rawDesc = "" +
 	"3steeleagle_protocol/v1/services/daemon/daemon.proto\x12&steeleagle_protocol.v1.services.daemon\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/duration.proto\"M\n" +
 	"\x1bRegisterOrchestratorRequest\x12\x1a\n" +
 	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12\x12\n" +
-	"\x04port\x18\x02 \x01(\x05R\x04port\"F\n" +
+	"\x04port\x18\x02 \x01(\x05R\x04port\"x\n" +
 	"\x1cRegisterOrchestratorResponse\x12\x12\n" +
 	"\x04cert\x18\x01 \x01(\tR\x04cert\x12\x12\n" +
-	"\x04port\x18\x02 \x01(\x05R\x04port\"3\n" +
+	"\x04port\x18\x02 \x01(\x05R\x04port\x120\n" +
+	"\x14default_flow_targets\x18\x03 \x03(\tR\x12defaultFlowTargets\"3\n" +
 	"\x10ConfigureRequest\x12\x1f\n" +
 	"\vconfig_toml\x18\x01 \x01(\tR\n" +
 	"configToml\"\x13\n" +

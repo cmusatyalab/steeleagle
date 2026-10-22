@@ -14,11 +14,6 @@ orchestrator = "homebase:9000"
 [[vehicles]] # List of vehicles (can be empty)
 # Name of the vehicle
 name = "harpy"
-# If set to true, will spawn the vehicle in the simulated world instead of running
-# the driver (optional)
-simulate = false
-# Origin point, only used when simulate is true (optional)
-origin = [40.413664, -79.949285]
 [vehicles.plugin] # Driver plugin for this vehicle
 # Plugin to use
 plugin = "parrot_anafi"
@@ -30,6 +25,8 @@ ip = "10.202.0.1"
 [[engines]] # List of engines (can be empty)
 # Name of the engine
 name = "yolo"
+# Whether this engine is a default flow target for the vehicle (optional)
+default_target = true
 [engines.plugin] # Plugin for this engine
 # Plugin to use
 plugin = "yolo_qnn"
@@ -48,7 +45,7 @@ plugin = "gcs"
 package = "github.com/cmusatyalab/steeleagle_plugins/commanders/gcs"
 [commanders.plugin.args] # Args for this plugin (can be empty)
 
-# [[monitors]] and [[extras]] follow the same format as [[engines]] and [[commanders]] (can be empty)
+# [[monitors]] and [[extras]] follow the same format as [[commanders]] (can be empty)
 
 [simulator] # Simulator for this daemon (can be empty)
 # Name of the simulator

@@ -37,12 +37,14 @@ class RegisterOrchestratorRequest(_message.Message):
     def __init__(self, vehicles: _Optional[_Iterable[str]] = ..., port: _Optional[int] = ...) -> None: ...
 
 class RegisterOrchestratorResponse(_message.Message):
-    __slots__ = ("cert", "port")
+    __slots__ = ("cert", "port", "default_flow_targets")
     CERT_FIELD_NUMBER: _ClassVar[int]
     PORT_FIELD_NUMBER: _ClassVar[int]
+    DEFAULT_FLOW_TARGETS_FIELD_NUMBER: _ClassVar[int]
     cert: str
     port: int
-    def __init__(self, cert: _Optional[str] = ..., port: _Optional[int] = ...) -> None: ...
+    default_flow_targets: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, cert: _Optional[str] = ..., port: _Optional[int] = ..., default_flow_targets: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class ConfigureRequest(_message.Message):
     __slots__ = ("config_toml",)

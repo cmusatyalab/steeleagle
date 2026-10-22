@@ -108,8 +108,9 @@ message RegisterOrchestratorRequest {
 }
 
 message RegisterOrchestratorResponse {
-  string cert = 1; // cert key for the remote compute service
-  int32 port = 2;  // port for the remote compute service
+  string cert = 1;                           // cert key for the remote compute service
+  int32 port = 2;                            // port for the remote compute service
+  repeated string default_flow_targets = 3;  // default remote flow targets 
 }
 
 message ConfigureRequest {

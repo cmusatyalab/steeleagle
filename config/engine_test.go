@@ -22,10 +22,6 @@ func TestEngineCapParsesExample(t *testing.T) {
 		Type:   "detection",
 		Inputs: []string{"steeleagle_protocol/v1/messages/frame/RawFrame"},
 		Result: "steeleagle_protocol/v1/messages/result/DetectionResult",
-		Events: []EngineEvent{{
-			Label: "dropped",
-			Type:  "steeleagle_protocol/v1/messages/result/GenericResult",
-		}},
 	}
 	if !reflect.DeepEqual(*p.Engine, want) {
 		t.Errorf("Engine = %+v, want %+v", *p.Engine, want)
@@ -70,33 +66,14 @@ func TestEngineCapMatchesResultType(t *testing.T) {
 	}
 }
 
-// TestEngineCapHasEvent checks that events are looked up by label, not type.
-func TestEngineCapHasEvent(t *testing.T) {
-	p, err := ParsePluginConfigFromFilepath("examples/engine.plugin.toml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	cases := map[string]bool{
-		"dropped": true,
-		"found":   false,
-		"steeleagle_protocol/v1/messages/result/GenericResult": false,
-		"": false,
-	}
-	for label, want := range cases {
-		if got := p.Engine.HasEvent(label); got != want {
-			t.Errorf("HasEvent(%q) = %v, want %v", label, got, want)
-		}
-	}
-}
-
-// TestEngineCapEmpty checks that an engine cap with no inputs or events
+// TestEngineCapEmpty checks that an engine cap with no inputs or result
 // matches nothing.
 func TestEngineCapEmpty(t *testing.T) {
 	e := &EngineCap{}
 	if e.MatchesInputType("steeleagle_protocol/v1/messages/frame/RawFrame") {
 		t.Error("MatchesInputType = true, want false")
 	}
-	if e.HasEvent("dropped") {
-		t.Error("HasEvent = true, want false")
+	if e.MatchesResultType("steeleagle_protocol/v1/messages/result/DetectionResult") {
+		t.Error("MatchesResultType = true, want false")
 	}
 }
