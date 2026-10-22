@@ -30,9 +30,6 @@ const PendingDirName = ".pending"
 // Name of the metadata file stored in each installed package.
 const PackageInfoFileName = ".package.toml"
 
-// Marker file in the pending directory, written when it changes.
-const dirtyFileName = ".dirty"
-
 // Prefix of temporary directories in the package directory.
 const tmpPrefix = ".tmp-"
 

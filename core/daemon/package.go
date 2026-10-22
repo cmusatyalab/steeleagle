@@ -205,7 +205,7 @@ func (d *Daemon) installPackage(ctx context.Context, url, tag string) error {
 		return status.Error(codes.Internal, err.Error())
 	}
 	d.log.Info().Str("package", u.name).Str("commit", commit).Msg("package installed, pending restart")
-	return d.markPendingDirty()
+	return nil
 }
 
 // removePackage removes the package at url from the pending package
@@ -225,7 +225,7 @@ func (d *Daemon) removePackage(url string) error {
 		return status.Error(codes.Internal, err.Error())
 	}
 	d.log.Info().Str("package", u.name).Msg("package removed, pending restart")
-	return d.markPendingDirty()
+	return nil
 }
 
 // listPackages returns the packages in the pending package directory, so that
@@ -287,16 +287,7 @@ func readPackage(dir string) (*daemonpb.Package, error) {
 	}.Build(), nil
 }
 
-// markPendingDirty marks the pending directory as changed, so that it is
-// applied on the next restart. The caller must hold pkgMu.
-func (d *Daemon) markPendingDirty() error {
-	if err := os.WriteFile(filepath.Join(d.pendingDir(), dirtyFileName), nil, 0644); err != nil {
-		return status.Error(codes.Internal, err.Error())
-	}
-	return nil
-}
-
-// commitPendingPackages applies a changed pending directory to the package
+// commitPendingPackages applies the pending directory to the package
 // directory, so that installs and removals take effect without disrupting
 // services running on the old packages.
 func (d *Daemon) commitPendingPackages() error {
@@ -323,15 +314,8 @@ func (d *Daemon) commitPendingPackages() error {
 		}
 		return os.Rename(tmp, pending)
 	}
-	dirty := filepath.Join(pending, dirtyFileName)
-	if _, err := os.Stat(dirty); errors.Is(err, fs.ErrNotExist) {
-		return nil
-	}
 	d.log.Info().Msg("applying pending packages")
-	if err := mirror(pending, d.PkgDir); err != nil {
-		return err
-	}
-	return os.Remove(dirty)
+	return mirror(pending, d.PkgDir)
 }
 
 // mirror replaces the package directories in dst with copies of those in src.

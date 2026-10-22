@@ -103,8 +103,8 @@ func TestParsePackageUrl(t *testing.T) {
 }
 
 // TestCommitPendingPackages ensures that the pending directory is created as a
-// copy of the package directory, and that changes to pending are only applied
-// to the package directory once pending is marked dirty.
+// copy of the package directory, and that changes to pending are applied to
+// the package directory on commit.
 func TestCommitPendingPackages(t *testing.T) {
 	d := newTestPackageDaemon(t, "a")
 	pending := d.pendingDir()
@@ -113,14 +113,9 @@ func TestCommitPendingPackages(t *testing.T) {
 		t.Errorf("expected executable file copied into pending, got %v, %v", info, err)
 	}
 
-	// Install b and update a; nothing applies until pending is dirty
+	// Install b and update a
 	writeTestPackage(t, pending, "b", "1")
 	writeTestPackage(t, pending, "a", "2")
-	if err := d.commitPendingPackages(); err != nil {
-		t.Fatalf("commit failed: %v", err)
-	}
-	assertPackages(t, d.PkgDir, "a")
-	d.markPendingDirty()
 	if err := d.commitPendingPackages(); err != nil {
 		t.Fatalf("commit failed: %v", err)
 	}
@@ -128,9 +123,6 @@ func TestCommitPendingPackages(t *testing.T) {
 	assertPackages(t, pending, "a", "b")
 	if content, err := os.ReadFile(filepath.Join(d.PkgDir, "a", "run.sh")); err != nil || string(content) != "2" {
 		t.Errorf("expected package a updated, got %q, %v", content, err)
-	}
-	if _, err := os.Stat(filepath.Join(pending, dirtyFileName)); !errors.Is(err, os.ErrNotExist) {
-		t.Errorf("expected dirty marker cleared after commit, got %v", err)
 	}
 
 	// Leave a stray temporary directory; it is cleaned up on commit
