@@ -110,6 +110,20 @@ func (a *Acl) AddPid(pid int, code AuthCode) error {
 	return nil
 }
 
+// RemovePid removes a PID from the ACL, if it is present.
+func (a *Acl) RemovePid(pid int) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	delete(a.pids, pid)
+}
+
+// ClearPids removes every PID from the ACL, leaving IP ranges untouched.
+func (a *Acl) ClearPids() {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	clear(a.pids)
+}
+
 // unlisted returns the decision for a client not on the ACL. The caller must
 // hold the lock.
 func (a *Acl) unlisted() (bool, AuthCode) {

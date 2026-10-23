@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -308,22 +309,15 @@ func TestPluginRestart(t *testing.T) {
 		WithPath(path),
 		WithScriptArgs([]string{"--erroronce"}),
 		WithEnvironment("ERROR_ONCE_MARKER", marker),
-		WithTimeout(0),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
 	_, _, err = plugin.Start(t.Context())
-	if err != nil {
-		t.Logf("timeed out waiting for plugin socket: %v", err)
+	if err == nil {
+		t.Fatal("expected first start to fail since the plugin errors once")
 	}
 
-	select {
-	case <-plugin.Watch():
-	case <-time.After(time.Second):
-		t.Fatal("expected plugin to error out")
-	}
-	WithTimeout(15)(plugin)
 	for i := range 3 {
 		ctx, cancel := context.WithCancel(t.Context())
 		ln, conn, err := plugin.Start(ctx)
@@ -408,5 +402,187 @@ func TestPluginConcurrentWaiters(t *testing.T) {
 		} else if exitErr.ExitCode() != 1 {
 			t.Fatal("expected exit code 1")
 		}
+	}
+}
+
+// TestPluginStartExitBeforeSocket ensures that Start fails as soon as the
+// plugin exits, rather than waiting out the timeout for its socket.
+func TestPluginStartExitBeforeSocket(t *testing.T) {
+	path, err := filepath.Abs(goBinary)
+	if err != nil {
+		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
+	}
+	plugin, err := newTestBasePlugin(t,
+		WithPath(path),
+		WithScriptArgs([]string{"--error"}),
+		WithTimeout(15),
+	)
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
+	begin := time.Now()
+	_, _, err = plugin.Start(t.Context())
+	if err == nil {
+		t.Fatal("expected Start() to fail since the plugin exits immediately")
+	}
+	if elapsed := time.Since(begin); elapsed > 5*time.Second {
+		t.Fatalf("expected Start() to fail before the timeout, took %v", elapsed)
+	}
+}
+
+// TestPluginStartFailureKillsProcess ensures that a Start which launches the
+// plugin but fails afterwards kills the process and removes it from the ACL.
+func TestPluginStartFailureKillsProcess(t *testing.T) {
+	// A plugin that never creates its socket
+	script := filepath.Join(t.TempDir(), "sleep.sh")
+	err := os.WriteFile(script, []byte("#!/bin/sh\nexec sleep 30\n"), 0o755)
+	if err != nil {
+		t.Fatalf("couldn't write plugin script: %v", err)
+	}
+	acl := listener.NewAcl(nil, nil, false)
+	plugin, err := newTestBasePlugin(t,
+		WithPath(script),
+		WithAcl(acl),
+		WithTimeout(1),
+	)
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
+	_, _, err = plugin.Start(t.Context())
+	if err == nil {
+		t.Fatal("expected Start() to fail since the plugin never creates its socket")
+	}
+
+	pid := plugin.cmd.Process.Pid
+	if plugin.Running() {
+		t.Error("expected plugin to not be running after a failed Start()")
+	}
+	if err := syscall.Kill(pid, 0); !errors.Is(err, syscall.ESRCH) {
+		t.Errorf("expected plugin process %d to be killed, got: %v", pid, err)
+	}
+	if ok, _ := acl.AllowsPid(pid); ok {
+		t.Errorf("expected plugin process %d to be removed from the ACL", pid)
+	}
+}
+
+// TestPluginInstall ensures that a package plugin can be installed, and then
+// started from the installed environment.
+func TestPluginInstall(t *testing.T) {
+	requirePixi(t)
+	path := copyPackage(t, pyPkg)
+	plugin, err := newTestBasePlugin(t, WithPath(path))
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
+	err = plugin.Install(t.Context())
+	if err != nil {
+		t.Fatalf("encountered error installing plugin: %v", err)
+	}
+	if plugin.Running() {
+		t.Error("expected plugin to not be running after Install() returns")
+	}
+	if _, err := os.Stat(filepath.Join(path, ".pixi")); err != nil {
+		t.Fatalf("expected pixi environment to be installed: %v", err)
+	}
+
+	ln, conn, err := plugin.Start(t.Context())
+	if err != nil {
+		t.Fatalf("encountered error spawning plugin: %v", err)
+	}
+	err = pluginRPCCheck(t, ln, conn, listener.UnknownCode)
+	if err != nil {
+		t.Errorf("encountered error with plugin RPC handshake: %v", err)
+	}
+}
+
+// TestPluginInstallFailure ensures that a failed install returns the exit
+// error of the install process, and leaves the plugin able to run again.
+func TestPluginInstallFailure(t *testing.T) {
+	requirePixi(t)
+	path := copyPackage(t, pyPkg)
+	plugin, err := newTestBasePlugin(t, WithPath(path))
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
+	// pixi.toml takes precedence over pyproject.toml, so pixi will fail to
+	// parse the package manifest
+	err = os.WriteFile(filepath.Join(path, "pixi.toml"), []byte("[[[invalid"), 0o644)
+	if err != nil {
+		t.Fatalf("couldn't write invalid manifest: %v", err)
+	}
+	for i := range 2 {
+		err = plugin.Install(t.Context())
+		var exitErr *exec.ExitError
+		if !errors.As(err, &exitErr) {
+			t.Fatalf("expected an exit error from the install, got: %v, iter: %d", err, i)
+		}
+		if plugin.Running() {
+			t.Fatalf("expected plugin to not be running after a failed Install(), iter: %d", i)
+		}
+	}
+}
+
+// TestPluginInstallCanceled ensures that canceling the context stops an
+// install.
+func TestPluginInstallCanceled(t *testing.T) {
+	requirePixi(t)
+	plugin, err := newTestBasePlugin(t, WithPath(copyPackage(t, pyPkg)))
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	err = plugin.Install(ctx)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context canceled error, got: %v", err)
+	}
+	if plugin.Running() {
+		t.Error("expected plugin to not be running after a canceled Install()")
+	}
+}
+
+// TestPluginInstallNotPackage ensures that Install is a no-op for plugins that
+// aren't pixi packages, rather than running the plugin.
+func TestPluginInstallNotPackage(t *testing.T) {
+	path, err := filepath.Abs(goBinary)
+	if err != nil {
+		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
+	}
+	plugin, err := newTestBasePlugin(t, WithPath(path))
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
+	err = plugin.Install(t.Context())
+	if err != nil {
+		t.Fatalf("expected Install() to be a no-op, got: %v", err)
+	}
+	if plugin.cmd != nil {
+		t.Fatal("expected Install() to not run anything")
+	}
+}
+
+// TestPluginInstallAlreadyRunning ensures that a plugin can't be installed
+// while it is running.
+func TestPluginInstallAlreadyRunning(t *testing.T) {
+	requirePixi(t)
+	path, err := filepath.Abs(goPkg)
+	if err != nil {
+		t.Fatalf("couldn't stat mock_plugin helper go_pkg: %v", err)
+	}
+	plugin, err := newTestBasePlugin(t, WithPath(path))
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
+	ln, conn, err := plugin.Start(t.Context())
+	if err != nil {
+		t.Fatalf("encountered error spawning plugin: %v", err)
+	}
+	err = pluginRPCCheck(t, ln, conn, listener.UnknownCode)
+	if err != nil {
+		t.Errorf("encountered error with plugin RPC handshake: %v", err)
+	}
+	err = plugin.Install(t.Context())
+	if err == nil {
+		t.Fatal("expected error installing plugin since it's already running")
 	}
 }

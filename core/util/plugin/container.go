@@ -19,6 +19,7 @@ type ContainerPlugin struct {
 	*BasePlugin
 	imageRef string
 	cid      string
+	prepared bool // whether the podman args have been added to rargs
 }
 
 // NewContainerPlugin creates a ContainerPlugin backed by podman, pulling
@@ -60,24 +61,65 @@ func NewContainerPlugin(imageRef string, options ...PluginOption) (*ContainerPlu
 	return p, nil
 }
 
-// Start launches the container with the appropriate volume mounts and socket
-// bindings, then returns the listener and gRPC client connection to the
-// caller.
+// Start delegates to BasePlugin.Start.
 func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
-	// Check if final has been set, if so just re-run
-	if p.final != nil {
-		return p.BasePlugin.Start(ctx)
+	if err := p.createContainer(); err != nil {
+		p.log.Error().Err(err).Msg("couldn't start container plugin")
+		return nil, nil, err
+	}
+	ln, conn, err := p.BasePlugin.Start(ctx)
+	if err != nil {
+		p.log.Error().Err(err).Msg("couldn't start container plugin")
+		return nil, nil, err
+	}
+	if err := p.addPid(); err != nil {
+		p.log.Error().Err(err).Msg("failed to read container pid")
+		if ln != nil {
+			ln.Close()
+		}
+		if conn != nil {
+			conn.Close()
+		}
+		p.abort()
+		return nil, nil, err
+	}
+	return ln, conn, err
+}
+
+// Install delegates to BasePlugin.Install. The install process only runs to
+// completion and never connects to the listener, so its PID isn't added to the
+// ACL.
+func (p *ContainerPlugin) Install(ctx context.Context) error {
+	if err := p.createContainer(); err != nil {
+		p.log.Error().Err(err).Msg("couldn't install container plugin")
+		return err
+	}
+	return p.BasePlugin.Install(ctx)
+}
+
+// createContainer sets up the script to run inside a podman container.
+func (p *ContainerPlugin) createContainer() error {
+	// Don't modify the args out from under a running container
+	if p.running.Load() {
+		return fmt.Errorf("plugin already running")
+	}
+	// Check if the container args have been set up, if so nothing needs to be
+	// done
+	if p.prepared {
+		return nil
 	}
 
 	// Setup the run directory
 	err := p.setupRunDir()
 	if err != nil {
 		p.log.Err(err).Msg("error setting up plugin runtime directory")
+		return err
 	}
 
 	// Set environment variables and link in the plugin runtime folder
 	args := []string{
 		"run",
+		"--rm",
 		"-e",
 		fmt.Sprintf("%s=%s", ClientSockEnv, p.lnSock),
 		"-e",
@@ -92,7 +134,7 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 			path, err := exec.LookPath(f)
 			if err != nil {
 				p.log.Error().Err(err).Msg("couldn't get path to executable")
-				return nil, nil, err
+				return err
 			}
 			args = append(args,
 				"-v",
@@ -102,12 +144,12 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 			_, err := os.Stat(f) // ensure the file exists
 			if err != nil {
 				p.log.Error().Err(err).Msg("couldn't stat linked file")
-				return nil, nil, err
+				return err
 			}
 			path, err := filepath.Abs(f)
 			if err != nil {
 				p.log.Error().Err(err).Msg("couldn't get absolute filepath")
-				return nil, nil, err
+				return err
 			}
 			if w == 1 { // read-write
 				args = append(args,
@@ -153,26 +195,27 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 		}
 		p.rargs = append(p.rargs, "-w", "/"+bindDir, p.imageRef) // change workdir
 	}
+	p.prepared = true
+	return nil
+}
 
-	// Append the podman PID namespace to the allowed PIDs
-	ln, conn, err := p.BasePlugin.Start(ctx)
-	if err != nil {
-		p.log.Error().Err(err).Msg("couldn't start container plugin")
-		return nil, nil, err
-	}
-	err = p.setCID(cidFile)
+// addPid adds the host PID of the running container to the plugin's ACL.
+func (p *ContainerPlugin) addPid() error {
+	// Read the CID file to get the PID
+	cidFile := filepath.Join(p.runDir, ".cid")
+	err := p.setCID(cidFile)
 	if err != nil {
 		p.log.Error().Err(err).Msg("couldn't get container cid")
-		return nil, nil, err
+		return err
 	}
 	pid, err := p.getPID()
 	if err != nil {
 		p.log.Error().Err(err).Msg("couldn't get container pid")
-		return nil, nil, err
+		return err
 	}
 	// The listener shares the plugin's ACL, so allow the container PID on it
-	p.acl.AddPid(pid, p.code)
-	return ln, conn, err
+	p.allowPid(pid)
+	return nil
 }
 
 // setCID polls cidPath until the container ID is written or the plugin timeout

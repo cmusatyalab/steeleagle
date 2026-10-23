@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -22,7 +23,6 @@ func TestContainerPlugin(t *testing.T) {
 	plugin, err := newTestContainerPlugin(t,
 		"alpine",
 		WithPath(path),
-		WithRunnerArgs([]string{"--rm"}),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
@@ -49,7 +49,6 @@ func TestContainerPluginPixi(t *testing.T) {
 	plugin, err := newTestContainerPlugin(t,
 		pixiImage,
 		WithPath(path),
-		WithRunnerArgs([]string{"--rm"}),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
@@ -76,7 +75,6 @@ func TestContainerPluginPython(t *testing.T) {
 	plugin, err := newTestContainerPlugin(t,
 		pixiImage,
 		WithPath(path),
-		WithRunnerArgs([]string{"--rm"}),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
@@ -106,7 +104,6 @@ func TestContainerPluginPythonCustomExec(t *testing.T) {
 		WithScript(path+"/main.py"),
 		WithExecutable("uv"),
 		WithExecutableArgs([]string{"run"}),
-		WithRunnerArgs([]string{"--rm"}),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
@@ -161,7 +158,6 @@ func TestContainerPluginWrongAuthCode(t *testing.T) {
 		"alpine",
 		WithPath(path),
 		WithAuthCode(listener.UserCode),
-		WithRunnerArgs([]string{"--rm"}),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
@@ -190,7 +186,6 @@ func TestContainerPluginArgs(t *testing.T) {
 		WithPath(path),
 		WithScriptArgs([]string{"--error"}),
 		WithoutClient(),
-		WithRunnerArgs([]string{"--rm"}),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
@@ -219,9 +214,35 @@ func TestContainerPluginWrongTag(t *testing.T) {
 	_, err = newTestContainerPlugin(t,
 		"foobar",
 		WithPath(path),
-		WithRunnerArgs([]string{"--rm"}),
 	)
 	if err == nil {
 		t.Fatalf("no error creating plugin when it was expected")
+	}
+}
+
+// TestContainerPluginInstall ensures that a package plugin can be installed in
+// a container, and then started from the installed environment.
+func TestContainerPluginInstall(t *testing.T) {
+	requireContainer(t)
+	path := copyPackage(t, pyPkg)
+	plugin, err := newTestContainerPlugin(t, pixiImage, WithPath(path))
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
+	err = plugin.Install(t.Context())
+	if err != nil {
+		t.Fatalf("encountered error installing plugin: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(path, ".pixi")); err != nil {
+		t.Fatalf("expected pixi environment to be installed: %v", err)
+	}
+
+	ln, conn, err := plugin.Start(t.Context())
+	if err != nil {
+		t.Fatalf("encountered error spawning plugin: %v", err)
+	}
+	err = pluginRPCCheck(t, ln, conn, listener.UnknownCode)
+	if err != nil {
+		t.Errorf("encountered error with plugin RPC handshake: %v", err)
 	}
 }

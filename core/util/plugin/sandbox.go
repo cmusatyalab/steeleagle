@@ -13,6 +13,7 @@ import (
 
 type SandboxPlugin struct {
 	*BasePlugin
+	prepared bool // whether the bwrap args have been added to rargs
 }
 
 // NewSandboxPlugin creates a SandboxPlugin backed by bubblewrap (bwrap).
@@ -49,20 +50,48 @@ func NewSandboxPlugin(options ...PluginOption) (*SandboxPlugin, error) {
 		}
 	}
 
+	// Installation downloads packages, so share the host network (this must
+	// come after --unshare-all, which bwrap applies in order)
+	p.iargs = append(p.iargs, "--share-net")
+
 	return p, nil
 }
 
-// Start assembles the bubblewrap arguments, binds in the plugin files, and delegates to BasePlugin.Start.
+// Start delegates to BasePlugin.Start.
 func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
-	// Check if final has been set, if so just re-run
-	if p.final != nil {
-		return p.BasePlugin.Start(ctx)
+	if err := p.createSandbox(); err != nil {
+		p.log.Error().Err(err).Msg("failed to create sandbox")
+		return nil, nil, err
+	}
+	return p.BasePlugin.Start(ctx)
+}
+
+// Install delegates to BasePlugin.Install.
+func (p *SandboxPlugin) Install(ctx context.Context) error {
+	if err := p.createSandbox(); err != nil {
+		p.log.Error().Err(err).Msg("failed to create sandbox")
+		return err
+	}
+	return p.BasePlugin.Install(ctx)
+}
+
+// createSandbox sets up the script to run inside a bwrap sandbox.
+func (p *SandboxPlugin) createSandbox() error {
+	// Don't modify the args out from under a running sandbox
+	if p.running.Load() {
+		return fmt.Errorf("plugin already running")
+	}
+	// Check if the sandbox args have been set up, if so nothing needs to be
+	// done
+	if p.prepared {
+		return nil
 	}
 
 	// Setup the run directory
 	err := p.setupRunDir()
 	if err != nil {
 		p.log.Err(err).Msg("error setting up plugin runtime directory")
+		return err
 	}
 
 	// Add the correct bubblewrap args
@@ -91,7 +120,7 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
 			path, err := exec.LookPath(f)
 			if err != nil {
 				p.log.Error().Err(err).Msg("couldn't get path to executable")
-				return nil, nil, err
+				return err
 			}
 			args = append(args,
 				"--ro-bind",
@@ -101,12 +130,12 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
 			_, err := os.Stat(f) // ensure the file exists
 			if err != nil {
 				p.log.Error().Err(err).Msg("couldn't stat linked file")
-				return nil, nil, err
+				return err
 			}
 			path, err := filepath.Abs(f)
 			if err != nil {
 				p.log.Error().Err(err).Msg("couldn't get absolute filepath")
-				return nil, nil, err
+				return err
 			}
 			if w == 1 { // read-write
 				args = append(args,
@@ -150,8 +179,8 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
 			p.script = fmt.Sprintf("./%s", filepath.Base(p.script))
 		}
 	}
-
-	return p.BasePlugin.Start(ctx)
+	p.prepared = true
+	return nil
 }
 
 // checkBwrapPermissions verifies that bwrap can run a minimal sandbox, returning an error if permissions are insufficient.

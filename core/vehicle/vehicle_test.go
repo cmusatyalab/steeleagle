@@ -129,9 +129,10 @@ func (f *fakeDriver) Wait() error {
 	return f.exitErr
 }
 
-func (f *fakeDriver) Name() string            { return "fake" }
-func (f *fakeDriver) Code() listener.AuthCode { return listener.AdminCode }
-func (f *fakeDriver) Running() bool           { return f.running.Load() }
+func (f *fakeDriver) Install(context.Context) error { return nil }
+func (f *fakeDriver) Name() string                  { return "fake" }
+func (f *fakeDriver) Code() listener.AuthCode       { return listener.AdminCode }
+func (f *fakeDriver) Running() bool                 { return f.running.Load() }
 
 // newTestVehicle creates a vehicle with a fake driver, using temporary XDG
 // directories.

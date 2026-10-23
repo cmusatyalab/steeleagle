@@ -25,10 +25,17 @@ import (
 
 // Plugin defines the behavior required of all plugin implementations.
 type Plugin interface {
-	// Start launches the plugin and returns a listener for the plugin's server
-	// side and a client connection to the plugin. The returned listener and
-	// connection are both bound to the plugin's lifetime. Cancel ctx to stop.
+	// Start runs the plugin in execution mode, which if using pixi, runs
+	// `pixi run start`, or can run any arbitrary script. It returns a listener
+	// for the plugin's gRPC server side and a client connection to the plugin
+	// The returned listener and connection are both bound to the plugin's lifetime.
+	// Cancel ctx to stop.
 	Start(context.Context) (net.Listener, *grpc.ClientConn, error)
+
+	// Install runs the plugin in installation mode, which if using pixi, runs
+	// `pixi install`. No-op if the plugin doesn't use pixi. Blocks until
+	// completion, unlike Start.
+	Install(context.Context) error
 
 	// Watch returns a channel that receives the plugin's exit error when it
 	// terminates.
@@ -55,19 +62,19 @@ type BasePlugin struct {
 	pkg         bool               // determines whether the plugin is a package or not
 	path        string             // path to plugin
 	runner      string             // runner target (e.g. bwrap, podman)
-	final       []string           // final args for the subprocess
+	final       []string           // final args for the most recent subprocess
 	rargs       []string           // runner args, never modified during runtime
+	iargs       []string           // runner args appended to rargs only for installation
 	exec        string             // executable target (e.g. sh)
 	eargs       []string           // executable args
 	script      string             // script target (plugin script)
 	sargs       []string           // script args
-	dir         string             // working directory for the subprocess
 	files       map[string]int     // linked files (only applicable to sandboxes/containers)
 	start       int64              // plugin start time
 	timeout     int                // timeout in seconds waiting for the server to start
 	running     atomic.Bool        // whether or not the plugin is currently running
 	parentDir   string             // parent directory for plugin to live under (used to create runDir)
-	runDir      string             // runtime directory path
+	runDir      string             // runtime directory path (where sockets live)
 	cSock       string             // path of the socket this process dials as a client, and the plugin listens on
 	lnSock      string             // path of the socket this process listens on, and the plugin dials as a client
 	client      bool               // whether or not to support a plugin server
@@ -75,6 +82,8 @@ type BasePlugin struct {
 	check       bool               // whether or not to check existence of files
 	cmd         *exec.Cmd          // command to run
 	acl         *listener.Acl      // ACL for listener connections
+	pids        []int              // PIDs this plugin added to the ACL, removed on cleanup
+	pidsMu      sync.Mutex         // guards pids
 	log         zerolog.Logger     // logger object
 	outStream   io.Writer          // replacement out file for Stdout/err
 	environ     []string           // environment to run the plugin in
@@ -126,110 +135,35 @@ func NewBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 	return p, nil
 }
 
-// Start builds the command from the configured runner/executable/script chain,
-// launches the subprocess, and returns the listener and gRPC client
-// connection.
+// Start starts the plugin in normal execution mode.
 func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
-	// Prevent against multiple Start() calls while running
-	if !p.running.CompareAndSwap(false, true) {
-		return nil, nil, fmt.Errorf("plugin already running")
+	if err := p.createAndRunCommand(ctx, false); err != nil {
+		p.log.Error().Err(err).Msg("couldn't start plugin")
+		return nil, nil, err
 	}
-
-	// Create a new context with a cancel function
-	p.ctx, p.cancel = context.WithCancel(ctx)
-
-	// Reset the per-run wait/cleanup state so a restarted plugin waits on its
-	// new process rather than replaying the previous run's result.
-	p.waitOnce = sync.Once{}
-	p.waitErr = nil
-	p.waitDone = make(chan struct{})
-	p.cleanupDone = make(chan struct{})
-
-	// Set up the run directory and the client/listen socket
-	err := p.setupRunDir()
+	// Add the process to the ACL so that the returned listener accepts it
+	p.allowPid(p.cmd.Process.Pid)
+	ln, conn, err := p.createSocketEndpoints()
 	if err != nil {
-		p.log.Err(err).Msg("error setting up plugin runtime directory")
-		p.cleanup()
+		p.abort()
 		return nil, nil, err
 	}
+	return ln, conn, nil
+}
 
-	// Create the command if it hasn't already been created; check in sequence
-	// whether the script, executable, and then runner are set, and prepend the
-	// arguments for each into one executable string
-	if p.final == nil {
-		if p.script != "" {
-			p.final = slices.Insert(p.sargs, 0, p.script)
-		}
-		if p.exec != "" {
-			p.final = append(p.eargs, p.final...)
-			p.final = slices.Insert(p.final, 0, p.exec)
-		}
-		if p.runner != "" {
-			p.final = append(p.rargs, p.final...)
-			p.final = slices.Insert(p.final, 0, p.runner)
-		}
+// Install runs the plugin in installation mode and blocks until the install
+// process exits, returning its exit error. Only pixi packages have an install
+// step (`pixi install`); for any other plugin Install is a no-op.
+func (p *BasePlugin) Install(ctx context.Context) error {
+	if !p.usesPixi() {
+		p.log.Debug().Msg("plugin is not a pixi package, nothing to install")
+		return nil
 	}
-
-	// Check for argument count
-	if len(p.final) >= 2 {
-		p.cmd = exec.CommandContext(ctx, p.final[0], p.final[1:]...)
-	} else if len(p.final) == 1 {
-		p.cmd = exec.CommandContext(ctx, p.final[0])
-	} else {
-		err := fmt.Errorf("no arguments provided to plugin")
-		p.log.Error().Err(err).Msg("insufficient arguments to start plugin")
-		p.cleanup()
-		return nil, nil, err
+	if err := p.createAndRunCommand(ctx, true); err != nil {
+		p.log.Error().Err(err).Msg("couldn't install plugin")
+		return err
 	}
-	// Run in its own process group and kill the whole group on shutdown, not
-	// just the immediate child
-	p.cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	p.cmd.Cancel = func() error {
-		return syscall.Kill(-p.cmd.Process.Pid, syscall.SIGKILL)
-	}
-	// Set the working directory for the command
-	if p.dir != "" {
-		p.cmd.Dir = p.dir
-	} else if p.script != "" {
-		p.cmd.Dir = filepath.Dir(p.script)
-	}
-	p.log.Info().Msgf("starting: %v", p.final)
-
-	// Bind in stdout and stderr
-	p.cmd.Stdout = p.outStream
-	p.cmd.Stderr = p.outStream
-
-	// Reverse the listener and client; the plugin connects in the opposite way
-	p.cmd.Env = append(
-		p.environ,
-		fmt.Sprintf("%s=%s", ListenSockEnv, p.cSock),
-		fmt.Sprintf("%s=%s", ClientSockEnv, p.lnSock),
-	)
-	err = p.run()
-	if err != nil {
-		p.log.Error().Err(err).Msg("error running command")
-		p.cleanup()
-		return nil, nil, err
-	}
-	p.log.Info().Int("pid", p.cmd.Process.Pid).Msg("plugin process launched")
-	p.acl.AddPid(p.cmd.Process.Pid, p.code)
-
-	// Cleanup goroutine
-	go func() {
-		err := p.waitProcess()
-		if ctx.Err() != nil {
-			p.log.Err(err).Msg("context canceled, initiating cleanup")
-		} else {
-			var exitErr *exec.ExitError
-			if errors.As(err, &exitErr) {
-				p.log.Err(err).
-					Msgf("plugin exited unexpectedly with exit code %d", exitErr.ExitCode())
-			}
-		}
-		p.cleanup()
-	}()
-
-	return p.createSocketEndpoints()
+	return p.Wait()
 }
 
 // Watch returns a channel that receives the subprocess exit error when the
@@ -270,11 +204,134 @@ func (p *BasePlugin) Running() bool {
 	return p.running.Load()
 }
 
+// buildCommand assembles the runner, executable, and script along with their
+// args into one command. Pixi packages are started with `pixi <eargs> start`
+// (eargs default to `run`), and installed with `pixi install`. Fresh slices
+// are used so that none of the configured arg slices are aliased or modified.
+func (p *BasePlugin) buildCommand(install bool) []string {
+	var args []string
+	if p.runner != "" {
+		args = append(args, p.runner)
+		args = append(args, p.rargs...)
+		if install {
+			args = append(args, p.iargs...)
+		}
+	}
+	if install {
+		return append(args, pixiExec, pixiInstall)
+	}
+	if p.exec != "" {
+		args = append(args, p.exec)
+		args = append(args, p.eargs...)
+		if p.usesPixi() {
+			args = append(args, pixiStart)
+		}
+	}
+	if p.script != "" {
+		args = append(args, p.script)
+		args = append(args, p.sargs...)
+	}
+	return args
+}
+
+// createAndRunCommand builds the start or install command, and then runs the
+// command with the input context. On success, a goroutine cleans up the plugin
+// once the process exits; on failure, cleanup has already been run.
+func (p *BasePlugin) createAndRunCommand(ctx context.Context, install bool) error {
+	// Prevent against multiple subsequent run calls while running
+	if !p.running.CompareAndSwap(false, true) {
+		return fmt.Errorf("plugin already running")
+	}
+
+	// Create a new context with a cancel function
+	p.ctx, p.cancel = context.WithCancel(ctx)
+
+	// Reset the per-run wait/cleanup state so a restarted plugin waits on its
+	// new process rather than replaying the previous run's result.
+	p.waitOnce = sync.Once{}
+	p.waitErr = nil
+	p.waitDone = make(chan struct{})
+	p.cleanupDone = make(chan struct{})
+
+	// Set up the run directory and the client/listen socket
+	err := p.setupRunDir()
+	if err != nil {
+		p.log.Err(err).Msg("error setting up plugin runtime directory")
+		p.cleanup()
+		return err
+	}
+
+	// Rebuild the command on every run, since it differs between Start and
+	// Install
+	p.final = p.buildCommand(install)
+
+	// Check for argument count
+	if len(p.final) >= 2 {
+		p.cmd = exec.CommandContext(p.ctx, p.final[0], p.final[1:]...)
+	} else if len(p.final) == 1 {
+		p.cmd = exec.CommandContext(p.ctx, p.final[0])
+	} else {
+		err := fmt.Errorf("no arguments provided to plugin")
+		p.log.Error().Err(err).Msg("insufficient arguments to start plugin")
+		p.cleanup()
+		return err
+	}
+	// Run in its own process group and kill the whole group on shutdown, not
+	// just the immediate child
+	p.cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	p.cmd.Cancel = func() error {
+		return syscall.Kill(-p.cmd.Process.Pid, syscall.SIGKILL)
+	}
+	// Run packages from the package directory, and scripts from the script's
+	// directory
+	if p.pkg {
+		p.cmd.Dir = p.path
+	} else {
+		p.cmd.Dir = filepath.Dir(p.script)
+	}
+	p.log.Info().Msgf("starting: %v", p.final)
+
+	// Bind in stdout and stderr
+	p.cmd.Stdout = p.outStream
+	p.cmd.Stderr = p.outStream
+
+	// Reverse the listener and client; the plugin connects in the opposite way
+	p.cmd.Env = append(
+		p.environ,
+		fmt.Sprintf("%s=%s", ListenSockEnv, p.cSock),
+		fmt.Sprintf("%s=%s", ClientSockEnv, p.lnSock),
+	)
+	err = p.run()
+	if err != nil {
+		p.log.Error().Err(err).Msg("error running command")
+		p.cleanup()
+		return err
+	}
+	p.log.Info().Int("pid", p.cmd.Process.Pid).Msg("plugin process launched")
+
+	// Cleanup goroutine
+	go func() {
+		err := p.waitProcess()
+		if ctx.Err() != nil {
+			p.log.Err(err).Msg("context canceled, initiating cleanup")
+		} else {
+			var exitErr *exec.ExitError
+			if errors.As(err, &exitErr) {
+				p.log.Err(err).
+					Msgf("plugin exited unexpectedly with exit code %d", exitErr.ExitCode())
+			}
+		}
+		p.cleanup()
+	}()
+	return nil
+}
+
 // validateScript resolves and validates the plugin's script path, setting pkg
-// and exec fields as needed. Directories are treated as pixi packages and
-// started with `pixi run start`, unless an executable has been set, in which
-// case the executable and its args are used in place of `pixi run`. Files are
-// treated as binaries and run directly.
+// and exec fields as needed. Directories are treated as pixi packages, which
+// are started with `pixi run start` and installed with `pixi install`,
+// unless an executable has been set, in which case the executable and its args
+// are used in place of `pixi run <task>`. Files are treated as binaries and
+// run directly.
 func (p *BasePlugin) validateScript() error {
 	// Check if script has already been manually set
 	if p.script != "" {
@@ -306,8 +363,6 @@ func (p *BasePlugin) validateScript() error {
 		}
 		p.log.Debug().Str("manifest", manifest).Msg("found pixi manifest")
 		p.pkg = true
-		p.dir = p.path
-		p.script = pixiTask
 		if p.exec == "" {
 			p.exec = pixiExec
 			p.eargs = slices.Insert(p.eargs, 0, pixiRun)
@@ -319,9 +374,29 @@ func (p *BasePlugin) validateScript() error {
 			p.log.Error().Msg("couldn't find runnable script")
 			return fmt.Errorf("plugin %s is not executable nor does it contain an executable runhook", p.path)
 		}
+		p.log.Debug().Str("script", p.script).Msg("found executable script")
 	}
 
 	return nil
+}
+
+// abort kills a launched plugin process and blocks until its cleanup has
+// finished, so that a failed Start never leaves the process running and the
+// plugin can be started again as soon as abort returns.
+func (p *BasePlugin) abort() {
+	p.cancel()
+	p.Wait()
+}
+
+// findManifest returns the path of the pixi manifest within dir.
+func findManifest(dir string) (string, error) {
+	for _, name := range pixiManifests {
+		manifest := filepath.Join(dir, name)
+		if _, err := os.Stat(manifest); err == nil {
+			return manifest, nil
+		}
+	}
+	return "", fmt.Errorf("plugin %s does not contain a pixi manifest (one of %v)", dir, pixiManifests)
 }
 
 // waitProcess blocks until the plugin subprocess exits and returns its exit
@@ -342,17 +417,6 @@ func (p *BasePlugin) waitProcess() error {
 	})
 	<-p.waitDone
 	return p.waitErr
-}
-
-// findManifest returns the path of the pixi manifest within dir.
-func findManifest(dir string) (string, error) {
-	for _, name := range pixiManifests {
-		manifest := filepath.Join(dir, name)
-		if _, err := os.Stat(manifest); err == nil {
-			return manifest, nil
-		}
-	}
-	return "", fmt.Errorf("plugin %s does not contain a pixi manifest (one of %v)", dir, pixiManifests)
 }
 
 // createSocketEndpoints listens on the server socket and, when server mode is
@@ -405,21 +469,48 @@ func (p *BasePlugin) createSocketEndpoints() (net.Listener, *grpc.ClientConn, er
 	return listener.NewCodedListener(listen, p.acl, listener.WithLogger(p.log)), client, nil
 }
 
-// waitForSocket polls path until the socket file exists or the plugin timeout
-// elapses.
+// waitForSocket polls path until the socket file exists, the plugin process
+// exits, or the plugin timeout elapses.
 func (p *BasePlugin) waitForSocket(path string) error {
 	deadline := time.Now().Add(time.Duration(p.timeout) * time.Second)
 	for time.Now().Before(deadline) {
 		if _, err := os.Stat(path); err == nil {
 			return nil
 		}
+		select {
+		case <-p.waitDone: // nil for shims, which never select this case
+			return fmt.Errorf("plugin exited before creating socket: %s", path)
+		default:
+		}
 		time.Sleep(50 * time.Millisecond)
 	}
 	return fmt.Errorf("timed out waiting for socket: %s", path)
 }
 
-// cleanup cleans up system resources, including the runtime directory.
+// allowPid adds pid to the ACL with the plugin's AuthCode, and records it so
+// that it is removed from the ACL on cleanup.
+func (p *BasePlugin) allowPid(pid int) {
+	p.pidsMu.Lock()
+	defer p.pidsMu.Unlock()
+	if err := p.acl.AddPid(pid, p.code); err != nil {
+		p.log.Error().Err(err).Int("pid", pid).Msg("couldn't add pid to acl")
+		return
+	}
+	p.pids = append(p.pids, pid)
+}
+
+// cleanup cleans up system resources, including the runtime directory and the
+// PIDs this plugin added to the ACL.
 func (p *BasePlugin) cleanup() {
+	// Remove the plugin's PIDs from the ACL, since they may be reused by
+	// unrelated processes once the plugin exits
+	p.pidsMu.Lock()
+	for _, pid := range p.pids {
+		p.acl.RemovePid(pid)
+	}
+	p.pids = nil
+	p.pidsMu.Unlock()
+
 	// Remove the plugin run directory
 	err := os.RemoveAll(p.runDir)
 	p.cancel()
@@ -458,4 +549,9 @@ func (p *BasePlugin) setupRunDir() error {
 	os.Remove(p.cSock)
 	os.Remove(p.lnSock)
 	return nil
+}
+
+// usesPixi reports whether the plugin is a package run through a pixi task.
+func (p *BasePlugin) usesPixi() bool {
+	return p.pkg && p.exec == pixiExec
 }
