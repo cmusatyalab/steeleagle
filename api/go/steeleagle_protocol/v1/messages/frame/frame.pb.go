@@ -26,6 +26,54 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Compression format of an encoded frame.
+type Codec int32
+
+const (
+	Codec_CODEC_UNSPECIFIED Codec = 0
+	// each frame is a complete JPEG image
+	Codec_CODEC_JPEG Codec = 1
+	// each frame is one H.264 access unit as an Annex B byte stream; keyframes
+	// are IDR frames, preceded by their SPS and PPS
+	Codec_CODEC_H264 Codec = 2
+)
+
+// Enum value maps for Codec.
+var (
+	Codec_name = map[int32]string{
+		0: "CODEC_UNSPECIFIED",
+		1: "CODEC_JPEG",
+		2: "CODEC_H264",
+	}
+	Codec_value = map[string]int32{
+		"CODEC_UNSPECIFIED": 0,
+		"CODEC_JPEG":        1,
+		"CODEC_H264":        2,
+	}
+)
+
+func (x Codec) Enum() *Codec {
+	p := new(Codec)
+	*p = x
+	return p
+}
+
+func (x Codec) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Codec) Descriptor() protoreflect.EnumDescriptor {
+	return file_steeleagle_protocol_v1_messages_frame_frame_proto_enumTypes[0].Descriptor()
+}
+
+func (Codec) Type() protoreflect.EnumType {
+	return &file_steeleagle_protocol_v1_messages_frame_frame_proto_enumTypes[0]
+}
+
+func (x Codec) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
 // Raw camera frames.
 type RawFrame struct {
 	state                   protoimpl.MessageState  `protogen:"opaque.v1"`
@@ -256,7 +304,7 @@ func (b0 RawFrame_builder) Build() *RawFrame {
 	return m0
 }
 
-// Compressed camera frames (JPG encoded).
+// Compressed camera frames.
 type EncodedFrame struct {
 	state                   protoimpl.MessageState  `protogen:"opaque.v1"`
 	xxx_hidden_Timestamp    *timestamppb.Timestamp  `protobuf:"bytes,1,opt,name=timestamp,proto3"`
@@ -265,6 +313,8 @@ type EncodedFrame struct {
 	xxx_hidden_GimbalInfo   *telemetry.GimbalInfo   `protobuf:"bytes,4,opt,name=gimbal_info,json=gimbalInfo,proto3"`
 	xxx_hidden_PositionInfo *telemetry.PositionInfo `protobuf:"bytes,5,opt,name=position_info,json=positionInfo,proto3"`
 	xxx_hidden_CameraId     uint64                  `protobuf:"varint,6,opt,name=camera_id,json=cameraId,proto3"`
+	xxx_hidden_Codec        Codec                   `protobuf:"varint,7,opt,name=codec,proto3,enum=steeleagle_protocol.v1.messages.frame.Codec"`
+	xxx_hidden_Keyframe     bool                    `protobuf:"varint,8,opt,name=keyframe,proto3"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -336,6 +386,20 @@ func (x *EncodedFrame) GetCameraId() uint64 {
 	return 0
 }
 
+func (x *EncodedFrame) GetCodec() Codec {
+	if x != nil {
+		return x.xxx_hidden_Codec
+	}
+	return Codec_CODEC_UNSPECIFIED
+}
+
+func (x *EncodedFrame) GetKeyframe() bool {
+	if x != nil {
+		return x.xxx_hidden_Keyframe
+	}
+	return false
+}
+
 func (x *EncodedFrame) SetTimestamp(v *timestamppb.Timestamp) {
 	x.xxx_hidden_Timestamp = v
 }
@@ -361,6 +425,14 @@ func (x *EncodedFrame) SetPositionInfo(v *telemetry.PositionInfo) {
 
 func (x *EncodedFrame) SetCameraId(v uint64) {
 	x.xxx_hidden_CameraId = v
+}
+
+func (x *EncodedFrame) SetCodec(v Codec) {
+	x.xxx_hidden_Codec = v
+}
+
+func (x *EncodedFrame) SetKeyframe(v bool) {
+	x.xxx_hidden_Keyframe = v
 }
 
 func (x *EncodedFrame) HasTimestamp() bool {
@@ -401,7 +473,7 @@ type EncodedFrame_builder struct {
 
 	// capture timestamp of the frame
 	Timestamp *timestamppb.Timestamp
-	// encoded bytes representing the frame
+	// encoded bytes representing the frame, in the format given by codec
 	EncodedData []byte
 	// frame ID for future correlation
 	Id uint64
@@ -411,6 +483,11 @@ type EncodedFrame_builder struct {
 	PositionInfo *telemetry.PositionInfo
 	// ID of origin camera
 	CameraId uint64
+	// compression format of encoded_data
+	Codec Codec
+	// whether the frame decodes without any frame before it; every JPEG frame
+	// is a keyframe, while an H.264 frame is one only if it is an IDR frame
+	Keyframe bool
 }
 
 func (b0 EncodedFrame_builder) Build() *EncodedFrame {
@@ -423,6 +500,8 @@ func (b0 EncodedFrame_builder) Build() *EncodedFrame {
 	x.xxx_hidden_GimbalInfo = b.GimbalInfo
 	x.xxx_hidden_PositionInfo = b.PositionInfo
 	x.xxx_hidden_CameraId = b.CameraId
+	x.xxx_hidden_Codec = b.Codec
+	x.xxx_hidden_Keyframe = b.Keyframe
 	return m0
 }
 
@@ -443,7 +522,7 @@ const file_steeleagle_protocol_v1_messages_frame_frame_proto_rawDesc = "" +
 	"\vgimbal_info\x18\t \x01(\v25.steeleagle_protocol.v1.messages.telemetry.GimbalInfoR\n" +
 	"gimbalInfo\x12\x1b\n" +
 	"\tcamera_id\x18\n" +
-	" \x01(\x04R\bcameraId\"\xce\x02\n" +
+	" \x01(\x04R\bcameraId\"\xae\x03\n" +
 	"\fEncodedFrame\x128\n" +
 	"\ttimestamp\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12!\n" +
 	"\fencoded_data\x18\x02 \x01(\fR\vencodedData\x12\x0e\n" +
@@ -451,30 +530,41 @@ const file_steeleagle_protocol_v1_messages_frame_frame_proto_rawDesc = "" +
 	"\vgimbal_info\x18\x04 \x01(\v25.steeleagle_protocol.v1.messages.telemetry.GimbalInfoR\n" +
 	"gimbalInfo\x12\\\n" +
 	"\rposition_info\x18\x05 \x01(\v27.steeleagle_protocol.v1.messages.telemetry.PositionInfoR\fpositionInfo\x12\x1b\n" +
-	"\tcamera_id\x18\x06 \x01(\x04R\bcameraIdB\xbb\x02\n" +
+	"\tcamera_id\x18\x06 \x01(\x04R\bcameraId\x12B\n" +
+	"\x05codec\x18\a \x01(\x0e2,.steeleagle_protocol.v1.messages.frame.CodecR\x05codec\x12\x1a\n" +
+	"\bkeyframe\x18\b \x01(\bR\bkeyframe*>\n" +
+	"\x05Codec\x12\x15\n" +
+	"\x11CODEC_UNSPECIFIED\x10\x00\x12\x0e\n" +
+	"\n" +
+	"CODEC_JPEG\x10\x01\x12\x0e\n" +
+	"\n" +
+	"CODEC_H264\x10\x02B\xbb\x02\n" +
 	")com.steeleagle_protocol.v1.messages.frameB\n" +
 	"FrameProtoP\x01ZNgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/frame\xa2\x02\x04SVMF\xaa\x02$SteeleagleProtocol.V1.Messages.Frame\xca\x02$SteeleagleProtocol\\V1\\Messages\\Frame\xe2\x020SteeleagleProtocol\\V1\\Messages\\Frame\\GPBMetadata\xea\x02'SteeleagleProtocol::V1::Messages::Frameb\x06proto3"
 
+var file_steeleagle_protocol_v1_messages_frame_frame_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_steeleagle_protocol_v1_messages_frame_frame_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_steeleagle_protocol_v1_messages_frame_frame_proto_goTypes = []any{
-	(*RawFrame)(nil),               // 0: steeleagle_protocol.v1.messages.frame.RawFrame
-	(*EncodedFrame)(nil),           // 1: steeleagle_protocol.v1.messages.frame.EncodedFrame
-	(*timestamppb.Timestamp)(nil),  // 2: google.protobuf.Timestamp
-	(*telemetry.PositionInfo)(nil), // 3: steeleagle_protocol.v1.messages.telemetry.PositionInfo
-	(*telemetry.GimbalInfo)(nil),   // 4: steeleagle_protocol.v1.messages.telemetry.GimbalInfo
+	(Codec)(0),                     // 0: steeleagle_protocol.v1.messages.frame.Codec
+	(*RawFrame)(nil),               // 1: steeleagle_protocol.v1.messages.frame.RawFrame
+	(*EncodedFrame)(nil),           // 2: steeleagle_protocol.v1.messages.frame.EncodedFrame
+	(*timestamppb.Timestamp)(nil),  // 3: google.protobuf.Timestamp
+	(*telemetry.PositionInfo)(nil), // 4: steeleagle_protocol.v1.messages.telemetry.PositionInfo
+	(*telemetry.GimbalInfo)(nil),   // 5: steeleagle_protocol.v1.messages.telemetry.GimbalInfo
 }
 var file_steeleagle_protocol_v1_messages_frame_frame_proto_depIdxs = []int32{
-	2, // 0: steeleagle_protocol.v1.messages.frame.RawFrame.timestamp:type_name -> google.protobuf.Timestamp
-	3, // 1: steeleagle_protocol.v1.messages.frame.RawFrame.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
-	4, // 2: steeleagle_protocol.v1.messages.frame.RawFrame.gimbal_info:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalInfo
-	2, // 3: steeleagle_protocol.v1.messages.frame.EncodedFrame.timestamp:type_name -> google.protobuf.Timestamp
-	4, // 4: steeleagle_protocol.v1.messages.frame.EncodedFrame.gimbal_info:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalInfo
-	3, // 5: steeleagle_protocol.v1.messages.frame.EncodedFrame.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	3, // 0: steeleagle_protocol.v1.messages.frame.RawFrame.timestamp:type_name -> google.protobuf.Timestamp
+	4, // 1: steeleagle_protocol.v1.messages.frame.RawFrame.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
+	5, // 2: steeleagle_protocol.v1.messages.frame.RawFrame.gimbal_info:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalInfo
+	3, // 3: steeleagle_protocol.v1.messages.frame.EncodedFrame.timestamp:type_name -> google.protobuf.Timestamp
+	5, // 4: steeleagle_protocol.v1.messages.frame.EncodedFrame.gimbal_info:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalInfo
+	4, // 5: steeleagle_protocol.v1.messages.frame.EncodedFrame.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
+	0, // 6: steeleagle_protocol.v1.messages.frame.EncodedFrame.codec:type_name -> steeleagle_protocol.v1.messages.frame.Codec
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_steeleagle_protocol_v1_messages_frame_frame_proto_init() }
@@ -487,13 +577,14 @@ func file_steeleagle_protocol_v1_messages_frame_frame_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_messages_frame_frame_proto_rawDesc), len(file_steeleagle_protocol_v1_messages_frame_frame_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_steeleagle_protocol_v1_messages_frame_frame_proto_goTypes,
 		DependencyIndexes: file_steeleagle_protocol_v1_messages_frame_frame_proto_depIdxs,
+		EnumInfos:         file_steeleagle_protocol_v1_messages_frame_frame_proto_enumTypes,
 		MessageInfos:      file_steeleagle_protocol_v1_messages_frame_frame_proto_msgTypes,
 	}.Build()
 	File_steeleagle_protocol_v1_messages_frame_frame_proto = out.File

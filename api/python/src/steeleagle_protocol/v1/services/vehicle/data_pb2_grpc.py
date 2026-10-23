@@ -81,8 +81,9 @@ class DataServiceServicer:
         Query a dataflow.
 
         Queries a dataflow for results, returning all results that match the query
-        timestamps. If no start timestamp or end timestamp is provided, this will
-        return the most recent result for that dataflow.
+        timestamps, ordered from oldest to newest. If no start timestamp or end
+        timestamp is provided, this will return the most recent result for that
+        dataflow.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -93,8 +94,8 @@ class DataServiceServicer:
         Query telemetry data.
 
         Queries telemetry, returning all received telemetry that match the query
-        timestamps. If no start timestamp or end timestamp is provided, this will
-        return the most recent received telemetry.
+        timestamps, ordered from oldest to newest. If no start timestamp or end
+        timestamp is provided, this will return the most recent received telemetry.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')

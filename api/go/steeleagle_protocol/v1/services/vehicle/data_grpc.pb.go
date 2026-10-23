@@ -55,14 +55,15 @@ type DataServiceClient interface {
 	// Query a dataflow.
 	//
 	// Queries a dataflow for results, returning all results that match the query
-	// timestamps. If no start timestamp or end timestamp is provided, this will
-	// return the most recent result for that dataflow.
+	// timestamps, ordered from oldest to newest. If no start timestamp or end
+	// timestamp is provided, this will return the most recent result for that
+	// dataflow.
 	GetResult(ctx context.Context, in *GetResultRequest, opts ...grpc.CallOption) (*GetResultResponse, error)
 	// Query telemetry data.
 	//
 	// Queries telemetry, returning all received telemetry that match the query
-	// timestamps. If no start timestamp or end timestamp is provided, this will
-	// return the most recent received telemetry.
+	// timestamps, ordered from oldest to newest. If no start timestamp or end
+	// timestamp is provided, this will return the most recent received telemetry.
 	GetTelemetry(ctx context.Context, in *GetTelemetryRequest, opts ...grpc.CallOption) (*GetTelemetryResponse, error)
 }
 
@@ -140,14 +141,15 @@ type DataServiceServer interface {
 	// Query a dataflow.
 	//
 	// Queries a dataflow for results, returning all results that match the query
-	// timestamps. If no start timestamp or end timestamp is provided, this will
-	// return the most recent result for that dataflow.
+	// timestamps, ordered from oldest to newest. If no start timestamp or end
+	// timestamp is provided, this will return the most recent result for that
+	// dataflow.
 	GetResult(context.Context, *GetResultRequest) (*GetResultResponse, error)
 	// Query telemetry data.
 	//
 	// Queries telemetry, returning all received telemetry that match the query
-	// timestamps. If no start timestamp or end timestamp is provided, this will
-	// return the most recent received telemetry.
+	// timestamps, ordered from oldest to newest. If no start timestamp or end
+	// timestamp is provided, this will return the most recent received telemetry.
 	GetTelemetry(context.Context, *GetTelemetryRequest) (*GetTelemetryResponse, error)
 	mustEmbedUnimplementedDataServiceServer()
 }

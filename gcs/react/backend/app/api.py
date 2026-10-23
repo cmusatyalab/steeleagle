@@ -636,4 +636,4 @@ async def command(req: Command) -> JSONResponse:
 
 
 # Serve Vite static files
-app.mount("/", StaticFiles(directory="../prime/dist", html=True), name="react_app")
+app.mount("/", StaticFiles(directory="../../web/dist", html=True), name="react_app")

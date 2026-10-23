@@ -80,7 +80,7 @@ type Daemon struct {
 	log        zerolog.Logger                              // logger object
 }
 
-// Creates a new daemon from the config in the data directory.
+// Creates a new daemon from the config in the config directory.
 func NewDaemon(options ...DaemonOption) (*Daemon, error) {
 	daemon := &Daemon{
 		log: zerolog.New(os.Stderr).With().Timestamp().Logger(),
@@ -91,13 +91,13 @@ func NewDaemon(options ...DaemonOption) (*Daemon, error) {
 
 	// Locate and parse the config; a missing config is an error
 	if daemon.configPath == "" {
-		dataDir, err := util.GetDataDir()
+		configDir, err := util.GetConfigDir()
 		if err != nil {
-			daemon.log.Error().Err(err).Str("directory", dataDir).
-				Msg("unable to create or access daemon data directory")
+			daemon.log.Error().Err(err).Str("directory", configDir).
+				Msg("unable to create or access daemon config directory")
 			return nil, err
 		}
-		daemon.configPath = filepath.Join(dataDir, ConfigFileName)
+		daemon.configPath = filepath.Join(configDir, ConfigFileName)
 	}
 	if _, err := os.Stat(daemon.configPath); errors.Is(err, fs.ErrNotExist) {
 		daemon.log.Warn().Str("path", daemon.configPath).
@@ -229,6 +229,17 @@ func (d *Daemon) Run(ctx context.Context) (err error) {
 	}
 	d.netLn = listener.NewCodedListener(ln, acl, listener.WithLogger(d.log))
 
+	// The control socket is how local tools, like the eagle CLI, call the
+	// daemon; only its own user can connect, and is privileged, so that the
+	// law still applies to them
+	ctlLn, err := d.listenControl()
+	if err != nil {
+		d.log.Error().Err(err).Str("path", util.GetDaemonSocketPath()).
+			Msg("failed to create control socket listener")
+		d.netLn.Close()
+		return err
+	}
+
 	// Service names are qualified with the daemon's address, so they are
 	// unique across the network
 	d.selfAddr = d.localAddr(ctx)
@@ -240,6 +251,12 @@ func (d *Daemon) Run(ctx context.Context) (err error) {
 	errChan := make(chan error, 1)
 	go func() {
 		errChan <- d.relay.Serve(d.netLn)
+	}()
+	// The control socket stops with the relay
+	go func() {
+		if err := d.relay.Serve(ctlLn); err != nil {
+			d.log.Error().Err(err).Msg("control socket exited with error")
+		}
 	}()
 	d.log.Info().Int("port", d.Config.Daemon.Port).Msg("daemon started")
 
@@ -304,6 +321,26 @@ func (d *Daemon) Run(ctx context.Context) (err error) {
 		err = ErrRestart
 	}
 	return err
+}
+
+// listenControl listens on the daemon's control socket, replacing any left by
+// a daemon that didn't stop cleanly. Only the daemon's own user can connect,
+// as AuthCode PrivilegedCode.
+func (d *Daemon) listenControl() (net.Listener, error) {
+	path := util.GetDaemonSocketPath()
+	if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return nil, err
+	}
+	ln, err := net.Listen("unix", path)
+	if err != nil {
+		return nil, err
+	}
+	if err := os.Chmod(path, 0o600); err != nil {
+		ln.Close()
+		return nil, err
+	}
+	d.log.Debug().Str("path", path).Msg("control socket listening")
+	return listener.NewOwnerListener(ln, listener.PrivilegedCode, d.log), nil
 }
 
 // localAddr returns the address of this daemon on the network: the one it

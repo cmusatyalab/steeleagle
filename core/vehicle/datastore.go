@@ -30,9 +30,12 @@ type subscribers struct {
 }
 
 // parseDataflow reads a Uriel flow spec whose producers are named after the
-// vehicle's cameras. They are renamed to their fully qualified names, {vehicle
-// name}.{camera name}, in the producers and the edges that start at them, and
-// the cameras to stream are worked out; at most one may be a primary camera.
+// vehicle's cameras, or are its telemetry (TelemetryProducerName). They are
+// renamed to their fully qualified names, {vehicle name}.{producer name}, in
+// the producers and the edges that start at them, and the cameras to stream
+// are worked out; at most one may be a primary camera. The driver always
+// streams telemetry, so a telemetry producer streams nothing more, but the
+// driver must support streaming it.
 // Every engine must be an available engine, at its location. Uriel checks the
 // rest when the flow is added.
 func (v *Vehicle) parseDataflow(spec []byte) (*dataflow, error) {
@@ -77,6 +80,9 @@ func (v *Vehicle) parseDataflow(spec []byte) (*dataflow, error) {
 
 	cameras := make(map[string]config.DriverCamera)
 	for _, c := range v.Config.Driver.Cameras {
+		if c.Name == TelemetryProducerName {
+			return nil, fmt.Errorf("camera %q has the name of the telemetry producer", c.Name)
+		}
 		cameras[c.Name] = c
 	}
 	flow := &dataflow{cameras: &driverpb.StreamCamerasRequest{}}
@@ -84,11 +90,23 @@ func (v *Vehicle) parseDataflow(spec []byte) (*dataflow, error) {
 	renamed := make(map[string]string)
 	for _, p := range producers {
 		name, _ := p["name"].(string)
-		camera, ok := cameras[name]
-		if !ok {
-			return nil, fmt.Errorf("producer %q is not a camera of the vehicle", name)
+		if _, ok := renamed[name]; ok {
+			return nil, fmt.Errorf("producer %q is declared more than once", name)
 		}
 		uri := v.Name + "." + name
+		if name == TelemetryProducerName {
+			if !v.Config.Driver.Supports(StreamTelemetryMethod) {
+				return nil, fmt.Errorf("producer %q is telemetry, which the driver does not stream", name)
+			}
+			p["name"] = uri
+			renamed[name] = uri
+			flow.producers = append(flow.producers, uri)
+			continue
+		}
+		camera, ok := cameras[name]
+		if !ok {
+			return nil, fmt.Errorf("producer %q is neither a camera of the vehicle nor %q", name, TelemetryProducerName)
+		}
 		p["name"] = uri
 		renamed[name] = uri
 		flow.producers = append(flow.producers, uri)

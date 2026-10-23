@@ -9,3 +9,6 @@ const vpnDir string = "vpn"
 const modelDir string = "models"
 const fileDir string = "files"
 const missionDir string = "missions"
+
+// Name of the daemon's control socket, in its runtime directory
+const daemonSocket string = "eagled.sock"

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"slices"
 	"sync"
 	"sync/atomic"
@@ -18,7 +19,9 @@ import (
 	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 )
 
 // fakeDriver is a driver plugin that runs until its context is canceled or
@@ -256,5 +259,50 @@ func TestStartFailure(t *testing.T) {
 	cancel()
 	if err := waitTimeout(t, v); err != nil {
 		t.Errorf("expected no error after cancel, got %v", err)
+	}
+}
+
+// TestStreamServiceNotRouted ensures that callers can't reach the driver's
+// stream service through the vehicle, even though the driver supports it:
+// only the vehicle starts streams.
+func TestStreamServiceNotRouted(t *testing.T) {
+	t.Setenv("XDG_RUNTIME_DIR", t.TempDir())
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	xdg.Reload()
+	t.Cleanup(xdg.Reload)
+	streams := &fakeStreams{sock: filepath.Join(t.TempDir(), "driver.sock")}
+	cfg := &config.PluginConfig{
+		Plugin: config.PluginRoot{Name: "fake", Type: "driver"},
+		Driver: &config.DriverCap{Supported: config.DriverSupported{Services: []string{StreamService}}},
+	}
+	v, err := NewVehicle(&fakeDriver{streams: streams}, cfg,
+		WithName(fmt.Sprintf("vehicle-%d", os.Getpid())), WithLogger(zerolog.Nop()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { v.Close() })
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	daemonLn := listener.NewLocalListener(listener.AdminCode)
+	if err := v.Start(ctx, daemonLn); err != nil {
+		t.Fatal(err)
+	}
+	defer waitTimeout(t, v)
+	defer cancel()
+
+	conn, err := grpc.NewClient("passthrough:///vehicle", grpc.WithContextDialer(daemonLn.Dial),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	_, before := streams.requests()
+	req := driverpb.StreamTelemetryRequest_builder{Uri: "elsewhere"}.Build()
+	_, err = driverpb.NewStreamServiceClient(conn).StreamTelemetry(ctx, req)
+	if status.Code(err) != codes.Unimplemented {
+		t.Errorf("StreamTelemetry through the vehicle = %v, want Unimplemented", err)
+	}
+	if _, after := streams.requests(); len(after) != len(before) {
+		t.Errorf("driver was asked for telemetry streams %v, want only the vehicle's %v", after, before)
 	}
 }

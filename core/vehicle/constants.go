@@ -26,8 +26,10 @@ const DefaultLcsName = "eagled"
 const TelemetryProducerName = "telemetry"
 
 // Driver methods the vehicle calls to start streams, and how long it waits
-// for them.
+// for them. Their service is internal to the vehicle, so it is never routed
+// to, even if the driver supports it.
 const (
+	StreamService         = "steeleagle_protocol/v1/services/driver/StreamService"
 	StreamCamerasMethod   = "steeleagle_protocol/v1/services/driver/StreamService/StreamCameras"
 	StreamTelemetryMethod = "steeleagle_protocol/v1/services/driver/StreamService/StreamTelemetry"
 	StreamTimeout         = 10 * time.Second

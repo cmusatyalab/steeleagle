@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -238,6 +239,10 @@ func (v *Vehicle) Start(ctx context.Context, daemonLn net.Listener) (err error) 
 		return err
 	}
 	for _, s := range v.Config.Driver.Supported.Services {
+		// The stream service is internal and thus not globally hosted
+		if strings.ReplaceAll(s, ".", "/") == StreamService {
+			continue
+		}
 		v.router.AddServiceRoute(s, v.driver.conn)
 	}
 	v.log.Info().Str("driver", v.Config.Plugin.Name).Msg("driver plugin started")

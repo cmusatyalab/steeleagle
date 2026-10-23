@@ -17,6 +17,22 @@ func GetDataHome() string {
 	return xdg.DataHome
 }
 
+// GetConfigHome returns the XDG config home root.
+func GetConfigHome() string {
+	return xdg.ConfigHome
+}
+
+// GetConfigDir returns the application config directory, creating it if it
+// does not exist.
+func GetConfigDir() (string, error) {
+	configPath := filepath.Join(GetConfigHome(), projectDir)
+	err := os.MkdirAll(configPath, 0755)
+	if err != nil {
+		return "", err
+	}
+	return configPath, nil
+}
+
 // GetDataDir returns the persistent application data directory, creating it if
 // it does not exist.
 func GetDataDir() (string, error) {
@@ -139,6 +155,13 @@ func GetVehicleMissionDirByName(name string) (string, error) {
 		return "", err
 	}
 	return dir, nil
+}
+
+// GetDaemonSocketPath returns the path of the daemon's control socket, which
+// local tools call the daemon on. It is within the daemon runtime directory,
+// which is not created.
+func GetDaemonSocketPath() string {
+	return filepath.Join(GetRuntimeDir(), projectDir, daemonSocket)
 }
 
 // GetDaemonRunDir returns the daemon runtime directory, creating it if it does

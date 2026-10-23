@@ -136,3 +136,47 @@ func TestRunRestart(t *testing.T) {
 		ln.Close()
 	}
 }
+
+// TestNewDaemonDefaultConfigPath ensures that, without a config path, the
+// daemon writes its default config to the config directory and reads it from
+// there, rather than the data directory.
+func TestNewDaemonDefaultConfigPath(t *testing.T) {
+	configHome, dataHome := t.TempDir(), t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", configHome)
+	t.Setenv("XDG_DATA_HOME", dataHome)
+	t.Setenv("XDG_RUNTIME_DIR", t.TempDir())
+	xdg.Reload()
+	t.Cleanup(xdg.Reload)
+
+	d, err := NewDaemon(WithLogger(testLogger()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := filepath.Join(configHome, "steeleagle", ConfigFileName)
+	if d.configPath != want {
+		t.Errorf("config path = %s, want %s", d.configPath, want)
+	}
+	content, err := os.ReadFile(want)
+	if err != nil {
+		t.Fatalf("default config not written to the config directory: %v", err)
+	}
+	if string(content) != string(DefaultConfig) {
+		t.Errorf("config written = %q, want the default config", content)
+	}
+	if _, err := os.Stat(filepath.Join(dataHome, "steeleagle", ConfigFileName)); err == nil {
+		t.Error("config written to the data directory")
+	}
+
+	// A config already in the config directory is read, not replaced
+	custom := "[daemon]\nport = 9100\nlcs = 9101\nhostname = 'custom'\n"
+	if err := os.WriteFile(want, []byte(custom), 0644); err != nil {
+		t.Fatal(err)
+	}
+	d, err = NewDaemon(WithLogger(testLogger()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d.Config.Daemon.Hostname != "custom" || d.Config.Daemon.Port != 9100 {
+		t.Errorf("config = %+v, want the one in the config directory", d.Config.Daemon)
+	}
+}

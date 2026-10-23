@@ -34,11 +34,21 @@ message RawFrame {
   uint64 camera_id = 10;
 }
 
-// Compressed camera frames (JPG encoded).
+// Compression format of an encoded frame.
+enum Codec {
+  CODEC_UNSPECIFIED = 0;
+  // each frame is a complete JPEG image
+  CODEC_JPEG = 1;
+  // each frame is one H.264 access unit as an Annex B byte stream; keyframes
+  // are IDR frames, preceded by their SPS and PPS
+  CODEC_H264 = 2;
+}
+
+// Compressed camera frames.
 message EncodedFrame {
   // capture timestamp of the frame
   google.protobuf.Timestamp timestamp = 1;
-  // encoded bytes representing the frame
+  // encoded bytes representing the frame, in the format given by codec
   bytes encoded_data = 2;
   // frame ID for future correlation
   uint64 id = 3;
@@ -48,4 +58,9 @@ message EncodedFrame {
   steeleagle_protocol.v1.messages.telemetry.PositionInfo position_info = 5;
   // ID of origin camera
   uint64 camera_id = 6;
+  // compression format of encoded_data
+  Codec codec = 7;
+  // whether the frame decodes without any frame before it; every JPEG frame
+  // is a keyframe, while an H.264 frame is one only if it is an IDR frame
+  bool keyframe = 8;
 }

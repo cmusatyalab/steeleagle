@@ -12,7 +12,7 @@ func WithLogger(logger zerolog.Logger) DaemonOption {
 }
 
 // WithConfigPath sets a custom path to the daemon config.toml, overriding the
-// default path in the data directory.
+// default path in the config directory.
 func WithConfigPath(path string) DaemonOption {
 	return func(d *Daemon) {
 		d.configPath = path

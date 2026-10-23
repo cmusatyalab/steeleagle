@@ -2,12 +2,22 @@ import datetime
 
 from steeleagle_protocol.v1.messages.telemetry import telemetry_pb2 as _telemetry_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
+from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from collections.abc import Mapping as _Mapping
 from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
+
+class Codec(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    CODEC_UNSPECIFIED: _ClassVar[Codec]
+    CODEC_JPEG: _ClassVar[Codec]
+    CODEC_H264: _ClassVar[Codec]
+CODEC_UNSPECIFIED: Codec
+CODEC_JPEG: Codec
+CODEC_H264: Codec
 
 class RawFrame(_message.Message):
     __slots__ = ("timestamp", "data", "h_res", "v_res", "d_res", "channels", "id", "position_info", "gimbal_info", "camera_id")
@@ -34,17 +44,21 @@ class RawFrame(_message.Message):
     def __init__(self, timestamp: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., data: _Optional[bytes] = ..., h_res: _Optional[int] = ..., v_res: _Optional[int] = ..., d_res: _Optional[int] = ..., channels: _Optional[int] = ..., id: _Optional[int] = ..., position_info: _Optional[_Union[_telemetry_pb2.PositionInfo, _Mapping]] = ..., gimbal_info: _Optional[_Union[_telemetry_pb2.GimbalInfo, _Mapping]] = ..., camera_id: _Optional[int] = ...) -> None: ...
 
 class EncodedFrame(_message.Message):
-    __slots__ = ("timestamp", "encoded_data", "id", "gimbal_info", "position_info", "camera_id")
+    __slots__ = ("timestamp", "encoded_data", "id", "gimbal_info", "position_info", "camera_id", "codec", "keyframe")
     TIMESTAMP_FIELD_NUMBER: _ClassVar[int]
     ENCODED_DATA_FIELD_NUMBER: _ClassVar[int]
     ID_FIELD_NUMBER: _ClassVar[int]
     GIMBAL_INFO_FIELD_NUMBER: _ClassVar[int]
     POSITION_INFO_FIELD_NUMBER: _ClassVar[int]
     CAMERA_ID_FIELD_NUMBER: _ClassVar[int]
+    CODEC_FIELD_NUMBER: _ClassVar[int]
+    KEYFRAME_FIELD_NUMBER: _ClassVar[int]
     timestamp: _timestamp_pb2.Timestamp
     encoded_data: bytes
     id: int
     gimbal_info: _telemetry_pb2.GimbalInfo
     position_info: _telemetry_pb2.PositionInfo
     camera_id: int
-    def __init__(self, timestamp: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., encoded_data: _Optional[bytes] = ..., id: _Optional[int] = ..., gimbal_info: _Optional[_Union[_telemetry_pb2.GimbalInfo, _Mapping]] = ..., position_info: _Optional[_Union[_telemetry_pb2.PositionInfo, _Mapping]] = ..., camera_id: _Optional[int] = ...) -> None: ...
+    codec: Codec
+    keyframe: bool
+    def __init__(self, timestamp: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., encoded_data: _Optional[bytes] = ..., id: _Optional[int] = ..., gimbal_info: _Optional[_Union[_telemetry_pb2.GimbalInfo, _Mapping]] = ..., position_info: _Optional[_Union[_telemetry_pb2.PositionInfo, _Mapping]] = ..., camera_id: _Optional[int] = ..., codec: _Optional[_Union[Codec, str]] = ..., keyframe: _Optional[bool] = ...) -> None: ...

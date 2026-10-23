@@ -14,7 +14,7 @@ var DefaultLaw []byte // DefaultLaw is the control law for the daemon.
 //go:embed defaults/config.toml
 var DefaultConfig []byte // DefaultConfig is written as the config if none exists.
 
-// Name of the daemon config file within the data director.y
+// Name of the daemon config file within the config directory.
 const ConfigFileName = "config.toml"
 
 // Hostname used if none is provided in the daemon config.

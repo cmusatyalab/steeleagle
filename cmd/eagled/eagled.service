@@ -1,0 +1,45 @@
+# systemd user unit for the SteelEagle daemon.
+#
+# It runs as a user service, since plugins run under rootless podman and
+# bwrap, which need the user's session (HOME and XDG_RUNTIME_DIR). It reads
+# its config from ~/.config/steeleagle/config.toml, and keeps its data in
+# ~/.local/share/steeleagle. To install it:
+#
+#   go build -o ~/.local/bin/eagled ./cmd/eagled
+#   mkdir -p ~/.config/systemd/user ~/.config/steeleagle
+#   cp cmd/eagled/eagled.service ~/.config/systemd/user/
+#   cp cmd/eagled/eagled.env ~/.config/steeleagle/   # then edit it
+#   chmod 600 ~/.config/steeleagle/eagled.env
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now eagled
+#   sudo loginctl enable-linger "$USER"   # start at boot, without a login
+#
+# Logs are in the journal: journalctl --user -u eagled -f
+[Unit]
+Description=SteelEagle daemon
+Documentation=https://github.com/cmusatyalab/steeleagle
+# Give up if the daemon keeps failing, rather than restarting forever
+StartLimitIntervalSec=120
+StartLimitBurst=5
+
+[Service]
+Type=exec
+# Flags (EAGLED_ARGS) and the VPN auth key (STEELEAGLE_AUTH_KEY) are set in
+# the environment file, which is optional
+Environment=EAGLED_ARGS=
+EnvironmentFile=-%h/.config/steeleagle/eagled.env
+# Plugins are started with pixi, so it must be on the PATH
+Environment=PATH=%h/.local/bin:%h/.pixi/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=%h/.local/bin/eagled $EAGLED_ARGS
+# eagled exits 75 when the daemon stops for a restart (after a Restart or
+# Configure call), which is always restarted; other failures are too
+Restart=on-failure
+RestartForceExitStatus=75
+RestartSec=2
+# Only eagled is sent SIGTERM, so it stops its plugins itself; anything left
+# once it exits is killed
+KillMode=mixed
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target

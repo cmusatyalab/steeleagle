@@ -101,7 +101,7 @@ docs/yarn-debug.log*
 docs/yarn-error.log*
 
 # React
-gcs/react/prime/src/config.js
+gcs/web/src/config.js
 gcs/react/backend/config.toml
 # Dependencies
 */node_modules

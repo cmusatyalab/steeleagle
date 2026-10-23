@@ -80,7 +80,7 @@ type PositionInfo_VelocityNeu interface {
 type PositionInfo interface {
 	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/home
 	GetHome() (PositionInfo_Home, error)
-	// #exclude-ifndef steeleagle_messages/Telemetry/PositionInfo/home
+	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/home
 	hasHome() bool
 	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/global_position
 	GetGlobalPosition() (PositionInfo_GlobalPosition, error)

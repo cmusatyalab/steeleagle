@@ -1,0 +1,50 @@
+[plugin]
+# Name of the plugin
+name = "SteelEagle GCS"
+# Plugin type: (driver, engine, monitor, simulator, extra)
+type = "engine"
+# Description of the plugin (optional)
+description = "Ground control station: serves the web UI, and streams the frames and telemetry vehicles feed it to browsers over WebRTC"
+# Extra dependencies not covered by Pixi (optional). The GCS links Uriel's
+# native library (found with pkg-config) with cgo, so it is built with the
+# system C compiler that the library was built with
+dependencies = ["gcc", "liburiel"]
+
+[[args]] # Plugin arguments (can be empty)
+# Name of the argument
+name = "http_addr"
+# JSON type: (string, object, boolean, array, number)
+type = "string"
+# Description of the argument (optional)
+description = "Address the web UI, its API and WebRTC signaling are served on"
+# Default value (optional)
+default = ":8080"
+
+[[args]]
+name = "ice_servers"
+type = "array"
+description = "STUN/TURN server URLs for browsers that aren't on the GCS's network (e.g. \"stun:stun.l.google.com:19302\")"
+default = []
+
+[[args]]
+name = "webrtc_ports"
+type = "string"
+description = "UDP port range WebRTC is sent from, as \"min-max\", so a firewall can allow it; empty for any port"
+default = ""
+
+[[args]]
+name = "max_input_size"
+type = "number"
+description = "Largest frame or telemetry message accepted, in bytes"
+default = 4194304
+
+[engine]
+# Engine type: (detection, classification, guidance, position, generic, filter)
+type = "generic"
+# Input types, enforced at dataflow creation. H.264 frames are relayed to
+# browsers as WebRTC video without re-encoding, and telemetry as it is
+inputs = [
+    "steeleagle_protocol/v1/messages/frame/EncodedFrame",
+    "steeleagle_protocol/v1/messages/telemetry/Telemetry",
+]
+# No result type: the GCS is a sink, which forwards nothing into the flow

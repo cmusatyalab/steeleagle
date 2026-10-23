@@ -1,6 +1,7 @@
 package vehicle
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -268,12 +269,112 @@ func TestSetDataflowInvalid(t *testing.T) {
 		"[[edges]]\nfrom = \"nothing\"\nto = \"nowhere\"\ntimeout = \"1s\"",
 		"[[producers]]\nname = \"missing\"",
 		"[[producers]]\nname = \"front\"\n[[producers]]\nname = \"rear\"",
+		"[[producers]]\nname = \"down\"\n[[producers]]\nname = \"down\"",
+		"[[producers]]\nname = \"telemetry\"\n[[producers]]\nname = \"telemetry\"",
 	} {
 		req := vehiclepb.SetDataflowRequest_builder{Toml: []byte(spec)}.Build()
 		_, err := v.SetDataflow(context.Background(), req)
 		if status.Code(err) != codes.InvalidArgument {
 			t.Errorf("spec %q: got %v, want InvalidArgument", spec, err)
 		}
+	}
+}
+
+// TestDataflowTelemetryProducer ensures that a dataflow can feed the
+// vehicle's telemetry to an engine, without asking the driver for any camera,
+// while the vehicle still stores the telemetry itself, and that the engine's
+// results are stored like any other's.
+func TestDataflowTelemetryProducer(t *testing.T) {
+	engineName := fmt.Sprintf("monitor-%d", os.Getpid())
+	v := newDataTestVehicle(t, engineName)
+	engine, err := uriel.NewEngine(engineName, "steeleagle_protocol/v1/messages/result/DetectionResult", 256)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
+	producer, err := uriel.NewProducer(v.Name+"."+TelemetryProducerName, "", 256)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer producer.Close()
+
+	spec := fmt.Sprintf(`
+[[producers]]
+name = "telemetry"
+
+[[engines]]
+name = %[1]q
+location = "local"
+
+[[edges]]
+from = "telemetry"
+to = %[1]q
+timeout = "1s"
+`, engineName)
+	req := vehiclepb.SetDataflowRequest_builder{Toml: []byte(spec)}.Build()
+	if _, err := v.SetDataflow(context.Background(), req); err != nil {
+		t.Fatal(err)
+	}
+	if got := v.flow.producers; !slices.Equal(got, []string{v.Name + "." + TelemetryProducerName}) {
+		t.Errorf("got producers %v, want the telemetry's fully qualified name", got)
+	}
+	streams := v.driver.obj.(*fakeDriver).streams
+	if cameras, _ := streams.requests(); len(cameras) != 1 ||
+		cameras[0].HasPrimary() || len(cameras[0].GetSecondaries()) > 0 {
+		t.Errorf("got camera streams %v, want one request for no cameras", cameras)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	sent, _ := proto.Marshal(telemetryAt(7))
+	if _, err := producer.Send(v.Name, sent); err != nil {
+		t.Fatal(err)
+	}
+	input, err := engine.Next(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(input.Data, sent) {
+		t.Errorf("engine got %x, want the telemetry sent", input.Data)
+	}
+	if input.ID.Producer != v.Name+"."+TelemetryProducerName {
+		t.Errorf("engine got an input from %q, want the telemetry producer", input.ID.Producer)
+	}
+	// An empty result isn't stored, so it has a detection
+	data, _ := proto.Marshal(resultpb.DetectionResult_builder{Detections: []*resultpb.Detection{
+		resultpb.Detection_builder{ClassName: "low-battery"}.Build(),
+	}}.Build())
+	if err := engine.Drop(data); err != nil {
+		t.Fatal(err)
+	}
+	waitStored(t, v, engineName, 1)
+	waitStored(t, v, TelemetryBucket, 1)
+}
+
+// TestDataflowTelemetryUnsupported ensures that a dataflow with a telemetry
+// producer is rejected when the driver doesn't stream telemetry, and that a
+// driver with a camera named like the telemetry producer can't set dataflows.
+func TestDataflowTelemetryUnsupported(t *testing.T) {
+	v := newDataTestVehicle(t, fmt.Sprintf("unused-%d", os.Getpid()))
+	spec := []byte("[[producers]]\nname = \"telemetry\"")
+	cap := *v.Config.Driver
+	v.Config.Driver = &config.DriverCap{
+		Cameras:     cap.Cameras,
+		Supported:   cap.Supported,
+		Unsupported: config.DriverUnsupported{Methods: []string{StreamTelemetryMethod}},
+	}
+	req := vehiclepb.SetDataflowRequest_builder{Toml: spec}.Build()
+	if _, err := v.SetDataflow(context.Background(), req); status.Code(err) != codes.InvalidArgument {
+		t.Errorf("driver without telemetry: got %v, want InvalidArgument", err)
+	}
+
+	v.Config.Driver = &config.DriverCap{
+		Cameras:   append(slices.Clone(cap.Cameras), config.DriverCamera{Name: TelemetryProducerName}),
+		Supported: cap.Supported,
+	}
+	req = vehiclepb.SetDataflowRequest_builder{Toml: []byte("[[producers]]\nname = \"down\"")}.Build()
+	if _, err := v.SetDataflow(context.Background(), req); status.Code(err) != codes.InvalidArgument {
+		t.Errorf("camera named telemetry: got %v, want InvalidArgument", err)
 	}
 }
 

@@ -8,7 +8,7 @@ export NVM_DIR="$HOME/.nvm"
 # install npm
 nvm install 22
 source ~/.bashrc
-cd prime
+cd ../web
 npm install
 npm run build
 # BACKEND
