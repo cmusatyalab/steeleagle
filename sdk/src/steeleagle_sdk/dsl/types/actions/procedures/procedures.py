@@ -10,11 +10,11 @@ from scipy.spatial.transform import Rotation as R
 
 from ....compiler.registry import register_action
 from ...base import Action
-from ...datatypes.primitives import common as common
-from ...datatypes.primitives.vehicle import AltitudeMode, HeadingMode, PoseMode
-from ...datatypes.primitives.result import BoundingBox, Detection, FrameResult
 from ...datatypes.advanced.route_plan import RoutePlan
+from ...datatypes.primitives import common as common
 from ...datatypes.primitives.map import Map as MissionMap
+from ...datatypes.primitives.result import BoundingBox, Detection, FrameResult
+from ...datatypes.primitives.vehicle import AltitudeMode, HeadingMode, PoseMode
 from ...utils import fetch_results, fetch_results_range, fetch_telemetry
 from ..primitives.vehicle import (
     Hold,
@@ -28,7 +28,9 @@ from ..primitives.vehicle import (
 logger = logging.getLogger(__name__)
 
 DEFAULT_HOVER_TIME = 1.0
-DEFAULT_MAX_VELOCITY = common.Velocity(x_vel=3.0, y_vel=3.0, z_vel=3.0, angular_vel=120.0)
+DEFAULT_MAX_VELOCITY = common.Velocity(
+    x_vel=3.0, y_vel=3.0, z_vel=3.0, angular_vel=120.0
+)
 
 
 # private helper method to fly through a list of locations with hover time and max velocity
@@ -64,7 +66,8 @@ async def _fly(
 
         if hover_time > 0:
             await asyncio.sleep(hover_time)
-            
+
+
 @register_action
 class ElevateToAltitude(Action):
     """Climb to a target altitude by setting vertical velocity until reached."""
@@ -86,7 +89,7 @@ class ElevateToAltitude(Action):
         while True:
             tel = await fetch_telemetry()
             if not tel:
-              logger.warning("Could not get telemetry, waiting...")
+                logger.warning("Could not get telemetry, waiting...")
             rel_alt = tel.position_info.relative_position.z
 
             if rel_alt + self.tolerance >= self.target_altitude:
@@ -143,7 +146,9 @@ class Patrol(Action):
     )
 
     async def execute(self):
-        mission_map = MissionMap() # init the map object without the area parameter will spawn the mission map
+        mission_map = (
+            MissionMap()
+        )  # init the map object without the area parameter will spawn the mission map
         locations = self.plan.apply(mission_map)
         await _fly(locations, self.plan.alt, self.hover_time, self.max_velocity)
 
@@ -166,6 +171,14 @@ class PrecisionLand(Action):
     # --- Compute / detection configuration ---
     target: Detection = Field(
         description="Detection to track (class_name to match, optional score threshold)"
+    )
+    fallback_target: Detection | None = Field(
+        None,
+        description=(
+            "Secondary detection to track when `target` is not visible this frame "
+            "(e.g. a smaller marker nested near the primary one, used when the "
+            "primary marker exits the frame at close range)."
+        ),
     )
     target_lost_duration: float = Field(1.0)
 
@@ -256,6 +269,45 @@ class PrecisionLand(Action):
         logger.debug("clamping value=%f, min=%f, max=%f", value, minimum, maximum)
         return float(np.clip(value, minimum, maximum))
 
+    @staticmethod
+    def _match_boxes(res: FrameResult, class_name: str) -> list[BoundingBox]:
+        boxes: list[BoundingBox] = []
+        for compute in res.result or []:
+            det_result = compute.detection_result
+            if not det_result or not det_result.detections:
+                continue
+            for det in det_result.detections:
+                if det is not None and det.class_name == class_name:
+                    boxes.append(det.bbox)
+        return boxes
+
+    @staticmethod
+    def _average_box(boxes: list[BoundingBox]) -> BoundingBox:
+        n = len(boxes)
+        return BoundingBox(
+            x_min=sum(b.x_min for b in boxes) / n,
+            y_min=sum(b.y_min for b in boxes) / n,
+            x_max=sum(b.x_max for b in boxes) / n,
+            y_max=sum(b.y_max for b in boxes) / n,
+        )
+
+    def _select_box(self, res: FrameResult) -> BoundingBox | None:
+        """Pick the box to track this frame: `target` if visible (averaged across
+        all matches, in case of multiple simultaneous detections), else
+        `fallback_target` under the same rule, else None."""
+        boxes: list[BoundingBox] = []
+        if self.target.class_name is not None:
+            boxes = self._match_boxes(res, self.target.class_name)
+        if (
+            not boxes
+            and self.fallback_target is not None
+            and self.fallback_target.class_name is not None
+        ):
+            boxes = self._match_boxes(res, self.fallback_target.class_name)
+        if not boxes:
+            return None
+        return self._average_box(boxes)
+
     async def _compute_error(
         self, box: BoundingBox, telemetry
     ) -> tuple[float, float, float]:
@@ -310,27 +362,14 @@ class PrecisionLand(Action):
 
             # --- Detections ---
             res: FrameResult = await fetch_results(self.compute_stream)
-            box: BoundingBox | None = None
             if not res or not res.result:
                 logger.info(f"PrecisionLand: No results from {self.compute_stream}")
                 continue
 
-            for compute in res.result:
-                det_result = compute.detection_result
-                if not det_result or not det_result.detections:
-                    continue
-                for det in det_result.detections:
-                    if det is None:
-                        continue
-                    if self.target.class_name is not None and (
-                        det.class_name == self.target.class_name
-                    ):
-                        box = det.bbox
-                        last_seen = now
-                        break
-
+            box = self._select_box(res)
             if box is None:
                 continue
+            last_seen = now
 
             # --- Error computation (every iteration, fresh) ---
             altitude = telemetry.position_info.relative_position.z
@@ -346,7 +385,7 @@ class PrecisionLand(Action):
                 and math.isclose(lateral_off, 0.0, abs_tol=self.err_tol)
                 and altitude <= self.target_altitude
             ):
-                logger.info("Landing criteria met -- landing")
+                logger.info(f"Landing criteria met -- landing from {altitude}")
                 await Land().execute()
                 return
 
@@ -359,7 +398,7 @@ class PrecisionLand(Action):
                     await Hold().execute()
                     mode = 1
                 else:
-                    logger.info("forward step: %.2fm", forward_off)
+                    # logger.info("forward step: %.2fm", forward_off)
                     target.x_vel = self._clamp(
                         forward_off, -self.forward_speed, self.forward_speed
                     )
@@ -374,7 +413,7 @@ class PrecisionLand(Action):
                     await Hold().execute()
                     mode = 2
                 else:
-                    logger.info("lateral step: %.2fm", lateral_off)
+                    # logger.info("lateral step: %.2fm", lateral_off)
                     target.y_vel = self._clamp(
                         lateral_off, -self.lateral_speed, self.lateral_speed
                     )
@@ -622,7 +661,7 @@ class Track(Action):
             # --- Telemetry ---
             telemetry = await fetch_telemetry()
             if not telemetry:
-                    logger.warning("Could not get telemetry, waiting...")
+                logger.warning("Could not get telemetry, waiting...")
             # logger.info("Track: telemetry fetched: %s", telemetry)
 
             # --- Detections ---
@@ -831,7 +870,9 @@ class Map(Action):
             "trigger_distance/alt are reused to slice every subsequent flight's area."
         )
     )
-    num_trials: int = Field(1, gt=0, description="Number of trials for iterative flights")
+    num_trials: int = Field(
+        1, gt=0, description="Number of trials for iterative flights"
+    )
 
     @staticmethod
     def _oldest_area(results: list[tuple[float, FrameResult]]):
@@ -847,8 +888,9 @@ class Map(Action):
 
     # Main logic
     async def execute(self):
-
-        current_map = MissionMap()  # init the map object without the area parameter will spawn the mission map
+        current_map = (
+            MissionMap()
+        )  # init the map object without the area parameter will spawn the mission map
         first_trial_locations = self.initial_plan.apply(current_map)
         logger.info(
             "[Map] trial 1/%d (%d left): flying %d waypoints: %s",
@@ -858,7 +900,12 @@ class Map(Action):
             [(loc.latitude, loc.longitude) for loc in first_trial_locations],
         )
         t0 = time.time()
-        await _fly(first_trial_locations, self.initial_plan.alt, self.hover_time, self.max_velocity)
+        await _fly(
+            first_trial_locations,
+            self.initial_plan.alt,
+            self.hover_time,
+            self.max_velocity,
+        )
 
         for trial in range(self.num_trials - 1):
             trial_no = trial + 2
@@ -894,6 +941,9 @@ class Map(Action):
                 len(next_trial_locations),
                 [(loc.latitude, loc.longitude) for loc in next_trial_locations],
             )
-            await _fly(next_trial_locations, self.iterative_plan.alt, self.hover_time, self.max_velocity)
-
-
+            await _fly(
+                next_trial_locations,
+                self.iterative_plan.alt,
+                self.hover_time,
+                self.max_velocity,
+            )
