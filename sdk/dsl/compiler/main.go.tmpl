@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -33,6 +34,10 @@ var manifestToml = []byte({{printf "%q" .ManifestToml}})
 // compiled against, embedded the same way. Empty when none was given.
 var missionGeoJson = []byte({{printf "%q" .GeoJson}})
 
+// flowToml is the dataflow set on the vehicle each time the mission is
+// started, embedded the same way. Empty when none was given.
+var flowToml = []byte({{printf "%q" .FlowToml}})
+
 {{range .AllOrdered}}
 {{.Render}}
 {{end}}
@@ -41,6 +46,16 @@ func main() {
 	socket := os.Getenv("CLIENT_SOCKET")
 	if socket == "" {
 		log.Fatal().Msg("CLIENT_SOCKET environment variable unset")
+	}
+	listenSocket := os.Getenv("LISTEN_SOCKET")
+	if listenSocket == "" {
+		log.Fatal().Msg("LISTEN_SOCKET environment variable unset")
+	}
+
+	// The vehicle waits for the mission to listen, so this is done first
+	ln, err := net.Listen("unix", listenSocket)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to listen on socket")
 	}
 
 	conn, err := grpc.NewClient("unix://"+socket, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -105,9 +120,17 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	mission := fsm.NewDslFsm({{printf "%q" .Start}}, transitions, actions, events, data, conn)
-	if err := mission.Start(ctx); err != nil {
+	// The mission runs once the vehicle starts it, and again each time it is
+	// started after being stopped
+	newMission := func() *fsm.DslFsm {
+		return fsm.NewDslFsm({{printf "%q" .Start}}, transitions, actions, events, data, conn)
+	}
+	if err := fsm.Serve(ctx, ln, conn, flowToml, log, newMission); err != nil {
 		log.Fatal().Err(err).Msg("mission exited unexpectedly")
+	}
+	if ctx.Err() != nil {
+		log.Info().Msg("mission process stopped")
+		return
 	}
 	log.Info().Msg("mission complete!")
 }

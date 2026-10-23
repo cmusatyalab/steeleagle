@@ -7,6 +7,7 @@ import (
 
 	commonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/common"
 	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
+	"github.com/rs/zerolog"
 )
 
 // TestDistanceGlobalPositionApproaching tests a getDistance call for
@@ -27,7 +28,7 @@ func TestDistanceGlobalPositionApproaching(t *testing.T) {
 	calls := make([]func() (float32, bool, error), len(steps))
 	for i, gp := range steps {
 		gp := gp
-		calls[i] = func() (float32, bool, error) { return getDistance(setpoint, telemetryGlobal(gp), tol) }
+		calls[i] = func() (float32, bool, error) { return getDistance(zerolog.Nop(), setpoint, telemetryGlobal(gp), tol) }
 	}
 	assertApproaching(t, "GlobalPosition", calls)
 }
@@ -50,7 +51,7 @@ func TestDistanceRelativePositionApproaching(t *testing.T) {
 	calls := make([]func() (float32, bool, error), len(steps))
 	for i, rp := range steps {
 		rp := rp
-		calls[i] = func() (float32, bool, error) { return getDistance(setpoint, telemetryRelative(rp), tol) }
+		calls[i] = func() (float32, bool, error) { return getDistance(zerolog.Nop(), setpoint, telemetryRelative(rp), tol) }
 	}
 	assertApproaching(t, "RelativePosition", calls)
 }
@@ -73,7 +74,7 @@ func TestDistanceVelocityApproaching(t *testing.T) {
 	calls := make([]func() (float32, bool, error), len(steps))
 	for i, v := range steps {
 		v := v
-		calls[i] = func() (float32, bool, error) { return getDistance(setpoint, telemetryVelocity(v), tol) }
+		calls[i] = func() (float32, bool, error) { return getDistance(zerolog.Nop(), setpoint, telemetryVelocity(v), tol) }
 	}
 	assertApproaching(t, "Velocity", calls)
 }
@@ -96,7 +97,7 @@ func TestDistancePoseApproaching(t *testing.T) {
 	calls := make([]func() (float32, bool, error), len(steps))
 	for i, p := range steps {
 		p := p
-		calls[i] = func() (float32, bool, error) { return getDistance(setpoint, telemetryPose(p), tol) }
+		calls[i] = func() (float32, bool, error) { return getDistance(zerolog.Nop(), setpoint, telemetryPose(p), tol) }
 	}
 	assertApproaching(t, "Pose", calls)
 }
@@ -119,7 +120,9 @@ func TestDistancePoseVelocityApproaching(t *testing.T) {
 	calls := make([]func() (float32, bool, error), len(steps))
 	for i, pv := range steps {
 		pv := pv
-		calls[i] = func() (float32, bool, error) { return getDistance(setpoint, telemetryPoseVelocity(pv), tol) }
+		calls[i] = func() (float32, bool, error) {
+			return getDistance(zerolog.Nop(), setpoint, telemetryPoseVelocity(pv), tol)
+		}
 	}
 	assertApproaching(t, "PoseVelocity", calls)
 }
@@ -132,7 +135,7 @@ func TestDistancePoseYawWraparound(t *testing.T) {
 	tol := Tolerances{AngleTol: 5}
 	telemetry := telemetryPose(commonpb.Pose_builder{Yaw: f32(359)}.Build())
 
-	dist, ok, err := getDistance(setpoint, telemetry, tol)
+	dist, ok, err := getDistance(zerolog.Nop(), setpoint, telemetry, tol)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -157,7 +160,7 @@ func TestDistanceGlobalPositionHaversine(t *testing.T) {
 	const earthRadiusM = 6371000.0
 	expectedMeters := earthRadiusM * (0.01 * math.Pi / 180)
 
-	dist, ok, err := getDistance(setpoint, telemetry, tol)
+	dist, ok, err := getDistance(zerolog.Nop(), setpoint, telemetry, tol)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -177,7 +180,7 @@ func TestDistanceUnsupportedSetpointType(t *testing.T) {
 	unsupported := telemetrypb.Telemetry_builder{}.Build()
 	telemetry := telemetryGlobal(commonpb.GlobalPosition_builder{Latitude: f64(0), Longitude: f64(0)}.Build())
 
-	dist, ok, err := getDistance(unsupported, telemetry, Tolerances{PosTol: 1})
+	dist, ok, err := getDistance(zerolog.Nop(), unsupported, telemetry, Tolerances{PosTol: 1})
 	if !errors.Is(err, ErrInternal) {
 		t.Fatalf("expected ErrInternal, got %v", err)
 	}
@@ -195,7 +198,7 @@ func TestDistanceMissingPositionInfo(t *testing.T) {
 	setpoint := commonpb.GlobalPosition_builder{Latitude: f64(0), Longitude: f64(0)}.Build()
 	emptyTelemetry := telemetrypb.Telemetry_builder{}.Build()
 
-	_, _, err := getDistance(setpoint, emptyTelemetry, Tolerances{PosTol: 1})
+	_, _, err := getDistance(zerolog.Nop(), setpoint, emptyTelemetry, Tolerances{PosTol: 1})
 	if !errors.Is(err, ErrInternal) {
 		t.Fatalf("expected ErrInternal, got %v", err)
 	}
@@ -207,7 +210,7 @@ func TestDistanceMissingGimbalInfo(t *testing.T) {
 	setpoint := commonpb.Pose_builder{Pitch: f32(0)}.Build()
 	emptyTelemetry := telemetrypb.Telemetry_builder{}.Build()
 
-	_, _, err := getDistance(setpoint, emptyTelemetry, Tolerances{AngleTol: 1})
+	_, _, err := getDistance(zerolog.Nop(), setpoint, emptyTelemetry, Tolerances{AngleTol: 1})
 	if !errors.Is(err, ErrInternal) {
 		t.Fatalf("expected ErrInternal, got %v", err)
 	}
@@ -220,7 +223,7 @@ func TestDistanceSetFieldMissingFromTelemetry(t *testing.T) {
 	setpoint := commonpb.GlobalPosition_builder{Altitude: f32(10)}.Build()
 	telemetry := telemetryGlobal(commonpb.GlobalPosition_builder{Latitude: f64(0)}.Build()) // no altitude
 
-	_, _, err := getDistance(setpoint, telemetry, Tolerances{PosTol: 1})
+	_, _, err := getDistance(zerolog.Nop(), setpoint, telemetry, Tolerances{PosTol: 1})
 	if !errors.Is(err, ErrInternal) {
 		t.Fatalf("expected ErrInternal, got %v", err)
 	}
@@ -233,7 +236,7 @@ func TestDistanceOnlyComparesSetSubfields(t *testing.T) {
 	setpoint := commonpb.RelativePosition_builder{X: f32(5)}.Build() // only X set
 	telemetry := telemetryRelative(commonpb.RelativePosition_builder{X: f32(5)}.Build())
 
-	dist, ok, err := getDistance(setpoint, telemetry, Tolerances{PosTol: 1})
+	dist, ok, err := getDistance(zerolog.Nop(), setpoint, telemetry, Tolerances{PosTol: 1})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -249,7 +252,7 @@ func TestDistanceSumsAcrossAxesNotMax(t *testing.T) {
 	tol := Tolerances{PosTol: 1}
 	telemetry := telemetryRelative(commonpb.RelativePosition_builder{X: f32(3), Y: f32(4)}.Build())
 
-	dist, ok, err := getDistance(setpoint, telemetry, tol)
+	dist, ok, err := getDistance(zerolog.Nop(), setpoint, telemetry, tol)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -277,7 +280,7 @@ func TestDistanceStuckAxisDoesNotMaskProgress(t *testing.T) {
 
 	var prev float32 = math.MaxFloat32
 	for i, rp := range steps {
-		dist, _, err := getDistance(setpoint, telemetryRelative(rp), tol)
+		dist, _, err := getDistance(zerolog.Nop(), setpoint, telemetryRelative(rp), tol)
 		if err != nil {
 			t.Fatalf("step %d: unexpected error: %v", i, err)
 		}
@@ -296,7 +299,7 @@ func TestDistanceZeroToleranceRequiresExactMatch(t *testing.T) {
 	tol := Tolerances{PosTol: 0}
 
 	exact := telemetryRelative(commonpb.RelativePosition_builder{X: f32(5)}.Build())
-	dist, ok, err := getDistance(setpoint, exact, tol)
+	dist, ok, err := getDistance(zerolog.Nop(), setpoint, exact, tol)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -305,7 +308,7 @@ func TestDistanceZeroToleranceRequiresExactMatch(t *testing.T) {
 	}
 
 	mismatch := telemetryRelative(commonpb.RelativePosition_builder{X: f32(5.001)}.Build())
-	dist, ok, err = getDistance(setpoint, mismatch, tol)
+	dist, ok, err = getDistance(zerolog.Nop(), setpoint, mismatch, tol)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

@@ -23,6 +23,7 @@ type templateData struct {
 	PluginToml   string
 	ManifestToml string
 	GeoJson      string
+	FlowToml     string
 }
 
 // generate renders a linked IR as a runnable main.go inside the workspace
@@ -35,6 +36,7 @@ func generate(ir *linker.IR, cfg *buildtools.Config, dir string) error {
 		PluginToml:   string(cfg.PluginToml),
 		ManifestToml: string(cfg.ManifestToml),
 		GeoJson:      string(cfg.GeoJson),
+		FlowToml:     string(cfg.FlowToml),
 	}
 
 	var buf strings.Builder

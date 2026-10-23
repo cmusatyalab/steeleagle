@@ -1,8 +1,11 @@
 package opt
 
 import (
+	"time"
+
 	driverpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver"
 	"github.com/cmusatyalab/steeleagle/sdk/enums"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Option is the base option type for RPC options.
@@ -58,6 +61,13 @@ type SetGimbalAngleTargetOption interface {
 	SetAngleMode(driverpb.AngleMode)
 	// #exclude-ifndef steeleagle_protocol/v1/services/driver/SetGimbalAngleTargetRequest/frame
 	SetFrame(driverpb.ReferenceFrame)
+}
+
+// QueryOption represents an option for a telemetry or result query. With
+// neither a start nor an end, a query returns only the most recent entry.
+type QueryOption interface {
+	SetTimeStart(*timestamppb.Timestamp)
+	SetTimeEnd(*timestamppb.Timestamp)
 }
 
 // hasAltitude checks that the base interface supports an optional altitude.
@@ -178,5 +188,33 @@ type hasAngleMode interface {
 func WithAngleMode[T hasAngleMode](mode enums.AngleMode) func(T) {
 	return func(t T) {
 		t.SetAngleMode(driverpb.AngleMode(mode))
+	}
+}
+
+// hasQueryStart checks that the base interface supports an optional query
+// start time.
+type hasQueryStart interface {
+	SetTimeStart(*timestamppb.Timestamp)
+}
+
+// WithQueryStart sets the start time of a query that supports it, so that it
+// returns every entry from start onwards (or up to its end, if it has one).
+func WithQueryStart[T hasQueryStart](start time.Time) func(T) {
+	return func(t T) {
+		t.SetTimeStart(timestamppb.New(start))
+	}
+}
+
+// hasQueryEnd checks that the base interface supports an optional query end
+// time.
+type hasQueryEnd interface {
+	SetTimeEnd(*timestamppb.Timestamp)
+}
+
+// WithQueryEnd sets the end time of a query that supports it, so that it
+// returns every entry up to end (or from its start, if it has one).
+func WithQueryEnd[T hasQueryEnd](end time.Time) func(T) {
+	return func(t T) {
+		t.SetTimeEnd(timestamppb.New(end))
 	}
 }

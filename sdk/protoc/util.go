@@ -5,8 +5,20 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/cmusatyalab/steeleagle/sdk/preprocess"
 	"google.golang.org/protobuf/compiler/protogen"
 )
+
+// emitDirective writes a preprocessor directive guarding the next line on
+// capPath, unless capPath is under one of the undirectedPathRoots.
+func emitDirective(g *protogen.GeneratedFile, directive preprocess.Directive, capPath string) {
+	for _, root := range undirectedPathRoots {
+		if strings.HasPrefix(capPath, root) {
+			return
+		}
+	}
+	g.P(directive, " ", capPath)
+}
 
 // capFilePrefix returns the "steeleagle_protocol/v1/<category>/<file-basename>"
 // prefix used to identify file in the vehicle capability file's path convention

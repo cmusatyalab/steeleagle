@@ -25,7 +25,7 @@ const (
 	actionsPkg    = "github.com/cmusatyalab/steeleagle/sdk/dsl/actions"
 )
 
-// testManifest declares two roles, two squawks and one detection flow.
+// testManifest declares two roles, two squawks and one detection engine.
 const testManifest = `
 [info]
 name = "test"
@@ -33,10 +33,29 @@ version = "0.1.0"
 roles = ["Patroller", "tracker"]
 squawks = ["found", "Found"]
 
-[[flows]]
+[[engines]]
 name = "yolo"
 result = "messages/result/DetectionResult"
 `
+
+// testFlow feeds the front camera to yolo, the flow's only engine.
+const testFlow = `
+[[producers]]
+name = "front"
+
+[[engines]]
+name = "yolo"
+location = "local"
+
+[[edges]]
+from = "front"
+to = "yolo"
+`
+
+// flowOf returns a flow of the single engine name.
+func flowOf(name string) []byte {
+	return []byte("[[engines]]\nname = \"" + name + "\"\nlocation = \"local\"\n")
+}
 
 // testGeoJson holds one polygon and one line string with lowercase names.
 const testGeoJson = `{
@@ -342,41 +361,42 @@ func TestLoadInvalidGeoJson(t *testing.T) {
 	}
 }
 
-// TestLoadMalformedFlowResult checks that a flow whose result has no type
+// TestLoadMalformedEngineResult checks that an engine whose result has no type
 // name is reported before any packages are loaded.
-func TestLoadMalformedFlowResult(t *testing.T) {
+func TestLoadMalformedEngineResult(t *testing.T) {
 	path := writeMission(t, t.TempDir(), importsStanza(paramsPkgPath))
 	for _, result := range []string{"", "messages/result/"} {
-		manifest := "[[flows]]\nname = \"x\"\nresult = \"" + result + "\"\n"
+		manifest := "[[engines]]\nname = \"x\"\nresult = \"" + result + "\"\n"
 		_, errs := Load(FromFile(path), buildtools.WithManifest([]byte(manifest)))
-		requireErrorContaining(t, errs, "flow x has malformed result proto message id")
+		requireErrorContaining(t, errs, "engine x has malformed result proto message id")
 	}
 }
 
-// TestLoadUndeclaredFlowType checks that a flow whose output names a type
+// TestLoadUndeclaredEngineType checks that an engine whose output names a type
 // params doesn't declare is reported.
-func TestLoadUndeclaredFlowType(t *testing.T) {
+func TestLoadUndeclaredEngineType(t *testing.T) {
 	skipIfShort(t)
 	path := linkedMission(t, "", dslPkgPath, paramsPkgPath)
-	manifest := "[[flows]]\nname = \"x\"\nresult = \"messages/result/BogusResult\"\n"
-	_, errs := Load(FromFile(path), buildtools.WithManifest([]byte(manifest)))
-	requireErrorContaining(t, errs, `type "BogusResult" is not declared`)
+	manifest := "[[engines]]\nname = \"x\"\nresult = \"messages/result/BogusResult\"\n"
+	_, errs := Load(FromFile(path), buildtools.WithManifest([]byte(manifest)), buildtools.WithFlow(flowOf("x")))
+	requireErrorContaining(t, errs, `type "BogusEngine" is not declared`)
 }
 
 // TestLoadGeneratesConsts checks that Load declares a const per manifest
-// role, squawk and flow, and per GeoJSON feature, named <Type>_<name>, and
-// returns them in the registry JSON.
+// role and squawk, flow engine, and GeoJSON feature, named <Type>_<name>,
+// and returns them in the registry JSON.
 func TestLoadGeneratesConsts(t *testing.T) {
 	skipIfShort(t)
 	path := linkedMission(t, "", dslPkgPath, paramsPkgPath)
-	out, errs := Load(FromFile(path), buildtools.WithManifest([]byte(testManifest)), buildtools.WithGeoJson([]byte(testGeoJson)))
+	out, errs := Load(FromFile(path), buildtools.WithManifest([]byte(testManifest)),
+		buildtools.WithFlow([]byte(testFlow)), buildtools.WithGeoJson([]byte(testGeoJson)))
 	if len(errs) > 0 {
 		t.Fatalf("Load() errors = %v", errs)
 	}
 	want := map[string][]string{
 		"params.Role":            {"Role_Patroller", "Role_tracker"},
 		"params.Squawk":          {"Squawk_found", "Squawk_Found"},
-		"params.DetectionResult": {"DetectionResult_yolo"},
+		"params.DetectionEngine": {"DetectionEngine_yolo"},
 		"params.Polygon":         {"Polygon_area"},
 		"params.LineString":      {"LineString_path"},
 	}
@@ -393,13 +413,34 @@ func TestLoadGeneratesConsts(t *testing.T) {
 	}
 }
 
-// TestLoadMergesFlowAndFeatureConsts checks that a flow and a GeoJSON
-// feature generating consts of the same type are both kept.
-func TestLoadMergesFlowAndFeatureConsts(t *testing.T) {
+// TestLoadGeneratesQualifiedConsts checks that qualified engine names and
+// camera names with slashes generate consts with underscores in their place.
+func TestLoadGeneratesQualifiedConsts(t *testing.T) {
 	skipIfShort(t)
 	path := linkedMission(t, "", dslPkgPath, paramsPkgPath)
-	manifest := "[[flows]]\nname = \"zone\"\nresult = \"messages/result/Polygon\"\n"
-	out, errs := Load(FromFile(path), buildtools.WithManifest([]byte(manifest)), buildtools.WithGeoJson([]byte(testGeoJson)))
+	manifest := "[[engines]]\nname = \"host.yolo\"\nresult = \"messages/result/DetectionResult\"\n"
+	cap := "[driver]\n[[driver.cameras]]\nname = \"front/left\"\n"
+	out, errs := Load(FromFile(path), buildtools.WithPlugin([]byte(cap)),
+		buildtools.WithManifest([]byte(manifest)), buildtools.WithFlow(flowOf("host.yolo")))
+	if len(errs) > 0 {
+		t.Fatalf("Load() errors = %v", errs)
+	}
+	if got := enumConsts(t, out, "params.DetectionEngine"); !got["DetectionEngine_host_yolo"] {
+		t.Errorf("params.DetectionEngine consts = %v, want DetectionEngine_host_yolo", got)
+	}
+	if got := enumConsts(t, out, "params.Camera"); !got["Camera_front_left"] {
+		t.Errorf("params.Camera consts = %v, want Camera_front_left", got)
+	}
+}
+
+// TestLoadMergesEngineAndFeatureConsts checks that an engine and a GeoJSON
+// feature generating consts of the same type are both kept.
+func TestLoadMergesEngineAndFeatureConsts(t *testing.T) {
+	skipIfShort(t)
+	path := linkedMission(t, "", dslPkgPath, paramsPkgPath)
+	manifest := "[[engines]]\nname = \"zone\"\nresult = \"messages/result/Polygon\"\n"
+	out, errs := Load(FromFile(path), buildtools.WithManifest([]byte(manifest)),
+		buildtools.WithFlow(flowOf("zone")), buildtools.WithGeoJson([]byte(testGeoJson)))
 	if len(errs) > 0 {
 		t.Fatalf("Load() errors = %v", errs)
 	}
@@ -422,6 +463,24 @@ func TestLoadOutsideModule(t *testing.T) {
 	}
 	if got := enumConsts(t, out, "params.Polygon"); !got["Polygon_area"] {
 		t.Errorf("params.Polygon consts = %v, want Polygon_area", got)
+	}
+}
+
+// TestLoadGeneratesCameraConsts checks that Load declares a const per cap
+// file camera, named Camera_<name>.
+func TestLoadGeneratesCameraConsts(t *testing.T) {
+	skipIfShort(t)
+	path := linkedMission(t, "", dslPkgPath, paramsPkgPath)
+	cap := "[driver.supported]\nservices = [\"steeleagle_protocol/v1/services/driver/ControlService\", " +
+		"\"steeleagle_protocol/v1/services/driver/StreamService\"]\n" +
+		"[[driver.cameras]]\nname = \"front\"\n[[driver.cameras]]\nname = \"down\"\n"
+	out, errs := Load(FromFile(path), buildtools.WithPlugin([]byte(cap)))
+	if len(errs) > 0 {
+		t.Fatalf("Load() errors = %v", errs)
+	}
+	got := enumConsts(t, out, "params.Camera")
+	if len(got) != 2 || !got["Camera_front"] || !got["Camera_down"] {
+		t.Errorf("params.Camera consts = %v, want Camera_front and Camera_down", got)
 	}
 }
 

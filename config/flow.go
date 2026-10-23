@@ -46,6 +46,23 @@ func ParseFlowConfigFromFilepath(filepath string) (*FlowConfig, error) {
 	return ParseTomlFromFilepath[FlowConfig](filepath)
 }
 
+// GetLeafEngines returns the flow's leaf engines, those with no edges out of
+// them, in the order they are declared. Their results are the flow's
+// output, since no other engine consumes them.
+func (f *FlowConfig) GetLeafEngines() []Engine {
+	inner := make(map[string]bool)
+	for _, e := range f.Edges {
+		inner[e.From] = true
+	}
+	var leaves []Engine
+	for _, e := range f.Engines {
+		if !inner[e.Name] {
+			leaves = append(leaves, e)
+		}
+	}
+	return leaves
+}
+
 // ToBytes writes a FlowConfig to TOML bytes.
 func (f *FlowConfig) ToBytes() ([]byte, error) {
 	var buf bytes.Buffer

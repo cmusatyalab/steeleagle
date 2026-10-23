@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/cmusatyalab/steeleagle/sdk/preprocess"
 )
@@ -88,11 +89,34 @@ func goCmd(dir string, env []string, args ...string) ([]byte, error) {
 	cmd := exec.Command("go", args...)
 	cmd.Dir = dir
 	cmd.Env = append(os.Environ(), env...)
-	var stdout, combined bytes.Buffer
+	var stdout bytes.Buffer
+	var combined lockedBuffer
+	// os/exec copies stdout and stderr in separate goroutines, since they
+	// are different writers, so combined must be safe for concurrent use
 	cmd.Stdout = io.MultiWriter(&stdout, &combined)
 	cmd.Stderr = &combined
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("go %v: %w\n%s", args, err, combined.Bytes())
 	}
 	return stdout.Bytes(), nil
+}
+
+// lockedBuffer is a bytes.Buffer that is safe for concurrent writes.
+type lockedBuffer struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+// Write appends p to the buffer.
+func (b *lockedBuffer) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.Write(p)
+}
+
+// Bytes returns the buffer's contents.
+func (b *lockedBuffer) Bytes() []byte {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.Bytes()
 }

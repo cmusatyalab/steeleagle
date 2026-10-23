@@ -1,6 +1,9 @@
 package preprocess
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 // TestGenerateConstsAppendsConsts checks that a single declared type with
 // entries in types gets one string const per entry, named <Type>_<entry>
@@ -135,6 +138,47 @@ func TestGenerateConstsInvalidIdentifierErrors(t *testing.T) {
 	}, []byte(src))
 	if err == nil {
 		t.Fatal("expected error for entry that is not a valid Go identifier, got nil")
+	}
+}
+
+// TestGenerateConstsQualifiedNames checks that dots and slashes in entries,
+// as in qualified engine names and camera names, become underscores in the
+// const names, while the values keep them.
+func TestGenerateConstsQualifiedNames(t *testing.T) {
+	src := "package sdk\n\ntype Engine string\n\ntype Camera string\n"
+	out, err := GenerateConsts(map[string][]string{
+		"Engine": {"host.yolo", "remote.lab.yolo"},
+		"Camera": {"front/left", "gimbal.cam/rgb"},
+	}, []byte(src))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	consts := parseConsts(t, out)
+	want := map[string]string{
+		"Engine_host_yolo":       "host.yolo",
+		"Engine_remote_lab_yolo": "remote.lab.yolo",
+		"Camera_front_left":      "front/left",
+		"Camera_gimbal_cam_rgb":  "gimbal.cam/rgb",
+	}
+	for name, value := range want {
+		if got, ok := consts[name]; !ok {
+			t.Errorf("const %s not found in output:\n%s", name, out)
+		} else if got != value {
+			t.Errorf("const %s = %q, want %q", name, got, value)
+		}
+	}
+}
+
+// TestGenerateConstsReplacedNameCollisionErrors checks that entries which
+// only differ by a separator replaced with an underscore are an error,
+// rather than emitting a duplicate const.
+func TestGenerateConstsReplacedNameCollisionErrors(t *testing.T) {
+	src := "package sdk\n\ntype Engine string\n"
+	for _, names := range [][]string{{"host.yolo", "host_yolo"}, {"a/b", "a.b"}} {
+		_, err := GenerateConsts(map[string][]string{"Engine": names}, []byte(src))
+		if err == nil || !strings.Contains(err.Error(), "both generate const Engine_") {
+			t.Errorf("GenerateConsts(%q) error = %v, want a collision error", names, err)
+		}
 	}
 }
 

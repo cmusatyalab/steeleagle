@@ -1,5 +1,6 @@
 package events
 
+// #begin-exclude-ifndef steeleagle_protocol/v1/messages/GpsInfo/satellites
 import (
 	"time"
 
@@ -23,10 +24,15 @@ func (e *Satellites) Monitor(v sdk.Vehicle, m dsl.MissionData) (bool, error) {
 		case <-v.Ctx().Done():
 			return false, nil
 		case <-ticker.C:
-			t, err := v.GetTelemetry().Wait()
+			telemetry, err := v.GetTelemetry().Wait()
 			if err != nil {
 				return false, err
 			}
+			if len(telemetry) == 0 {
+				continue // no telemetry received yet, keep polling
+			}
+			// Without a time range, only the most recent telemetry is returned
+			t := telemetry[len(telemetry)-1]
 			gps, err := t.GetGpsInfo()
 			if err != nil {
 				continue // telemetry field not populated yet, keep polling
@@ -43,3 +49,5 @@ func (e *Satellites) Monitor(v sdk.Vehicle, m dsl.MissionData) (bool, error) {
 }
 
 var _ dsl.Event = &Satellites{}
+
+// #end-exclude

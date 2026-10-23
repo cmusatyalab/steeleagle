@@ -20,11 +20,22 @@ func Scrub(filter func(string) bool, src []byte) ([]byte, bool, error) {
 		if tag != "" {
 			out[i] = "" // directive lines are preprocessor syntax, not source, so scrub them too
 			dirty = true
-			satisfied := false
-			for _, t := range types { // check whether the tag is satisfied by the cap file
-				satisfied = satisfied || !filter(strings.TrimSpace(t))
+			// An -ifallndef directive acts as the -ifndef directive it
+			// clones, satisfied only if all of its types are undefined
+			base, all := tag, false
+			if b, ok := allDirectives[tag]; ok {
+				base, all = b, true
 			}
-			switch tag {
+			satisfied := all
+			for _, t := range types { // check whether the tag is satisfied by the cap file
+				undefined := !filter(strings.TrimSpace(t))
+				if all {
+					satisfied = satisfied && undefined
+				} else {
+					satisfied = satisfied || undefined
+				}
+			}
+			switch base {
 			case DirectiveExclude:
 				nextExclude = satisfied
 			case DirectivePrivate:
@@ -45,7 +56,7 @@ func Scrub(filter func(string) bool, src []byte) ([]byte, bool, error) {
 				replaceStack.push(satisfied)
 			case DirectiveReplaceWith:
 				if err := replaceStack.with(); err != nil {
-					return nil, false, &PreprocessError{error: fmt.Errorf("#replace-with does not follow #begin-replace-ifndef: %w", err), LineNo: uint32(i + 1)}
+					return nil, false, &PreprocessError{error: fmt.Errorf("#replace-with does not follow #begin-replace-ifndef or #begin-replace-ifallndef: %w", err), LineNo: uint32(i + 1)}
 				}
 			case DirectiveEndReplace:
 				if err := replaceStack.pop(); err != nil {
@@ -98,24 +109,11 @@ func Scrub(filter func(string) bool, src []byte) ([]byte, bool, error) {
 func getTag(line string) (Directive, []string) {
 	trimmed := strings.TrimSpace(line)
 	tag := directiveNull
-	if strings.HasPrefix(trimmed, string(DirectiveExclude)) {
-		tag = DirectiveExclude
-	} else if strings.HasPrefix(trimmed, string(DirectivePrivate)) {
-		tag = DirectivePrivate
-	} else if strings.HasPrefix(trimmed, string(DirectiveBeginExclude)) {
-		tag = DirectiveBeginExclude
-	} else if strings.HasPrefix(trimmed, string(DirectiveEndExclude)) {
-		tag = DirectiveEndExclude
-	} else if strings.HasPrefix(trimmed, string(DirectiveBeginPrivate)) {
-		tag = DirectiveBeginPrivate
-	} else if strings.HasPrefix(trimmed, string(DirectiveEndPrivate)) {
-		tag = DirectiveEndPrivate
-	} else if strings.HasPrefix(trimmed, string(DirectiveBeginReplace)) {
-		tag = DirectiveBeginReplace
-	} else if strings.HasPrefix(trimmed, string(DirectiveReplaceWith)) {
-		tag = DirectiveReplaceWith
-	} else if strings.HasPrefix(trimmed, string(DirectiveEndReplace)) {
-		tag = DirectiveEndReplace
+	for _, d := range directives {
+		if strings.HasPrefix(trimmed, string(d)) {
+			tag = d
+			break
+		}
 	}
 	return tag, strings.Split(trimmed[len(tag):], ",")
 }

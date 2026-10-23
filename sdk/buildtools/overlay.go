@@ -19,10 +19,10 @@ const (
 
 // OverlayConfig returns the preprocessing c asks for: the SDK's module
 // (whatever module path or version it resolves to) is overlaid, scrubbed
-// according to the cap file, and the constants named by the manifest and
-// GeoJSON (see constTypes) are generated into the params package. The
-// caller sets where and how the packages are loaded, and any other modules
-// to overlay.
+// according to the cap file, and the constants named by the cap file,
+// manifest, flow and GeoJSON (see constTypes) are generated into the params
+// package. The caller sets where and how the packages are loaded, and any
+// other modules to overlay.
 func (c *Config) OverlayConfig() (preprocess.OverlayConfig, []*CompileError) {
 	cfg := preprocess.OverlayConfig{ModulesOf: []string{sdkPkgPath}}
 	if c.Cap != nil {
@@ -37,10 +37,11 @@ func (c *Config) OverlayConfig() (preprocess.OverlayConfig, []*CompileError) {
 }
 
 // constTypes returns the constants to generate in the params package, by
-// type name, named by the manifest and GeoJSON: roles and squawks from the
-// manifest, engine names (typed by their result message), and GeoJSON
-// feature names (typed by their geometry). A name may only be declared
-// once per type.
+// type name, named by the cap file, manifest, flow and GeoJSON: camera names
+// from the cap file, roles and squawks from the manifest, the flow's leaf
+// engines (typed by the result message the manifest gives them), and GeoJSON
+// feature names (typed by their geometry). Every engine of the flow must be
+// declared in the manifest. A name may only be declared once per type.
 func (c *Config) constTypes() (map[string][]string, []*CompileError) {
 	types := map[string][]string{}
 	var errs []*CompileError
@@ -53,6 +54,13 @@ func (c *Config) constTypes() (map[string][]string, []*CompileError) {
 		}
 		types[typeName] = append(types[typeName], name)
 	}
+	if c.Cap != nil {
+		for _, camera := range c.Cap.Cameras {
+			add("Camera", camera.Name, "camera")
+		}
+	}
+	// Engine types by name, from the manifest
+	engines := map[string]string{}
 	if c.Manifest != nil {
 		for _, r := range c.Manifest.Info.Roles {
 			add("Role", r, "role")
@@ -60,7 +68,6 @@ func (c *Config) constTypes() (map[string][]string, []*CompileError) {
 		for _, s := range c.Manifest.Info.Squawks {
 			add("Squawk", s, "squawk")
 		}
-		engines := map[string]bool{}
 		for _, e := range c.Manifest.Engines {
 			typeName := e.Result[strings.LastIndex(e.Result, "/")+1:]
 			if typeName == "" {
@@ -69,12 +76,30 @@ func (c *Config) constTypes() (map[string][]string, []*CompileError) {
 				})
 				continue
 			}
-			if engines[e.Name] {
+			if _, ok := engines[e.Name]; ok {
 				errs = append(errs, &CompileError{Err: fmt.Errorf("engine %q is declared more than once", e.Name)})
 				continue
 			}
-			engines[e.Name] = true
-			add(typeName, e.Name, "engine")
+			// Engines are typed by their result message, e.g. a
+			// DetectionResult engine is a params.DetectionEngine
+			if base, ok := strings.CutSuffix(typeName, "Result"); ok && base != "" {
+				typeName = base + "Engine"
+			}
+			engines[e.Name] = typeName
+		}
+	}
+	if c.Flow != nil {
+		for _, e := range c.Flow.Engines {
+			if _, ok := engines[e.Name]; !ok {
+				errs = append(errs, &CompileError{Err: fmt.Errorf("flow engine %q is not declared in the manifest", e.Name)})
+			}
+		}
+		// Only leaf engines have results the mission can get, since every
+		// other engine's results are consumed within the flow
+		for _, e := range c.Flow.GetLeafEngines() {
+			if typeName, ok := engines[e.Name]; ok {
+				add(typeName, e.Name, "engine")
+			}
 		}
 	}
 	if c.GeoJson != nil {

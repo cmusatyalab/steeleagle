@@ -66,3 +66,33 @@ func TestFlowConfigToBytesRoundTrip(t *testing.T) {
 		t.Errorf("round trip = %+v, want %+v", got, f)
 	}
 }
+
+// TestGetLeafEngines checks that only engines without edges out of them are
+// leaves, in declaration order, whether or not edges lead into them.
+func TestGetLeafEngines(t *testing.T) {
+	f := FlowConfig{
+		Producers: []Producer{{Name: "front"}},
+		Engines: []Engine{
+			{Name: "detect", Location: "local"},
+			{Name: "track", Location: "remote"},
+			{Name: "segment", Location: "local"},
+			{Name: "unused", Location: "local"},
+		},
+		Edges: []Edge{
+			{From: "front", To: "detect"},
+			{From: "detect", To: "track"},
+			{From: "front", To: "segment"},
+		},
+	}
+	want := []Engine{
+		{Name: "track", Location: "remote"},
+		{Name: "segment", Location: "local"},
+		{Name: "unused", Location: "local"},
+	}
+	if got := f.GetLeafEngines(); !reflect.DeepEqual(got, want) {
+		t.Errorf("GetLeafEngines() = %+v, want %+v", got, want)
+	}
+	if got := (&FlowConfig{}).GetLeafEngines(); len(got) != 0 {
+		t.Errorf("GetLeafEngines() of an empty flow = %+v, want none", got)
+	}
+}

@@ -8,6 +8,9 @@ import (
 
 	"github.com/cmusatyalab/steeleagle/sdk"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl"
+	"github.com/rs/zerolog"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // TestStartRunsActionsThroughDoneToTerminalAction checks that Start drives
@@ -125,4 +128,58 @@ func TestStartEndsMissionWhenDoneHasNoMatchingRule(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal(`Start did not return promptly when the action finished with no matching "done" rule`)
 	}
+}
+
+// TestStartLabelsTaskLogs checks that every action and event start and
+// every transition is logged at info, and that logging inside a task,
+// through its mission data or through its vehicle's commands, is labelled
+// with the task's type and name.
+func TestStartLabelsTaskLogs(t *testing.T) {
+	// The vehicle can't connect, so its commands fail fast and log it
+	conn, err := grpc.NewClient("passthrough:///127.0.0.1:1", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+
+	logged := make(chan struct{})
+	actions := map[string]dsl.Action{
+		"patrol": &loggingAction{execute: func(v sdk.Vehicle) error {
+			v.Hold()
+			close(logged)
+			<-v.Ctx().Done()
+			return v.Ctx().Err()
+		}},
+		"land": &fakeAction{execute: func(v sdk.Vehicle) error { return nil }},
+	}
+	events := map[string]dsl.Event{
+		"found": &loggingEvent{monitor: func(v sdk.Vehicle) (bool, error) {
+			<-logged
+			return true, nil
+		}},
+	}
+	transitions := map[string]map[string]string{"patrol": {"found": "land"}}
+	var buf logBuffer
+	data := dsl.MissionData{Log: zerolog.New(&buf).Level(zerolog.DebugLevel)}
+	d := NewDslFsm("patrol", transitions, actions, events, data, conn)
+
+	if err := d.Start(context.Background()); err != nil {
+		t.Fatalf("Start() = %v, want nil", err)
+	}
+
+	entries := buf.entries(t)
+	patrol := map[string]any{"action": "loggingAction", "name": "patrol"}
+	found := map[string]any{"event": "loggingEvent", "name": "found"}
+	requireEntry(t, entries, "action started", map[string]any{"level": "info", "action": "loggingAction", "name": "patrol"})
+	requireEntry(t, entries, "event started", map[string]any{"level": "info", "event": "loggingEvent", "name": "found"})
+	requireEntry(t, entries, "inside action", patrol)
+	requireEntry(t, entries, "inside event", found)
+	requireEntry(t, entries, "command failed", map[string]any{"action": "loggingAction", "name": "patrol", "command": "Hold", "code": "Unavailable"})
+	requireEntry(t, entries, "state transition", map[string]any{"level": "info", "from": "patrol", "to": "land", "trigger": "found"})
+	for _, e := range entries {
+		if e["message"] == "action started" && e["name"] == "land" && e["action"] == "fakeAction" {
+			return
+		}
+	}
+	t.Errorf("no start logged for action land in %v", entries)
 }

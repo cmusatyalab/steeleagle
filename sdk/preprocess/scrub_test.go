@@ -632,3 +632,105 @@ func TestScrubReplaceTagLinesAlwaysRemoved(t *testing.T) {
 		}
 	}
 }
+
+// TestScrubAllUndefinedSemantics checks that every -ifallndef directive
+// acts as the -ifndef directive it clones, except that it only fires if
+// all of its types are undefined, rather than any of them.
+func TestScrubAllUndefinedSemantics(t *testing.T) {
+	const (
+		lat = "services/driver/TakeOffRequest/latitude"
+		alt = "services/driver/TakeOffRequest/altitude"
+	)
+	// Each directive governs its source, which scrubs to fired if the
+	// directive fires and to kept if it doesn't. Directive lines are
+	// always blanked.
+	directives := []struct {
+		name          string
+		src           func(directive string) string
+		fired, kept   string
+		ifndef, ifall preprocess.Directive
+	}{
+		{
+			ifndef: preprocess.DirectiveExclude, ifall: preprocess.DirectiveExcludeAll,
+			src:   func(d string) string { return d + "\nLine()\n" },
+			fired: "\n\n", kept: "\nLine()\n",
+		},
+		{
+			ifndef: preprocess.DirectivePrivate, ifall: preprocess.DirectivePrivateAll,
+			src:   func(d string) string { return d + "\nLine()\n" },
+			fired: "\nline()\n", kept: "\nLine()\n",
+		},
+		{
+			ifndef: preprocess.DirectiveBeginExclude, ifall: preprocess.DirectiveBeginExcludeAll,
+			src:   func(d string) string { return d + "\nLine()\n// #end-exclude\n" },
+			fired: "\n\n\n", kept: "\nLine()\n\n",
+		},
+		{
+			ifndef: preprocess.DirectiveBeginPrivate, ifall: preprocess.DirectiveBeginPrivateAll,
+			src:   func(d string) string { return d + "\nLine()\n// #end-private\n" },
+			fired: "\nline()\n\n", kept: "\nLine()\n\n",
+		},
+		{
+			ifndef: preprocess.DirectiveBeginReplace, ifall: preprocess.DirectiveBeginReplaceAll,
+			src: func(d string) string {
+				return d + "\nOriginal()\n// #replace-with\nReplacement()\n// #end-replace\n"
+			},
+			fired: "\n\n\nReplacement()\n\n", kept: "\nOriginal()\n\n\n\n",
+		},
+	}
+	// Which of the directive's two types the cap leaves undefined, and
+	// whether -ifndef and -ifallndef fire for it
+	caps := []struct {
+		name               string
+		undefined          []string
+		ifndefFires, ifall bool
+	}{
+		{name: "none undefined", undefined: nil},
+		{name: "one undefined", undefined: []string{alt}, ifndefFires: true},
+		{name: "all undefined", undefined: []string{lat, alt}, ifndefFires: true, ifall: true},
+	}
+	for _, d := range directives {
+		for _, c := range caps {
+			for _, variant := range []struct {
+				directive preprocess.Directive
+				fires     bool
+			}{{d.ifndef, c.ifndefFires}, {d.ifall, c.ifall}} {
+				t.Run(string(variant.directive)[3:]+"/"+c.name, func(t *testing.T) {
+					cap := newDriverCap(t, c.undefined...)
+					src := d.src(string(variant.directive) + " " + lat + "," + alt)
+					out, _, err := preprocess.Scrub(cap.Supports, []byte(src))
+					if err != nil {
+						t.Fatalf("unexpected error: %v", err)
+					}
+					want := d.kept
+					if variant.fires {
+						want = d.fired
+					}
+					if string(out) != want {
+						t.Errorf("out = %q, want %q", out, want)
+					}
+				})
+			}
+		}
+	}
+}
+
+// TestScrubAllUndefinedNestedDominance checks that an -ifallndef block
+// that doesn't fire is still dominated by an enclosing block that does.
+func TestScrubAllUndefinedNestedDominance(t *testing.T) {
+	cap := newDriverCap(t, "services/driver/TakeOffRequest/altitude")
+	src := "// #begin-exclude-ifndef services/driver/TakeOffRequest/altitude\n" +
+		"// #begin-exclude-ifallndef services/driver/TakeOffRequest/latitude,services/driver/TakeOffRequest/altitude\n" +
+		"Inner()\n" +
+		"// #end-exclude\n" +
+		"Outer()\n" +
+		"// #end-exclude\n" +
+		"After()\n"
+	out, _, err := preprocess.Scrub(cap.Supports, []byte(src))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if want := "\n\n\n\n\n\nAfter()\n"; string(out) != want {
+		t.Errorf("out = %q, want %q", out, want)
+	}
+}

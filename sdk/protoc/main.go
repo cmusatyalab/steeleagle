@@ -138,7 +138,7 @@ func generateEnum(g *protogen.GeneratedFile, enum *protogen.Enum, filePrefix str
 			panic(fmt.Sprintf("enum %s value %s has number %d, want %d: iota-based generation requires sequential enum values", typeName, v.Desc.Name(), v.Desc.Number(), i))
 		}
 		valuePath := filePrefix + "/" + typeName + "/" + string(v.Desc.Name())
-		g.P(preprocess.DirectivePrivate, " ", valuePath)
+		emitDirective(g, preprocess.DirectivePrivate, valuePath)
 		if i == 0 {
 			g.P(enumValueConstName(enum, v), " ", typeName, " = iota")
 		} else {

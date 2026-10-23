@@ -4,6 +4,8 @@ import (
 	"errors"
 	"testing"
 	"time"
+
+	"github.com/rs/zerolog"
 )
 
 // TestWaiterConstructorErrorSkipsPoll checks that when newWaiter is given a
@@ -16,7 +18,7 @@ func TestWaiterConstructorErrorSkipsPoll(t *testing.T) {
 		return nil
 	}
 	wantErr := errors.New("rpc failed")
-	w := newWaiter("resp", wantErr, poll)
+	w := newWaiter(zerolog.Nop(), "resp", wantErr, poll)
 
 	// The constructor should have already marked the waiter done, before
 	// Wait is ever called
@@ -47,7 +49,7 @@ func TestWaiterConstructorErrorSkipsPoll(t *testing.T) {
 func TestWaiterWaitReturnsPollResult(t *testing.T) {
 	wantErr := ErrTimeout
 	poll := func(WaitOptions) error { return wantErr }
-	w := newWaiter(42, nil, poll)
+	w := newWaiter(zerolog.Nop(), 42, nil, poll)
 
 	resp, err := w.Wait()
 	if resp != 42 { // the answer to life, the universe, and everything...
@@ -67,7 +69,7 @@ func TestWaiterCheckReflectsCompletion(t *testing.T) {
 		<-release
 		return nil
 	}
-	w := newWaiter("resp", nil, poll)
+	w := newWaiter(zerolog.Nop(), "resp", nil, poll)
 
 	if done, _ := w.Check(); done {
 		t.Fatalf("Check() = done before poll finished")
@@ -102,7 +104,7 @@ func TestWaiterCheckReportsPollError(t *testing.T) {
 		polls++
 		return ErrTimeout
 	}
-	w := newWaiter("resp", nil, poll)
+	w := newWaiter(zerolog.Nop(), "resp", nil, poll)
 
 	if _, err := w.Wait(); !errors.Is(err, ErrTimeout) {
 		t.Fatalf("Wait() err = %v, want %v", err, ErrTimeout)

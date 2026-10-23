@@ -183,3 +183,25 @@ func TestServiceOf(t *testing.T) {
 		}
 	}
 }
+
+// TestDriverCapGetCamera checks that GetCamera returns the named camera's
+// config, and an error for a camera the driver doesn't have.
+func TestDriverCapGetCamera(t *testing.T) {
+	p, err := ParsePluginConfigFromFilepath("examples/driver.plugin.toml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	camera, err := p.Driver.GetCamera("rgb")
+	if err != nil {
+		t.Fatalf("GetCamera(%q) error = %v", "rgb", err)
+	}
+	if camera.Name != "rgb" || camera.HRes != 1080 || !camera.Primary {
+		t.Errorf("GetCamera(%q) = %+v, want the example's rgb camera", "rgb", camera)
+	}
+	if _, err := p.Driver.GetCamera("thermal"); err == nil {
+		t.Errorf("GetCamera(%q) error = nil, want one for a missing camera", "thermal")
+	}
+	if _, err := (&DriverCap{}).GetCamera("rgb"); err == nil {
+		t.Errorf("GetCamera(%q) on a driver with no cameras error = nil, want one", "rgb")
+	}
+}

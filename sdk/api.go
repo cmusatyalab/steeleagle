@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/cmusatyalab/steeleagle/sdk/opt"
+	"github.com/cmusatyalab/steeleagle/sdk/params"
 )
 
 // Vehicle is the interface that all SDK code interacts with. It provides
@@ -51,5 +52,10 @@ type Vehicle interface {
 		pitchVel, rollVel, yawVel float32,
 	) *Waiter[SetGimbalVelocityTargetResponse]
 	// #exclude-ifndef steeleagle_protocol/v1/services/driver/StreamService/StreamTelemetry
-	GetTelemetry() *Waiter[Telemetry]
+	GetTelemetry(options ...opt.Option[opt.QueryOption]) *Waiter[[]Telemetry]
+	GetDetectionResult(engine params.DetectionEngine, options ...opt.Option[opt.QueryOption]) *Waiter[[]DetectionResult]
+	GetClassificationResult(engine params.ClassificationEngine, options ...opt.Option[opt.QueryOption]) *Waiter[[]ClassificationResult]
+	GetGuidanceResult(engine params.GuidanceEngine, options ...opt.Option[opt.QueryOption]) *Waiter[[]GuidanceResult]
+	GetPositionResult(engine params.PositionEngine, options ...opt.Option[opt.QueryOption]) *Waiter[[]PositionResult]
+	GetGenericResult(engine params.GenericEngine, options ...opt.Option[opt.QueryOption]) *Waiter[[]GenericResult]
 }

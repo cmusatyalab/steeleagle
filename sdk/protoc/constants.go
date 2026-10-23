@@ -15,6 +15,13 @@ const commonPackage = "steeleagle_protocol.v1.common"
 // preprocessor directive is qualified with.
 const capPathRoot = "steeleagle_protocol/v1/"
 
+// undirectedPathRoots are capability path roots that never get a
+// preprocessor directive: result messages come from compute engines, not
+// the vehicle, so a cap file never masks them.
+var undirectedPathRoots = []string{
+	capPathRoot + "messages/result/",
+}
+
 // fieldNotPresentError is the name of the error returned when a field is not set.
 const fieldNotPresentError = "ErrFieldNotPresent"
 

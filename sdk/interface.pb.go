@@ -80,7 +80,7 @@ type PositionInfo_VelocityNeu interface {
 type PositionInfo interface {
 	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/home
 	GetHome() (PositionInfo_Home, error)
-	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/home
+	// #exclude-ifndef steeleagle_messages/Telemetry/PositionInfo/home
 	hasHome() bool
 	// #exclude-ifndef steeleagle_protocol/v1/messages/telemetry/PositionInfo/global_position
 	GetGlobalPosition() (PositionInfo_GlobalPosition, error)
@@ -262,125 +262,80 @@ type EncodedFrame interface {
 }
 
 type BoundingBox interface {
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/BoundingBox/y_min
 	GetYMin() float64
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/BoundingBox/x_min
 	GetXMin() float64
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/BoundingBox/y_max
 	GetYMax() float64
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/BoundingBox/x_max
 	GetXMax() float64
 }
 
 type Detection interface {
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/Detection/class_name
 	GetClassName() string
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/Detection/score
 	GetScore() float64
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/Detection/bbox
 	GetBbox() (BoundingBox, error)
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/Detection/bbox
 	hasBbox() bool
 }
 
 type DetectionResult interface {
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/DetectionResult/detections
 	GetDetections() []Detection
 }
 
 type ClassificationResult interface {
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ClassificationResult/score
 	GetScore() float64
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ClassificationResult/class
 	GetClass() (string, error)
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ClassificationResult/class
 	hasClass() bool
 }
 
 type GuidanceResult_Trajectory interface {
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/GuidanceResult/trajectory/x_vel
 	GetXVel() (float32, error)
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/GuidanceResult/trajectory/y_vel
 	GetYVel() (float32, error)
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/GuidanceResult/trajectory/z_vel
 	GetZVel() (float32, error)
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/GuidanceResult/trajectory/angular_vel
 	GetAngularVel() (float32, error)
 }
 
 type GuidanceResult interface {
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/GuidanceResult/trajectory
 	GetTrajectory() (GuidanceResult_Trajectory, error)
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/GuidanceResult/trajectory
 	hasTrajectory() bool
 }
 
 type PositionResult_RelativePosition interface {
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/PositionResult/relative_position/x
 	GetX() (float32, error)
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/PositionResult/relative_position/y
 	GetY() (float32, error)
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/PositionResult/relative_position/z
 	GetZ() (float32, error)
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/PositionResult/relative_position/angle
 	GetAngle() (float32, error)
 }
 
 type PositionResult_GlobalPosition interface {
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/PositionResult/global_position/latitude
 	GetLatitude() (float64, error)
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/PositionResult/global_position/longitude
 	GetLongitude() (float64, error)
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/PositionResult/global_position/altitude
 	GetAltitude() (float32, error)
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/PositionResult/global_position/heading
 	GetHeading() (float32, error)
 }
 
 type PositionResult interface {
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/PositionResult/relative_position
 	GetRelativePosition() (PositionResult_RelativePosition, error)
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/PositionResult/relative_position
 	hasRelativePosition() bool
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/PositionResult/global_position
 	GetGlobalPosition() (PositionResult_GlobalPosition, error)
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/PositionResult/global_position
 	hasGlobalPosition() bool
 }
 
 type GenericResult interface {
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/GenericResult/payload
 	GetPayload() []byte
 }
 
 type ComputeResult interface {
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/timestamp
 	GetTimestamp() (*timestamppb.Timestamp, error)
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/timestamp
 	hasTimestamp() bool
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/sequence_num
 	GetSequenceNum() uint64
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/local
 	GetLocal() bool
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/detection_result
 	GetDetectionResult() (DetectionResult, error)
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/detection_result
 	hasDetectionResult() bool
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/classification_result
 	GetClassificationResult() (ClassificationResult, error)
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/classification_result
 	hasClassificationResult() bool
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/guidance_result
 	GetGuidanceResult() (GuidanceResult, error)
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/guidance_result
 	hasGuidanceResult() bool
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/position_result
 	GetPositionResult() (PositionResult, error)
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/position_result
 	hasPositionResult() bool
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/generic_result
 	GetGenericResult() (GenericResult, error)
-	// #exclude-ifndef steeleagle_protocol/v1/messages/result/ComputeResult/generic_result
 	hasGenericResult() bool
 }
 

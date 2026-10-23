@@ -44,8 +44,9 @@ service DataService {
    * Query a dataflow.
    *
    * Queries a dataflow for results, returning all results that match the query
-   * timestamps. If no start timestamp or end timestamp is provided, this will
-   * return the most recent result for that dataflow.
+   * timestamps, ordered from oldest to newest. If no start timestamp or end
+   * timestamp is provided, this will return the most recent result for that
+   * dataflow.
    */
   rpc GetResult (GetResultRequest)
     returns (GetResultResponse) {}
@@ -54,8 +55,8 @@ service DataService {
    * Query telemetry data.
    *
    * Queries telemetry, returning all received telemetry that match the query
-   * timestamps. If no start timestamp or end timestamp is provided, this will
-   * return the most recent received telemetry.
+   * timestamps, ordered from oldest to newest. If no start timestamp or end
+   * timestamp is provided, this will return the most recent received telemetry.
    */
   rpc GetTelemetry (GetTelemetryRequest)
     returns (GetTelemetryResponse) {}
@@ -80,7 +81,7 @@ message GetResultRequest {
 }
 
 message GetResultResponse {
-  repeated steeleagle_protocol.v1.messages.result.ComputeResult result = 1; // result query response
+  repeated steeleagle_protocol.v1.messages.result.ComputeResult result = 1; // result query response, oldest to newest
 }
 
 message GetTelemetryRequest {
@@ -89,5 +90,5 @@ message GetTelemetryRequest {
 }
 
 message GetTelemetryResponse {
-  repeated steeleagle_protocol.v1.messages.telemetry.Telemetry telemetry = 1; // telemetry query response
+  repeated steeleagle_protocol.v1.messages.telemetry.Telemetry telemetry = 1; // telemetry query response, oldest to newest
 }

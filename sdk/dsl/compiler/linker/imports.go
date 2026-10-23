@@ -10,6 +10,7 @@ import (
 // kept in sync with main.go.tmpl.
 var fixedImports = map[string]string{
 	"context":                "context",
+	"net":                    "net",
 	"os":                     "os",
 	"os/signal":              "signal",
 	"syscall":                "syscall",

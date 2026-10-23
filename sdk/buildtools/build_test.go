@@ -35,6 +35,20 @@ name = "yolo"
 result = "messages/result/DetectionResult"
 `
 
+// testFlow feeds the front camera to yolo, the flow's only engine.
+const testFlow = `
+[[producers]]
+name = "front"
+
+[[engines]]
+name = "yolo"
+location = "local"
+
+[[edges]]
+from = "front"
+to = "yolo"
+`
+
 // repoRoot returns the absolute path of the root of the steeleagle
 // repository, which holds the SDK's module in sdk/ and the API's in
 // api/go/.
@@ -202,12 +216,14 @@ func TestBuildSdkErrors(t *testing.T) {
 	requireErrorContaining(t, BuildSdk(dir, nil), "undefined: params.Polygon_area")
 }
 
-// TestOverlayConfig checks that OverlayConfig generates manifest roles,
-// squawks and engines and GeoJSON features into the params package, and
-// overlays the SDK's module with the cap file's support.
+// TestOverlayConfig checks that OverlayConfig generates cap file cameras,
+// manifest roles and squawks, flow engines and GeoJSON features into the params
+// package, and overlays the SDK's module with the cap file's support.
 func TestOverlayConfig(t *testing.T) {
-	cap := "[driver.unsupported]\nmethods = [\"services/driver/ControlService/Kill\"]\n"
-	c, errs := NewConfig(WithPlugin([]byte(cap)), WithManifest([]byte(testManifest)), WithGeoJson([]byte(testGeoJson)))
+	cap := "[driver.unsupported]\nmethods = [\"services/driver/ControlService/Kill\"]\n" +
+		"[[driver.cameras]]\nname = \"front\"\n[[driver.cameras]]\nname = \"down\"\n"
+	c, errs := NewConfig(WithPlugin([]byte(cap)), WithManifest([]byte(testManifest)),
+		WithFlow([]byte(testFlow)), WithGeoJson([]byte(testGeoJson)))
 	if len(errs) > 0 {
 		t.Fatalf("NewConfig() errors = %v", errs)
 	}
@@ -220,9 +236,10 @@ func TestOverlayConfig(t *testing.T) {
 		t.Fatalf("Consts = %v, want constants for %s only", cfg.Consts, paramsPkgPath)
 	}
 	want := map[string]string{
+		"Camera":          "front down",
 		"Role":            "Patroller tracker",
 		"Squawk":          "found",
-		"DetectionResult": "yolo",
+		"DetectionEngine": "yolo",
 		"Polygon":         "area",
 	}
 	for typeName, names := range want {
@@ -240,6 +257,58 @@ func TestOverlayConfig(t *testing.T) {
 	empty, _ := NewConfig()
 	if cfg, errs := empty.OverlayConfig(); len(errs) > 0 || cfg.Supports != nil {
 		t.Errorf("OverlayConfig() with no files = %+v, %v; want no errors and no Supports", cfg, errs)
+	}
+}
+
+// TestOverlayConfigLeafEngines checks that only the flow's leaf engines get
+// consts, typed by the manifest, and that no engine gets one without a flow.
+func TestOverlayConfigLeafEngines(t *testing.T) {
+	manifest := "[[engines]]\nname = \"yolo\"\nresult = \"messages/result/DetectionResult\"\n" +
+		"[[engines]]\nname = \"pre\"\nresult = \"messages/result/GenericResult\"\n" +
+		"[[engines]]\nname = \"unused\"\nresult = \"messages/result/PositionResult\"\n"
+	flow := "[[producers]]\nname = \"front\"\n" +
+		"[[engines]]\nname = \"pre\"\n[[engines]]\nname = \"yolo\"\n" +
+		"[[edges]]\nfrom = \"front\"\nto = \"pre\"\n[[edges]]\nfrom = \"pre\"\nto = \"yolo\"\n"
+	c, errs := NewConfig(WithManifest([]byte(manifest)), WithFlow([]byte(flow)))
+	if len(errs) > 0 {
+		t.Fatalf("NewConfig() errors = %v", errs)
+	}
+	cfg, errs := c.OverlayConfig()
+	if len(errs) > 0 {
+		t.Fatalf("OverlayConfig() errors = %v", errs)
+	}
+	types := cfg.Consts[paramsPkgPath]
+	want := map[string]string{"DetectionEngine": "yolo", "GenericEngine": "", "PositionEngine": ""}
+	for typeName, names := range want {
+		if got := strings.Join(types[typeName], " "); got != names {
+			t.Errorf("%s consts = %q, want %q", typeName, got, names)
+		}
+	}
+
+	c, _ = NewConfig(WithManifest([]byte(manifest)))
+	cfg, errs = c.OverlayConfig()
+	if len(errs) > 0 {
+		t.Fatalf("OverlayConfig() without a flow errors = %v", errs)
+	}
+	for _, typeName := range []string{"DetectionEngine", "GenericEngine", "PositionEngine"} {
+		if got := cfg.Consts[paramsPkgPath][typeName]; len(got) > 0 {
+			t.Errorf("%s consts without a flow = %v, want none", typeName, got)
+		}
+	}
+}
+
+// TestOverlayConfigUndeclaredFlowEngine checks that every engine of the
+// flow, leaf or not, must be declared in the manifest.
+func TestOverlayConfigUndeclaredFlowEngine(t *testing.T) {
+	flow := "[[engines]]\nname = \"pre\"\n[[engines]]\nname = \"yolo\"\n" +
+		"[[edges]]\nfrom = \"pre\"\nto = \"yolo\"\n"
+	for _, manifest := range []string{"", testManifest} {
+		c, errs := NewConfig(WithManifest([]byte(manifest)), WithFlow([]byte(flow)))
+		if len(errs) > 0 {
+			t.Fatalf("NewConfig() errors = %v", errs)
+		}
+		_, errs = c.OverlayConfig()
+		requireErrorContaining(t, errs, `flow engine "pre" is not declared in the manifest`)
 	}
 }
 
@@ -261,18 +330,40 @@ func TestOverlayConfigErrors(t *testing.T) {
 		_, errs = c.OverlayConfig()
 		requireErrorContaining(t, errs, want)
 	}
-	c, _ := NewConfig(WithGeoJson([]byte(`{"type":"FeatureCollection","features":[{"type":"Feature","properties":{},"geometry":{"type":"Point","coordinates":[0,0]}}]}`)))
+	c, _ := NewConfig(WithPlugin([]byte("[driver]\n[[driver.cameras]]\nname = \"front\"\n[[driver.cameras]]\nname = \"front\"\n")))
 	_, errs := c.OverlayConfig()
+	requireErrorContaining(t, errs, `camera "front" is declared more than once`)
+	c, _ = NewConfig(WithGeoJson([]byte(`{"type":"FeatureCollection","features":[{"type":"Feature","properties":{},"geometry":{"type":"Point","coordinates":[0,0]}}]}`)))
+	_, errs = c.OverlayConfig()
 	requireErrorContaining(t, errs, "has no name property")
 }
 
-// TestNewConfigErrors checks that unparseable cap and manifest files are
-// reported.
+// TestNewConfigErrors checks that unparseable cap, manifest and flow files
+// are reported.
 func TestNewConfigErrors(t *testing.T) {
 	if _, errs := NewConfig(WithPlugin([]byte("[[[\n"))); len(errs) == 0 {
 		t.Error("NewConfig() with a bad cap file succeeded")
 	}
 	if _, errs := NewConfig(WithManifest([]byte("[[[\n"))); len(errs) == 0 {
 		t.Error("NewConfig() with a bad manifest succeeded")
+	}
+	if _, errs := NewConfig(WithFlow([]byte("[[[\n"))); len(errs) == 0 {
+		t.Error("NewConfig() with a bad flow file succeeded")
+	}
+}
+
+// TestNewConfigParsesFlow checks that a flow file is parsed and kept
+// verbatim.
+func TestNewConfigParsesFlow(t *testing.T) {
+	flow := "[[producers]]\nname = \"front\"\n"
+	c, errs := NewConfig(WithFlow([]byte(flow)))
+	if len(errs) > 0 {
+		t.Fatalf("NewConfig() errors = %v", errs)
+	}
+	if c.Flow == nil || len(c.Flow.Producers) != 1 || c.Flow.Producers[0].Name != "front" {
+		t.Errorf("Flow = %+v, want one producer named front", c.Flow)
+	}
+	if string(c.FlowToml) != flow {
+		t.Errorf("FlowToml = %q, want %q", c.FlowToml, flow)
 	}
 }

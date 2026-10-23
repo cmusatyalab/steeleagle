@@ -50,10 +50,7 @@ func authCode(auth config.Auth) (listener.AuthCode, error) {
 // gatherServices reads the services used by the config into d.services
 // without starting them. Each service is named by its qualified name, so that
 // its plugin, and the vehicle or engine it runs, are unique across the
-// network. A service that can't be set up, like one whose package isn't
-// installed, is kept as broken with its error, so that it is listed but never
-// started, and is reported in the returned error, so that the rest of the
-// config can still run.
+// network.
 func (d *Daemon) gatherServices() error {
 	d.svcMu.Lock()
 	defer d.svcMu.Unlock()
@@ -147,10 +144,6 @@ func (d *Daemon) newService(
 	}
 	switch category {
 	case daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE:
-		// Engines serve over iceoryx at an endpoint named after them, so the
-		// daemon has no client connection to them, but they can call the
-		// daemon through their listener. They can read, but not change, the
-		// models transferred to the daemon
 		models, err := util.GetModelDir()
 		if err != nil {
 			return nil, fmt.Errorf("could not get model directory: %w", err)
@@ -159,9 +152,6 @@ func (d *Daemon) newService(
 			plugin.WithParentDir(cat.dir), plugin.WithEnvironment(IceoryxServiceEnv, name),
 			plugin.WithReadOnlyFiles([]string{models}))
 	case daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE:
-		// Drivers are pure servers for their vehicle, and run within its
-		// runtime directory, so they have no listener for their auth to apply
-		// to
 		if cfg.Driver == nil {
 			return nil, fmt.Errorf("plugin %q has no driver cap", field.Plugin)
 		}
@@ -285,9 +275,7 @@ func (d *Daemon) stopServices(services []*serviceInfo) {
 // startService starts a run of a service. A vehicle runs on its driver plugin,
 // and is created on its first start; each run gets a new in-process daemon
 // listener, and the router sends calls with the vehicle's name as their route
-// key to a client connection on it. Any other plugin hosts a service, and the
-// daemon serves its listener, so the plugin can call the daemon with the
-// AuthCode of its configured auth. The caller must hold svcMu.
+// key to a client connection on it.
 func (d *Daemon) startService(s *serviceInfo) error {
 	ctx, cancel := context.WithCancel(d.ctx)
 	if s.category != daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE {

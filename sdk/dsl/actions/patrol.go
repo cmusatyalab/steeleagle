@@ -1,5 +1,6 @@
 package actions
 
+// #begin-exclude-ifndef steeleagle_protocol/v1/services/driver/ControlService/SetGlobalPositionTarget
 import (
 	"github.com/cmusatyalab/steeleagle/sdk"
 	"github.com/cmusatyalab/steeleagle/sdk/dsl"
@@ -68,9 +69,11 @@ func (p *Patrol) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 		if err != nil {
 			return err
 		}
-		m.Log.Info().Msgf("waypoint %d reached!", i)
+		m.Log.Info().Msgf("waypoint %d reached", i)
 	}
 	return nil
 }
 
 var _ dsl.Action = &Patrol{}
+
+// #end-exclude

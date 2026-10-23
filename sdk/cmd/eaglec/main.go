@@ -1,18 +1,21 @@
 // Command eaglec builds SteelEagle programs with the SDK preprocessed
 // for a vehicle. It has four modes:
 //
-//	eaglec sdk [-plugin file] [-manifest file] [-geojson file] [-o file] [packages]
-//	eaglec dsl [-json] [-plugin file] [-manifest file] [-geojson file] [-o file] mission
-//	eaglec schema [-json] [-plugin file] [-manifest file] [-geojson file] mission
+//	eaglec sdk [-plugin file] [-manifest file] [-flow file] [-geojson file] [-o file] [packages]
+//	eaglec dsl [-json] [-plugin file] [-manifest file] [-flow file] [-geojson file] [-o file] mission
+//	eaglec schema [-json] [-plugin file] [-manifest file] [-flow file] [-geojson file] mission
 //	eaglec parse mission.dsl
 //
 // An SDK compile runs go build on packages (the package in the working
 // directory by default) in the local Go module, with the module's and the
 // SDK's packages scrubbed according to the plugin config's driver cap and
-// with the consts named by the manifest and GeoJSON generated into them.
+// with the consts named by the manifest, flow and GeoJSON generated into
+// them. Engine consts are only generated for the flow's leaf engines.
 //
 // A DSL compile compiles a mission in a temporary workspace, preprocessing
-// the SDK the same way, into a DSL binary (mission.dslb by default).
+// the SDK the same way, into a DSL binary (mission.dslb by default). The
+// flow file, if given, is embedded in the binary, which sets it as the
+// vehicle's dataflow each time the mission is started.
 //
 // A schema run loads the types available to a mission, preprocessed the
 // same way, and prints the type registry as JSON. Only the mission's
@@ -232,7 +235,7 @@ func cleanAst(v any) any {
 // inputFiles are the paths of the optional input files the sdk, dsl and
 // schema modes take.
 type inputFiles struct {
-	plugin, manifest, geoJson string
+	plugin, manifest, flow, geoJson string
 }
 
 // newBaseFlagSet returns a flag set for mode with the -errors flag every
@@ -254,6 +257,7 @@ func newFlagSet(mode, args string) (*flag.FlagSet, *inputFiles) {
 	files := &inputFiles{}
 	fs.StringVar(&files.plugin, "plugin", "", "vehicle driver plugin config (optional; nothing is scrubbed without one)")
 	fs.StringVar(&files.manifest, "manifest", "", "mission manifest file (optional)")
+	fs.StringVar(&files.flow, "flow", "", "dataflow config whose leaf engines get consts, set when a DSL mission starts (optional)")
 	fs.StringVar(&files.geoJson, "geojson", "", "mission GeoJSON file (optional)")
 	return fs, files
 }
@@ -280,6 +284,7 @@ func (f *inputFiles) options() ([]buildtools.Option, error) {
 		{f.plugin, buildtools.WithPlugin},
 		{f.manifest, buildtools.WithManifest},
 		{f.geoJson, buildtools.WithGeoJson},
+		{f.flow, buildtools.WithFlow},
 	} {
 		if in.path == "" {
 			continue

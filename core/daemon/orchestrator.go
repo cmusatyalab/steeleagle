@@ -48,13 +48,23 @@ func newRegistration(acl *listener.Acl) *registration {
 	return &registration{acl: acl, allowed: make(map[netip.Addr]bool), registered: make(chan struct{})}
 }
 
+// allow grants AdminCode to the orchestrator's IP addresses on the daemon
+// network, if they weren't already.
+func (r *registration) allow(addrs []netip.Addr) {
+	for _, addr := range addrs {
+		if r.allowed[addr] {
+			continue
+		}
+		if err := r.acl.AddIp(addr.String(), listener.AdminCode); err == nil {
+			r.allowed[addr] = true
+		}
+	}
+}
+
 // serveRegistration serves a registration stream from a daemon that has this
 // daemon as its orchestrator. The stream opens with the daemon's registration,
 // answered with this daemon's remote compute service, and is then a heartbeat:
-// each empty request is answered with an empty response. The stream ends if
-// no request arrives within heartbeatTimeout, and the daemon is disconnected
-// until it registers again; its routes are kept, so that it is reachable again
-// once it does.
+// each empty request is answered with an empty response.
 func (d *Daemon) serveRegistration(
 	stream grpc.BidiStreamingServer[daemonpb.RegisterOrchestratorRequest, daemonpb.RegisterOrchestratorResponse],
 ) error {
@@ -120,10 +130,6 @@ func (d *Daemon) serveRegistration(
 // registerOrchestrator registers this daemon as the orchestrator for the
 // calling daemon at port. The daemon's IP and its vehicles, given by their
 // qualified names, "{daemon IP}.{vehicle name}", become header routes to it.
-// This daemon's remote compute service is returned: the cert and port of its
-// local compute service, and the plugin toml of each engine it serves, by
-// qualified name. Every vehicle must be qualified with the IP of the caller,
-// so that a daemon can only register its own vehicles.
 func (d *Daemon) registerOrchestrator(caller netip.Addr, vehicles []string, port int32) (*daemonpb.RemoteCompute, error) {
 	if port < 1 || port > 65535 {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid daemon port %d", port)
@@ -314,42 +320,6 @@ func (d *Daemon) setRcs(addr netip.Addr, compute *daemonpb.RemoteCompute) error 
 	return nil
 }
 
-// allow grants AdminCode to the orchestrator's IP addresses on the daemon
-// network, if they weren't already.
-func (r *registration) allow(addrs []netip.Addr) {
-	for _, addr := range addrs {
-		if r.allowed[addr] {
-			continue
-		}
-		if err := r.acl.AddIp(addr.String(), listener.AdminCode); err == nil {
-			r.allowed[addr] = true
-		}
-	}
-}
-
-// receive reads messages from recv on its own goroutine until it fails or ctx
-// is done, so that they can be waited for with a timeout. The error recv
-// fails with is sent on the error channel.
-func receive[T any](ctx context.Context, recv func() (T, error)) (<-chan T, <-chan error) {
-	msgs := make(chan T)
-	errs := make(chan error, 1)
-	go func() {
-		for {
-			msg, err := recv()
-			if err != nil {
-				errs <- err
-				return
-			}
-			select {
-			case msgs <- msg:
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-	return msgs, errs
-}
-
 // remoteConn returns the client connection to the remote daemon at ip and
 // port, creating it on first use. There is one connection per IP, so a daemon
 // that registers again on another port replaces its old connection.
@@ -383,16 +353,6 @@ func (d *Daemon) remoteConn(ip netip.Addr, port int32) (*grpc.ClientConn, error)
 		d.remotes[ip] = &remoteInfo{conn: conn}
 	}
 	return conn, nil
-}
-
-// trackRemote adds delta to the number of open registration streams of the
-// remote daemon at ip.
-func (d *Daemon) trackRemote(ip netip.Addr, delta int) {
-	d.remotesMu.Lock()
-	defer d.remotesMu.Unlock()
-	if remote, ok := d.remotes[ip]; ok {
-		remote.streams += delta
-	}
 }
 
 // listRemoteServices lists the services of every registered remote daemon,
@@ -443,6 +403,16 @@ func (d *Daemon) listRemoteServices(ctx context.Context) ([]*daemonpb.ActiveServ
 	return slices.Concat(listed...), unavailable
 }
 
+// trackRemote adds delta to the number of open registration streams of the
+// remote daemon at ip.
+func (d *Daemon) trackRemote(ip netip.Addr, delta int) {
+	d.remotesMu.Lock()
+	defer d.remotesMu.Unlock()
+	if remote, ok := d.remotes[ip]; ok {
+		remote.streams += delta
+	}
+}
+
 // closeRemotes closes the connections to all registered remote daemons.
 func (d *Daemon) closeRemotes() {
 	d.remotesMu.Lock()
@@ -451,4 +421,27 @@ func (d *Daemon) closeRemotes() {
 		remote.conn.Close()
 		delete(d.remotes, ip)
 	}
+}
+
+// receive reads messages from recv on its own goroutine until it fails or ctx
+// is done, so that they can be waited for with a timeout. The error recv
+// fails with is sent on the error channel.
+func receive[T any](ctx context.Context, recv func() (T, error)) (<-chan T, <-chan error) {
+	msgs := make(chan T)
+	errs := make(chan error, 1)
+	go func() {
+		for {
+			msg, err := recv()
+			if err != nil {
+				errs <- err
+				return
+			}
+			select {
+			case msgs <- msg:
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	return msgs, errs
 }

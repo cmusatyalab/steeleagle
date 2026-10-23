@@ -3,25 +3,28 @@
 // prevent string mismatch errors at runtime.
 package params
 
-// DetectionResult is generated to hold all the detection-returning cognitive
-// flows that can be accessed at runtime.
-type DetectionResult string
+// Camera is generated to hold all the cameras that can be accessed at runtime.
+type Camera string
 
-// ClassificationResult is generated to hold all the classification-returning
-// cognitive flows that can be accessed at runtime.
-type ClassificationResult string
+// DetectionEngine is generated to hold all the detection-returning cognitive
+// engines that can be accessed at runtime.
+type DetectionEngine string
 
-// GuidanceResult is generated to hold all guidance-returning cognitive
-// flows that can be accessed at runtime.
-type GuidanceResult string
+// ClassificationEngine is generated to hold all the classification-returning
+// cognitive engines that can be accessed at runtime.
+type ClassificationEngine string
 
-// PositionResult is generated to hold all position-returning cognitive flows
+// GuidanceEngine is generated to hold all guidance-returning cognitive
+// engines that can be accessed at runtime.
+type GuidanceEngine string
+
+// PositionEngine is generated to hold all position-returning cognitive engines
 // that can be accessed at runtime.
-type PositionResult string
+type PositionEngine string
 
-// GenericResult is generated to hold all generic byte-returning cognitive
-// flows that can be accessed at runtime.
-type GenericResult string
+// GenericEngine is generated to hold all generic byte-returning cognitive
+// engines that can be accessed at runtime.
+type GenericEngine string
 
 // Point is generated to hold all the possible point features that can be
 // accessed at runtime.

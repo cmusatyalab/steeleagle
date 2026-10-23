@@ -309,8 +309,9 @@ func (v *Vehicle) store(bucket string, at time.Time, value []byte) error {
 }
 
 // query calls f with each value in bucket stored between start and end,
-// inclusive, in time order; a nil start is the first value, and a nil end
-// the last. If neither is given, f is only called with the most recent value.
+// inclusive, in time order from oldest to newest (values stored at the same
+// time in the order they were stored); a nil start is the first value, and a
+// nil end the last. If neither is given, f is only called with the most recent value.
 // Values are only valid during f. It fails with NotFound if nothing was ever
 // stored in bucket.
 func (v *Vehicle) query(bucket string, start, end *timestamppb.Timestamp, f func([]byte) error) error {

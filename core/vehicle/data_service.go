@@ -120,8 +120,9 @@ func (v *Vehicle) GetFlow(
 }
 
 // GetResult queries the results of an engine: the most recent one, or all
-// those between the start and end times, if either is given. It fails with
-// NotFound for an engine that never produced a result.
+// those between the start and end times, if either is given, ordered from
+// oldest to newest. It fails with NotFound for an engine that never produced
+// a result.
 func (v *Vehicle) GetResult(
 	ctx context.Context,
 	req *vehiclepb.GetResultRequest,
@@ -149,7 +150,8 @@ func (v *Vehicle) GetResult(
 }
 
 // GetTelemetry queries received telemetry: the most recent, or all of it
-// between the start and end times, if either is given.
+// between the start and end times, if either is given, ordered from oldest to
+// newest.
 func (v *Vehicle) GetTelemetry(
 	ctx context.Context,
 	req *vehiclepb.GetTelemetryRequest,

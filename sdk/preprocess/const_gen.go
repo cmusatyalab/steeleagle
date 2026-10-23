@@ -7,6 +7,7 @@ import (
 	"go/format"
 	"go/parser"
 	"go/token"
+	"strings"
 )
 
 // GenerateConsts returns a copy of a Go source file declaring one or more
@@ -76,17 +77,30 @@ func DeclaredStringTypes(src []byte) ([]string, error) {
 	return names, nil
 }
 
+// constNameReplacer replaces the separators of qualified names (e.g.
+// "host.yolo" engines and "front/left" cameras) in const names, which Go
+// identifiers can't contain.
+var constNameReplacer = strings.NewReplacer(".", "_", "/", "_")
+
 // writeConsts appends a const block to buf declaring one constant of type
 // typeName per entry in names, named typeName_entry and holding entry as
-// its string value. The entry is used verbatim in both places, so entries
+// its string value. The entry's dots and slashes are replaced with
+// underscores in the const name, and otherwise kept verbatim, so entries
 // differing only in case (e.g. "area" and "Area") get distinct const names.
+// Entries that only differ by those separators (e.g. "a.b" and "a_b") would
+// share a const name, so they are an error.
 func writeConsts(buf *bytes.Buffer, names []string, typeName string) error {
 	buf.WriteString("\nconst (\n")
+	seen := make(map[string]string, len(names))
 	for _, name := range names {
-		constName := typeName + "_" + name
+		constName := typeName + "_" + constNameReplacer.Replace(name)
 		if !token.IsIdentifier(constName) {
 			return fmt.Errorf("generated const name %q is not a valid Go identifier", constName)
 		}
+		if other, ok := seen[constName]; ok {
+			return fmt.Errorf("%s %q and %q both generate const %s", typeName, other, name, constName)
+		}
+		seen[constName] = name
 		fmt.Fprintf(buf, "\t%s %s = %q\n", constName, typeName, name)
 	}
 	buf.WriteString(")\n")

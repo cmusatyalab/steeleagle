@@ -10,6 +10,7 @@ import (
 	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
 	driverpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver"
 	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
+	"github.com/rs/zerolog"
 )
 
 // TestFetchTelemetrySuccess tests to make sure fetchTelemetry works on a mock
@@ -18,7 +19,7 @@ func TestFetchTelemetrySuccess(t *testing.T) {
 	want := telemetrypb.Telemetry_builder{Mode: modeP(telemetrypb.Mode_MODE_LOITER)}.Build()
 	v := testVehicleContext(context.Background(), constantTelemetry(want))
 
-	got, err := fetchTelemetry(v)
+	got, err := fetchTelemetry(zerolog.Nop(), v)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -32,7 +33,7 @@ func TestFetchTelemetrySuccess(t *testing.T) {
 func TestFetchTelemetryRPCError(t *testing.T) {
 	v := testVehicleContext(context.Background(), failingTelemetry)
 
-	_, err := fetchTelemetry(v)
+	_, err := fetchTelemetry(zerolog.Nop(), v)
 	if !errors.Is(err, ErrInternal) {
 		t.Fatalf("expected ErrInternal, got %v", err)
 	}
@@ -46,7 +47,7 @@ func TestFetchTelemetryMissingPayload(t *testing.T) {
 		return empty, nil
 	})
 
-	_, err := fetchTelemetry(v)
+	_, err := fetchTelemetry(zerolog.Nop(), v)
 	if !errors.Is(err, ErrInternal) {
 		t.Fatalf("expected ErrInternal, got %v", err)
 	}
@@ -114,7 +115,7 @@ func TestActionPollerImmediateMatch(t *testing.T) {
 	}.Build()
 	v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-	err := actionPoller(v, resp)(WaitOptions{Timeout: time.Second})
+	err := actionPoller(zerolog.Nop(), v, resp)(WaitOptions{Timeout: time.Second})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -133,7 +134,7 @@ func TestActionPollerModeMismatchCancels(t *testing.T) {
 	}.Build()
 	v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-	err := actionPoller(v, resp)(WaitOptions{Timeout: time.Hour, Stall: 20 * time.Millisecond})
+	err := actionPoller(zerolog.Nop(), v, resp)(WaitOptions{Timeout: time.Hour, Stall: 20 * time.Millisecond})
 	if !errors.Is(err, ErrCancelled) {
 		t.Fatalf("expected ErrCancelled, got %v", err)
 	}
@@ -159,7 +160,7 @@ func TestActionPollerModeMismatchRecoversWithinStall(t *testing.T) {
 	}
 	v := testVehicleContext(context.Background(), respond)
 
-	err := actionPoller(v, resp)(WaitOptions{Timeout: time.Second, Stall: time.Hour})
+	err := actionPoller(zerolog.Nop(), v, resp)(WaitOptions{Timeout: time.Second, Stall: time.Hour})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -173,8 +174,10 @@ func TestActionPollerHonorsPollInterval(t *testing.T) {
 		ExpectedMode:   telemetrypb.Mode_MODE_TAKEOFF,
 		ExpectedStatus: telemetrypb.MotionStatus_MOTION_STATUS_HOLDING,
 	}.Build()
+	// Moving but never arriving, so only the timeout ends the poll
 	tel := telemetrypb.Telemetry_builder{
-		Mode: modeP(telemetrypb.Mode_MODE_TAKEOFF),
+		Mode:         modeP(telemetrypb.Mode_MODE_TAKEOFF),
+		MotionStatus: motionStatusP(telemetrypb.MotionStatus_MOTION_STATUS_IN_TRANSIT),
 	}.Build()
 	calls := 0
 	v := testVehicleContext(context.Background(), func() (*vehiclepb.GetTelemetryResponse, error) {
@@ -186,7 +189,7 @@ func TestActionPollerHonorsPollInterval(t *testing.T) {
 		timeout  = 220 * time.Millisecond
 		interval = 50 * time.Millisecond
 	)
-	err := actionPoller(v, resp)(WaitOptions{Timeout: timeout, Interval: interval})
+	err := actionPoller(zerolog.Nop(), v, resp)(WaitOptions{Timeout: timeout, Interval: interval})
 	if !errors.Is(err, ErrTimeout) {
 		t.Fatalf("expected ErrTimeout, got %v", err)
 	}
@@ -208,9 +211,87 @@ func TestActionPollerTimeout(t *testing.T) {
 	}.Build()
 	v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-	err := actionPoller(v, resp)(WaitOptions{Timeout: 20 * time.Millisecond})
+	err := actionPoller(zerolog.Nop(), v, resp)(WaitOptions{Timeout: 20 * time.Millisecond})
 	if !errors.Is(err, ErrTimeout) {
 		t.Fatalf("expected ErrTimeout, got %v", err)
+	}
+}
+
+// TestActionPollerStatusStall tests that an action poller whose vehicle is
+// in the expected mode but at rest the opposite way to the expected status,
+// or reporting no status, stalls, and that one in transit doesn't.
+func TestActionPollerStatusStall(t *testing.T) {
+	const (
+		holding     = telemetrypb.MotionStatus_MOTION_STATUS_HOLDING
+		stopped     = telemetrypb.MotionStatus_MOTION_STATUS_STOPPED
+		inTransit   = telemetrypb.MotionStatus_MOTION_STATUS_IN_TRANSIT
+		unspecified = telemetrypb.MotionStatus_MOTION_STATUS_UNSPECIFIED
+	)
+	tests := []struct {
+		want, got telemetrypb.MotionStatus
+		stalls    bool
+	}{
+		{want: holding, got: stopped, stalls: true},
+		{want: stopped, got: holding, stalls: true},
+		{want: holding, got: inTransit},
+		{want: stopped, got: inTransit},
+		{want: holding, got: unspecified, stalls: true},
+		{want: stopped, got: unspecified, stalls: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.want.String()+"/"+tt.got.String(), func(t *testing.T) {
+			t.Parallel()
+			resp := driverpb.LandResponse_builder{
+				ExpectedMode:   telemetrypb.Mode_MODE_LAND,
+				ExpectedStatus: tt.want,
+			}.Build()
+			tel := telemetrypb.Telemetry_builder{
+				Mode:         modeP(telemetrypb.Mode_MODE_LAND),
+				MotionStatus: motionStatusP(tt.got),
+			}.Build()
+			v := testVehicleContext(context.Background(), constantTelemetry(tel))
+
+			// The timeout only ends the cases that shouldn't stall
+			err := actionPoller(zerolog.Nop(), v, resp)(WaitOptions{Timeout: time.Second, Stall: 20 * time.Millisecond})
+			want := ErrTimeout
+			if tt.stalls {
+				want = ErrFailedExpectation
+			}
+			if !errors.Is(err, want) {
+				t.Fatalf("expected %v, got %v", want, err)
+			}
+		})
+	}
+}
+
+// TestActionPollerInTransitIsProgress tests that an action poller whose
+// vehicle is in transit for longer than the stall window, and stops
+// briefly within it, doesn't stall, so a long landing still completes.
+func TestActionPollerInTransitIsProgress(t *testing.T) {
+	resp := driverpb.LandResponse_builder{
+		ExpectedMode:   telemetrypb.Mode_MODE_LAND,
+		ExpectedStatus: telemetrypb.MotionStatus_MOTION_STATUS_STOPPED,
+	}.Build()
+	const stall = 200 * time.Millisecond
+	start := time.Now()
+	v := testVehicleContext(context.Background(), func() (*vehiclepb.GetTelemetryResponse, error) {
+		status := telemetrypb.MotionStatus_MOTION_STATUS_IN_TRANSIT
+		switch elapsed := time.Since(start); {
+		case elapsed > 3*stall:
+			status = telemetrypb.MotionStatus_MOTION_STATUS_STOPPED
+		case elapsed > stall && elapsed < stall+stall/4:
+			status = telemetrypb.MotionStatus_MOTION_STATUS_HOLDING // a brief hover arms the stall timer
+		}
+		tel := telemetrypb.Telemetry_builder{
+			Mode:         modeP(telemetrypb.Mode_MODE_LAND),
+			MotionStatus: motionStatusP(status),
+		}.Build()
+		return vehiclepb.GetTelemetryResponse_builder{Telemetry: []*telemetrypb.Telemetry{tel}}.Build(), nil
+	})
+
+	err := actionPoller(zerolog.Nop(), v, resp)(WaitOptions{Timeout: 10 * time.Second, Stall: stall, Interval: 5 * time.Millisecond})
+	if err != nil {
+		t.Fatalf("expected the action to complete, got %v", err)
 	}
 }
 
@@ -236,7 +317,7 @@ func TestActionPollerZeroTimeoutNeverTimesOut(t *testing.T) {
 	}
 	v := testVehicleContext(context.Background(), respond)
 
-	err := actionPoller(v, resp)(WaitOptions{}) // zero-value Timeout
+	err := actionPoller(zerolog.Nop(), v, resp)(WaitOptions{}) // zero-value Timeout
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -254,7 +335,7 @@ func TestActionPollerContextExpired(t *testing.T) {
 	// cancellation, not a normal telemetry-based exit
 	v := testVehicleContext(ctx, failingTelemetry)
 
-	err := actionPoller(v, resp)(WaitOptions{Timeout: 5 * time.Second})
+	err := actionPoller(zerolog.Nop(), v, resp)(WaitOptions{Timeout: 5 * time.Second})
 	if !errors.Is(err, ErrContextExpired) {
 		t.Fatalf("expected ErrContextExpired, got %v", err)
 	}
@@ -275,7 +356,7 @@ func TestGuidancePollerImmediateMatch(t *testing.T) {
 	}.Build(), telemetrypb.MotionStatus_MOTION_STATUS_HOLDING)
 	v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-	err := guidancePoller(v, resp)(WaitOptions{Timeout: time.Second, Tolerances: tol})
+	err := guidancePoller(zerolog.Nop(), v, resp)(WaitOptions{Timeout: time.Second, Tolerances: tol})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -297,7 +378,7 @@ func TestGuidancePollerSetpointChangedCancels(t *testing.T) {
 	tel := telemetryForGuidance(otherSetpoint, otherSetpoint, telemetrypb.MotionStatus_MOTION_STATUS_HOLDING)
 	v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-	err := guidancePoller(v, resp)(WaitOptions{Timeout: time.Hour, Stall: 20 * time.Millisecond})
+	err := guidancePoller(zerolog.Nop(), v, resp)(WaitOptions{Timeout: time.Hour, Stall: 20 * time.Millisecond})
 	if !errors.Is(err, ErrCancelled) {
 		t.Fatalf("expected ErrCancelled, got %v", err)
 	}
@@ -326,7 +407,7 @@ func TestGuidancePollerSetpointRecoversWithinStall(t *testing.T) {
 	}
 	v := testVehicleContext(context.Background(), respond)
 
-	err := guidancePoller(v, resp)(WaitOptions{Timeout: time.Second, Stall: time.Hour, Tolerances: tol})
+	err := guidancePoller(zerolog.Nop(), v, resp)(WaitOptions{Timeout: time.Second, Stall: time.Hour, Tolerances: tol})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -353,7 +434,7 @@ func TestGuidancePollerTimeout(t *testing.T) {
 		return vehiclepb.GetTelemetryResponse_builder{Telemetry: []*telemetrypb.Telemetry{tel}}.Build(), nil
 	})
 
-	err := guidancePoller(v, resp)(WaitOptions{Timeout: 20 * time.Millisecond, Stall: time.Hour, Tolerances: tol})
+	err := guidancePoller(zerolog.Nop(), v, resp)(WaitOptions{Timeout: 20 * time.Millisecond, Stall: time.Hour, Tolerances: tol})
 	if !errors.Is(err, ErrTimeout) {
 		t.Fatalf("expected ErrTimeout, got %v", err)
 	}
@@ -379,7 +460,7 @@ func TestGuidancePollerStallDetected(t *testing.T) {
 		tel := telemetryForGuidance(setpoint, actual, telemetrypb.MotionStatus_MOTION_STATUS_IN_TRANSIT)
 		v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-		err := guidancePoller(v, resp)(WaitOptions{Timeout: time.Hour, Stall: 20 * time.Millisecond, Tolerances: tol})
+		err := guidancePoller(zerolog.Nop(), v, resp)(WaitOptions{Timeout: time.Hour, Stall: 20 * time.Millisecond, Tolerances: tol})
 		if !errors.Is(err, ErrFailedExpectation) {
 			t.Fatalf("expected ErrFailedExpectation, got %v", err)
 		}
@@ -387,15 +468,16 @@ func TestGuidancePollerStallDetected(t *testing.T) {
 
 	t.Run("progress resets the stall timer", func(t *testing.T) {
 		const (
-			stalledPhase  = 15 * time.Millisecond // long enough to arm the stall timer, short enough not to fire it
-			progressPhase = 15 * time.Millisecond // continuous progress here must reset the timer
-			stall         = 20 * time.Millisecond
+			stalledPhase  = 150 * time.Millisecond // long enough to arm the stall timer, short enough not to fire it
+			progressPhase = 150 * time.Millisecond // continuous progress here must reset the timer
+			stall         = 200 * time.Millisecond
 		)
 
 		// Three phases driven off wall-clock time: parked (arms the stall
 		// timer), then steady progress (must reset it), then parked again
 		// (a fresh stall that should still get caught)
 		start := time.Now()
+		var lastProgress time.Duration // when the last progress sample was taken, if any
 		v := testVehicleContext(context.Background(), func() (*vehiclepb.GetTelemetryResponse, error) {
 			elapsed := time.Since(start)
 			var lat float64
@@ -407,6 +489,7 @@ func TestGuidancePollerStallDetected(t *testing.T) {
 				// looks like progress and resets the stall timer
 				frac := float64(elapsed-stalledPhase) / float64(progressPhase)
 				lat = 0.001 * frac
+				lastProgress = elapsed
 			default:
 				lat = 0.001 // parked again, closer but still nowhere near tolerance
 			}
@@ -415,16 +498,19 @@ func TestGuidancePollerStallDetected(t *testing.T) {
 			return vehiclepb.GetTelemetryResponse_builder{Telemetry: []*telemetrypb.Telemetry{tel}}.Build(), nil
 		})
 
-		err := guidancePoller(v, resp)(WaitOptions{Timeout: 500 * time.Millisecond, Stall: stall, Tolerances: tol})
+		err := guidancePoller(zerolog.Nop(), v, resp)(WaitOptions{Timeout: 10 * time.Second, Stall: stall, Interval: 5 * time.Millisecond, Tolerances: tol})
 		elapsed := time.Since(start)
 		if !errors.Is(err, ErrFailedExpectation) {
 			t.Fatalf("expected ErrFailedExpectation once the second stall completes, got %v (after %v)", err, elapsed)
 		}
-		// The second stall can't complete before the progress phase ends
-		// plus another Stall duration; finishing any earlier means the
-		// first stall's timer fired instead of a fresh one armed by the
-		// post-progress stall
-		if minElapsed := stalledPhase + progressPhase + stall/2; elapsed < minElapsed {
+		// The second stall can't complete until a Stall duration after the
+		// last progress sample, however late the polls were; finishing any
+		// earlier means the first stall's timer fired instead of a fresh one
+		// armed by the post-progress stall
+		if lastProgress == 0 {
+			t.Fatalf("no poll landed in the %v progress phase", progressPhase)
+		}
+		if minElapsed := lastProgress + stall; elapsed < minElapsed {
 			t.Errorf("stall fired too early (after %v); wanted at least %v since a fresh stall timer should only start once progress stops", elapsed, minElapsed)
 		}
 	})
@@ -443,7 +529,7 @@ func TestGuidancePollerStallDetected(t *testing.T) {
 			return vehiclepb.GetTelemetryResponse_builder{Telemetry: []*telemetrypb.Telemetry{tel}}.Build(), nil
 		})
 
-		err := guidancePoller(v, resp)(WaitOptions{Timeout: time.Hour, Stall: 30 * time.Millisecond, Interval: time.Millisecond, Tolerances: tol})
+		err := guidancePoller(zerolog.Nop(), v, resp)(WaitOptions{Timeout: time.Hour, Stall: 30 * time.Millisecond, Interval: time.Millisecond, Tolerances: tol})
 		if !errors.Is(err, ErrFailedExpectation) {
 			t.Fatalf("expected ErrFailedExpectation, got %v", err)
 		}
@@ -464,9 +550,50 @@ func TestGuidancePollerStallDetectedAtZeroDistance(t *testing.T) {
 	tel := telemetryForGuidance(setpoint, setpoint, telemetrypb.MotionStatus_MOTION_STATUS_IN_TRANSIT)
 	v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-	err := guidancePoller(v, resp)(WaitOptions{Timeout: time.Second, Stall: 20 * time.Millisecond, Tolerances: tol})
+	err := guidancePoller(zerolog.Nop(), v, resp)(WaitOptions{Timeout: 10 * time.Second, Stall: 200 * time.Millisecond, Interval: 5 * time.Millisecond, Tolerances: tol})
 	if !errors.Is(err, ErrFailedExpectation) {
 		t.Fatalf("expected ErrFailedExpectation, got %v", err)
+	}
+}
+
+// TestGuidancePollerFailedMeasurementIsNotProgress tests that a distance
+// that can't be measured (here, telemetry missing longitude) counts as no
+// progress, rather than as a new best distance that a vehicle still
+// approaching the setpoint could never improve on.
+func TestGuidancePollerFailedMeasurementIsNotProgress(t *testing.T) {
+	setpoint := commonpb.GlobalPosition_builder{Latitude: f64(0), Longitude: f64(0)}.Build()
+	resp := driverpb.SetGlobalPositionTargetResponse_builder{
+		Setpoint:       setpoint,
+		ExpectedStatus: telemetrypb.MotionStatus_MOTION_STATUS_HOLDING,
+	}.Build()
+	tol := Tolerances{PosTol: 1}
+
+	// One unmeasurable sample, then a steady approach (closer on every
+	// sample, however they are paced) lasting several stall windows
+	const stall = 200 * time.Millisecond
+	const approach = 3 * stall
+	var start time.Time
+	call := 0
+	v := testVehicleContext(context.Background(), func() (*vehiclepb.GetTelemetryResponse, error) {
+		var tel *telemetrypb.Telemetry
+		switch {
+		case call == 0:
+			start = time.Now()
+			tel = telemetryForGuidance(setpoint, commonpb.GlobalPosition_builder{Latitude: f64(0.01)}.Build(), telemetrypb.MotionStatus_MOTION_STATUS_IN_TRANSIT)
+		case time.Since(start) < approach:
+			lat := 0.01 * float64(approach-time.Since(start)) / float64(approach)
+			actual := commonpb.GlobalPosition_builder{Latitude: f64(lat), Longitude: f64(0)}.Build()
+			tel = telemetryForGuidance(setpoint, actual, telemetrypb.MotionStatus_MOTION_STATUS_IN_TRANSIT)
+		default:
+			tel = telemetryForGuidance(setpoint, setpoint, telemetrypb.MotionStatus_MOTION_STATUS_HOLDING)
+		}
+		call++
+		return vehiclepb.GetTelemetryResponse_builder{Telemetry: []*telemetrypb.Telemetry{tel}}.Build(), nil
+	})
+
+	err := guidancePoller(zerolog.Nop(), v, resp)(WaitOptions{Timeout: time.Minute, Stall: stall, Interval: 5 * time.Millisecond, Tolerances: tol})
+	if err != nil {
+		t.Fatalf("expected the vehicle to arrive, got %v", err)
 	}
 }
 
@@ -485,7 +612,7 @@ func TestGuidancePollerContextExpired(t *testing.T) {
 	cancel()
 	v := testVehicleContext(ctx, constantTelemetry(tel))
 
-	err := guidancePoller(v, resp)(WaitOptions{Timeout: 5 * time.Second, Stall: time.Hour})
+	err := guidancePoller(zerolog.Nop(), v, resp)(WaitOptions{Timeout: 5 * time.Second, Stall: time.Hour})
 	if !errors.Is(err, ErrContextExpired) {
 		t.Fatalf("expected ErrContextExpired, got %v", err)
 	}
@@ -501,7 +628,7 @@ func TestGimbalPollerImmediateMatch(t *testing.T) {
 	tel := telemetryForGimbal(setpoint, commonpb.Pose_builder{Pitch: f32(10), Yaw: f32(90)}.Build())
 	v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-	err := gimbalPoller(v, resp)(WaitOptions{Timeout: time.Second, Tolerances: tol})
+	err := gimbalPoller(zerolog.Nop(), v, resp)(WaitOptions{Timeout: time.Second, Tolerances: tol})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -518,7 +645,7 @@ func TestGimbalPollerSetpointChangedCancels(t *testing.T) {
 	tel := telemetryForGimbal(otherSetpoint, otherSetpoint)
 	v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-	err := gimbalPoller(v, resp)(WaitOptions{Timeout: time.Hour, Stall: 20 * time.Millisecond})
+	err := gimbalPoller(zerolog.Nop(), v, resp)(WaitOptions{Timeout: time.Hour, Stall: 20 * time.Millisecond})
 	if !errors.Is(err, ErrCancelled) {
 		t.Fatalf("expected ErrCancelled, got %v", err)
 	}
@@ -544,7 +671,7 @@ func TestGimbalPollerSetpointRecoversWithinStall(t *testing.T) {
 	}
 	v := testVehicleContext(context.Background(), respond)
 
-	err := gimbalPoller(v, resp)(WaitOptions{Timeout: time.Second, Stall: time.Hour, Tolerances: tol})
+	err := gimbalPoller(zerolog.Nop(), v, resp)(WaitOptions{Timeout: time.Second, Stall: time.Hour, Tolerances: tol})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -560,7 +687,7 @@ func TestGimbalPollerTimeout(t *testing.T) {
 	tel := telemetryForGimbal(setpoint, actual)
 	v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-	err := gimbalPoller(v, resp)(WaitOptions{Timeout: 20 * time.Millisecond, Stall: time.Hour, Tolerances: tol})
+	err := gimbalPoller(zerolog.Nop(), v, resp)(WaitOptions{Timeout: 20 * time.Millisecond, Stall: time.Hour, Tolerances: tol})
 	if !errors.Is(err, ErrTimeout) {
 		t.Fatalf("expected ErrTimeout, got %v", err)
 	}
@@ -577,7 +704,7 @@ func TestGimbalPollerStallDetected(t *testing.T) {
 	tel := telemetryForGimbal(setpoint, actual)
 	v := testVehicleContext(context.Background(), constantTelemetry(tel))
 
-	err := gimbalPoller(v, resp)(WaitOptions{Timeout: time.Hour, Stall: 20 * time.Millisecond, Tolerances: tol})
+	err := gimbalPoller(zerolog.Nop(), v, resp)(WaitOptions{Timeout: time.Hour, Stall: 20 * time.Millisecond, Tolerances: tol})
 	if !errors.Is(err, ErrFailedExpectation) {
 		t.Fatalf("expected ErrFailedExpectation, got %v", err)
 	}
@@ -595,7 +722,7 @@ func TestGimbalPollerContextExpired(t *testing.T) {
 	cancel()
 	v := testVehicleContext(ctx, constantTelemetry(tel))
 
-	err := gimbalPoller(v, resp)(WaitOptions{Timeout: 5 * time.Second, Stall: time.Hour})
+	err := gimbalPoller(zerolog.Nop(), v, resp)(WaitOptions{Timeout: 5 * time.Second, Stall: time.Hour})
 	if !errors.Is(err, ErrContextExpired) {
 		t.Fatalf("expected ErrContextExpired, got %v", err)
 	}

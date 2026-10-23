@@ -3,6 +3,8 @@ package sdk
 import (
 	"sync"
 	"time"
+
+	"github.com/rs/zerolog"
 )
 
 // Waiter represents an in-flight long-running operation, returned by every
@@ -10,6 +12,7 @@ import (
 // whether it has, from another goroutine. A Waiter must not be waited on
 // by more than one goroutine.
 type Waiter[Resp any] struct {
+	log  zerolog.Logger
 	poll pollFunc
 	resp Resp
 	err  error
@@ -37,9 +40,10 @@ type Tolerances struct {
 
 // newWaiter creates a waiter object that checks the status of an in-flight
 // RPC, returning the result once it is complete. A non-nil err means the
-// RPC failed, so there is nothing to wait on.
-func newWaiter[Resp any](resp Resp, err error, poll pollFunc) *Waiter[Resp] {
+// RPC failed, so there is nothing to wait on. log is the command's logger.
+func newWaiter[Resp any](log zerolog.Logger, resp Resp, err error, poll pollFunc) *Waiter[Resp] {
 	w := &Waiter[Resp]{
+		log:  log,
 		poll: poll,
 		resp: resp,
 		err:  err,
@@ -58,6 +62,7 @@ func newWaiter[Resp any](resp Resp, err error, poll pollFunc) *Waiter[Resp] {
 func (w *Waiter[Resp]) Wait(options ...WaitOption) (Resp, error) {
 	select {
 	case <-w.done:
+		w.log.Debug().Err(w.err).Msg("wait on a finished command")
 		return w.resp, w.err
 	default:
 	}
@@ -77,10 +82,19 @@ func (w *Waiter[Resp]) Wait(options ...WaitOption) (Resp, error) {
 		option(&opts)
 	}
 
+	w.log.Debug().
+		Dur("interval", opts.Interval).
+		Dur("timeout", opts.Timeout).
+		Dur("stall", opts.Stall).
+		Interface("tolerances", opts.Tolerances).
+		Msg("waiting on command")
+	start := time.Now()
+
 	// Record the outcome before marking the operation done, so Check sees
 	// it
 	w.err = w.poll(opts)
 	w.cleanup()
+	w.log.Debug().Err(w.err).Dur("elapsed", time.Since(start)).Msg("wait finished")
 	return w.resp, w.err
 }
 

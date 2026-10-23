@@ -12,7 +12,7 @@ func emitCommonFieldInterface(g *protogen.GeneratedFile, parentGoName, fieldPath
 	g.P("type ", name, " interface {")
 	for _, innerField := range field.Message.Fields {
 		innerPath := fieldPath + "/" + string(innerField.Desc.Name())
-		g.P(preprocess.DirectiveExclude, " ", innerPath)
+		emitDirective(g, preprocess.DirectiveExclude, innerPath)
 		emitGetter(g, field.Message.GoIdent.GoName, innerField)
 	}
 	g.P("}")
@@ -51,11 +51,11 @@ func emitGetter(g *protogen.GeneratedFile, parentGoName string, field *protogen.
 // message field: a Getter (via emitGetter) and an unexported has<Field>()
 // if optional. No Setters are generated.
 func emitInterfaceMethod(g *protogen.GeneratedFile, parentGoName, fieldPath string, field *protogen.Field) {
-	g.P(preprocess.DirectiveExclude, " ", fieldPath)
+	emitDirective(g, preprocess.DirectiveExclude, fieldPath)
 	emitGetter(g, parentGoName, field)
 
 	if isOptional(field) {
-		g.P(preprocess.DirectiveExclude, " ", fieldPath)
+		emitDirective(g, preprocess.DirectiveExclude, fieldPath)
 		g.P("has", field.GoName, "() bool")
 	}
 }

@@ -12,16 +12,23 @@ import (
 )
 
 // fakeDataClient is a minimal vehiclepb.DataServiceClient test double.
-// Embedding the nil interface satisfies every method poll.go doesn't
+// Embedding the nil interface satisfies every method the SDK doesn't
 // exercise (calling one would panic loudly, which is the point); only
-// GetTelemetry is actually implemented.
+// GetTelemetry and GetResult are actually implemented.
 type fakeDataClient struct {
 	vehiclepb.DataServiceClient
-	respond func() (*vehiclepb.GetTelemetryResponse, error)
+	respond       func() (*vehiclepb.GetTelemetryResponse, error)
+	result        func(*vehiclepb.GetResultRequest) (*vehiclepb.GetResultResponse, error)
+	lastTelemetry *vehiclepb.GetTelemetryRequest // the most recent GetTelemetry request
 }
 
 func (f *fakeDataClient) GetTelemetry(ctx context.Context, in *vehiclepb.GetTelemetryRequest, opts ...grpc.CallOption) (*vehiclepb.GetTelemetryResponse, error) {
+	f.lastTelemetry = in
 	return f.respond()
+}
+
+func (f *fakeDataClient) GetResult(ctx context.Context, in *vehiclepb.GetResultRequest, opts ...grpc.CallOption) (*vehiclepb.GetResultResponse, error) {
+	return f.result(in)
 }
 
 // constantTelemetry always returns the same telemetry snapshot.

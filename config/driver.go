@@ -1,6 +1,9 @@
 package config
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 // servicesRoot is the type path prefix under which all services live.
 const servicesRoot = "steeleagle_protocol/v1/services/"
@@ -122,4 +125,15 @@ func (d *DriverCap) HasService(name string) bool {
 	}
 	_, ok := d.supportedSet[name]
 	return ok
+}
+
+// GetCamera returns the config of the driver's camera called name, or an
+// error if the driver has no such camera.
+func (d *DriverCap) GetCamera(name string) (DriverCamera, error) {
+	for _, c := range d.Cameras {
+		if c.Name == name {
+			return c, nil
+		}
+	}
+	return DriverCamera{}, fmt.Errorf("driver has no camera %q", name)
 }

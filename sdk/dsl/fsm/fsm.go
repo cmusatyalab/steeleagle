@@ -3,6 +3,7 @@ package fsm
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"sync"
 
 	"github.com/cmusatyalab/steeleagle/sdk"
@@ -53,7 +54,7 @@ func NewDslFsm(
 	}
 	d.fsm = fsm.NewFSM(start, fsmEvents(transitions), fsm.Callbacks{
 		"enter_state": func(_ context.Context, e *fsm.Event) {
-			d.data.Log.Info().Str("from", e.Src).Str("to", e.Dst).Str("event", e.Event).Msg("state transition")
+			d.data.Log.Info().Str("from", e.Src).Str("to", e.Dst).Str("trigger", e.Event).Msg("state transition")
 			d.enterState(e.Dst)
 		},
 	})
@@ -122,8 +123,8 @@ func (d *DslFsm) enterState(state string) {
 	}
 
 	go func() {
-		vehicle := sdk.NewVehicleFromContext(stateCtx, d.conn, sdk.WithLogger(d.data.Log))
-		if err := action.Execute(vehicle, d.data); err != nil {
+		vehicle, data := d.startTask(stateCtx, "action", action, state)
+		if err := action.Execute(vehicle, data); err != nil {
 			abort(fmt.Errorf("action %q: %w", state, err))
 			return
 		}
@@ -140,8 +141,8 @@ func (d *DslFsm) enterState(state string) {
 			continue
 		}
 		go func(name string, event dsl.Event) {
-			vehicle := sdk.NewVehicleFromContext(stateCtx, d.conn, sdk.WithLogger(d.data.Log))
-			ok, err := event.Monitor(vehicle, d.data)
+			vehicle, data := d.startTask(stateCtx, "event", event, name)
+			ok, err := event.Monitor(vehicle, data)
 			if err != nil {
 				abort(fmt.Errorf("event %q: %w", name, err))
 				return
@@ -151,6 +152,28 @@ func (d *DslFsm) enterState(state string) {
 			}
 		}(name, event)
 	}
+}
+
+// startTask logs the start of task, an action or event (kind) declared as
+// name, and returns the vehicle and mission data to run it with. Both log
+// with the task's type under kind (e.g. "action": "Patrol") and its name, so
+// logging inside the task is attributed to it.
+func (d *DslFsm) startTask(ctx context.Context, kind string, task any, name string) (sdk.Vehicle, dsl.MissionData) {
+	log := d.data.Log.With().Str(kind, taskType(task)).Str("name", name).Logger()
+	log.Info().Msg(kind + " started")
+	data := d.data
+	data.Log = log
+	return sdk.NewVehicleFromContext(ctx, d.conn, sdk.WithLogger(log)), data
+}
+
+// taskType returns the name of task's type, e.g. "Patrol" for an
+// *actions.Patrol.
+func taskType(task any) string {
+	t := reflect.TypeOf(task)
+	for t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+	return t.Name()
 }
 
 // fireEvent fires name on the underlying FSM from state. When name is the
