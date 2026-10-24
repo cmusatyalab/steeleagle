@@ -1,0 +1,101 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - Living Edge Lab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+package steeleagle_protocol.v1.services.vehicle;
+
+option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle;vehicle";
+
+import "google/protobuf/duration.proto";
+
+/*
+ * Used to specify vehicle safety settings.
+ *
+ * This service is used to set the vehicle disconnect behavior, geofences,
+ * and to query failsafe states.
+ */
+service SafetyService {
+  /*
+   * Notifies the vehicle of the orchestrator link status.
+   *
+   * Tells the vehicle when the daemon has lost connection to its orchestrator
+   * which then enters `FAILSAFE_NO_CONTROL` or `FAILSAFE_NO_CONTROL_NO_DATA`.
+   * Also tells the vehicle when the connection is restored so it can exit the
+   * failsafe state. This is usually called by the daemon.
+   */
+  rpc NotifyControlStatus (NotifyControlStatusRequest)
+    returns (NotifyControlStatusResponse) {}
+
+  /*
+   * Query the vehicle failsafe state.
+   *
+   * Gets the current failsafe state of the vehicle, along with the downtime
+   * of control and data planes.
+   */
+  rpc GetFailsafeState (GetFailsafeStateRequest)
+    returns (GetFailsafeStateResponse) {}
+
+  /*
+   * Set vehicle control failsafe behavior.
+   * 
+   * Sets the disconnection strategy for the vehicle after a control failsafe
+   * is entered like `FAILSAFE_NO_CONTROL` or `FAILSAFE_NO_CONTROL_NO_DATA`.
+   * Control failsafes are when the daemon loses contact with its orchestrator.
+   */
+  rpc SetControlFailsafeBehavior (SetControlFailsafeBehaviorRequest)
+    returns (SetControlFailsafeBehaviorResponse) {}
+  
+  /*
+   * Set vehicle data failsafe behavior.
+   * 
+   * Sets the disconnection strategy for the vehicle after a data failsafe
+   * is entered like `FAILSAFE_NO_CONTROL` or `FAILSAFE_NO_CONTROL_NO_DATA`.
+   * Data failsafes are when the vehicle loses contact with its RCS.
+   */
+  rpc SetDataFailsafeBehavior (SetDataFailsafeBehaviorRequest)
+    returns (SetDataFailsafeBehaviorResponse) {}
+}
+
+// Failsafe states for the vehicle.
+enum FailsafeState {
+  FAILSAFE_STATE_UNSPECIFIED = 0;        // default to none
+  FAILSAFE_STATE_NONE = 1;               // no failsafe
+  FAILSAFE_STATE_NO_CONTROL = 2;         // no control form the orchestrator
+  FAILSAFE_STATE_NO_DATA = 3;            // no data from the rcs
+  FAILSAFE_STATE_NO_CONTROL_NO_DATA = 4; // no control or data
+}
+
+// Failsafe behaviors.
+enum FailsafeBehavior {
+  FAILSAFE_BEHAVIOR_UNSPECIFIED = 0; // default to hold
+  FAILSAFE_BEHAVIOR_HOLD = 1;        // hold
+  FAILSAFE_BEHAVIOR_RTH = 2;         // return to home
+  FAILSAFE_BEHAVIOR_MISSION = 3;     // start the last uploaded mission
+  FAILSAFE_BEHAVIOR_NONE = 4;        // do nothing
+}
+
+message NotifyControlStatusRequest {
+  bool active = 1; // whether or not controls are active
+}
+
+message NotifyControlStatusResponse {}
+
+message GetFailsafeStateRequest {}
+
+message GetFailsafeStateResponse {
+  FailsafeState state = 1;           // failsafe state
+  google.protobuf.Duration time = 2; // time since last change
+}
+
+message SetControlFailsafeBehaviorRequest {
+  FailsafeBehavior behavior = 1; // behavior during control failsafes
+}
+
+message SetControlFailsafeBehaviorResponse {}
+
+message SetDataFailsafeBehaviorRequest {
+  FailsafeBehavior behavior = 1; // behavior during control failsafes
+}
+
+message SetDataFailsafeBehaviorResponse {}

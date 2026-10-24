@@ -7,7 +7,6 @@ const bindDir string = "steeleagle"
 const pixiExec string = "pixi"
 const pixiRun string = "run"
 const pixiStart string = "start"
-const pixiInstall string = "install"
 
 // Manifests that mark a directory as a pixi package, in order of precedence
 var pixiManifests = []string{"pixi.toml", "pyproject.toml"}

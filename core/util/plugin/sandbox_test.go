@@ -1,10 +1,8 @@
 package plugin
 
 import (
-	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"testing"
 	"time"
 
@@ -173,37 +171,5 @@ func TestSandboxPluginArgs(t *testing.T) {
 		return // expect an error
 	case <-time.After(5 * time.Second):
 		t.Fatalf("didn't get error from plugin when it was expected")
-	}
-}
-
-// TestSandboxPluginInstall ensures that a package plugin can be installed in a
-// sandbox, which has network access only while installing, and then started
-// from the installed environment.
-func TestSandboxPluginInstall(t *testing.T) {
-	requireSandbox(t)
-	requirePixi(t)
-	path := copyPackage(t, pyPkg)
-	plugin, err := newTestSandboxPlugin(t, WithPath(path))
-	if err != nil {
-		t.Fatalf("encountered error creating plugin: %v", err)
-	}
-	err = plugin.Install(t.Context())
-	if err != nil {
-		t.Fatalf("encountered error installing plugin: %v", err)
-	}
-	if _, err := os.Stat(filepath.Join(path, ".pixi")); err != nil {
-		t.Fatalf("expected pixi environment to be installed: %v", err)
-	}
-
-	ln, conn, err := plugin.Start(t.Context())
-	if err != nil {
-		t.Fatalf("encountered error spawning plugin: %v", err)
-	}
-	if slices.Contains(plugin.final, "--share-net") {
-		t.Errorf("expected started plugin to not share the network: %v", plugin.final)
-	}
-	err = pluginRPCCheck(t, ln, conn, listener.UnknownCode)
-	if err != nil {
-		t.Errorf("encountered error with plugin RPC handshake: %v", err)
 	}
 }

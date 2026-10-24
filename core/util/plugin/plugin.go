@@ -32,11 +32,6 @@ type Plugin interface {
 	// Cancel ctx to stop.
 	Start(context.Context) (net.Listener, *grpc.ClientConn, error)
 
-	// Install runs the plugin in installation mode, which if using pixi, runs
-	// `pixi install`. No-op if the plugin doesn't use pixi. Blocks until
-	// completion, unlike Start.
-	Install(context.Context) error
-
 	// Watch returns a channel that receives the plugin's exit error when it
 	// terminates.
 	Watch() <-chan error
@@ -64,7 +59,6 @@ type BasePlugin struct {
 	runner      string             // runner target (e.g. bwrap, podman)
 	final       []string           // final args for the most recent subprocess
 	rargs       []string           // runner args, never modified during runtime
-	iargs       []string           // runner args appended to rargs only for installation
 	exec        string             // executable target (e.g. sh)
 	eargs       []string           // executable args
 	script      string             // script target (plugin script)
@@ -137,7 +131,7 @@ func NewBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 
 // Start starts the plugin in normal execution mode.
 func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
-	if err := p.createAndRunCommand(ctx, false); err != nil {
+	if err := p.createAndRunCommand(ctx); err != nil {
 		p.log.Error().Err(err).Msg("couldn't start plugin")
 		return nil, nil, err
 	}
@@ -149,21 +143,6 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 		return nil, nil, err
 	}
 	return ln, conn, nil
-}
-
-// Install runs the plugin in installation mode and blocks until the install
-// process exits, returning its exit error. Only pixi packages have an install
-// step (`pixi install`); for any other plugin Install is a no-op.
-func (p *BasePlugin) Install(ctx context.Context) error {
-	if !p.usesPixi() {
-		p.log.Debug().Msg("plugin is not a pixi package, nothing to install")
-		return nil
-	}
-	if err := p.createAndRunCommand(ctx, true); err != nil {
-		p.log.Error().Err(err).Msg("couldn't install plugin")
-		return err
-	}
-	return p.Wait()
 }
 
 // Watch returns a channel that receives the subprocess exit error when the
@@ -206,19 +185,13 @@ func (p *BasePlugin) Running() bool {
 
 // buildCommand assembles the runner, executable, and script along with their
 // args into one command. Pixi packages are started with `pixi <eargs> start`
-// (eargs default to `run`), and installed with `pixi install`. Fresh slices
-// are used so that none of the configured arg slices are aliased or modified.
-func (p *BasePlugin) buildCommand(install bool) []string {
+// (eargs default to `run`). Fresh slices are used so that none of the
+// configured arg slices are aliased or modified.
+func (p *BasePlugin) buildCommand() []string {
 	var args []string
 	if p.runner != "" {
 		args = append(args, p.runner)
 		args = append(args, p.rargs...)
-		if install {
-			args = append(args, p.iargs...)
-		}
-	}
-	if install {
-		return append(args, pixiExec, pixiInstall)
 	}
 	if p.exec != "" {
 		args = append(args, p.exec)
@@ -234,10 +207,10 @@ func (p *BasePlugin) buildCommand(install bool) []string {
 	return args
 }
 
-// createAndRunCommand builds the start or install command, and then runs the
-// command with the input context. On success, a goroutine cleans up the plugin
+// createAndRunCommand builds the start command, and then runs the command with
+// the input context. On success, a goroutine cleans up the plugin
 // once the process exits; on failure, cleanup has already been run.
-func (p *BasePlugin) createAndRunCommand(ctx context.Context, install bool) error {
+func (p *BasePlugin) createAndRunCommand(ctx context.Context) error {
 	// Prevent against multiple subsequent run calls while running
 	if !p.running.CompareAndSwap(false, true) {
 		return fmt.Errorf("plugin already running")
@@ -261,9 +234,8 @@ func (p *BasePlugin) createAndRunCommand(ctx context.Context, install bool) erro
 		return err
 	}
 
-	// Rebuild the command on every run, since it differs between Start and
-	// Install
-	p.final = p.buildCommand(install)
+	// Rebuild the command on every run
+	p.final = p.buildCommand()
 
 	// Check for argument count
 	if len(p.final) >= 2 {
@@ -328,8 +300,7 @@ func (p *BasePlugin) createAndRunCommand(ctx context.Context, install bool) erro
 
 // validateScript resolves and validates the plugin's script path, setting pkg
 // and exec fields as needed. Directories are treated as pixi packages, which
-// are started with `pixi run start` and installed with `pixi install`,
-// unless an executable has been set, in which case the executable and its args
+// are started with `pixi run start`, unless an executable has been set, in which case the executable and its args
 // are used in place of `pixi run <task>`. Files are treated as binaries and
 // run directly.
 func (p *BasePlugin) validateScript() error {

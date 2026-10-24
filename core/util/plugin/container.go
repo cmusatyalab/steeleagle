@@ -86,17 +86,6 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 	return ln, conn, err
 }
 
-// Install delegates to BasePlugin.Install. The install process only runs to
-// completion and never connects to the listener, so its PID isn't added to the
-// ACL.
-func (p *ContainerPlugin) Install(ctx context.Context) error {
-	if err := p.createContainer(); err != nil {
-		p.log.Error().Err(err).Msg("couldn't install container plugin")
-		return err
-	}
-	return p.BasePlugin.Install(ctx)
-}
-
 // createContainer sets up the script to run inside a podman container.
 func (p *ContainerPlugin) createContainer() error {
 	// Don't modify the args out from under a running container

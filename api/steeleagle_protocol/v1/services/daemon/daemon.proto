@@ -112,25 +112,42 @@ service DaemonService {
     returns (RemovePackageResponse) {}
 }
 
-message RegisterOrchestratorRequest {
-  optional DaemonRegistration registration = 1; // registration, only in the handshake; heartbeats are empty
+// Types of daemon services.
+enum ServiceCategory {
+  SERVICE_CATEGORY_UNSPECIFIED = 0; // unspecified (returns an error)
+  SERVICE_CATEGORY_SIMULATOR = 1;   // simulator service
+  SERVICE_CATEGORY_VEHICLE = 2;     // vehicle service
+  SERVICE_CATEGORY_ENGINE = 3;      // engine service
+  SERVICE_CATEGORY_EXTRA = 4;       // extra service
 }
 
-// Registration a daemon sends its orchestrator in the handshake.
-message DaemonRegistration {
-  repeated string vehicles = 1; // qualified vehicle names, as "{daemon IP}.{vehicle name}"
-  int32 port = 2;               // port of the registering daemon
+// Types of isolation for a plugin.
+enum Isolation {
+  ISOLATION_UNSPECIFIED = 0; // unspecified
+  ISOLATION_PROCESS = 1;     // process
+  ISOLATION_SANDBOX = 2;     // sandbox
+  ISOLATION_CONTAINER = 3;   // container
+}
+
+// A service in the system.
+message Service {
+  string name = 1;                     // service description
+  ServiceCategory category = 2;        // service category
+  string plugin = 3;                   // plugin name
+  string uri = 4;                      // package uri
+  bytes config = 5;                    // plugin config
+  Isolation isolation = 6;             // isolation of the plugin 
+  bool running = 7;                    // whether or not the service is running
+  google.protobuf.Duration uptime = 8; // service uptime
+  string error = 9;                    // why the service couldn't be set up, failed to start, or exited, if it did
+}
+
+message RegisterOrchestratorRequest {
+  repeated Service services = 1; // services of the daemon registering
 }
 
 message RegisterOrchestratorResponse {
-  optional RemoteCompute compute = 1; // remote compute service, only in the handshake; heartbeats are empty
-}
-
-// Remote compute service an orchestrator offers in the handshake.
-message RemoteCompute {
-  string cert = 1;                // cert key for the remote compute service
-  int32 port = 2;                 // port for the remote compute service
-  map<string, bytes> engines = 3; // plugin toml of each orchestrator engine, keyed by qualified engine name
+  repeated Service services = 1; // services of the daemon registering
 }
 
 message ConfigureRequest {
@@ -142,48 +159,20 @@ message ConfigureResponse {}
 message GetConfigurationRequest {}
 
 message GetConfigurationResponse {
-  // eagled config.toml
-  bytes config_toml = 1;
-  // plugin toml of each service that was set up, keyed by "{category}/{name}"
-  // with the category in lowercase, like "engine/detector"
-  map<string, bytes> plugin_tomls = 2;
-}
-
-// Types of daemon services.
-enum ServiceCategory {
-  SERVICE_CATEGORY_UNSPECIFIED = 0; // unspecified (returns an error)
-  SERVICE_CATEGORY_VEHICLE = 1;     // vehicle service
-  SERVICE_CATEGORY_ENGINE = 2;      // engine service
-  SERVICE_CATEGORY_MONITOR = 3;     // monitor service
-  SERVICE_CATEGORY_SIMULATOR = 4;   // simulator service
-  SERVICE_CATEGORY_EXTRA = 5;       // extra service
-}
-
-// A service description.
-message Service {
-  string name = 1;                  // service name
-  ServiceCategory category = 2;     // service category
-}
-
-// An active service in the system.
-message ActiveService {
-  Service srv = 1;                     // service description
-  string plugin = 2;                   // plugin name
-  string url = 3;                      // package url
-  bool running = 4;                    // whether or not the service is running
-  google.protobuf.Duration uptime = 5; // service uptime
-  string error = 6;                    // why the service couldn't be set up, failed to start, or exited, if it did
+  bytes config_toml = 1; // eagled config.toml
 }
 
 message ListServicesRequest {}
 
 message ListServicesResponse {
-  repeated ActiveService services = 1; // list of active services
-  repeated string unavailable = 2;     // IPs of remote daemons that couldn't be reached on this request, if any
+  // services on the daemon (merged services on orchestrator)
+  repeated Service services = 1;
+  // remote daemons that were unavailable (orchestrator only)
+  repeated string unavailable = 2;
 }
 
 message RestartServicesRequest {
-  repeated Service services = 1; // list of target services
+  repeated string service_names = 1; // list of target services
 }
 
 message RestartServicesResponse {}
@@ -193,18 +182,16 @@ message RestartRequest {}
 message RestartResponse {}
 
 message InstallPackageRequest {
-  string url = 1;               // package url 
-  optional string tag = 2;      // branch or commit tag
+  string uri = 1; // package uri 
 }
 
 message InstallPackageResponse {}
 
 // Package installed on the daemon.
 message Package {
-  string url = 1;                           // package url
-  string tag = 2;                           // branch or commit tag
-  map<string, bytes> plugins = 3;           // plugin tomls in this package 
-  google.protobuf.Timestamp modified = 4;   // last modified time
+  string uri = 1;                         // package uri
+  map<string, bytes> plugins = 2;         // plugin tomls in this package 
+  google.protobuf.Timestamp modified = 3; // last modified time
 }
 
 message ListPackagesRequest {}
@@ -214,7 +201,7 @@ message ListPackagesResponse {
 }
 
 message RemovePackageRequest {
-  string url = 1;   // package url
+  string uri = 1; // package uri
 }
 
 message RemovePackageResponse {}

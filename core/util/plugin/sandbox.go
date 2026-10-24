@@ -50,10 +50,6 @@ func NewSandboxPlugin(options ...PluginOption) (*SandboxPlugin, error) {
 		}
 	}
 
-	// Installation downloads packages, so share the host network (this must
-	// come after --unshare-all, which bwrap applies in order)
-	p.iargs = append(p.iargs, "--share-net")
-
 	return p, nil
 }
 
@@ -64,15 +60,6 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
 		return nil, nil, err
 	}
 	return p.BasePlugin.Start(ctx)
-}
-
-// Install delegates to BasePlugin.Install.
-func (p *SandboxPlugin) Install(ctx context.Context) error {
-	if err := p.createSandbox(); err != nil {
-		p.log.Error().Err(err).Msg("failed to create sandbox")
-		return err
-	}
-	return p.BasePlugin.Install(ctx)
 }
 
 // createSandbox sets up the script to run inside a bwrap sandbox.

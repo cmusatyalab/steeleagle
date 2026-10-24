@@ -14,54 +14,60 @@ DESCRIPTOR: _descriptor.FileDescriptor
 class ServiceCategory(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
     SERVICE_CATEGORY_UNSPECIFIED: _ClassVar[ServiceCategory]
+    SERVICE_CATEGORY_SIMULATOR: _ClassVar[ServiceCategory]
     SERVICE_CATEGORY_VEHICLE: _ClassVar[ServiceCategory]
     SERVICE_CATEGORY_ENGINE: _ClassVar[ServiceCategory]
-    SERVICE_CATEGORY_MONITOR: _ClassVar[ServiceCategory]
-    SERVICE_CATEGORY_SIMULATOR: _ClassVar[ServiceCategory]
     SERVICE_CATEGORY_EXTRA: _ClassVar[ServiceCategory]
+
+class Isolation(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    ISOLATION_UNSPECIFIED: _ClassVar[Isolation]
+    ISOLATION_PROCESS: _ClassVar[Isolation]
+    ISOLATION_SANDBOX: _ClassVar[Isolation]
+    ISOLATION_CONTAINER: _ClassVar[Isolation]
 SERVICE_CATEGORY_UNSPECIFIED: ServiceCategory
+SERVICE_CATEGORY_SIMULATOR: ServiceCategory
 SERVICE_CATEGORY_VEHICLE: ServiceCategory
 SERVICE_CATEGORY_ENGINE: ServiceCategory
-SERVICE_CATEGORY_MONITOR: ServiceCategory
-SERVICE_CATEGORY_SIMULATOR: ServiceCategory
 SERVICE_CATEGORY_EXTRA: ServiceCategory
+ISOLATION_UNSPECIFIED: Isolation
+ISOLATION_PROCESS: Isolation
+ISOLATION_SANDBOX: Isolation
+ISOLATION_CONTAINER: Isolation
+
+class Service(_message.Message):
+    __slots__ = ("name", "category", "plugin", "uri", "config", "isolation", "running", "uptime", "error")
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    CATEGORY_FIELD_NUMBER: _ClassVar[int]
+    PLUGIN_FIELD_NUMBER: _ClassVar[int]
+    URI_FIELD_NUMBER: _ClassVar[int]
+    CONFIG_FIELD_NUMBER: _ClassVar[int]
+    ISOLATION_FIELD_NUMBER: _ClassVar[int]
+    RUNNING_FIELD_NUMBER: _ClassVar[int]
+    UPTIME_FIELD_NUMBER: _ClassVar[int]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    category: ServiceCategory
+    plugin: str
+    uri: str
+    config: bytes
+    isolation: Isolation
+    running: bool
+    uptime: _duration_pb2.Duration
+    error: str
+    def __init__(self, name: _Optional[str] = ..., category: _Optional[_Union[ServiceCategory, str]] = ..., plugin: _Optional[str] = ..., uri: _Optional[str] = ..., config: _Optional[bytes] = ..., isolation: _Optional[_Union[Isolation, str]] = ..., running: _Optional[bool] = ..., uptime: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ..., error: _Optional[str] = ...) -> None: ...
 
 class RegisterOrchestratorRequest(_message.Message):
-    __slots__ = ("registration",)
-    REGISTRATION_FIELD_NUMBER: _ClassVar[int]
-    registration: DaemonRegistration
-    def __init__(self, registration: _Optional[_Union[DaemonRegistration, _Mapping]] = ...) -> None: ...
-
-class DaemonRegistration(_message.Message):
-    __slots__ = ("vehicles", "port")
-    VEHICLES_FIELD_NUMBER: _ClassVar[int]
-    PORT_FIELD_NUMBER: _ClassVar[int]
-    vehicles: _containers.RepeatedScalarFieldContainer[str]
-    port: int
-    def __init__(self, vehicles: _Optional[_Iterable[str]] = ..., port: _Optional[int] = ...) -> None: ...
+    __slots__ = ("services",)
+    SERVICES_FIELD_NUMBER: _ClassVar[int]
+    services: _containers.RepeatedCompositeFieldContainer[Service]
+    def __init__(self, services: _Optional[_Iterable[_Union[Service, _Mapping]]] = ...) -> None: ...
 
 class RegisterOrchestratorResponse(_message.Message):
-    __slots__ = ("compute",)
-    COMPUTE_FIELD_NUMBER: _ClassVar[int]
-    compute: RemoteCompute
-    def __init__(self, compute: _Optional[_Union[RemoteCompute, _Mapping]] = ...) -> None: ...
-
-class RemoteCompute(_message.Message):
-    __slots__ = ("cert", "port", "engines")
-    class EnginesEntry(_message.Message):
-        __slots__ = ("key", "value")
-        KEY_FIELD_NUMBER: _ClassVar[int]
-        VALUE_FIELD_NUMBER: _ClassVar[int]
-        key: str
-        value: bytes
-        def __init__(self, key: _Optional[str] = ..., value: _Optional[bytes] = ...) -> None: ...
-    CERT_FIELD_NUMBER: _ClassVar[int]
-    PORT_FIELD_NUMBER: _ClassVar[int]
-    ENGINES_FIELD_NUMBER: _ClassVar[int]
-    cert: str
-    port: int
-    engines: _containers.ScalarMap[str, bytes]
-    def __init__(self, cert: _Optional[str] = ..., port: _Optional[int] = ..., engines: _Optional[_Mapping[str, bytes]] = ...) -> None: ...
+    __slots__ = ("services",)
+    SERVICES_FIELD_NUMBER: _ClassVar[int]
+    services: _containers.RepeatedCompositeFieldContainer[Service]
+    def __init__(self, services: _Optional[_Iterable[_Union[Service, _Mapping]]] = ...) -> None: ...
 
 class ConfigureRequest(_message.Message):
     __slots__ = ("config_toml",)
@@ -78,43 +84,10 @@ class GetConfigurationRequest(_message.Message):
     def __init__(self) -> None: ...
 
 class GetConfigurationResponse(_message.Message):
-    __slots__ = ("config_toml", "plugin_tomls")
-    class PluginTomlsEntry(_message.Message):
-        __slots__ = ("key", "value")
-        KEY_FIELD_NUMBER: _ClassVar[int]
-        VALUE_FIELD_NUMBER: _ClassVar[int]
-        key: str
-        value: bytes
-        def __init__(self, key: _Optional[str] = ..., value: _Optional[bytes] = ...) -> None: ...
+    __slots__ = ("config_toml",)
     CONFIG_TOML_FIELD_NUMBER: _ClassVar[int]
-    PLUGIN_TOMLS_FIELD_NUMBER: _ClassVar[int]
     config_toml: bytes
-    plugin_tomls: _containers.ScalarMap[str, bytes]
-    def __init__(self, config_toml: _Optional[bytes] = ..., plugin_tomls: _Optional[_Mapping[str, bytes]] = ...) -> None: ...
-
-class Service(_message.Message):
-    __slots__ = ("name", "category")
-    NAME_FIELD_NUMBER: _ClassVar[int]
-    CATEGORY_FIELD_NUMBER: _ClassVar[int]
-    name: str
-    category: ServiceCategory
-    def __init__(self, name: _Optional[str] = ..., category: _Optional[_Union[ServiceCategory, str]] = ...) -> None: ...
-
-class ActiveService(_message.Message):
-    __slots__ = ("srv", "plugin", "url", "running", "uptime", "error")
-    SRV_FIELD_NUMBER: _ClassVar[int]
-    PLUGIN_FIELD_NUMBER: _ClassVar[int]
-    URL_FIELD_NUMBER: _ClassVar[int]
-    RUNNING_FIELD_NUMBER: _ClassVar[int]
-    UPTIME_FIELD_NUMBER: _ClassVar[int]
-    ERROR_FIELD_NUMBER: _ClassVar[int]
-    srv: Service
-    plugin: str
-    url: str
-    running: bool
-    uptime: _duration_pb2.Duration
-    error: str
-    def __init__(self, srv: _Optional[_Union[Service, _Mapping]] = ..., plugin: _Optional[str] = ..., url: _Optional[str] = ..., running: _Optional[bool] = ..., uptime: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ..., error: _Optional[str] = ...) -> None: ...
+    def __init__(self, config_toml: _Optional[bytes] = ...) -> None: ...
 
 class ListServicesRequest(_message.Message):
     __slots__ = ()
@@ -124,15 +97,15 @@ class ListServicesResponse(_message.Message):
     __slots__ = ("services", "unavailable")
     SERVICES_FIELD_NUMBER: _ClassVar[int]
     UNAVAILABLE_FIELD_NUMBER: _ClassVar[int]
-    services: _containers.RepeatedCompositeFieldContainer[ActiveService]
+    services: _containers.RepeatedCompositeFieldContainer[Service]
     unavailable: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, services: _Optional[_Iterable[_Union[ActiveService, _Mapping]]] = ..., unavailable: _Optional[_Iterable[str]] = ...) -> None: ...
+    def __init__(self, services: _Optional[_Iterable[_Union[Service, _Mapping]]] = ..., unavailable: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class RestartServicesRequest(_message.Message):
-    __slots__ = ("services",)
-    SERVICES_FIELD_NUMBER: _ClassVar[int]
-    services: _containers.RepeatedCompositeFieldContainer[Service]
-    def __init__(self, services: _Optional[_Iterable[_Union[Service, _Mapping]]] = ...) -> None: ...
+    __slots__ = ("service_names",)
+    SERVICE_NAMES_FIELD_NUMBER: _ClassVar[int]
+    service_names: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, service_names: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class RestartServicesResponse(_message.Message):
     __slots__ = ()
@@ -147,19 +120,17 @@ class RestartResponse(_message.Message):
     def __init__(self) -> None: ...
 
 class InstallPackageRequest(_message.Message):
-    __slots__ = ("url", "tag")
-    URL_FIELD_NUMBER: _ClassVar[int]
-    TAG_FIELD_NUMBER: _ClassVar[int]
-    url: str
-    tag: str
-    def __init__(self, url: _Optional[str] = ..., tag: _Optional[str] = ...) -> None: ...
+    __slots__ = ("uri",)
+    URI_FIELD_NUMBER: _ClassVar[int]
+    uri: str
+    def __init__(self, uri: _Optional[str] = ...) -> None: ...
 
 class InstallPackageResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
 class Package(_message.Message):
-    __slots__ = ("url", "tag", "plugins", "modified")
+    __slots__ = ("uri", "plugins", "modified")
     class PluginsEntry(_message.Message):
         __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
@@ -167,15 +138,13 @@ class Package(_message.Message):
         key: str
         value: bytes
         def __init__(self, key: _Optional[str] = ..., value: _Optional[bytes] = ...) -> None: ...
-    URL_FIELD_NUMBER: _ClassVar[int]
-    TAG_FIELD_NUMBER: _ClassVar[int]
+    URI_FIELD_NUMBER: _ClassVar[int]
     PLUGINS_FIELD_NUMBER: _ClassVar[int]
     MODIFIED_FIELD_NUMBER: _ClassVar[int]
-    url: str
-    tag: str
+    uri: str
     plugins: _containers.ScalarMap[str, bytes]
     modified: _timestamp_pb2.Timestamp
-    def __init__(self, url: _Optional[str] = ..., tag: _Optional[str] = ..., plugins: _Optional[_Mapping[str, bytes]] = ..., modified: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+    def __init__(self, uri: _Optional[str] = ..., plugins: _Optional[_Mapping[str, bytes]] = ..., modified: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
 
 class ListPackagesRequest(_message.Message):
     __slots__ = ()
@@ -188,10 +157,10 @@ class ListPackagesResponse(_message.Message):
     def __init__(self, packages: _Optional[_Iterable[_Union[Package, _Mapping]]] = ...) -> None: ...
 
 class RemovePackageRequest(_message.Message):
-    __slots__ = ("url",)
-    URL_FIELD_NUMBER: _ClassVar[int]
-    url: str
-    def __init__(self, url: _Optional[str] = ...) -> None: ...
+    __slots__ = ("uri",)
+    URI_FIELD_NUMBER: _ClassVar[int]
+    uri: str
+    def __init__(self, uri: _Optional[str] = ...) -> None: ...
 
 class RemovePackageResponse(_message.Message):
     __slots__ = ()

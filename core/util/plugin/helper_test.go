@@ -2,10 +2,7 @@ package plugin
 
 import (
 	"io"
-	"io/fs"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"testing"
 
 	"github.com/rs/zerolog"
@@ -88,41 +85,4 @@ func requireContainer(t *testing.T) {
 	if _, err := exec.LookPath("podman"); err != nil {
 		t.Skip("podman not found, skipping test")
 	}
-}
-
-// copyPackage copies the package plugin at src into a temporary directory,
-// leaving out its installed environments so that it must be installed before
-// it can be started.
-func copyPackage(t *testing.T, src string) string {
-	t.Helper()
-	dst := filepath.Join(t.TempDir(), filepath.Base(filepath.Clean(src)))
-	err := filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() && (d.Name() == ".pixi" || d.Name() == ".venv") {
-			return filepath.SkipDir
-		}
-		rel, err := filepath.Rel(src, path)
-		if err != nil {
-			return err
-		}
-		target := filepath.Join(dst, rel)
-		if d.IsDir() {
-			return os.MkdirAll(target, 0o755)
-		}
-		info, err := d.Info()
-		if err != nil {
-			return err
-		}
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		return os.WriteFile(target, data, info.Mode().Perm())
-	})
-	if err != nil {
-		t.Fatalf("couldn't copy package %s: %v", src, err)
-	}
-	return dst
 }

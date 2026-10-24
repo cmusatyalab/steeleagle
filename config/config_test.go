@@ -24,12 +24,35 @@ func TestDaemonConfigParsesExample(t *testing.T) {
 		t.Errorf("Daemon = %+v (orchestrator %+v), want %+v (orchestrator %+v)", c.Daemon, c.Daemon.Orchestrator, wantDaemon, wantDaemon.Orchestrator)
 	}
 
+	wantSimulator := SimulatorField{
+		Vehicles: []SimVehicleField{{
+			Name:   "cassowary",
+			Plugin: "sim_vehicle",
+			Origin: [3]float64{40.01654, -79.3402, 0.0},
+		}},
+		Engines: []SimEngineField{{
+			Name:   "sensor_twin",
+			Plugin: "sim_detector",
+		}},
+		Actors: []SimActorField{{
+			Tag: "person",
+			Waypoints: [][3]float64{
+				{40.86543, -79.2831, 0.0},
+				{40.86541, -79.2835, 0.0},
+			},
+			Speed: 3.0,
+		}},
+	}
+	if !reflect.DeepEqual(c.Simulator, wantSimulator) {
+		t.Errorf("Simulator = %+v, want %+v", c.Simulator, wantSimulator)
+	}
+
 	wantVehicles := []VehicleField{{
 		Name: "harpy",
 		Auth: AuthAdmin,
 		Plugin: PluginField{
 			Plugin:  "parrot_anafi",
-			Package: "github.com/cmusatyalab/steeleagle_plugins/drivers/parrot",
+			Package: "github.com/cmusatyalab/steeleagle_plugins//drivers/parrot@asdef9",
 			Args:    map[string]interface{}{"ip": "10.202.0.1"},
 		},
 	}}
@@ -42,15 +65,17 @@ func TestDaemonConfigParsesExample(t *testing.T) {
 		Auth: AuthExternal,
 		Plugin: PluginField{
 			Plugin:  "yolo_qnn",
-			Package: "github.com/cmusatyalab/steeleagle_plugins/engines/yolo",
-			Args:    map[string]interface{}{"confidence": 0.0},
+			Package: "github.com/cmusatyalab/steeleagle_plugins//engines/yolo",
+			Isolate: IsolateSandbox,
+			Args:    map[string]interface{}{"confidence": 0.7},
 		},
 	}, {
-		Name: "gcs",
-		Auth: AuthPrivileged,
+		Name: "yolo_nq",
+		Auth: AuthExternal,
 		Plugin: PluginField{
-			Plugin:  "gcs",
-			Package: "github.com/cmusatyalab/steeleagle_plugins/commanders/gcs",
+			Plugin:  "yolo_qnn",
+			Package: "github.com/cmusatyalab/steeleagle_plugins//engines/yolo",
+			Isolate: "docker.io/library/alpine:latest",
 			Args:    map[string]interface{}{},
 		},
 	}}
@@ -58,23 +83,8 @@ func TestDaemonConfigParsesExample(t *testing.T) {
 		t.Errorf("Engines = %+v, want %+v", c.Engines, wantEngines)
 	}
 
-	if len(c.Monitors) != 0 {
-		t.Errorf("len(Monitors) = %d, want 0", len(c.Monitors))
-	}
 	if len(c.Extras) != 0 {
 		t.Errorf("len(Extras) = %d, want 0", len(c.Extras))
-	}
-
-	wantSimulator := ServiceField{
-		Name: "aviary",
-		Auth: AuthExternal,
-		Plugin: PluginField{
-			Plugin:  "aviary",
-			Package: "github.com/cmusatyalab/steeleagle_plugins/simulators/aviary",
-		},
-	}
-	if !reflect.DeepEqual(c.Simulator, wantSimulator) {
-		t.Errorf("Simulator = %+v, want %+v", c.Simulator, wantSimulator)
 	}
 }
 
@@ -129,20 +139,23 @@ func TestValidateServices(t *testing.T) {
 		t.Errorf("ValidateServices() on example = %v, want nil", err)
 	}
 
+	p := PluginField{Package: "github.com/org/repo"}
 	cross := DaemonConfig{
-		Vehicles: []VehicleField{{Name: "a"}},
-		Engines:  []EngineField{{Name: "a"}},
-		Monitors: []ServiceField{{Name: "a"}},
+		Vehicles:  []VehicleField{{Name: "a", Plugin: p}},
+		Engines:   []EngineField{{Name: "a", Plugin: p}},
+		Extras:    []ServiceField{{Name: "a", Plugin: p}},
+		Simulator: SimulatorField{Vehicles: []SimVehicleField{{Name: "a"}}, Engines: []SimEngineField{{Name: "a"}}},
 	}
 	if err := cross.ValidateServices(); err != nil {
 		t.Errorf("ValidateServices() with names shared across lists = %v, want nil", err)
 	}
 
 	dupes := map[string]DaemonConfig{
-		"vehicles": {Vehicles: []VehicleField{{Name: "a"}, {Name: "a"}}},
-		"engines":  {Engines: []EngineField{{Name: "a"}, {Name: "a"}}},
-		"monitors": {Monitors: []ServiceField{{Name: "a"}, {Name: "a"}}},
-		"extras":   {Extras: []ServiceField{{Name: "a"}, {Name: "a"}}},
+		"vehicles":           {Vehicles: []VehicleField{{Name: "a", Plugin: p}, {Name: "a", Plugin: p}}},
+		"engines":            {Engines: []EngineField{{Name: "a", Plugin: p}, {Name: "a", Plugin: p}}},
+		"extras":             {Extras: []ServiceField{{Name: "a", Plugin: p}, {Name: "a", Plugin: p}}},
+		"simulator vehicles": {Simulator: SimulatorField{Vehicles: []SimVehicleField{{Name: "a"}, {Name: "a"}}}},
+		"simulator engines":  {Simulator: SimulatorField{Engines: []SimEngineField{{Name: "a"}, {Name: "a"}}}},
 	}
 	for list, c := range dupes {
 		if err := c.ValidateServices(); err == nil {
@@ -154,13 +167,12 @@ func TestValidateServices(t *testing.T) {
 // TestValidateServicesAuth checks that every auth level, and no auth, is
 // accepted for each kind of service, and that any other auth is rejected.
 func TestValidateServicesAuth(t *testing.T) {
+	p := PluginField{Package: "github.com/org/repo"}
 	configs := func(auth Auth) map[string]DaemonConfig {
 		return map[string]DaemonConfig{
-			"vehicle":   {Vehicles: []VehicleField{{Name: "a", Auth: auth}}},
-			"engine":    {Engines: []EngineField{{Name: "a", Auth: auth}}},
-			"monitor":   {Monitors: []ServiceField{{Name: "a", Auth: auth}}},
-			"extra":     {Extras: []ServiceField{{Name: "a", Auth: auth}}},
-			"simulator": {Simulator: ServiceField{Name: "a", Auth: auth}},
+			"vehicle": {Vehicles: []VehicleField{{Name: "a", Auth: auth, Plugin: p}}},
+			"engine":  {Engines: []EngineField{{Name: "a", Auth: auth, Plugin: p}}},
+			"extra":   {Extras: []ServiceField{{Name: "a", Auth: auth, Plugin: p}}},
 		}
 	}
 	for _, auth := range []Auth{"", AuthAdmin, AuthPrivileged, AuthUser, AuthExternal, AuthUnknown} {
@@ -184,5 +196,25 @@ func TestAuthLevel(t *testing.T) {
 	}
 	if got := AuthUser.Level(); got != AuthUser {
 		t.Errorf("AuthUser.Level() = %q, want %q", got, AuthUser)
+	}
+}
+
+// TestValidateServicesPlugin checks that a plugin must define a package.
+func TestValidateServicesPlugin(t *testing.T) {
+	valid := map[string]PluginField{
+		"package":              {Package: "github.com/org/repo//sub"},
+		"package with version": {Package: "github.com/org/repo//sub@main"},
+		"package with isolate": {Package: "github.com/org/repo", Isolate: IsolateSandbox},
+	}
+	for name, p := range valid {
+		c := DaemonConfig{Extras: []ServiceField{{Name: "a", Plugin: p}}}
+		if err := c.ValidateServices(); err != nil {
+			t.Errorf("ValidateServices() with %s plugin = %v, want nil", name, err)
+		}
+	}
+
+	c := DaemonConfig{Extras: []ServiceField{{Name: "a", Plugin: PluginField{Plugin: "a"}}}}
+	if err := c.ValidateServices(); err == nil {
+		t.Error("ValidateServices() with no package = nil, want error")
 	}
 }

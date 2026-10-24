@@ -23,7 +23,7 @@ import (
 	"github.com/cmusatyalab/steeleagle/v4/core/util/policy"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/router"
 	"github.com/cmusatyalab/steeleagle/v4/core/vehicle"
-	"github.com/cmusatyalab/uriel/go"
+	uriel "github.com/cmusatyalab/uriel/go"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 )
