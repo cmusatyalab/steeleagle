@@ -36,7 +36,7 @@ ISOLATION_SANDBOX: Isolation
 ISOLATION_CONTAINER: Isolation
 
 class Service(_message.Message):
-    __slots__ = ("name", "category", "plugin", "uri", "config", "isolation", "running", "uptime", "error")
+    __slots__ = ("name", "category", "plugin", "uri", "config", "isolation", "running", "auth")
     NAME_FIELD_NUMBER: _ClassVar[int]
     CATEGORY_FIELD_NUMBER: _ClassVar[int]
     PLUGIN_FIELD_NUMBER: _ClassVar[int]
@@ -44,8 +44,7 @@ class Service(_message.Message):
     CONFIG_FIELD_NUMBER: _ClassVar[int]
     ISOLATION_FIELD_NUMBER: _ClassVar[int]
     RUNNING_FIELD_NUMBER: _ClassVar[int]
-    UPTIME_FIELD_NUMBER: _ClassVar[int]
-    ERROR_FIELD_NUMBER: _ClassVar[int]
+    AUTH_FIELD_NUMBER: _ClassVar[int]
     name: str
     category: ServiceCategory
     plugin: str
@@ -53,9 +52,8 @@ class Service(_message.Message):
     config: bytes
     isolation: Isolation
     running: bool
-    uptime: _duration_pb2.Duration
-    error: str
-    def __init__(self, name: _Optional[str] = ..., category: _Optional[_Union[ServiceCategory, str]] = ..., plugin: _Optional[str] = ..., uri: _Optional[str] = ..., config: _Optional[bytes] = ..., isolation: _Optional[_Union[Isolation, str]] = ..., running: _Optional[bool] = ..., uptime: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ..., error: _Optional[str] = ...) -> None: ...
+    auth: str
+    def __init__(self, name: _Optional[str] = ..., category: _Optional[_Union[ServiceCategory, str]] = ..., plugin: _Optional[str] = ..., uri: _Optional[str] = ..., config: _Optional[bytes] = ..., isolation: _Optional[_Union[Isolation, str]] = ..., running: _Optional[bool] = ..., auth: _Optional[str] = ...) -> None: ...
 
 class RegisterOrchestratorRequest(_message.Message):
     __slots__ = ("services",)
@@ -101,13 +99,13 @@ class ListServicesResponse(_message.Message):
     unavailable: _containers.RepeatedScalarFieldContainer[str]
     def __init__(self, services: _Optional[_Iterable[_Union[Service, _Mapping]]] = ..., unavailable: _Optional[_Iterable[str]] = ...) -> None: ...
 
-class RestartServicesRequest(_message.Message):
+class RestartServiceRequest(_message.Message):
     __slots__ = ("service_names",)
     SERVICE_NAMES_FIELD_NUMBER: _ClassVar[int]
-    service_names: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, service_names: _Optional[_Iterable[str]] = ...) -> None: ...
+    service_names: str
+    def __init__(self, service_names: _Optional[str] = ...) -> None: ...
 
-class RestartServicesResponse(_message.Message):
+class RestartServiceResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 

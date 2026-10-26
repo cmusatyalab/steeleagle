@@ -150,9 +150,10 @@ func TestCompiledMissionSetsFlowOnStart(t *testing.T) {
 		"    \"" + configModPath + "\" => \"" + filepath.Join(root, "config") + "\"\n" +
 		importsStanza(dslPkgPath, actionsPkg) + testMissionBody
 	bin := filepath.Join(t.TempDir(), "mission")
-	flow := "[[producers]]\nname = \"front\"\n"
+	flow := testFlow
 	errs := Compile(FromFile(writeMission(t, t.TempDir(), src)),
-		buildtools.WithFlow([]byte(flow)), buildtools.WithOutputFile(bin))
+		buildtools.WithManifest([]byte(testManifest)), buildtools.WithFlow([]byte(flow)),
+		buildtools.WithOutputFile(bin))
 	if len(errs) > 0 {
 		t.Fatalf("Compile() errors = %v", errs)
 	}

@@ -7,7 +7,7 @@ require (
 	github.com/adrg/xdg v0.5.3
 	github.com/alecthomas/participle/v2 v2.1.4
 	github.com/cmusatyalab/steeleagle/api/go v0.3.1
-	github.com/cmusatyalab/steeleagle/config v0.0.1
+	github.com/cmusatyalab/steeleagle/config v0.0.2
 	github.com/cmusatyalab/uriel/go v0.1.0
 	github.com/go-git/go-git/v5 v5.19.2
 	github.com/google/uuid v1.6.0

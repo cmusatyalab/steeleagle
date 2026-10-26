@@ -50,6 +50,7 @@ location = "local"
 [[edges]]
 from = "front"
 to = "yolo"
+timeout = "2s"
 `
 
 // flowOf returns a flow of the single engine name.

@@ -41,9 +41,9 @@ func WithGeoJson(geoJson []byte) Option {
 	}
 }
 
-// WithFlow sets the dataflow config (as TOML bytes) whose leaf engines
-// constants are generated from, which a DSL mission also embeds and sets on
-// the vehicle each time it is started.
+// WithFlow sets the dataflow config (as TOML bytes), which a DSL mission
+// embeds and sets on the vehicle each time it is started. Every engine of the
+// flow must be declared in the manifest.
 func WithFlow(flowToml []byte) Option {
 	return func(o *Options) {
 		o.FlowToml = flowToml

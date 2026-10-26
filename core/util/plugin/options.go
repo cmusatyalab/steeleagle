@@ -165,7 +165,7 @@ func WithProcessOutputStream(out io.Writer) PluginOption {
 	}
 }
 
-// WithEnvironment sets an environment key-value pair for the plugin.
+// WithEnvironment adds an environment key-value pair for the plugin.
 func WithEnvironment(key, value string) PluginOption {
 	return func(k *BasePlugin) {
 		k.environ = append(k.environ, fmt.Sprintf("%s=%s", key, value))

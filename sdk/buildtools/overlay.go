@@ -20,7 +20,7 @@ const (
 // OverlayConfig returns the preprocessing c asks for: the SDK's module
 // (whatever module path or version it resolves to) is overlaid, scrubbed
 // according to the cap file, and the constants named by the cap file,
-// manifest, flow and GeoJSON (see constTypes) are generated into the params
+// manifest and GeoJSON (see constTypes) are generated into the params
 // package. The caller sets where and how the packages are loaded, and any
 // other modules to overlay.
 func (c *Config) OverlayConfig() (preprocess.OverlayConfig, []*CompileError) {
@@ -37,11 +37,11 @@ func (c *Config) OverlayConfig() (preprocess.OverlayConfig, []*CompileError) {
 }
 
 // constTypes returns the constants to generate in the params package, by
-// type name, named by the cap file, manifest, flow and GeoJSON: camera names
-// from the cap file, roles and squawks from the manifest, the flow's leaf
-// engines (typed by the result message the manifest gives them), and GeoJSON
-// feature names (typed by their geometry). Every engine of the flow must be
-// declared in the manifest. A name may only be declared once per type.
+// type name, named by the cap file, manifest and GeoJSON: camera names from
+// the cap file, roles, squawks and engines (typed by their result message)
+// from the manifest, and GeoJSON feature names (typed by their geometry).
+// Every engine of the flow must be declared in the manifest. A name may only
+// be declared once per type.
 func (c *Config) constTypes() (map[string][]string, []*CompileError) {
 	types := map[string][]string{}
 	var errs []*CompileError
@@ -86,19 +86,13 @@ func (c *Config) constTypes() (map[string][]string, []*CompileError) {
 				typeName = base + "Engine"
 			}
 			engines[e.Name] = typeName
+			add(typeName, e.Name, "engine")
 		}
 	}
 	if c.Flow != nil {
 		for _, e := range c.Flow.Engines {
 			if _, ok := engines[e.Name]; !ok {
 				errs = append(errs, &CompileError{Err: fmt.Errorf("flow engine %q is not declared in the manifest", e.Name)})
-			}
-		}
-		// Only leaf engines have results the mission can get, since every
-		// other engine's results are consumed within the flow
-		for _, e := range c.Flow.GetLeafEngines() {
-			if typeName, ok := engines[e.Name]; ok {
-				add(typeName, e.Name, "engine")
 			}
 		}
 	}

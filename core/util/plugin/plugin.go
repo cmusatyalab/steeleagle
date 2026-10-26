@@ -300,9 +300,9 @@ func (p *BasePlugin) createAndRunCommand(ctx context.Context) error {
 
 // validateScript resolves and validates the plugin's script path, setting pkg
 // and exec fields as needed. Directories are treated as pixi packages, which
-// are started with `pixi run start`, unless an executable has been set, in which case the executable and its args
-// are used in place of `pixi run <task>`. Files are treated as binaries and
-// run directly.
+// are started with `pixi run start`, unless an executable has been set, in which
+// case the executable and its args are used in place of `pixi run <task>`. Files
+// are treated as binaries and run directly.
 func (p *BasePlugin) validateScript() error {
 	// Check if script has already been manually set
 	if p.script != "" {

@@ -27,7 +27,7 @@ const (
 	DaemonService_Configure_FullMethodName            = "/steeleagle_protocol.v1.services.daemon.DaemonService/Configure"
 	DaemonService_GetConfiguration_FullMethodName     = "/steeleagle_protocol.v1.services.daemon.DaemonService/GetConfiguration"
 	DaemonService_ListServices_FullMethodName         = "/steeleagle_protocol.v1.services.daemon.DaemonService/ListServices"
-	DaemonService_RestartServices_FullMethodName      = "/steeleagle_protocol.v1.services.daemon.DaemonService/RestartServices"
+	DaemonService_RestartService_FullMethodName       = "/steeleagle_protocol.v1.services.daemon.DaemonService/RestartService"
 	DaemonService_Restart_FullMethodName              = "/steeleagle_protocol.v1.services.daemon.DaemonService/Restart"
 	DaemonService_InstallPackage_FullMethodName       = "/steeleagle_protocol.v1.services.daemon.DaemonService/InstallPackage"
 	DaemonService_ListPackages_FullMethodName         = "/steeleagle_protocol.v1.services.daemon.DaemonService/ListPackages"
@@ -76,12 +76,10 @@ type DaemonServiceClient interface {
 	// a remote daemon that can't be reached is left out, and listed as
 	// unavailable.
 	ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error)
-	// Restart daemon services.
+	// Restart a daemon services.
 	//
-	// Restarts a list of daemon services. These must be vehicles, monitors, or
-	// engines. Restarts of other services, like GCS or simulator, must be done
-	// through a `Configure` call and will return an error if included.
-	RestartServices(ctx context.Context, in *RestartServicesRequest, opts ...grpc.CallOption) (*RestartServicesResponse, error)
+	// Restarts a target daemon service.
+	RestartService(ctx context.Context, in *RestartServiceRequest, opts ...grpc.CallOption) (*RestartServiceResponse, error)
 	// Restart the daemon.
 	//
 	// Restarts the whole daemon and all of its services, including core services
@@ -154,10 +152,10 @@ func (c *daemonServiceClient) ListServices(ctx context.Context, in *ListServices
 	return out, nil
 }
 
-func (c *daemonServiceClient) RestartServices(ctx context.Context, in *RestartServicesRequest, opts ...grpc.CallOption) (*RestartServicesResponse, error) {
+func (c *daemonServiceClient) RestartService(ctx context.Context, in *RestartServiceRequest, opts ...grpc.CallOption) (*RestartServiceResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(RestartServicesResponse)
-	err := c.cc.Invoke(ctx, DaemonService_RestartServices_FullMethodName, in, out, cOpts...)
+	out := new(RestartServiceResponse)
+	err := c.cc.Invoke(ctx, DaemonService_RestartService_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -246,12 +244,10 @@ type DaemonServiceServer interface {
 	// a remote daemon that can't be reached is left out, and listed as
 	// unavailable.
 	ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error)
-	// Restart daemon services.
+	// Restart a daemon services.
 	//
-	// Restarts a list of daemon services. These must be vehicles, monitors, or
-	// engines. Restarts of other services, like GCS or simulator, must be done
-	// through a `Configure` call and will return an error if included.
-	RestartServices(context.Context, *RestartServicesRequest) (*RestartServicesResponse, error)
+	// Restarts a target daemon service.
+	RestartService(context.Context, *RestartServiceRequest) (*RestartServiceResponse, error)
 	// Restart the daemon.
 	//
 	// Restarts the whole daemon and all of its services, including core services
@@ -293,8 +289,8 @@ func (UnimplementedDaemonServiceServer) GetConfiguration(context.Context, *GetCo
 func (UnimplementedDaemonServiceServer) ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListServices not implemented")
 }
-func (UnimplementedDaemonServiceServer) RestartServices(context.Context, *RestartServicesRequest) (*RestartServicesResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method RestartServices not implemented")
+func (UnimplementedDaemonServiceServer) RestartService(context.Context, *RestartServiceRequest) (*RestartServiceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RestartService not implemented")
 }
 func (UnimplementedDaemonServiceServer) Restart(context.Context, *RestartRequest) (*RestartResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Restart not implemented")
@@ -390,20 +386,20 @@ func _DaemonService_ListServices_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DaemonService_RestartServices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RestartServicesRequest)
+func _DaemonService_RestartService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RestartServiceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DaemonServiceServer).RestartServices(ctx, in)
+		return srv.(DaemonServiceServer).RestartService(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: DaemonService_RestartServices_FullMethodName,
+		FullMethod: DaemonService_RestartService_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DaemonServiceServer).RestartServices(ctx, req.(*RestartServicesRequest))
+		return srv.(DaemonServiceServer).RestartService(ctx, req.(*RestartServiceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -500,8 +496,8 @@ var DaemonService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _DaemonService_ListServices_Handler,
 		},
 		{
-			MethodName: "RestartServices",
-			Handler:    _DaemonService_RestartServices_Handler,
+			MethodName: "RestartService",
+			Handler:    _DaemonService_RestartService_Handler,
 		},
 		{
 			MethodName: "Restart",

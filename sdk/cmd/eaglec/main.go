@@ -9,8 +9,7 @@
 // An SDK compile runs go build on packages (the package in the working
 // directory by default) in the local Go module, with the module's and the
 // SDK's packages scrubbed according to the plugin config's driver cap and
-// with the consts named by the manifest, flow and GeoJSON generated into
-// them. Engine consts are only generated for the flow's leaf engines.
+// with the consts named by the manifest and GeoJSON generated into them.
 //
 // A DSL compile compiles a mission in a temporary workspace, preprocessing
 // the SDK the same way, into a DSL binary (mission.dslb by default). The
@@ -257,7 +256,7 @@ func newFlagSet(mode, args string) (*flag.FlagSet, *inputFiles) {
 	files := &inputFiles{}
 	fs.StringVar(&files.plugin, "plugin", "", "vehicle driver plugin config (optional; nothing is scrubbed without one)")
 	fs.StringVar(&files.manifest, "manifest", "", "mission manifest file (optional)")
-	fs.StringVar(&files.flow, "flow", "", "dataflow config whose leaf engines get consts, set when a DSL mission starts (optional)")
+	fs.StringVar(&files.flow, "flow", "", "dataflow config, set when a DSL mission starts (optional)")
 	fs.StringVar(&files.geoJson, "geojson", "", "mission GeoJSON file (optional)")
 	return fs, files
 }

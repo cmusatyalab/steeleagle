@@ -47,6 +47,7 @@ location = "local"
 [[edges]]
 from = "front"
 to = "yolo"
+timeout = "2s"
 `
 
 // repoRoot returns the absolute path of the root of the steeleagle
@@ -260,48 +261,46 @@ func TestOverlayConfig(t *testing.T) {
 	}
 }
 
-// TestOverlayConfigLeafEngines checks that only the flow's leaf engines get
-// consts, typed by the manifest, and that no engine gets one without a flow.
-func TestOverlayConfigLeafEngines(t *testing.T) {
+// TestOverlayConfigManifestEngines checks that every engine of the manifest
+// gets a const, typed by its result, whether or not it is a leaf of the flow
+// and whether or not there is a flow.
+func TestOverlayConfigManifestEngines(t *testing.T) {
 	manifest := "[[engines]]\nname = \"yolo\"\nresult = \"messages/result/DetectionResult\"\n" +
 		"[[engines]]\nname = \"pre\"\nresult = \"messages/result/GenericResult\"\n" +
 		"[[engines]]\nname = \"unused\"\nresult = \"messages/result/PositionResult\"\n"
 	flow := "[[producers]]\nname = \"front\"\n" +
-		"[[engines]]\nname = \"pre\"\n[[engines]]\nname = \"yolo\"\n" +
-		"[[edges]]\nfrom = \"front\"\nto = \"pre\"\n[[edges]]\nfrom = \"pre\"\nto = \"yolo\"\n"
-	c, errs := NewConfig(WithManifest([]byte(manifest)), WithFlow([]byte(flow)))
-	if len(errs) > 0 {
-		t.Fatalf("NewConfig() errors = %v", errs)
-	}
-	cfg, errs := c.OverlayConfig()
-	if len(errs) > 0 {
-		t.Fatalf("OverlayConfig() errors = %v", errs)
-	}
-	types := cfg.Consts[paramsPkgPath]
-	want := map[string]string{"DetectionEngine": "yolo", "GenericEngine": "", "PositionEngine": ""}
-	for typeName, names := range want {
-		if got := strings.Join(types[typeName], " "); got != names {
-			t.Errorf("%s consts = %q, want %q", typeName, got, names)
+		"[[engines]]\nname = \"pre\"\nlocation = \"local\"\n[[engines]]\nname = \"yolo\"\nlocation = \"local\"\n" +
+		"[[edges]]\nfrom = \"front\"\nto = \"pre\"\ntimeout = \"2s\"\n" +
+		"[[edges]]\nfrom = \"pre\"\nto = \"yolo\"\ntimeout = \"2s\"\n"
+	want := map[string]string{"DetectionEngine": "yolo", "GenericEngine": "pre", "PositionEngine": "unused"}
+	for name, opts := range map[string][]Option{
+		"with a flow":    {WithManifest([]byte(manifest)), WithFlow([]byte(flow))},
+		"without a flow": {WithManifest([]byte(manifest))},
+	} {
+		c, errs := NewConfig(opts...)
+		if len(errs) > 0 {
+			t.Fatalf("NewConfig() %s errors = %v", name, errs)
 		}
-	}
-
-	c, _ = NewConfig(WithManifest([]byte(manifest)))
-	cfg, errs = c.OverlayConfig()
-	if len(errs) > 0 {
-		t.Fatalf("OverlayConfig() without a flow errors = %v", errs)
-	}
-	for _, typeName := range []string{"DetectionEngine", "GenericEngine", "PositionEngine"} {
-		if got := cfg.Consts[paramsPkgPath][typeName]; len(got) > 0 {
-			t.Errorf("%s consts without a flow = %v, want none", typeName, got)
+		cfg, errs := c.OverlayConfig()
+		if len(errs) > 0 {
+			t.Fatalf("OverlayConfig() %s errors = %v", name, errs)
+		}
+		types := cfg.Consts[paramsPkgPath]
+		for typeName, names := range want {
+			if got := strings.Join(types[typeName], " "); got != names {
+				t.Errorf("%s consts %s = %q, want %q", typeName, name, got, names)
+			}
 		}
 	}
 }
 
 // TestOverlayConfigUndeclaredFlowEngine checks that every engine of the
-// flow, leaf or not, must be declared in the manifest.
+// flow must be declared in the manifest.
 func TestOverlayConfigUndeclaredFlowEngine(t *testing.T) {
-	flow := "[[engines]]\nname = \"pre\"\n[[engines]]\nname = \"yolo\"\n" +
-		"[[edges]]\nfrom = \"pre\"\nto = \"yolo\"\n"
+	flow := "[[producers]]\nname = \"front\"\n" +
+		"[[engines]]\nname = \"pre\"\nlocation = \"local\"\n[[engines]]\nname = \"yolo\"\nlocation = \"local\"\n" +
+		"[[edges]]\nfrom = \"front\"\nto = \"pre\"\ntimeout = \"2s\"\n" +
+		"[[edges]]\nfrom = \"pre\"\nto = \"yolo\"\ntimeout = \"2s\"\n"
 	for _, manifest := range []string{"", testManifest} {
 		c, errs := NewConfig(WithManifest([]byte(manifest)), WithFlow([]byte(flow)))
 		if len(errs) > 0 {
@@ -355,7 +354,7 @@ func TestNewConfigErrors(t *testing.T) {
 // TestNewConfigParsesFlow checks that a flow file is parsed and kept
 // verbatim.
 func TestNewConfigParsesFlow(t *testing.T) {
-	flow := "[[producers]]\nname = \"front\"\n"
+	flow := testFlow
 	c, errs := NewConfig(WithFlow([]byte(flow)))
 	if len(errs) > 0 {
 		t.Fatalf("NewConfig() errors = %v", errs)

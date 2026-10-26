@@ -44,6 +44,17 @@ func GetDataDir() (string, error) {
 	return dataPath, nil
 }
 
+// GetCredsDir returns the application credentials directory, creating it if it
+// does not exist.
+func GetCredsDir() (string, error) {
+	credsPath := filepath.Join(GetRuntimeDir(), projectDir, credsDir)
+	err := os.MkdirAll(credsPath, 0755)
+	if err != nil {
+		return "", err
+	}
+	return credsPath, nil
+}
+
 // GetVpnDir returns the persistent vpn data directory, creating it if it does
 // not exist.
 func GetVpnDir() (string, error) {
@@ -55,9 +66,57 @@ func GetVpnDir() (string, error) {
 	return vpnPath, nil
 }
 
-// GetPackageDir returns the persistent directory for installed packages.
-func GetPackageDir(category string) (string, error) {
-	dir := filepath.Join(GetDataHome(), projectDir, packageDir)
+// GetPackageDirByCategory returns the persistent directory for installed packages
+// by category, creating it if it does not exist.
+func GetPackageDirByCategory(category string) (string, error) {
+	dir := filepath.Join(GetDataHome(), projectDir, packageDir, category)
+	err := os.MkdirAll(dir, 0755)
+	if err != nil {
+		return "", err
+	}
+	return dir, nil
+}
+
+// GetPackageDirByCategoryAndName returns the directory for a package by name
+// and category, returning an error if it does not exist.
+func GetPackageDirByCategoryAndName(category, name string) (string, error) {
+	dir, err := GetPackageDirByCategory(category)
+	if err != nil {
+		return "", err
+	}
+	path := filepath.Join(dir, name)
+	if _, err = os.Stat(path); err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
+// GetLogByName returns the log file for a service by name, creating it if it does
+// not exist.
+func GetLogByName(name string) (string, error) {
+	file := filepath.Join(GetDataHome(), projectDir, logDir, name+logSuffix)
+	err := os.MkdirAll(file, 0755)
+	if err != nil {
+		return "", err
+	}
+	return file, nil
+}
+
+// GetPendingDir returns the pending directory for a daemon, creating it if it does
+// not exist.
+func GetPendingDir() (string, error) {
+	dir := filepath.Join(GetDataHome(), projectDir, pendingDir)
+	err := os.MkdirAll(dir, 0755)
+	if err != nil {
+		return "", err
+	}
+	return dir, nil
+}
+
+// GetPendingDirByCategory returns the pending directory for a package category,
+// creating it if it does not exist.
+func GetPendingDirByCategory(category string) (string, error) {
+	dir := filepath.Join(GetDataHome(), projectDir, pendingDir, category)
 	err := os.MkdirAll(dir, 0755)
 	if err != nil {
 		return "", err
@@ -95,17 +154,21 @@ func GetPluginDir() (string, error) {
 	return pluginPath, nil
 }
 
-// GetPluginDirByName returns the runtime directory for the plugin with the
-// given name and parent, creating it if it does not exist.
-func GetPluginDirByName(name, parent string) (string, error) {
-	var pluginPath string
-	if parent == "" { // if the parent is not set, place the plugin in the main runtime directory
-		pluginPath = filepath.Join(GetRuntimeDir(), projectDir, pluginDir, name)
-	} else if filepath.IsAbs(parent) {
-		pluginPath = filepath.Join(parent, pluginDir, name)
-	} else { // if parent is set, place the plugin in that directory
-		pluginPath = filepath.Join(GetRuntimeDir(), projectDir, parent, pluginDir, name)
+// GetPluginDirByCategory returns the runtime directory for plugins given a category,
+// creating it if it does not exist.
+func GetPluginDirByCategory(category string) (string, error) {
+	pluginPath := filepath.Join(GetRuntimeDir(), projectDir, pluginDir, category)
+	err := os.MkdirAll(pluginPath, 0755)
+	if err != nil {
+		return "", err
 	}
+	return pluginPath, nil
+}
+
+// GetPluginDirByCategoryAndName returns the runtime directory for the plugin with the given category
+// and name, creating it if it does not exist.
+func GetPluginDirByCategoryAndName(category, name string) (string, error) {
+	pluginPath := filepath.Join(GetRuntimeDir(), projectDir, pluginDir, category, name)
 	err := os.MkdirAll(pluginPath, 0755)
 	if err != nil {
 		return "", err
@@ -162,15 +225,4 @@ func GetVehicleMissionDirByName(name string) (string, error) {
 // which is not created.
 func GetDaemonSocketPath() string {
 	return filepath.Join(GetRuntimeDir(), projectDir, daemonSocket)
-}
-
-// GetDaemonRunDir returns the daemon runtime directory, creating it if it does
-// not exist.
-func GetDaemonRunDir() (string, error) {
-	daemonPath := filepath.Join(GetRuntimeDir(), projectDir)
-	err := os.MkdirAll(daemonPath, 0755)
-	if err != nil {
-		return "", err
-	}
-	return daemonPath, nil
 }

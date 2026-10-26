@@ -1,14 +1,16 @@
-# List of producers in the flow, {vehicle} is subbed out for
-# the vehicle name automatically
+# List of producers in the flow: telemetry, or a camera of the vehicle.
+# The vehicle prefixes each name with its own ("<vehicle>.telemetry")
 [[producers]]
 # Name of the producer
 name = "telemetry"
+# Inputs the producer may have in the flow at once (optional, at least 1)
+tokens = 2
 
 # List of engines in the flow
 [[engines]]
 # Name of the engine
 name = "yolo"
-# Location of the engine
+# Location of the engine (one of: local, remote)
 location = "local"
 
 # List of edges in the flow
@@ -17,5 +19,5 @@ location = "local"
 from = "telemetry"
 # Destination of the edge
 to = "yolo"
-# Edge timeout
+# Edge timeout, a positive duration
 timeout = "2s"

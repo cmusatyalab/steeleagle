@@ -47,7 +47,7 @@ func ParsePluginConfigFromFilepath(filepath string) (*PluginConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := p.validate(); err != nil {
+	if err := p.Validate(); err != nil {
 		return nil, err
 	}
 	return p, nil
@@ -59,14 +59,16 @@ func ParsePluginConfigFromBytes(config []byte) (*PluginConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := p.validate(); err != nil {
+	if err := p.Validate(); err != nil {
 		return nil, err
 	}
 	return p, nil
 }
 
-// validate checks cap exclusivity and builds the driver cap lookup sets.
-func (p *PluginConfig) validate() error {
+// Validate checks cap exclusivity and builds the driver cap lookup sets. The
+// parse functions call it; call it on a PluginConfig built by hand before
+// using its driver cap's Supports.
+func (p *PluginConfig) Validate() error {
 	if p.Driver != nil && p.Engine != nil {
 		return errors.New("plugin config cannot define both a driver and an engine cap")
 	}

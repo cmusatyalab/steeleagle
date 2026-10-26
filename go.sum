@@ -81,6 +81,8 @@ github.com/cmusatyalab/steeleagle/config v0.0.0-20261020034212-353eb2969f61 h1:d
 github.com/cmusatyalab/steeleagle/config v0.0.0-20261020034212-353eb2969f61/go.mod h1:ufbS1yFbr6eExvEp9JRqNMsXuqmh7QfR/CTqCyRwDLk=
 github.com/cmusatyalab/steeleagle/config v0.0.1 h1:gJIeaMYugw5d6KiyzJp2PRtlOueRb+AGec48v9nD3I4=
 github.com/cmusatyalab/steeleagle/config v0.0.1/go.mod h1:ufbS1yFbr6eExvEp9JRqNMsXuqmh7QfR/CTqCyRwDLk=
+github.com/cmusatyalab/steeleagle/config v0.0.2 h1:JKi+Ehf6eEkjs+AOznah8xfAodbanyi0C+4aRBbFjC4=
+github.com/cmusatyalab/steeleagle/config v0.0.2/go.mod h1:ufbS1yFbr6eExvEp9JRqNMsXuqmh7QfR/CTqCyRwDLk=
 github.com/cmusatyalab/uriel/go v0.1.0 h1:RXzOmzP93C1d+8Fa1L+jWCSfL8NdtuvJVP3Z5MLERgg=
 github.com/cmusatyalab/uriel/go v0.1.0/go.mod h1:Ck8FmU/kdWH7wX/XK6848bReGfpzHahsRASbP8yWetg=
 github.com/coder/websocket v1.8.15 h1:6B2JPeOGlpff2Uz6vOEH1Vzpi0iUz20A+lPVhPHtNUA=

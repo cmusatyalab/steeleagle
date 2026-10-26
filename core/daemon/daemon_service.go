@@ -2,225 +2,323 @@ package daemon
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
-	"time"
+	"strings"
 
 	daemonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon"
 	"github.com/cmusatyalab/steeleagle/config"
+	"github.com/cmusatyalab/steeleagle/v4/core/util/plugin"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 // RegisterOrchestrator is called by a daemon that has this daemon as its
-// orchestrator, and stays open as a heartbeat. Its vehicles become addressable
-// through this daemon's router, and it gets back the cert and port of this
-// daemon's local compute service, along with the plugin toml of each engine it
-// serves, which become remote engines for its vehicles.
+// orchestrator. The stream opens with a handshake, where the registering daemon
+// sends its services and this daemon answers with the remote compute service
+// details and the engines it serves. After that, the stream is a heartbeat of
+// empty requests, each answered with an empty response.
 func (d *Daemon) RegisterOrchestrator(
 	stream grpc.BidiStreamingServer[daemonpb.RegisterOrchestratorRequest, daemonpb.RegisterOrchestratorResponse],
 ) error {
-	if err := d.serveRegistration(stream); err != nil {
-		d.log.Error().Err(err).Msg("registration stream failed")
-		return err
-	}
-	return nil
+	// TODO: handshake, then heartbeat until the stream dies
+	return status.Error(codes.Unimplemented, "RegisterOrchestrator is not implemented")
 }
 
-// Configure replaces the config.toml on disk and stops the daemon, so that it
-// is restarted with the new config. The current config is already loaded, so
-// overwriting it doesn't affect the running daemon.
+// Configure replaces the daemon config with the given TOML and restarts the
+// daemon, running all services.
 func (d *Daemon) Configure(
 	ctx context.Context,
 	req *daemonpb.ConfigureRequest,
 ) (*daemonpb.ConfigureResponse, error) {
-	if err := d.writeConfig([]byte(req.GetConfigToml())); err != nil {
-		d.log.Error().Err(err).Str("path", d.configPath).Msg("could not write daemon config")
-		return nil, err
-	}
-	d.log.Info().Str("path", d.configPath).Msg("daemon config replaced")
-	d.stopForRestart()
-	return &daemonpb.ConfigureResponse{}, nil
+	// TODO: write the config and trigger a restart
+	return nil, status.Error(codes.Unimplemented, "Configure is not implemented")
 }
 
-// GetConfiguration returns the current config.toml as bytes.
+// GetConfiguration returns the current config as TOML bytes.
 func (d *Daemon) GetConfiguration(
 	ctx context.Context,
 	req *daemonpb.GetConfigurationRequest,
 ) (*daemonpb.GetConfigurationResponse, error) {
-	content, err := os.ReadFile(d.configPath)
-	if err != nil {
-		d.log.Error().Err(err).Str("path", d.configPath).Msg("could not read daemon config")
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	// Only services that were set up have a plugin toml
-	tomls := make(map[string][]byte)
-	d.eachService(func(s *serviceInfo) {
-		if s.toml != nil {
-			tomls[categories[s.category].name+"/"+s.name] = s.toml
-		}
-	})
-	return daemonpb.GetConfigurationResponse_builder{ConfigToml: content, PluginTomls: tomls}.Build(), nil
+	// TODO: read the current config
+	return nil, status.Error(codes.Unimplemented, "GetConfiguration is not implemented")
 }
 
-// ListServices lists all services from the config, whether they are running
-// or stopped, followed by the services of every registered remote daemon on an
-// orchestrator. Services are listed by their qualified names, so those of
-// different daemons never collide.
+// ListServices lists all services from the config, whether they are running or
+// stopped, along with why each couldn't be set up, failed to start, or exited.
+// On an orchestrator, the services of every registered remote daemon are
+// listed too, by their qualified names, "{daemon IP}.{name}"; a remote daemon
+// that can't be reached is left out and listed as unavailable.
 func (d *Daemon) ListServices(
 	ctx context.Context,
 	req *daemonpb.ListServicesRequest,
 ) (*daemonpb.ListServicesResponse, error) {
-	var services []*daemonpb.ActiveService
-	d.eachService(func(s *serviceInfo) {
-		running := s.running()
-		var uptime *durationpb.Duration
-		if running {
-			uptime = durationpb.New(time.Since(s.started))
-		}
-		services = append(services, daemonpb.ActiveService_builder{
-			Srv:     daemonpb.Service_builder{Name: s.name, Category: s.category}.Build(),
-			Plugin:  s.pluginName,
-			Url:     s.url,
-			Running: running,
-			Uptime:  uptime,
-			Error:   s.errorString(),
-		}.Build())
-	})
-	remote, unavailable := d.listRemoteServices(ctx)
-	services = append(services, remote...)
-	return daemonpb.ListServicesResponse_builder{Services: services, Unavailable: unavailable}.Build(), nil
+	// TODO: list local services, then merge in those of remote daemons
+	return nil, status.Error(codes.Unimplemented, "ListServices is not implemented")
 }
 
-// RestartServices restarts a list of vehicle, monitor, or engine services. A
-// bad entry rejects the whole request before any service is touched.
-func (d *Daemon) RestartServices(
+// RestartService restarts a target daemon service.
+func (d *Daemon) RestartService(
 	ctx context.Context,
-	req *daemonpb.RestartServicesRequest,
-) (*daemonpb.RestartServicesResponse, error) {
-	targets, err := d.restartTargets(req.GetServices())
-	if err != nil {
-		return nil, err
-	}
-	d.stopServices(targets)
-	if err := d.startServices(targets); err != nil {
-		d.log.Error().Err(err).Msg("could not start services")
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	return &daemonpb.RestartServicesResponse{}, nil
+	req *daemonpb.RestartServiceRequest,
+) (*daemonpb.RestartServiceResponse, error) {
+	// TODO: validate the targets and restart them
+	return nil, status.Error(codes.Unimplemented, "RestartService is not implemented")
 }
 
-// restartTargets looks up the services of a restart request, which must all
-// be set up and of a restartable category.
-func (d *Daemon) restartTargets(services []*daemonpb.Service) ([]*serviceInfo, error) {
-	d.svcMu.Lock()
-	defer d.svcMu.Unlock()
-	var targets []*serviceInfo
-	for _, s := range services {
-		if !categories[s.GetCategory()].restartable {
-			return nil, status.Errorf(codes.InvalidArgument,
-				"service %q has category %s, only vehicles, monitors and engines can be restarted; use Configure for the rest",
-				s.GetName(), s.GetCategory())
-		}
-		target, err := d.lookupService(s.GetCategory(), s.GetName())
-		if err != nil {
-			return nil, err
-		}
-		targets = append(targets, target)
-	}
-	return targets, nil
-}
-
-// Restart stops the daemon, closing all of its services, so that it is
-// restarted with all of them by its supervisor.
+// Restart restarts the whole daemon and all of its services, including core
+// services that have died. The config is reloaded and pending package changes
+// are applied, like after a Configure call.
 func (d *Daemon) Restart(
 	ctx context.Context,
 	req *daemonpb.RestartRequest,
 ) (*daemonpb.RestartResponse, error) {
-	d.log.Info().Msg("restart requested")
-	d.stopForRestart()
-	return &daemonpb.RestartResponse{}, nil
+	// TODO: trigger a restart
+	return nil, status.Error(codes.Unimplemented, "Restart is not implemented")
 }
 
-// stopForRestart stops the daemon, so that Run returns ErrRestart once
-// everything is closed. Stopping is graceful, so the calling RPC returns
-// before the relay shuts down.
-func (d *Daemon) stopForRestart() {
-	d.log.Info().Msg("stopping for restart")
-	d.restart.Store(true)
-	d.cancel()
-}
-
-// InstallPackage installs a new package of plugins locally. The package is
-// staged and takes effect on the next daemon restart.
+// InstallPackage installs a package locally, indexing its plugins for future
+// Configure calls.
 func (d *Daemon) InstallPackage(
 	ctx context.Context,
 	req *daemonpb.InstallPackageRequest,
 ) (*daemonpb.InstallPackageResponse, error) {
-	if err := d.installPackage(ctx, req.GetUrl(), req.GetTag()); err != nil {
-		d.log.Error().Err(err).Str("url", req.GetUrl()).Msg("could not install package")
-		return nil, err
-	}
-	return &daemonpb.InstallPackageResponse{}, nil
+	// TODO: download and index the package
+	return nil, status.Error(codes.Unimplemented, "InstallPackage is not implemented")
 }
 
-// RemovePackage removes a package identified by its URL. The removal takes
-// effect on the next daemon restart.
-func (d *Daemon) RemovePackage(
-	ctx context.Context,
-	req *daemonpb.RemovePackageRequest,
-) (*daemonpb.RemovePackageResponse, error) {
-	if err := d.removePackage(req.GetUrl()); err != nil {
-		d.log.Error().Err(err).Str("url", req.GetUrl()).Msg("could not remove package")
-		return nil, err
-	}
-	return &daemonpb.RemovePackageResponse{}, nil
-}
-
-// ListPackages lists the installed packages and the plugins in each, including
-// installs and removals pending the next daemon restart.
+// ListPackages lists all locally installed packages.
 func (d *Daemon) ListPackages(
 	ctx context.Context,
 	req *daemonpb.ListPackagesRequest,
 ) (*daemonpb.ListPackagesResponse, error) {
-	packages, err := d.listPackages()
-	if err != nil {
-		d.log.Error().Err(err).Msg("could not list packages")
-		return nil, err
-	}
-	return daemonpb.ListPackagesResponse_builder{Packages: packages}.Build(), nil
+	// TODO: list installed packages with their plugin tomls
+	return nil, status.Error(codes.Unimplemented, "ListPackages is not implemented")
 }
 
-// writeConfig validates a config.toml and atomically replaces the one on disk
-// with it, so that an invalid or partially written config never prevents the
-// daemon from starting.
-func (d *Daemon) writeConfig(content []byte) error {
-	cfg, err := config.ParseDaemonConfigFromBytes(content)
+// RemovePackage removes the package identified by its uri.
+func (d *Daemon) RemovePackage(
+	ctx context.Context,
+	req *daemonpb.RemovePackageRequest,
+) (*daemonpb.RemovePackageResponse, error) {
+	// TODO: remove the package
+	return nil, status.Error(codes.Unimplemented, "RemovePackage is not implemented")
+}
+
+// populateServices creates service objects for all the services in the
+// daemon config file, so that they can be sent to the orchestrator or
+// children. Called only on startup.
+func (d *Daemon) populateServices() error {
+	d.srvMu.Lock()
+	defer d.srvMu.Unlock()
+	// Populate simulator (only placed in d.all, not in a category)
+	simulator := &service{
+		name:     d.qualify(SimulatorName),
+		category: daemonpb.ServiceCategory_SERVICE_CATEGORY_SIMULATOR,
+		uri:      d.Config.Simulator.Package,
+	}
+	// Verify the simulator package exists
+	_, err := util.GetPackageDirByCategoryAndName(
+		SimulatorName,
+		getPackageDir(d.Config.Simulator.Package),
+	)
 	if err != nil {
-		return status.Errorf(codes.InvalidArgument, "invalid daemon config: %v", err)
+		d.log.Error().Err(err).
+			Str("package", d.Config.Simulator.Package).
+			Msg("simulator package not found")
+		return err
 	}
-	if err := cfg.ValidateServices(); err != nil {
-		return status.Errorf(codes.InvalidArgument, "invalid daemon config: %v", err)
-	}
-	tmp, err := os.CreateTemp(filepath.Dir(d.configPath), "."+ConfigFileName+"-*")
-	if err != nil {
-		return status.Error(codes.Internal, err.Error())
-	}
-	defer os.Remove(tmp.Name())
-	if _, err := tmp.Write(content); err != nil {
-		tmp.Close()
-		return status.Error(codes.Internal, err.Error())
-	}
-	if err := tmp.Close(); err != nil {
-		return status.Error(codes.Internal, err.Error())
-	}
-	if err := os.Chmod(tmp.Name(), 0644); err != nil {
-		return status.Error(codes.Internal, err.Error())
-	}
-	if err := os.Rename(tmp.Name(), d.configPath); err != nil {
-		return status.Error(codes.Internal, err.Error())
+	d.all[simulator.name] = simulator
+	// Populate services
+	for _, service := range d.Config.Services {
+		var mapToUse map[string]*service
+		var serviceType daemonpb.ServiceCategory
+		switch serivce.Type {
+		case config.ServiceEngine:
+			serviceType = daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE
+			mapToUse = d.engines
+		case config.ServiceVehicle:
+			serviceType = daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE
+			mapToUse = d.vehicles
+		case config.ServiceExtra:
+			serviceType = daemonpb.ServiceCategory_SERVICE_CATEGORY_EXTRA
+			mapToUse = d.extras
+		}
+		path, err := util.GetPackageDirByCategoryAndName(
+			getDirectoryForCategory(serviceType),
+			getPackageDir(service.Plugin.Package),
+		)
+		if err != nil && !service.Simulate {
+			d.log.Error().Err(err).Str("package", service.Plugin.Package).
+				Str("service", service.Name).
+				Msg("package not found for service")
+			return err
+		}
+		qualName := d.qualify(service.Name)
+		name := sanitizePluginName(service.Plugin.Plugin)
+		conf, err := config.ParsePluginConfigFromFilepath(filepath.Join(path, name))
+		pkg := service.Plugin.Package
+		if err != nil {
+			return err
+		}
+		mapToUse[qualName] = &service{
+			name:       qualName,
+			category:   serviceType,
+			uri:        pkg,
+			pluginName: name,
+			config:     conf,
+			simulated:  service.Simulate,
+		}
+		d.all = mapToUse[qualName]
+		if service.Simulate { // track simulated packages separately
+			d.simulated = mapToUse[qualName]
+		}
 	}
 	return nil
+}
+
+// startServices starts all the services in the daemon's config file. Called
+// only on startup.
+func (d *Daemon) startServices() error {
+	d.srvMu.Lock()
+	defer d.srvMu.Unlock()
+	// Start each individual service
+	for _, service := range d.all {
+		err := d.startService(service)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// startService starts a single daemon service. Must be called while holding the
+// service lock.
+func (d *Daemon) startService(s *service) error {
+	if s.plugin != nil { // plugin already exists (restart case)
+		if s.plugin.Running() { // if the plugin is running, cancel it
+			s.cancel()
+			s.conn.Close()
+			s.Wait()
+			d.log.Info().Str("service", s.name).Str("plugin", s.pluginName).
+				Msg("stopped plugin for service")
+		}
+
+	} else { // plugin doesn't exist (fresh start case)
+		dir, err := GetPluginDirByCategoryAndName(
+			getDirectoryForCategory(s.category),
+			s.name,
+		)
+		if err != nil {
+			return err
+		}
+		logFile, err := GetLogForName(s.name)
+		if err != nil {
+			return err
+		}
+		// TODO: initialize models/ and files/
+		options := []plugin.PluginOption{
+			plugin.WithLogger(
+				d.log.With().Str("service", s.name).Str("plugin".s.pluginName).Logger(),
+			),
+			plugin.WithParentDir(dir),
+			plugin.WithProcessOutputStream(os.Create(logFile)),
+		}
+		switch s.category {
+		case daemonpb.ServiceCategory_SERVICE_CATEGORY_SIMULATOR:
+			options = append(
+				options,
+				plugin.WithoutListener(), plugin.WithoutClient(),
+			)
+		case daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE:
+			options = append(
+				options,
+				WithReadOnlyFiles([]string{}), // models and files
+			)
+		case daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE:
+			options = append(
+				options,
+				WithFiles([]string{}), // mission dir for vehicle
+			)
+		case daemonpb.ServiceCategory_SERVICE_CATEGORY_EXTRA:
+		default:
+			return fmt.Errorf("unrecognized service category for %s", s.name)
+		}
+		var p plugin.Plugin
+		switch {
+		case s.config.Isolate == SandboxName: // sandbox
+		case s.config.Isolate != "": // container
+		default: // simulated or process
+			// Simulated services need shim plugins
+			if s.simlated {
+				p = plugin.NewShimPlugin()
+			} else {
+				p = plugin.NewBasePlugin()
+			}
+		}
+	}
+	ctx, cancel = context.WithCancel(d.ctx)
+	s.cancel = cancel
+	s.ln, s.conn, err = s.plugin.Start(ctx)
+	if err != nil {
+		d.log.Error().Err(err).Str("plugin", s.pluginName).
+			Msg("failed to start plugin")
+		return err
+	}
+	d.log.Info().Str("service", s.name).Str("plugin", s.pluginName).
+		Msg("started plugin for service")
+	// This serve will clean itself up when the plugin stops and tears down
+	// the listener
+	if s.ln != nil {
+		go d.server.Serve(s.ln)
+	}
+}
+
+// getPackageDir gets a package directory name from a package uri.
+func getPackageDir(uri string) string {
+	return strings.NewReplacer("/", "_", ".", "_", ":", "_").Replace(uri)
+}
+
+// sanitizePluginName checks for a .plugin.toml suffix, and if it is not present,
+// it adds one.
+func sanitizePluginName(name string) string {
+	if strings.HasSuffix(name) {
+		return name
+	} else {
+		return name + PluginFileSuffix
+	}
+}
+
+// getDirectoryForCategory gets the correct directory name for a daemon service
+// category.
+func getDirectoryForCategory(category daemonpb.ServiceCategory) string {
+	switch serivce.Type {
+	case SimulatorName:
+		return SimulatorDir
+	case config.ServiceEngine:
+		return EngineDir
+	case config.ServiceVehicle:
+		return VehicleDir
+	case config.ServiceExtra:
+		return ExtraDir
+	default:
+		return UnknownDir
+	}
+}
+
+// commitPackages writes packages in the .pending directory into the main
+// package directory. This is called on every daemon restart to initialize
+// plugins installed during the daemon's last run.
+func commitPackages() error {
+	source, err := util.GetPendingDir()
+	if err != nil {
+		return nil
+	}
+	dest, err := util.GetPackageDir()
+	if err != nil {
+		return nil
+	}
+	return os.CopyFS(dest, os.DirFS(source))
 }

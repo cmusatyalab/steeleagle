@@ -40,10 +40,10 @@ class DaemonServiceStub:
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.ListServicesRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.ListServicesResponse.FromString,
                 _registered_method=True)
-        self.RestartServices = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.daemon.DaemonService/RestartServices',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServicesRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServicesResponse.FromString,
+        self.RestartService = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.daemon.DaemonService/RestartService',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServiceRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServiceResponse.FromString,
                 _registered_method=True)
         self.Restart = channel.unary_unary(
                 '/steeleagle_protocol.v1.services.daemon.DaemonService/Restart',
@@ -132,13 +132,11 @@ class DaemonServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def RestartServices(self, request, context):
+    def RestartService(self, request, context):
         """
-        Restart daemon services.
+        Restart a daemon services.
 
-        Restarts a list of daemon services. These must be vehicles, monitors, or
-        engines. Restarts of other services, like GCS or simulator, must be done
-        through a `Configure` call and will return an error if included.
+        Restarts a target daemon service.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -210,10 +208,10 @@ def add_DaemonServiceServicer_to_server(servicer, server):
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.ListServicesRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.ListServicesResponse.SerializeToString,
             ),
-            'RestartServices': grpc.unary_unary_rpc_method_handler(
-                    servicer.RestartServices,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServicesRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServicesResponse.SerializeToString,
+            'RestartService': grpc.unary_unary_rpc_method_handler(
+                    servicer.RestartService,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServiceRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServiceResponse.SerializeToString,
             ),
             'Restart': grpc.unary_unary_rpc_method_handler(
                     servicer.Restart,
@@ -361,7 +359,7 @@ class DaemonService:
             _registered_method=True)
 
     @staticmethod
-    def RestartServices(request,
+    def RestartService(request,
             target,
             options=(),
             channel_credentials=None,
@@ -374,9 +372,9 @@ class DaemonService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle_protocol.v1.services.daemon.DaemonService/RestartServices',
-            steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServicesRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServicesResponse.FromString,
+            '/steeleagle_protocol.v1.services.daemon.DaemonService/RestartService',
+            steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServiceRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServiceResponse.FromString,
             options,
             channel_credentials,
             insecure,

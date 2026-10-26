@@ -7,9 +7,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"errors"
 	"fmt"
-	"io/fs"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -18,52 +16,36 @@ import (
 	"github.com/cmusatyalab/steeleagle/v4/core/util"
 )
 
-// lcsCert returns the PEM encoded cert for the local compute service, which
-// remote daemons use to verify it. Only the cert is returned, never the key.
-func (d *Daemon) lcsCert() (string, error) {
-	_, der, err := d.lcsIdentity()
+// getCert gets the PEM encoded cert from the creds/ directory, which remote daemons
+// use to verify the local compute server.
+func (d *Daemon) getCert() (string, error) {
+	path, err := util.GetCredsDir()
+	if err != nil {
+		d.log.Error().Err(err).Str("path", path).Msg("failed to read creds directory")
+		return "", err
+	}
+	certPath := filepath.Join(path, LcsCertFileName)
+	keyPath := filepath.Join(path, LcsKeyFileName)
+	// If a valid cert is found, return it
+	if cert, err := readCert(certPath, keyPath); err == nil {
+		return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert})), nil
+	}
+
+	// Generate new keys, then return the cert
+	d.log.Info().Str("path", certPath).Msg("replacing invalid or missing certificate")
+	cert, key, err := generateCert(LcsServerName)
 	if err != nil {
 		return "", err
 	}
-	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})), nil
-}
-
-// lcsIdentity returns the identity directory of the local compute service's
-// Uriel server and the DER encoded cert in it. The cert and its key are kept
-// there in the format Uriel expects; if there is no valid cert there, a new
-// self-signed one is generated and saved.
-func (d *Daemon) lcsIdentity() (string, []byte, error) {
-	d.certMu.Lock()
-	defer d.certMu.Unlock()
-	dir, err := util.GetDataDir()
-	if err != nil {
-		return "", nil, err
-	}
-	dir = filepath.Join(dir, LcsIdentityDirName)
-	if err := os.MkdirAll(dir, 0700); err != nil {
-		return "", nil, err
-	}
-	certPath := filepath.Join(dir, LcsCertFileName)
-	keyPath := filepath.Join(dir, LcsKeyFileName)
-	if cert, err := readCert(certPath, keyPath); err == nil {
-		return dir, cert, nil
-	} else if !errors.Is(err, fs.ErrNotExist) {
-		d.log.Warn().Err(err).Str("path", certPath).Msg("replacing invalid local compute cert")
-	}
-
-	cert, key, err := generateCert(lcsServerName)
-	if err != nil {
-		return "", nil, err
-	}
 	// The key is written first, so a cert on disk always has its key
 	if err := os.WriteFile(keyPath, key, 0600); err != nil {
-		return "", nil, err
+		return "", err
 	}
 	if err := os.WriteFile(certPath, cert, 0644); err != nil {
-		return "", nil, err
+		return "", err
 	}
 	d.log.Info().Str("path", certPath).Msg("generated local compute cert")
-	return dir, cert, nil
+	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert})), nil
 }
 
 // readCert reads the DER cert at certPath, checking that its key exists, that
@@ -84,8 +66,8 @@ func readCert(certPath, keyPath string) ([]byte, error) {
 		return nil, fmt.Errorf("cert in %s expired at %s", certPath, cert.NotAfter)
 	}
 	// A cert made for another name, e.g. by an older version, is refused by clients
-	if err := cert.VerifyHostname(lcsServerName); err != nil {
-		return nil, fmt.Errorf("cert in %s is not for %s: %w", certPath, lcsServerName, err)
+	if err := cert.VerifyHostname(LcsServerName); err != nil {
+		return nil, fmt.Errorf("cert in %s is not for %s: %w", certPath, LcsServerName, err)
 	}
 	return der, nil
 }
@@ -108,7 +90,7 @@ func generateCert(name string) ([]byte, []byte, error) {
 		Subject:               pkix.Name{CommonName: name},
 		DNSNames:              []string{name},
 		NotBefore:             now.Add(-time.Hour), // tolerate clock skew
-		NotAfter:              now.Add(lcsCertValidity),
+		NotAfter:              now.Add(LcsCertValidity),
 		KeyUsage:              x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,

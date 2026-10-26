@@ -67,14 +67,12 @@ service DaemonService {
     returns (ListServicesResponse) {}
 
   /*
-   * Restart daemon services.
+   * Restart a daemon services.
    *
-   * Restarts a list of daemon services. These must be vehicles, monitors, or
-   * engines. Restarts of other services, like GCS or simulator, must be done
-   * through a `Configure` call and will return an error if included.
+   * Restarts a target daemon service.
    */
-  rpc RestartServices (RestartServicesRequest)
-    returns (RestartServicesResponse) {}
+  rpc RestartService (RestartServiceRequest)
+    returns (RestartServiceResponse) {}
 
   /*
    * Restart the daemon.
@@ -138,8 +136,7 @@ message Service {
   bytes config = 5;                    // plugin config
   Isolation isolation = 6;             // isolation of the plugin 
   bool running = 7;                    // whether or not the service is running
-  google.protobuf.Duration uptime = 8; // service uptime
-  string error = 9;                    // why the service couldn't be set up, failed to start, or exited, if it did
+  string auth = 8;                     // auth level of this service
 }
 
 message RegisterOrchestratorRequest {
@@ -147,7 +144,7 @@ message RegisterOrchestratorRequest {
 }
 
 message RegisterOrchestratorResponse {
-  repeated Service services = 1; // services of the daemon registering
+  repeated Service services = 1; // services of the orchestrator
 }
 
 message ConfigureRequest {
@@ -171,11 +168,11 @@ message ListServicesResponse {
   repeated string unavailable = 2;
 }
 
-message RestartServicesRequest {
-  repeated string service_names = 1; // list of target services
+message RestartServiceRequest {
+  string service_names = 1; // target service
 }
 
-message RestartServicesResponse {}
+message RestartServiceResponse {}
 
 message RestartRequest {}
 

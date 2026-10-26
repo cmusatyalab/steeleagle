@@ -4,52 +4,44 @@ import (
 	"net"
 	"strconv"
 
-	daemonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon"
+	"github.com/cmusatyalab/steeleagle/v4/core/util"
 	uriel "github.com/cmusatyalab/uriel/go"
 )
 
-// startUrielServer starts the local compute service, a Uriel server that
-// accepts remote clients on the LCS port and serves the running engines, each
-// at the endpoint named after it. An engine may start before or after the
-// server.
-func (d *Daemon) startUrielServer() error {
-	// The identity is made before the server starts, so the server presents
-	// the same cert that remote daemons are given
-	identityDir, _, err := d.lcsIdentity()
+// startComputeServer starts the local compute service, a Uriel server that
+// accepts remote clients on the LCS port and serves the running engines.
+func (d *Daemon) startComputeServer() error {
+	path, err := util.GetCredsDir()
 	if err != nil {
 		return err
 	}
-	addr := net.JoinHostPort(lcsBindHost, strconv.Itoa(d.Config.Daemon.Lcs))
-	server, err := uriel.NewServer(d.Config.Daemon.Hostname,
-		uriel.WithBindAddr(addr), uriel.WithIdentityDir(identityDir))
+	addr := net.JoinHostPort(LcsBindHost, strconv.Itoa(d.Config.Daemon.Lcs))
+	server, err := uriel.NewServer(
+		d.Config.Daemon.Hostname,
+		uriel.WithBindAddr(addr),
+		uriel.WithIdentityDir(path),
+	)
 	if err != nil {
 		return err
 	}
-	var endpoints []string
-	for _, s := range d.selectServices(func(s *serviceInfo) bool {
-		return s.category == daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE && s.running()
-	}) {
-		endpoints = append(endpoints, s.name)
-	}
-	for _, endpoint := range endpoints {
+	for endpoint, _ := range d.engines {
 		if err := server.AddEngine(endpoint); err != nil {
 			server.Close()
 			return err
 		}
 	}
-	d.uriel = server
-	d.log.Info().Str("address", addr).Strs("engines", endpoints).
-		Msg("local compute service started")
+	d.lcs = server
+	d.log.Info().Str("address", addr).Msg("local compute service started")
 	return nil
 }
 
-// stopUrielServer stops the local compute service, if it was started.
-func (d *Daemon) stopUrielServer() {
-	if d.uriel == nil {
+// stopComputeServer stops the local compute service, if it was started.
+func (d *Daemon) stopComputeServer() {
+	if d.lcs == nil {
 		return
 	}
-	if err := d.uriel.Close(); err != nil {
-		d.log.Warn().Err(err).Msg("could not stop local compute service")
+	if err := d.lcs.Close(); err != nil {
+		d.log.Error().Err(err).Msg("could not stop local compute service")
 	}
-	d.uriel = nil
+	d.lcs = nil
 }

@@ -12,19 +12,11 @@ hostname = "eagled"
 orchestrator = "homebase:9000"
 
 [simulator] # Simulator for this daemon (can be empty)
-[[simulator.vehicles]] # Simulated vehicles
-# Name of the vehicle
-name = "cassowary"
-# Plugin to use
-plugin = "sim_vehicle"
-# Origin point (lat, lon, alt)
-origin = [40.01654, -79.3402, 0.0]
-[[simulator.engines]]
-# Name of the engine
-name = "sensor_twin"
-# Plugin to use
-plugin = "sim_detector"
-[[simulator.actors]]
+# Package (a git repository where a double slash indicates the
+# subdirectory). Versions (a commit SHA, a branch, or a tag) are supported by
+# appending them with an `@`, as in Go (optional, defaults to latest)
+package = "github.com/cmusatyalab/steeleagle_plugins//simulator"
+[[simulator.actors]] # Movable simulator actors
 # Tag of the actor
 tag = "person"
 # Waypoints to travel
@@ -35,28 +27,33 @@ waypoints = [
 # Speed to move at (m/s)
 speed = 3.0
 
-[[vehicles]] # List of vehicles (can be empty)
-# Name of the vehicle
+[[services]] # List of daemon services (can be empty)
+# Name of the service (must be unique among services of its type)
 name = "harpy"
+# Type of the service: (vehicle, engine, extra)
+type = "vehicle"
 # Auth level of the service: (admin, privileged, user, external, unknown)
 # (optional, defaults to unknown)
 auth = "admin"
-[vehicles.plugin] # Driver plugin for this vehicle
+[services.plugin] # Plugin for this service
 # Plugin to use
 plugin = "parrot_anafi"
 # Package (a git repository where a double slash indicates the
-# subdirectory). Versions (a commit SHA, a branch, or a tag) are supported by
-# appending them with an `@`, as in Go (optional, defaults to latest)
+# subdirectory, required unless the service is simulated). Versions (a commit
+# SHA, a branch, or a tag) are supported by appending them with an `@`, as in
+# Go (optional, defaults to latest)
 package = "github.com/cmusatyalab/steeleagle_plugins//drivers/parrot@asdef9"
-[vehicles.plugin.args] # Args for this plugin (can be empty)
+[services.plugin.args] # Args for this plugin (can be empty)
 ip = "10.202.0.1"
 
-[[engines]] # List of engines (can be empty)
-# Name of the engine
+[[services]]
+# Name of the service
 name = "yolo"
+# Type of the service
+type = "engine"
 # Auth level of the service (optional, defaults to unknown)
 auth = "external"
-[engines.plugin] # Plugin for this engine
+[services.plugin] # Plugin for this service
 # Plugin to use
 plugin = "yolo_qnn"
 # Package (a git repository where a double slash indicates the
@@ -64,15 +61,17 @@ plugin = "yolo_qnn"
 package = "github.com/cmusatyalab/steeleagle_plugins//engines/yolo"
 # Isolation type (optional, sandbox or container url with tag)
 isolate = "sandbox"
-[engines.plugin.args] # Args for this plugin (can be empty)
+[services.plugin.args] # Args for this plugin (can be empty)
 confidence = 0.7
 
-[[engines]] # List of engines (can be empty)
-# Name of the engine
+[[services]]
+# Name of the service
 name = "yolo_nq"
+# Type of the service
+type = "engine"
 # Auth level of the service (optional, defaults to unknown)
 auth = "external"
-[engines.plugin] # Plugin for this engine
+[services.plugin] # Plugin for this service
 # Plugin to use
 plugin = "yolo_qnn"
 # Package (a git repository where a double slash indicates the
@@ -80,4 +79,29 @@ plugin = "yolo_qnn"
 package = "github.com/cmusatyalab/steeleagle_plugins//engines/yolo"
 # Isolation type (optional, sandbox or container url with tag)
 isolate = "docker.io/library/alpine:latest"
-[engines.plugin.args] # Args for this plugin (can be empty)
+[services.plugin.args] # Args for this plugin (can be empty)
+
+[[services]]
+# Name of the service
+name = "cassowary"
+# Type of the service
+type = "vehicle"
+# Run the service in the simulator (optional, defaults to false)
+simulate = true
+[services.plugin] # Plugin from the simulator's package (package and isolate are ignored)
+# Plugin to use
+plugin = "sim_vehicle"
+[services.plugin.args] # Args for this plugin (can be empty)
+origin = [40.33862, -79.86521, 0.0]
+
+[[services]]
+# Name of the service
+name = "yolo_sim"
+# Type of the service
+type = "engine"
+# Run the service in the simulator (optional, defaults to false)
+simulate = true
+[services.plugin] # Plugin from the simulator's package (package and isolate are ignored)
+# Plugin to use
+plugin = "sim_detector"
+[services.plugin.args] # Args for this plugin (can be empty)
