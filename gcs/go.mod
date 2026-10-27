@@ -2,11 +2,6 @@ module github.com/cmusatyalab/steeleagle/gcs
 
 go 1.26.5
 
-// The GCS uses EncodedFrame's codec and keyframe, which no release of the API
-// has yet. Drop this once one does, so the package builds where it's
-// installed, which has only the gcs directory.
-replace github.com/cmusatyalab/steeleagle/api/go => ../api/go
-
 require (
 	github.com/cmusatyalab/steeleagle/api/go v0.3.1
 	github.com/cmusatyalab/uriel/go v0.1.0
@@ -43,5 +38,3 @@ require (
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 )
-
-replace github.com/cmusatyalab/uriel/go => github.com/cmusatyalab/gabriel/go v0.0.0-20261026175819-cba4f5547e14
