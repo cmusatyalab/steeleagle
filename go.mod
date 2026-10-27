@@ -132,3 +132,5 @@ require (
 	gvisor.dev/gvisor v0.0.0-20260224225140-573d5e7127a8 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
+
+replace github.com/cmusatyalab/uriel/go => github.com/cmusatyalab/gabriel/go v0.0.0-20261026175819-cba4f5547e14

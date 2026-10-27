@@ -2,7 +2,6 @@ package plugin
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -16,8 +15,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/cmusatyalab/steeleagle/v4/core/util"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
-	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -93,7 +92,7 @@ type BasePlugin struct {
 func NewBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 	// Set defaults
 	p := &BasePlugin{
-		name:      shortId(),
+		name:      util.ShortId(),
 		code:      listener.UnknownCode,
 		files:     make(map[string]int),
 		client:    true,
@@ -127,15 +126,6 @@ func NewBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 	}
 
 	return p, nil
-}
-
-// shortId returns a short random ID, which names the plugin's run directory
-// by default. It only needs to be unique within the plugin's parent directory,
-// and is kept short since the plugin's sockets are made in its run directory,
-// and socket paths are limited to 107 bytes.
-func shortId() string {
-	id := uuid.New()
-	return hex.EncodeToString(id[:4])
 }
 
 // Start starts the plugin in normal execution mode.

@@ -4,9 +4,9 @@
 # once after installing the package so the first start is quick.
 #
 # Uriel is linked with cgo, and isn't on conda-forge: its native library must
-# be installed where pkg-config finds it (e.g. /usr/local/lib/pkgconfig), and
-# fetching its private Go module needs GOPRIVATE and git credentials for
-# github.com/cmusatyalab/uriel.
+# be installed where pkg-config finds it (e.g. /usr/local/lib/pkgconfig). Its
+# Go module comes from the uriel branch of github.com/cmusatyalab/gabriel (see
+# the replace in go.mod); tools/uriel/install.sh builds the matching library.
 [workspace]
 name = "steeleagle-gcs"
 channels = ["conda-forge"]
@@ -21,7 +21,6 @@ nodejs = ">=22"
 pkg-config = "*"
 
 [activation.env]
-GOPRIVATE = "github.com/cmusatyalab/uriel"
 # Uriel's library was built with the system toolchain, so cgo uses it too
 CC = "/usr/bin/cc"
 CGO_ENABLED = "1"

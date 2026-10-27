@@ -43,3 +43,5 @@ require (
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 )
+
+replace github.com/cmusatyalab/uriel/go => github.com/cmusatyalab/gabriel/go v0.0.0-20261026175819-cba4f5547e14

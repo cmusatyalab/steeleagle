@@ -112,7 +112,7 @@ type Daemon struct {
 	log        zerolog.Logger            // logger object
 }
 
-// Creates a new daemon from the config in the config directory.
+// NewDaemon creates a new daemon from the config in the config directory.
 func NewDaemon(options ...DaemonOption) (*Daemon, error) {
 	daemon := &Daemon{
 		Hostname: DefaultHostname,

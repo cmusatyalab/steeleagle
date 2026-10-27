@@ -1,0 +1,22 @@
+first = 'REMOTE'
+
+[[states]]
+name = 'REMOTE'
+allowed = []
+match = [
+    ['**.MissionService/StartMission', 'LOCAL'],
+]
+
+[[states]]
+name = 'LOCAL'
+allowed = [
+    'user/**.ControlService/*',
+    'user/**.DataService/GetTelemetry',
+    'user/**.DataService/GetResult',
+    'user/**.DataService/GetFlow',
+    'user/**.DataService/SetDataflow',
+]
+match = [
+    ['admin/**.ControlService/*', 'REMOTE'],
+    ['admin/**.MissionService/StopMission', 'REMOTE'],
+]
