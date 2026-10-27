@@ -6,13 +6,20 @@
 // The commands are:
 //
 //	configure <config.toml>         replace the daemon's config, restarting it
+//	get-config                      print the daemon's config
+//	status                          print whether the daemon reaches its orchestrator
 //	restart                         restart the daemon and all of its services
-//	list-services                   print the daemon's services
-//	install-package [-tag tag] <url> install a package of plugins
-//	remove-package <url>            remove an installed package
+//	restart-service <name>          restart one service
+//	list-services                   print the daemon's services and remote daemons
+//	install-package <uri>           install a package of plugins
+//	remove-package <uri>            remove an installed package
 //	list-packages                   print the installed packages
+//	transfer-file [-name name] <path>  copy a file to the daemon's files
+//	transfer-model [-name name] <path> copy a model to the daemon's models
 //
-// Package installs and removals take effect when the daemon next restarts.
+// A package uri has the form repo[//subdir][@version], and a package is
+// removed by the uri it was installed with. Package installs and removals take
+// effect when the daemon next restarts.
 package main
 
 import (
@@ -24,6 +31,7 @@ import (
 	"maps"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"slices"
 	"strings"
 	"text/tabwriter"
@@ -40,32 +48,48 @@ import (
 const usage = `usage: eagle [flags] <command> [args]
 
 Commands:
-  configure <config.toml>          replace the daemon's config, restarting it
-  restart                          restart the daemon and all of its services
-  list-services                    print the daemon's services
-  install-package [-tag tag] <url> install a package of plugins
-  remove-package <url>             remove an installed package
-  list-packages                    print the installed packages
+  configure <config.toml>            replace the daemon's config, restarting it
+  get-config                         print the daemon's config
+  status                             print whether the daemon reaches its orchestrator
+  restart                            restart the daemon and all of its services
+  restart-service <name>             restart one service
+  list-services                      print the daemon's services and remote daemons
+  install-package <uri>              install a package of plugins
+  remove-package <uri>               remove an installed package
+  list-packages                      print the installed packages
+  transfer-file [-name name] <path>  copy a file to the daemon's files
+  transfer-model [-name name] <path> copy a model to the daemon's models
 
-Package installs and removals take effect when the daemon next restarts.
+A package uri has the form repo[//subdir][@version], and a package is removed
+by the uri it was installed with. Package installs and removals take effect
+when the daemon next restarts.
 
 Flags:
 `
 
+// chunkSize is the size of the chunks files are transferred in, well under
+// gRPC's default message size limit.
+const chunkSize = 1 << 20
+
 // command is a subcommand, which parses its arguments args into fs and calls
-// the daemon with client, printing to out.
+// the daemon over conn, printing to out.
 type command struct {
 	args string // positional arguments, for its usage
-	run  func(ctx context.Context, client daemonpb.DaemonServiceClient, fs *flag.FlagSet, args []string, out io.Writer) error
+	run  func(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.FlagSet, args []string, out io.Writer) error
 }
 
 var commands = map[string]command{
 	"configure":       {"<config.toml>", configure},
+	"get-config":      {"", getConfig},
+	"status":          {"", connectionStatus},
 	"restart":         {"", restart},
+	"restart-service": {"<name>", restartService},
 	"list-services":   {"", listServices},
-	"install-package": {"[-tag tag] <url>", installPackage},
-	"remove-package":  {"<url>", removePackage},
+	"install-package": {"<uri>", installPackage},
+	"remove-package":  {"<uri>", removePackage},
 	"list-packages":   {"", listPackages},
+	"transfer-file":   {"[-name name] <path>", transferFile},
+	"transfer-model":  {"[-name name] <path>", transferModel},
 }
 
 func main() {
@@ -115,7 +139,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	ctx, cancelTimeout := context.WithTimeout(ctx, *timeout)
 	defer cancelTimeout()
 
-	err = cmd.run(ctx, daemonpb.NewDaemonServiceClient(conn), cmdFs, fs.Args()[1:], stdout)
+	err = cmd.run(ctx, conn, cmdFs, fs.Args()[1:], stdout)
 	var usageErr usageError
 	switch {
 	case errors.As(err, &usageErr):
@@ -165,7 +189,7 @@ func describe(err error, socket string) string {
 }
 
 // configure replaces the daemon's config with a config.toml file.
-func configure(ctx context.Context, client daemonpb.DaemonServiceClient, fs *flag.FlagSet, args []string, out io.Writer) error {
+func configure(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.FlagSet, args []string, out io.Writer) error {
 	if err := parseArgs(fs, args, 1); err != nil {
 		return err
 	}
@@ -174,22 +198,67 @@ func configure(ctx context.Context, client daemonpb.DaemonServiceClient, fs *fla
 		return err
 	}
 	req := daemonpb.ConfigureRequest_builder{ConfigToml: string(content)}.Build()
-	if _, err := client.Configure(ctx, req); err != nil {
+	if _, err := daemonpb.NewDaemonServiceClient(conn).Configure(ctx, req); err != nil {
 		return err
 	}
 	fmt.Fprintln(out, "config replaced; eagled is restarting")
 	return nil
 }
 
-// restart restarts the daemon.
-func restart(ctx context.Context, client daemonpb.DaemonServiceClient, fs *flag.FlagSet, args []string, out io.Writer) error {
+// getConfig prints the daemon's config.toml.
+func getConfig(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.FlagSet, args []string, out io.Writer) error {
 	if err := parseArgs(fs, args, 0); err != nil {
 		return err
 	}
-	if _, err := client.Restart(ctx, &daemonpb.RestartRequest{}); err != nil {
+	resp, err := daemonpb.NewDaemonServiceClient(conn).GetConfiguration(ctx, &daemonpb.GetConfigurationRequest{})
+	if err != nil {
+		return err
+	}
+	_, err = out.Write(resp.GetConfigToml())
+	return err
+}
+
+// connectionStatus prints whether the daemon is connected to its
+// orchestrator.
+func connectionStatus(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.FlagSet, args []string, out io.Writer) error {
+	if err := parseArgs(fs, args, 0); err != nil {
+		return err
+	}
+	resp, err := daemonpb.NewDaemonServiceClient(conn).GetConnectionStatus(ctx, &daemonpb.GetConnectionStatusRequest{})
+	if err != nil {
+		return err
+	}
+	if resp.GetConnected() {
+		fmt.Fprintln(out, "connected")
+	} else {
+		fmt.Fprintln(out, "not connected to orchestrator")
+	}
+	return nil
+}
+
+// restart restarts the daemon.
+func restart(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.FlagSet, args []string, out io.Writer) error {
+	if err := parseArgs(fs, args, 0); err != nil {
+		return err
+	}
+	if _, err := daemonpb.NewDaemonServiceClient(conn).Restart(ctx, &daemonpb.RestartRequest{}); err != nil {
 		return err
 	}
 	fmt.Fprintln(out, "eagled is restarting")
+	return nil
+}
+
+// restartService restarts one of the daemon's services, by its name as
+// list-services prints it.
+func restartService(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.FlagSet, args []string, out io.Writer) error {
+	if err := parseArgs(fs, args, 1); err != nil {
+		return err
+	}
+	req := daemonpb.RestartServiceRequest_builder{ServiceNames: fs.Arg(0)}.Build()
+	if _, err := daemonpb.NewDaemonServiceClient(conn).RestartService(ctx, req); err != nil {
+		return err
+	}
+	fmt.Fprintf(out, "restarted %s\n", fs.Arg(0))
 	return nil
 }
 
@@ -197,17 +266,24 @@ func restart(ctx context.Context, client daemonpb.DaemonServiceClient, fs *flag.
 var categoryNames = map[daemonpb.ServiceCategory]string{
 	daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE:   "vehicle",
 	daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE:    "engine",
-	daemonpb.ServiceCategory_SERVICE_CATEGORY_MONITOR:   "monitor",
 	daemonpb.ServiceCategory_SERVICE_CATEGORY_SIMULATOR: "simulator",
 	daemonpb.ServiceCategory_SERVICE_CATEGORY_EXTRA:     "extra",
 }
 
-// listServices prints the daemon's services as a table.
-func listServices(ctx context.Context, client daemonpb.DaemonServiceClient, fs *flag.FlagSet, args []string, out io.Writer) error {
+// isolationNames are the names isolations are printed with.
+var isolationNames = map[daemonpb.Isolation]string{
+	daemonpb.Isolation_ISOLATION_PROCESS:   "process",
+	daemonpb.Isolation_ISOLATION_SANDBOX:   "sandbox",
+	daemonpb.Isolation_ISOLATION_CONTAINER: "container",
+}
+
+// listServices prints the daemon's services as a table, followed by its
+// remote daemons, if it has any.
+func listServices(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.FlagSet, args []string, out io.Writer) error {
 	if err := parseArgs(fs, args, 0); err != nil {
 		return err
 	}
-	resp, err := client.ListServices(ctx, &daemonpb.ListServicesRequest{})
+	resp, err := daemonpb.NewDaemonServiceClient(conn).ListServices(ctx, &daemonpb.ListServicesRequest{})
 	if err != nil {
 		return err
 	}
@@ -215,40 +291,54 @@ func listServices(ctx context.Context, client daemonpb.DaemonServiceClient, fs *
 		fmt.Fprintln(out, "no services")
 	} else {
 		w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
-		fmt.Fprintln(w, "CATEGORY\tNAME\tPLUGIN\tSTATUS\tUPTIME\tPACKAGE\tERROR")
+		fmt.Fprintln(w, "CATEGORY\tNAME\tPLUGIN\tSTATUS\tISOLATION\tAUTH\tPACKAGE")
 		for _, s := range resp.GetServices() {
-			category, ok := categoryNames[s.GetSrv().GetCategory()]
+			category, ok := categoryNames[s.GetCategory()]
 			if !ok {
-				category = s.GetSrv().GetCategory().String()
+				category = s.GetCategory().String()
 			}
-			state, uptime := "stopped", "-"
+			isolation, ok := isolationNames[s.GetIsolation()]
+			if !ok {
+				isolation = "-"
+			}
+			state := "stopped"
 			if s.GetRunning() {
-				state, uptime = "running", s.GetUptime().AsDuration().Truncate(time.Second).String()
+				state = "running"
 			}
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", category, s.GetSrv().GetName(), orDash(s.GetPlugin()),
-				state, uptime, orDash(s.GetUrl()), orDash(s.GetError()))
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", category, s.GetName(), orDash(s.GetPlugin()),
+				state, isolation, orDash(s.GetAuth()), orDash(s.GetUri()))
 		}
 		if err := w.Flush(); err != nil {
 			return err
 		}
 	}
-	if unavailable := resp.GetUnavailable(); len(unavailable) > 0 {
-		fmt.Fprintf(out, "\ncould not reach remote daemons: %s\n", strings.Join(unavailable, ", "))
+	if len(resp.GetRemotes()) == 0 {
+		return nil
 	}
-	return nil
+	fmt.Fprintln(out)
+	w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "REMOTE\tHOSTNAME\tPLATFORM\tSTATUS")
+	for _, d := range resp.GetRemotes() {
+		platform := "-"
+		if d.GetOs() != "" || d.GetArch() != "" {
+			platform = d.GetOs() + "/" + d.GetArch()
+		}
+		state := "available"
+		if d.GetError() != "" {
+			state = "unavailable: " + d.GetError()
+		}
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", d.GetIp(), orDash(d.GetHostname()), platform, state)
+	}
+	return w.Flush()
 }
 
 // installPackage installs a package of plugins.
-func installPackage(ctx context.Context, client daemonpb.DaemonServiceClient, fs *flag.FlagSet, args []string, out io.Writer) error {
-	tag := fs.String("tag", "", "branch or commit to install (default: the default branch)")
+func installPackage(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.FlagSet, args []string, out io.Writer) error {
 	if err := parseArgs(fs, args, 1); err != nil {
 		return err
 	}
-	req := daemonpb.InstallPackageRequest_builder{Url: fs.Arg(0)}.Build()
-	if *tag != "" {
-		req.SetTag(*tag)
-	}
-	if _, err := client.InstallPackage(ctx, req); err != nil {
+	req := daemonpb.InstallPackageRequest_builder{Uri: fs.Arg(0)}.Build()
+	if _, err := daemonpb.NewDaemonServiceClient(conn).InstallPackage(ctx, req); err != nil {
 		return err
 	}
 	fmt.Fprintf(out, "installed %s; run `eagle restart` to use it\n", fs.Arg(0))
@@ -256,12 +346,12 @@ func installPackage(ctx context.Context, client daemonpb.DaemonServiceClient, fs
 }
 
 // removePackage removes an installed package.
-func removePackage(ctx context.Context, client daemonpb.DaemonServiceClient, fs *flag.FlagSet, args []string, out io.Writer) error {
+func removePackage(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.FlagSet, args []string, out io.Writer) error {
 	if err := parseArgs(fs, args, 1); err != nil {
 		return err
 	}
-	req := daemonpb.RemovePackageRequest_builder{Url: fs.Arg(0)}.Build()
-	if _, err := client.RemovePackage(ctx, req); err != nil {
+	req := daemonpb.RemovePackageRequest_builder{Uri: fs.Arg(0)}.Build()
+	if _, err := daemonpb.NewDaemonServiceClient(conn).RemovePackage(ctx, req); err != nil {
 		return err
 	}
 	fmt.Fprintf(out, "removed %s; run `eagle restart` to stop using it\n", fs.Arg(0))
@@ -269,11 +359,11 @@ func removePackage(ctx context.Context, client daemonpb.DaemonServiceClient, fs 
 }
 
 // listPackages prints the installed packages as a table.
-func listPackages(ctx context.Context, client daemonpb.DaemonServiceClient, fs *flag.FlagSet, args []string, out io.Writer) error {
+func listPackages(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.FlagSet, args []string, out io.Writer) error {
 	if err := parseArgs(fs, args, 0); err != nil {
 		return err
 	}
-	resp, err := client.ListPackages(ctx, &daemonpb.ListPackagesRequest{})
+	resp, err := daemonpb.NewDaemonServiceClient(conn).ListPackages(ctx, &daemonpb.ListPackagesRequest{})
 	if err != nil {
 		return err
 	}
@@ -282,16 +372,138 @@ func listPackages(ctx context.Context, client daemonpb.DaemonServiceClient, fs *
 		return nil
 	}
 	w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "URL\tTAG\tMODIFIED\tPLUGINS")
+	fmt.Fprintln(w, "URI\tMODIFIED\tPLUGINS")
 	for _, p := range resp.GetPackages() {
 		modified := "-"
 		if p.HasModified() {
 			modified = p.GetModified().AsTime().Local().Format(time.DateTime)
 		}
 		plugins := strings.Join(slices.Sorted(maps.Keys(p.GetPlugins())), ", ")
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", p.GetUrl(), orDash(p.GetTag()), modified, orDash(plugins))
+		fmt.Fprintf(w, "%s\t%s\t%s\n", p.GetUri(), modified, orDash(plugins))
 	}
 	return w.Flush()
+}
+
+// transferFile copies a file to the daemon's files directory.
+func transferFile(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.FlagSet, args []string, out io.Writer) error {
+	name := fs.String("name", "", "name to save the file as (default: the file's base name)")
+	if err := parseArgs(fs, args, 1); err != nil {
+		return err
+	}
+	stream, err := daemonpb.NewTransferServiceClient(conn).TransferFile(ctx)
+	if err != nil {
+		return err
+	}
+	saved, err := sendChunks(fs.Arg(0), *name,
+		func(chunk []byte, number, total int32, filename string) error {
+			return stream.Send(daemonpb.TransferFileRequest_builder{
+				Chunk: chunk, Number: number, Total: total, Filename: filename,
+			}.Build())
+		},
+		func() (int32, error) {
+			resp, err := stream.Recv()
+			return resp.GetReceived(), err
+		})
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(out, "transferred %s to the daemon's files\n", saved)
+	return stream.CloseSend()
+}
+
+// transferModel copies a model to the daemon's models directory, which
+// engines can read.
+func transferModel(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.FlagSet, args []string, out io.Writer) error {
+	name := fs.String("name", "", "name to save the model as (default: the file's base name)")
+	if err := parseArgs(fs, args, 1); err != nil {
+		return err
+	}
+	stream, err := daemonpb.NewTransferServiceClient(conn).TransferModel(ctx)
+	if err != nil {
+		return err
+	}
+	saved, err := sendChunks(fs.Arg(0), *name,
+		func(chunk []byte, number, total int32, filename string) error {
+			return stream.Send(daemonpb.TransferModelRequest_builder{
+				Chunk: chunk, Number: number, Total: total, Filename: filename,
+			}.Build())
+		},
+		func() (int32, error) {
+			resp, err := stream.Recv()
+			return resp.GetReceived(), err
+		})
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(out, "transferred %s to the daemon's models\n", saved)
+	return stream.CloseSend()
+}
+
+// sendChunks sends the file at path in chunks numbered from 1, naming it name
+// in the first chunk, or its base name if name is empty. Each chunk is sent
+// once the one before it is acknowledged by recv, and the last is acknowledged
+// once the daemon has saved the file. It returns the name the file was saved
+// as.
+func sendChunks(
+	path, name string,
+	send func(chunk []byte, number, total int32, filename string) error,
+	recv func() (int32, error),
+) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	info, err := f.Stat()
+	if err != nil {
+		return "", err
+	}
+	if !info.Mode().IsRegular() {
+		return "", fmt.Errorf("%s is not a regular file", path)
+	}
+	if name == "" {
+		name = filepath.Base(path)
+	}
+	// An empty file is still sent as one empty chunk
+	total := max(1, (info.Size()+chunkSize-1)/chunkSize)
+	if total > 1<<31-1 {
+		return "", fmt.Errorf("%s is too large to transfer", path)
+	}
+	buf := make([]byte, chunkSize)
+	for number := int32(1); number <= int32(total); number++ {
+		n, err := io.ReadFull(f, buf)
+		// The last chunk may be short, or empty for an empty file
+		if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) && !errors.Is(err, io.EOF) {
+			return "", err
+		}
+		filename := ""
+		if number == 1 {
+			filename = name
+		}
+		if err := send(buf[:n], number, int32(total), filename); err != nil {
+			return "", recvErr(err, recv)
+		}
+		received, err := recv()
+		if err != nil {
+			return "", err
+		}
+		if received != number {
+			return "", fmt.Errorf("daemon acknowledged chunk %d, want %d", received, number)
+		}
+	}
+	return name, nil
+}
+
+// recvErr returns the status of a stream whose send failed with err, which
+// gRPC only reports through recv.
+func recvErr(err error, recv func() (int32, error)) error {
+	if !errors.Is(err, io.EOF) {
+		return err
+	}
+	if _, recvErr := recv(); recvErr != nil {
+		return recvErr
+	}
+	return err
 }
 
 // orDash returns s, or "-" if it is empty, so table cells are never blank.

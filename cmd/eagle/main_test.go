@@ -11,24 +11,60 @@ import (
 	"time"
 
 	daemonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon"
+	"github.com/cmusatyalab/steeleagle/v4/core/util/download"
+	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// fakeDaemon records the calls eagle makes, answering with services and
-// packages, and failing every call with err.
+// fakeDaemon records the calls eagle makes, answering with services,
+// packages, its config and connection status, and failing every call with
+// err. Transfers are saved to dir, as the daemon saves them.
 type fakeDaemon struct {
 	daemonpb.UnimplementedDaemonServiceServer
-	err      error
-	services *daemonpb.ListServicesResponse
-	packages *daemonpb.ListPackagesResponse
-	calls    []string
-	config   string
-	install  *daemonpb.InstallPackageRequest
-	remove   string
+	daemonpb.UnimplementedTransferServiceServer
+	err       error
+	services  *daemonpb.ListServicesResponse
+	packages  *daemonpb.ListPackagesResponse
+	connected bool
+	dir       string
+	calls     []string
+	config    string
+	install   string
+	remove    string
+	restarted string
+}
+
+func (f *fakeDaemon) GetConfiguration(context.Context, *daemonpb.GetConfigurationRequest) (*daemonpb.GetConfigurationResponse, error) {
+	f.calls = append(f.calls, "GetConfiguration")
+	return daemonpb.GetConfigurationResponse_builder{ConfigToml: []byte(f.config)}.Build(), f.err
+}
+
+func (f *fakeDaemon) GetConnectionStatus(context.Context, *daemonpb.GetConnectionStatusRequest) (*daemonpb.GetConnectionStatusResponse, error) {
+	f.calls = append(f.calls, "GetConnectionStatus")
+	return daemonpb.GetConnectionStatusResponse_builder{Connected: f.connected}.Build(), f.err
+}
+
+func (f *fakeDaemon) RestartService(_ context.Context, req *daemonpb.RestartServiceRequest) (*daemonpb.RestartServiceResponse, error) {
+	f.calls = append(f.calls, "RestartService")
+	f.restarted = req.GetServiceNames()
+	return &daemonpb.RestartServiceResponse{}, f.err
+}
+
+func (f *fakeDaemon) TransferFile(stream grpc.BidiStreamingServer[daemonpb.TransferFileRequest, daemonpb.TransferFileResponse]) error {
+	f.calls = append(f.calls, "TransferFile")
+	return download.DownloadFile(zerolog.Nop(), stream, f.dir, func(number int32) *daemonpb.TransferFileResponse {
+		return daemonpb.TransferFileResponse_builder{Received: number}.Build()
+	})
+}
+
+func (f *fakeDaemon) TransferModel(stream grpc.BidiStreamingServer[daemonpb.TransferModelRequest, daemonpb.TransferModelResponse]) error {
+	f.calls = append(f.calls, "TransferModel")
+	return download.DownloadFile(zerolog.Nop(), stream, f.dir, func(number int32) *daemonpb.TransferModelResponse {
+		return daemonpb.TransferModelResponse_builder{Received: number}.Build()
+	})
 }
 
 func (f *fakeDaemon) Configure(_ context.Context, req *daemonpb.ConfigureRequest) (*daemonpb.ConfigureResponse, error) {
@@ -49,13 +85,13 @@ func (f *fakeDaemon) ListServices(context.Context, *daemonpb.ListServicesRequest
 
 func (f *fakeDaemon) InstallPackage(_ context.Context, req *daemonpb.InstallPackageRequest) (*daemonpb.InstallPackageResponse, error) {
 	f.calls = append(f.calls, "InstallPackage")
-	f.install = req
+	f.install = req.GetUri()
 	return &daemonpb.InstallPackageResponse{}, f.err
 }
 
 func (f *fakeDaemon) RemovePackage(_ context.Context, req *daemonpb.RemovePackageRequest) (*daemonpb.RemovePackageResponse, error) {
 	f.calls = append(f.calls, "RemovePackage")
-	f.remove = req.GetUrl()
+	f.remove = req.GetUri()
 	return &daemonpb.RemovePackageResponse{}, f.err
 }
 
@@ -80,6 +116,7 @@ func serveFake(t *testing.T, daemon *fakeDaemon) string {
 	}
 	server := grpc.NewServer()
 	daemonpb.RegisterDaemonServiceServer(server, daemon)
+	daemonpb.RegisterTransferServiceServer(server, daemon)
 	go server.Serve(ln)
 	t.Cleanup(server.Stop)
 	return path
@@ -142,25 +179,121 @@ func TestRestart(t *testing.T) {
 	}
 }
 
+// TestGetConfig checks that get-config prints the daemon's config as is.
+func TestGetConfig(t *testing.T) {
+	content := "[daemon]\nport = 9000\n"
+	socket := serveFake(t, &fakeDaemon{config: content})
+	code, out, errOut := runEagle(t, socket, "get-config")
+	if code != 0 {
+		t.Fatalf("exit = %d, stderr = %s", code, errOut)
+	}
+	if out != content {
+		t.Errorf("output = %q, want %q", out, content)
+	}
+}
+
+// TestStatus checks that status reports whether the daemon is connected.
+func TestStatus(t *testing.T) {
+	for _, connected := range []bool{true, false} {
+		socket := serveFake(t, &fakeDaemon{connected: connected})
+		code, out, errOut := runEagle(t, socket, "status")
+		if code != 0 {
+			t.Fatalf("exit = %d, stderr = %s", code, errOut)
+		}
+		if got := strings.TrimSpace(out) == "connected"; got != connected {
+			t.Errorf("connected = %v: output = %q", connected, out)
+		}
+	}
+}
+
+// TestRestartService checks that restart-service sends the service's name.
+func TestRestartService(t *testing.T) {
+	daemon := &fakeDaemon{}
+	socket := serveFake(t, daemon)
+	if code, _, errOut := runEagle(t, socket, "restart-service", "100.64.0.2.drone"); code != 0 {
+		t.Fatalf("exit = %d, stderr = %s", code, errOut)
+	}
+	if daemon.restarted != "100.64.0.2.drone" {
+		t.Errorf("restarted = %q, want 100.64.0.2.drone", daemon.restarted)
+	}
+}
+
+// TestTransfer checks that files and models of several chunks, one chunk and
+// none are saved whole by the daemon, under their base name or -name.
+func TestTransfer(t *testing.T) {
+	src := t.TempDir()
+	for _, tc := range []struct {
+		command string
+		size    int
+		args    []string
+		saved   string
+	}{
+		{"transfer-file", 2*chunkSize + 17, nil, "data.bin"},
+		{"transfer-model", chunkSize, []string{"-name", "yolo.pt"}, "yolo.pt"},
+		{"transfer-file", 0, nil, "data.bin"},
+	} {
+		daemon := &fakeDaemon{dir: t.TempDir()}
+		socket := serveFake(t, daemon)
+		content := bytes.Repeat([]byte("eagle"), tc.size/5+1)[:tc.size]
+		path := filepath.Join(src, "data.bin")
+		if err := os.WriteFile(path, content, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		code, out, errOut := runEagle(t, socket, append(append([]string{tc.command}, tc.args...), path)...)
+		if code != 0 {
+			t.Fatalf("%s of %d bytes: exit = %d, stderr = %s", tc.command, tc.size, code, errOut)
+		}
+		if !strings.Contains(out, tc.saved) {
+			t.Errorf("%s: output = %q, want it to name %s", tc.command, out, tc.saved)
+		}
+		got, err := os.ReadFile(filepath.Join(daemon.dir, tc.saved))
+		if err != nil {
+			t.Fatalf("%s of %d bytes: %v", tc.command, tc.size, err)
+		}
+		if !bytes.Equal(got, content) {
+			t.Errorf("%s of %d bytes: saved %d bytes, want the file", tc.command, tc.size, len(got))
+		}
+	}
+}
+
+// TestTransferRejected checks that a transfer the daemon rejects, like one
+// with a bad name, fails with the daemon's reason.
+func TestTransferRejected(t *testing.T) {
+	socket := serveFake(t, &fakeDaemon{dir: t.TempDir()})
+	path := filepath.Join(t.TempDir(), "data.bin")
+	if err := os.WriteFile(path, []byte("eagle"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	code, _, errOut := runEagle(t, socket, "transfer-file", "-name", "../escape", path)
+	if code != 1 || !strings.Contains(errOut, "invalid file name") {
+		t.Errorf("exit = %d, stderr = %q, want 1 with the daemon's reason", code, errOut)
+	}
+}
+
 // TestListServicesTable checks that services are printed as a table, with
-// their category, status and uptime, and that unreachable remote daemons are
-// reported.
+// their category, status and isolation, followed by the remote daemons, with
+// why any can't be reached.
 func TestListServicesTable(t *testing.T) {
 	daemon := &fakeDaemon{services: daemonpb.ListServicesResponse_builder{
-		Services: []*daemonpb.ActiveService{
-			daemonpb.ActiveService_builder{
-				Srv:     daemonpb.Service_builder{Name: "drone", Category: daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE}.Build(),
-				Plugin:  "anafi",
-				Url:     "github.com/example/drivers",
-				Running: true,
-				Uptime:  durationpb.New(90*time.Second + 300*time.Millisecond),
+		Services: []*daemonpb.Service{
+			daemonpb.Service_builder{
+				Name:      "drone",
+				Category:  daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE,
+				Plugin:    "anafi.toml",
+				Uri:       "github.com/example/drivers",
+				Isolation: daemonpb.Isolation_ISOLATION_PROCESS,
+				Auth:      "admin",
+				Running:   true,
 			}.Build(),
-			daemonpb.ActiveService_builder{
-				Srv:   daemonpb.Service_builder{Name: "yolo", Category: daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE}.Build(),
-				Error: "plugin exited",
+			daemonpb.Service_builder{
+				Name:     "100.64.0.2.yolo",
+				Category: daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE,
 			}.Build(),
 		},
-		Unavailable: []string{"100.64.0.2"},
+		Remotes: []*daemonpb.Daemon{
+			daemonpb.Daemon_builder{Ip: "100.64.0.2", Hostname: "jetson", Os: "linux", Arch: "arm64"}.Build(),
+			daemonpb.Daemon_builder{Ip: "100.64.0.3", Error: "connection refused"}.Build(),
+		},
 	}.Build()}
 	socket := serveFake(t, daemon)
 	code, out, errOut := runEagle(t, socket, "list-services")
@@ -169,17 +302,21 @@ func TestListServicesTable(t *testing.T) {
 	}
 	lines := strings.Split(strings.TrimSpace(out), "\n")
 	want := [][]string{
-		{"CATEGORY", "NAME", "PLUGIN", "STATUS", "UPTIME", "PACKAGE", "ERROR"},
-		{"vehicle", "drone", "anafi", "running", "1m30s", "github.com/example/drivers", "-"},
-		{"engine", "yolo", "-", "stopped", "-", "-", "plugin", "exited"},
+		{"CATEGORY", "NAME", "PLUGIN", "STATUS", "ISOLATION", "AUTH", "PACKAGE"},
+		{"vehicle", "drone", "anafi.toml", "running", "process", "admin", "github.com/example/drivers"},
+		{"engine", "100.64.0.2.yolo", "-", "stopped", "-", "-", "-"},
+		{},
+		{"REMOTE", "HOSTNAME", "PLATFORM", "STATUS"},
+		{"100.64.0.2", "jetson", "linux/arm64", "available"},
+		{"100.64.0.3", "-", "-", "unavailable:", "connection", "refused"},
+	}
+	if len(lines) != len(want) {
+		t.Fatalf("output = %q, want %d lines", out, len(want))
 	}
 	for i, fields := range want {
 		if got := strings.Fields(lines[i]); strings.Join(got, " ") != strings.Join(fields, " ") {
 			t.Errorf("line %d = %q, want fields %q", i, lines[i], fields)
 		}
-	}
-	if !strings.Contains(out, "could not reach remote daemons: 100.64.0.2") {
-		t.Errorf("output = %q, want the unreachable daemon", out)
 	}
 }
 
@@ -191,26 +328,20 @@ func TestListServicesEmpty(t *testing.T) {
 	}
 }
 
-// TestInstallPackage checks that install-package sends the URL, and the tag
-// only when one is given.
+// TestInstallPackage checks that install-package sends the uri as given.
 func TestInstallPackage(t *testing.T) {
 	daemon := &fakeDaemon{}
 	socket := serveFake(t, daemon)
-	if code, _, errOut := runEagle(t, socket, "install-package", "-tag", "v1.2", "github.com/example/pkg"); code != 0 {
+	uri := "https://github.com/example/pkg//plugins@v1.2"
+	if code, _, errOut := runEagle(t, socket, "install-package", uri); code != 0 {
 		t.Fatalf("exit = %d, stderr = %s", code, errOut)
 	}
-	if daemon.install.GetUrl() != "github.com/example/pkg" || daemon.install.GetTag() != "v1.2" {
-		t.Errorf("install = %v, want the URL with tag v1.2", daemon.install)
-	}
-	if code, _, errOut := runEagle(t, socket, "install-package", "github.com/example/other"); code != 0 {
-		t.Fatalf("exit = %d, stderr = %s", code, errOut)
-	}
-	if daemon.install.HasTag() {
-		t.Errorf("install without -tag = %v, want no tag", daemon.install)
+	if daemon.install != uri {
+		t.Errorf("installed = %q, want %q", daemon.install, uri)
 	}
 }
 
-// TestRemovePackage checks that remove-package sends the URL.
+// TestRemovePackage checks that remove-package sends the uri.
 func TestRemovePackage(t *testing.T) {
 	daemon := &fakeDaemon{}
 	socket := serveFake(t, daemon)
@@ -218,7 +349,7 @@ func TestRemovePackage(t *testing.T) {
 		t.Fatalf("exit = %d, stderr = %s", code, errOut)
 	}
 	if daemon.remove != "github.com/example/pkg" {
-		t.Errorf("removed = %q, want the URL", daemon.remove)
+		t.Errorf("removed = %q, want the uri", daemon.remove)
 	}
 }
 
@@ -229,12 +360,11 @@ func TestListPackagesTable(t *testing.T) {
 	daemon := &fakeDaemon{packages: daemonpb.ListPackagesResponse_builder{
 		Packages: []*daemonpb.Package{
 			daemonpb.Package_builder{
-				Url:      "github.com/example/drivers",
-				Tag:      "main",
+				Uri:      "github.com/example/drivers@main",
 				Plugins:  map[string][]byte{"sim": nil, "anafi": nil},
 				Modified: timestamppb.New(modified),
 			}.Build(),
-			daemonpb.Package_builder{Url: "github.com/example/empty"}.Build(),
+			daemonpb.Package_builder{Uri: "github.com/example/empty"}.Build(),
 		},
 	}.Build()}
 	socket := serveFake(t, daemon)
@@ -244,9 +374,9 @@ func TestListPackagesTable(t *testing.T) {
 	}
 	lines := strings.Split(strings.TrimSpace(out), "\n")
 	want := [][]string{
-		{"URL", "TAG", "MODIFIED", "PLUGINS"},
-		{"github.com/example/drivers", "main", "2026-10-01", "12:00:00", "anafi,", "sim"},
-		{"github.com/example/empty", "-", "-", "-"},
+		{"URI", "MODIFIED", "PLUGINS"},
+		{"github.com/example/drivers@main", "2026-10-01", "12:00:00", "anafi,", "sim"},
+		{"github.com/example/empty", "-", "-"},
 	}
 	for i, fields := range want {
 		if got := strings.Fields(lines[i]); strings.Join(got, " ") != strings.Join(fields, " ") {
@@ -266,8 +396,12 @@ func TestUsageErrors(t *testing.T) {
 		{"configure"},
 		{"restart", "extra"},
 		{"install-package"},
-		{"install-package", "-bogus", "url"},
+		{"install-package", "-bogus", "uri"},
 		{"remove-package", "a", "b"},
+		{"restart-service"},
+		{"get-config", "extra"},
+		{"transfer-file"},
+		{"transfer-model", "-bogus", "path"},
 	} {
 		if code, _, _ := runEagle(t, socket, args...); code != 2 {
 			t.Errorf("eagle %q exit = %d, want 2", args, code)
