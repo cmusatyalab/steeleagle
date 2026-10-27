@@ -3,7 +3,7 @@ module github.com/cmusatyalab/steeleagle/gcs
 go 1.26.5
 
 require (
-	github.com/cmusatyalab/steeleagle/api/go v0.3.1
+	github.com/cmusatyalab/steeleagle/api/go v0.3.3
 	github.com/cmusatyalab/uriel/go v0.1.0
 	github.com/pion/rtp v1.10.6
 	github.com/pion/webrtc/v4 v4.2.25

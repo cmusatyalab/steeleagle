@@ -20,7 +20,7 @@ tracked in git, so a new module is included automatically.
 ### Setup (once per clone)
 
 ```sh
-tools/scripts/alias.sh   # registers `git release` and `git workspace`
+tools/git/alias.sh       # registers `git release`, `git update-deps` and `git workspace`
 git workspace up         # creates go.work over every module in the repo
 ```
 
@@ -41,6 +41,7 @@ git release <patch|minor|major> [alpha|beta|prod] [options]
 | `--only root,api/go,...` | Release only these modules (`root` is the root module) |
 | `--push` | Push the branch and tags, then ask proxy.golang.org to cache the new versions |
 | `--no-sync` | Don't move modules onto new versions of other repo modules (see below) |
+| `--no-update` | Don't run `git update-deps` after releasing (see below) |
 | `--remote <name>` | Remote to fetch from and push to (default `origin`) |
 | `--no-fetch` | Don't fetch tags from the remote first |
 | `-n`, `--dry-run` | Print the plan and change nothing |
@@ -118,3 +119,26 @@ release: once fixed, finish with: git release minor alpha --only root,sdk --push
 
 The rerun computes the same versions and moves `root` and `sdk` onto the
 `api/go` tag that was already pushed.
+
+## `update-deps.sh`: moving modules onto each other's newest versions
+
+```sh
+git update-deps        # update every module
+git update-deps -n     # show what would change
+```
+
+For every Go module in the repo, `git update-deps` finds the other repo
+modules it requires, and moves each one onto its newest published version
+with `go get`. It counts prereleases, but skips versions that have been
+retracted. It never downgrades a requirement, and it leaves a requirement on
+a pseudo-version alone.
+
+- **Versions come straight from GitHub** (via `GOPRIVATE`), as with
+  `release.sh`, so only tags that have been pushed are used.
+- **Changes are left uncommitted**, in each module's `go.mod` and `go.sum`, for
+  you to review and commit.
+
+`git release` runs it after a successful release, so modules that weren't
+released (for example with `--only`) catch up with the new versions. Pass
+`--no-update` to skip it. It doesn't run on a dry run. Without `--push`, the
+new tags aren't published yet, so they aren't picked up.

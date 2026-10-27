@@ -14,6 +14,9 @@
 #   git release minor alpha        # v4.2.0-alpha.1, then -alpha.2, ...
 #   git release minor beta         # v4.2.0-beta.1 (continues an alpha series)
 #   git release minor prod         # v4.2.0 (same as omitting the stage)
+#
+# Afterwards, git update-deps moves every module onto the newest published
+# versions of the others, unless --no-update is given.
 
 set -euo pipefail
 
@@ -30,6 +33,7 @@ options:
   --only <mods>    comma-separated modules to release: root, api/go, sdk, ...
   --push           push the branch and tags atomically, then warm the Go proxy
   --no-sync        leave require lines on other repo modules as they are
+  --no-update      don't run git update-deps after releasing
   --remote <name>  remote to fetch from and push to (default: origin)
   --no-fetch       don't fetch tags from the remote first
   -n, --dry-run    show what would happen without changing anything
@@ -49,6 +53,7 @@ only=
 remote=origin
 push=false
 sync=true
+update=true
 fetch=true
 dry_run=false
 yes=false
@@ -72,6 +77,7 @@ while (($#)); do
 	--remote=*) remote=${1#*=} ;;
 	--push) push=true ;;
 	--no-sync) sync=false ;;
+	--no-update) update=false ;;
 	--no-fetch) fetch=false ;;
 	-n | --dry-run) dry_run=true ;;
 	-y | --yes) yes=true ;;
@@ -431,6 +437,15 @@ go_get() {
 	(cd "$dir" && GOWORK=off GOFLAGS=-mod=mod GOPRIVATE="${GOPRIVATE:+$GOPRIVATE,}$repo_path" go get "$@")
 }
 
+# Move every module onto the newest published versions of the others, now that
+# the release is done.
+update_deps() {
+	$update || return 0
+	echo
+	tools/git/update-deps.sh ||
+		echo "release: warning: update-deps failed; rerun it with: git update-deps" >&2
+}
+
 for i in "${!waves[@]}"; do
 	read -ra wave <<<"${waves[i]}"
 
@@ -480,6 +495,7 @@ if ! $push; then
 	echo "to undo:"
 	echo "  git tag -d ${tags[*]}"
 	((commits)) && echo "  git reset --soft HEAD~$commits"
+	update_deps
 	exit 0
 fi
 
@@ -493,3 +509,5 @@ if [[ $(git remote get-url "$remote") == *"${repo_path#*/}"* ]]; then
 else
 	echo "release: $remote doesn't look like ${repo_path#*/}; skipped warming the Go proxy" >&2
 fi
+
+update_deps

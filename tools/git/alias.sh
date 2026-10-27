@@ -15,6 +15,7 @@ cd "$(git rev-parse --show-toplevel)"
 # from the top of the working tree).
 aliases=(
     "release:tools/git/release.sh"
+    "update-deps:tools/git/update-deps.sh"
     "workspace:tools/git/workspace.sh"
 )
 

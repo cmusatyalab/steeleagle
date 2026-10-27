@@ -5,8 +5,8 @@ go 1.26.5
 require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/alecthomas/participle/v2 v2.1.4
-	github.com/cmusatyalab/steeleagle/api/go v0.3.1
-	github.com/cmusatyalab/steeleagle/config v0.0.2
+	github.com/cmusatyalab/steeleagle/api/go v0.3.3
+	github.com/cmusatyalab/steeleagle/config v0.0.3
 	github.com/looplab/fsm v1.0.4
 	github.com/peterstace/simplefeatures v0.59.0
 	github.com/rs/zerolog v1.35.1
