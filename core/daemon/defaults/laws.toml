@@ -10,6 +10,7 @@ allowed = [
     'external/**.DaemonService/ListServices',
     'external/**.DaemonService/ListPackages',
     'external/**.DaemonService/GetConfiguration',
+    'external/**.DaemonService/GetConnectionStatus',
     # Allows engines to upload models for other engines, and orchestrators to
     # relay transfers to their remote daemons
     'external/**.TransferService/TransferModel',
@@ -27,8 +28,11 @@ allowed = [
     'privileged/**.DaemonService/ListServices',
     'privileged/**.DaemonService/ListPackages',
     'privileged/**.DaemonService/GetConfiguration',
+    # Vehicles poll whether the daemon is connected to its orchestrator
+    'privileged/**.DaemonService/GetConnectionStatus',
     'external/**.DaemonService/ListServices',
     'external/**.DaemonService/ListPackages',
     'external/**.DaemonService/GetConfiguration',
+    'external/**.DaemonService/GetConnectionStatus',
 ]
 match = []

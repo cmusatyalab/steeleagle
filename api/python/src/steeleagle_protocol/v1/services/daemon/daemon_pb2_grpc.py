@@ -25,6 +25,11 @@ class DaemonServiceStub:
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RegisterOrchestratorRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RegisterOrchestratorResponse.FromString,
                 _registered_method=True)
+        self.GetConnectionStatus = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.daemon.DaemonService/GetConnectionStatus',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.GetConnectionStatusRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.GetConnectionStatusResponse.FromString,
+                _registered_method=True)
         self.Configure = channel.unary_unary(
                 '/steeleagle_protocol.v1.services.daemon.DaemonService/Configure',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.ConfigureRequest.SerializeToString,
@@ -89,6 +94,16 @@ class DaemonServiceServicer:
         stream is a heartbeat: the registering daemon sends empty requests, each
         answered with an empty response. The registering daemon registers again,
         with backoff, whenever the stream dies.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetConnectionStatus(self, request, context):
+        """
+        Gets the connection status of this daemon
+
+        Returns the status of this daemon's connection to its orchestrator daemon.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -193,6 +208,11 @@ def add_DaemonServiceServicer_to_server(servicer, server):
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RegisterOrchestratorRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RegisterOrchestratorResponse.SerializeToString,
             ),
+            'GetConnectionStatus': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetConnectionStatus,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.GetConnectionStatusRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.GetConnectionStatusResponse.SerializeToString,
+            ),
             'Configure': grpc.unary_unary_rpc_method_handler(
                     servicer.Configure,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.ConfigureRequest.FromString,
@@ -267,6 +287,33 @@ class DaemonService:
             '/steeleagle_protocol.v1.services.daemon.DaemonService/RegisterOrchestrator',
             steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RegisterOrchestratorRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RegisterOrchestratorResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetConnectionStatus(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/steeleagle_protocol.v1.services.daemon.DaemonService/GetConnectionStatus',
+            steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.GetConnectionStatusRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.GetConnectionStatusResponse.FromString,
             options,
             channel_credentials,
             insecure,

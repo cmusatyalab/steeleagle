@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	DaemonService_RegisterOrchestrator_FullMethodName = "/steeleagle_protocol.v1.services.daemon.DaemonService/RegisterOrchestrator"
+	DaemonService_GetConnectionStatus_FullMethodName  = "/steeleagle_protocol.v1.services.daemon.DaemonService/GetConnectionStatus"
 	DaemonService_Configure_FullMethodName            = "/steeleagle_protocol.v1.services.daemon.DaemonService/Configure"
 	DaemonService_GetConfiguration_FullMethodName     = "/steeleagle_protocol.v1.services.daemon.DaemonService/GetConfiguration"
 	DaemonService_ListServices_FullMethodName         = "/steeleagle_protocol.v1.services.daemon.DaemonService/ListServices"
@@ -56,6 +57,10 @@ type DaemonServiceClient interface {
 	// answered with an empty response. The registering daemon registers again,
 	// with backoff, whenever the stream dies.
 	RegisterOrchestrator(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[RegisterOrchestratorRequest, RegisterOrchestratorResponse], error)
+	// Gets the connection status of this daemon
+	//
+	// Returns the status of this daemon's connection to its orchestrator daemon.
+	GetConnectionStatus(ctx context.Context, in *GetConnectionStatusRequest, opts ...grpc.CallOption) (*GetConnectionStatusResponse, error)
 	// Load a TOML config.
 	//
 	// Configures the daemon with a TOML config according to eagled specification.
@@ -121,6 +126,16 @@ func (c *daemonServiceClient) RegisterOrchestrator(ctx context.Context, opts ...
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type DaemonService_RegisterOrchestratorClient = grpc.BidiStreamingClient[RegisterOrchestratorRequest, RegisterOrchestratorResponse]
+
+func (c *daemonServiceClient) GetConnectionStatus(ctx context.Context, in *GetConnectionStatusRequest, opts ...grpc.CallOption) (*GetConnectionStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetConnectionStatusResponse)
+	err := c.cc.Invoke(ctx, DaemonService_GetConnectionStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
 
 func (c *daemonServiceClient) Configure(ctx context.Context, in *ConfigureRequest, opts ...grpc.CallOption) (*ConfigureResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -224,6 +239,10 @@ type DaemonServiceServer interface {
 	// answered with an empty response. The registering daemon registers again,
 	// with backoff, whenever the stream dies.
 	RegisterOrchestrator(grpc.BidiStreamingServer[RegisterOrchestratorRequest, RegisterOrchestratorResponse]) error
+	// Gets the connection status of this daemon
+	//
+	// Returns the status of this daemon's connection to its orchestrator daemon.
+	GetConnectionStatus(context.Context, *GetConnectionStatusRequest) (*GetConnectionStatusResponse, error)
 	// Load a TOML config.
 	//
 	// Configures the daemon with a TOML config according to eagled specification.
@@ -280,6 +299,9 @@ type UnimplementedDaemonServiceServer struct{}
 func (UnimplementedDaemonServiceServer) RegisterOrchestrator(grpc.BidiStreamingServer[RegisterOrchestratorRequest, RegisterOrchestratorResponse]) error {
 	return status.Error(codes.Unimplemented, "method RegisterOrchestrator not implemented")
 }
+func (UnimplementedDaemonServiceServer) GetConnectionStatus(context.Context, *GetConnectionStatusRequest) (*GetConnectionStatusResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetConnectionStatus not implemented")
+}
 func (UnimplementedDaemonServiceServer) Configure(context.Context, *ConfigureRequest) (*ConfigureResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Configure not implemented")
 }
@@ -331,6 +353,24 @@ func _DaemonService_RegisterOrchestrator_Handler(srv interface{}, stream grpc.Se
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type DaemonService_RegisterOrchestratorServer = grpc.BidiStreamingServer[RegisterOrchestratorRequest, RegisterOrchestratorResponse]
+
+func _DaemonService_GetConnectionStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConnectionStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DaemonServiceServer).GetConnectionStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DaemonService_GetConnectionStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DaemonServiceServer).GetConnectionStatus(ctx, req.(*GetConnectionStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
 
 func _DaemonService_Configure_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ConfigureRequest)
@@ -483,6 +523,10 @@ var DaemonService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "steeleagle_protocol.v1.services.daemon.DaemonService",
 	HandlerType: (*DaemonServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetConnectionStatus",
+			Handler:    _DaemonService_GetConnectionStatus_Handler,
+		},
 		{
 			MethodName: "Configure",
 			Handler:    _DaemonService_Configure_Handler,

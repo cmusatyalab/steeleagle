@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -15,7 +16,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/cmusatyalab/steeleagle/v4/core/util"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
@@ -67,8 +67,8 @@ type BasePlugin struct {
 	start       int64              // plugin start time
 	timeout     int                // timeout in seconds waiting for the server to start
 	running     atomic.Bool        // whether or not the plugin is currently running
-	parentDir   string             // parent directory for plugin to live under (used to create runDir)
-	runDir      string             // runtime directory path (where sockets live)
+	parentDir   string             // directory the run dir is created under (defaults to the working directory)
+	runDir      string             // runtime directory path, parentDir/name (where sockets live)
 	cSock       string             // path of the socket this process dials as a client, and the plugin listens on
 	lnSock      string             // path of the socket this process listens on, and the plugin dials as a client
 	client      bool               // whether or not to support a plugin server
@@ -93,7 +93,7 @@ type BasePlugin struct {
 func NewBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 	// Set defaults
 	p := &BasePlugin{
-		name:      uuid.New().String(),
+		name:      shortId(),
 		code:      listener.UnknownCode,
 		files:     make(map[string]int),
 		client:    true,
@@ -127,6 +127,15 @@ func NewBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 	}
 
 	return p, nil
+}
+
+// shortId returns a short random ID, which names the plugin's run directory
+// by default. It only needs to be unique within the plugin's parent directory,
+// and is kept short since the plugin's sockets are made in its run directory,
+// and socket paths are limited to 107 bytes.
+func shortId() string {
+	id := uuid.New()
+	return hex.EncodeToString(id[:4])
 }
 
 // Start starts the plugin in normal execution mode.
@@ -485,11 +494,14 @@ func (p *BasePlugin) cleanup() {
 	// Remove the plugin run directory
 	err := os.RemoveAll(p.runDir)
 	p.cancel()
+	// The plugin can be started again once it isn't running, which replaces
+	// cleanupDone, so this run's is taken first
+	done := p.cleanupDone
 	p.running.Store(false)
 	if err != nil {
 		p.log.Error().Err(err).Msg("got error while trying to clean up")
 	}
-	close(p.cleanupDone)
+	close(done)
 }
 
 // run starts the plugin command and records the start time.
@@ -507,13 +519,29 @@ func (p *BasePlugin) run() error {
 }
 
 func (p *BasePlugin) setupRunDir() error {
-	// Get the plugin dir, then create the socket file paths
-	dir, err := util.GetPluginDirByName(p.name, p.parentDir)
-	if err != nil {
+	// The name becomes a directory that is removed on cleanup, so it must be a
+	// single path element
+	if p.name == "" || p.name == "." || p.name == ".." || filepath.Base(p.name) != p.name {
+		err := fmt.Errorf("invalid plugin name for run directory: %q", p.name)
 		p.log.Error().Err(err).Msg("couldn't create plugin run directory")
 		return err
 	}
-	p.runDir = dir
+	// Place the run dir under the parent dir if one was provided, otherwise
+	// under the working directory
+	parent := p.parentDir
+	if parent == "" {
+		wd, err := os.Getwd()
+		if err != nil {
+			p.log.Error().Err(err).Msg("couldn't get working directory")
+			return err
+		}
+		parent = wd
+	}
+	p.runDir = filepath.Join(parent, p.name)
+	if err := os.MkdirAll(p.runDir, 0755); err != nil {
+		p.log.Error().Err(err).Msg("couldn't create plugin run directory")
+		return err
+	}
 	p.cSock = filepath.Join(p.runDir, clientSockName)
 	p.lnSock = filepath.Join(p.runDir, listenSockName)
 	// Remove socket paths in case they're left over from last run

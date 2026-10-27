@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"fmt"
+	"slices"
 
 	"github.com/BurntSushi/toml"
 )
@@ -10,8 +11,8 @@ import (
 // Auth is the privilege level that a service's calls to the daemon carry.
 type Auth string
 
-// Auth levels, from most to least privileged. A service with no auth is
-// AuthUnknown.
+// Auth levels, from most to least privileged. A service with no auth gets the
+// default for its type (see ServiceField.AuthLevel).
 const (
 	AuthAdmin      Auth = "admin"
 	AuthPrivileged Auth = "privileged"
@@ -30,8 +31,8 @@ const (
 	ServiceExtra   ServiceType = "extra"
 )
 
-// IsolateSandbox runs a plugin in a sandbox rather than a container.
-const IsolateSandbox = "sandbox"
+// IsolationSandbox runs a plugin in a sandbox rather than a container.
+const IsolationSandbox = "sandbox"
 
 type DaemonRoot struct {
 	// Daemon port
@@ -52,14 +53,13 @@ type PluginField struct {
 	// Package url, a git repository where a double slash selects a sub
 	// directory. A version (commit SHA, branch, or tag) is supported by
 	// appending it with an "@", as in Go: github.com/org/repo//sub@v1.0.0
-	// (defaults to latest). Required unless the service is simulated, and
-	// ignored if it is, since simulated services run from the simulator's
-	// package
+	// (defaults to latest). For a simulated service, this is usually the
+	// simulator's package
 	Package string `toml:"package,omitempty"`
 	// Isolation type, either "sandbox" or a container url with tag (optional,
 	// ignored if the service is simulated)
-	Isolate string `toml:"isolate,omitempty"`
-	// Arguments for the plugin
+	Isolation string `toml:"isolation,omitempty"`
+	// Arguments for the plugin (ignored if the service is simulated)
 	Args map[string]interface{} `toml:"args"`
 }
 
@@ -69,23 +69,15 @@ type ServiceField struct {
 	Name string `toml:"name"`
 	// Type of the service (one of: vehicle, engine, extra)
 	Type ServiceType `toml:"type"`
-	// Auth level of the service (optional, defaults to "unknown")
+	// Auth level of the service (optional, defaults to "privileged" for
+	// vehicles and "external" for engines and extras)
 	Auth Auth `toml:"auth,omitempty"`
 	// Whether the service runs in the simulator (optional, defaults to false).
-	// A simulated service's plugin comes from the simulator's package, so its
-	// package and isolate are ignored
+	// A simulated service is run by the simulator, configured through the
+	// simulator's args, so its plugin's args and isolation are ignored
 	Simulate bool `toml:"simulate,omitempty"`
 	// Plugin details
 	Plugin PluginField `toml:"plugin"`
-}
-
-type SimActorField struct {
-	// Tag of the actor
-	Tag string `toml:"tag"`
-	// Waypoints to travel (lat, lon, alt)
-	Waypoints [][3]float64 `toml:"waypoints"`
-	// Speed to move at (m/s)
-	Speed float64 `toml:"speed"`
 }
 
 type SimulatorField struct {
@@ -94,8 +86,8 @@ type SimulatorField struct {
 	// supported by appending it with an "@", as in Go:
 	// github.com/org/repo//sub@v1.0.0 (defaults to latest)
 	Package string `toml:"package,omitempty"`
-	// Simulated actors
-	Actors []SimActorField `toml:"actors"`
+	// Arguments for the simulator, passed to it like a plugin's args
+	Args map[string]interface{} `toml:"args"`
 }
 
 type DaemonConfig struct {
@@ -116,6 +108,7 @@ func ParseDaemonConfigFromFilepath(filepath string) (*DaemonConfig, error) {
 	if err := d.Validate(); err != nil {
 		return nil, err
 	}
+	d.sortServices()
 	return d, nil
 }
 
@@ -128,7 +121,24 @@ func ParseDaemonConfigFromBytes(config []byte) (*DaemonConfig, error) {
 	if err := d.Validate(); err != nil {
 		return nil, err
 	}
+	d.sortServices()
 	return d, nil
+}
+
+// serviceOrder is the order services start in: engines first, since vehicles
+// use them, then vehicles, then extras.
+var serviceOrder = map[ServiceType]int{
+	ServiceEngine:  0,
+	ServiceVehicle: 1,
+	ServiceExtra:   2,
+}
+
+// sortServices sorts services into start order by type, keeping the config
+// order within each type.
+func (d *DaemonConfig) sortServices() {
+	slices.SortStableFunc(d.Services, func(a, b ServiceField) int {
+		return serviceOrder[a.Type] - serviceOrder[b.Type]
+	})
 }
 
 // ToBytes writes a DaemonConfig to TOML bytes.
@@ -140,26 +150,25 @@ func (d *DaemonConfig) ToBytes() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// Validate checks that every service is valid and that names are unique
-// among services of the same type, simulated or not.
+// Validate checks that every service is valid, that names are unique across
+// all services, whatever their type and whether simulated or not, and that
+// there is a simulator if any service is simulated.
 func (d *DaemonConfig) Validate() error {
-	names := make(map[ServiceType][]string)
+	names := make([]string, 0, len(d.Services))
 	for _, s := range d.Services {
 		if err := s.Validate(); err != nil {
 			return fmt.Errorf("%q in services: %w", s.Name, err)
 		}
-		names[s.Type] = append(names[s.Type], s.Name)
-	}
-	for _, t := range []ServiceType{ServiceVehicle, ServiceEngine, ServiceExtra} {
-		if err := uniqueNames(string(t)+" services", names[t]); err != nil {
-			return err
+		if s.Simulate && d.Simulator.Package == "" {
+			return fmt.Errorf("%q in services is simulated, but there is no simulator package", s.Name)
 		}
+		names = append(names, s.Name)
 	}
-	return nil
+	return uniqueNames("services", names)
 }
 
 // Validate checks that the service has a known type and a valid auth, and
-// that its plugin has a package unless the service is simulated.
+// that its plugin has a name and a package.
 func (s ServiceField) Validate() error {
 	if err := s.Type.Validate(); err != nil {
 		return err
@@ -167,24 +176,33 @@ func (s ServiceField) Validate() error {
 	if err := s.Auth.Validate(); err != nil {
 		return err
 	}
-	if !s.Simulate && s.Plugin.Package == "" {
-		return fmt.Errorf("plugin %q must define a package unless the service is simulated", s.Plugin.Plugin)
+	if s.Plugin.Plugin == "" {
+		return fmt.Errorf("no plugin defined")
+	}
+	if s.Plugin.Package == "" {
+		return fmt.Errorf("plugin %q must define a package", s.Plugin.Plugin)
 	}
 	return nil
 }
 
-// Level returns the auth level, defaulting to AuthUnknown if none is set.
-func (a Auth) Level() Auth {
-	if a == "" {
-		return AuthUnknown
+// AuthLevel returns the auth level of the service, defaulting to
+// AuthPrivileged for vehicles and AuthExternal for engines and extras if none
+// is set.
+func (s ServiceField) AuthLevel() Auth {
+	switch {
+	case s.Auth != "":
+		return s.Auth
+	case s.Type == ServiceVehicle:
+		return AuthPrivileged
+	default:
+		return AuthExternal
 	}
-	return a
 }
 
 // Validate checks that the auth is empty or a known level.
 func (a Auth) Validate() error {
-	switch a.Level() {
-	case AuthAdmin, AuthPrivileged, AuthUser, AuthExternal, AuthUnknown:
+	switch a {
+	case "", AuthAdmin, AuthPrivileged, AuthUser, AuthExternal, AuthUnknown:
 		return nil
 	}
 	return fmt.Errorf("invalid auth %q, must be one of %q, %q, %q, %q or %q",

@@ -12,6 +12,7 @@ const missionDir = "missions"
 const credsDir = "creds"
 const pendingDir = ".pending"
 const logDir = "logs"
+const simDir = "simulator"
 
 // Log file suffix
 const logSuffix = ".log"

@@ -1,0 +1,4 @@
+[plugin]
+name = "Echo"
+type = "extra"
+description = "Test plugin that serves the gRPC health service"

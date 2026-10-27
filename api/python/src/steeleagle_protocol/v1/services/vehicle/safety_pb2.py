@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from google.protobuf import duration_pb2 as google_dot_protobuf_dot_duration__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n4steeleagle_protocol/v1/services/vehicle/safety.proto\x12\'steeleagle_protocol.v1.services.vehicle\x1a\x1egoogle/protobuf/duration.proto\"4\n\x1aNotifyControlStatusRequest\x12\x16\n\x06\x61\x63tive\x18\x01 \x01(\x08R\x06\x61\x63tive\"\x1d\n\x1bNotifyControlStatusResponse\"\x19\n\x17GetFailsafeStateRequest\"\x97\x01\n\x18GetFailsafeStateResponse\x12L\n\x05state\x18\x01 \x01(\x0e\x32\x36.steeleagle_protocol.v1.services.vehicle.FailsafeStateR\x05state\x12-\n\x04time\x18\x02 \x01(\x0b\x32\x19.google.protobuf.DurationR\x04time\"z\n!SetControlFailsafeBehaviorRequest\x12U\n\x08\x62\x65havior\x18\x01 \x01(\x0e\x32\x39.steeleagle_protocol.v1.services.vehicle.FailsafeBehaviorR\x08\x62\x65havior\"$\n\"SetControlFailsafeBehaviorResponse\"w\n\x1eSetDataFailsafeBehaviorRequest\x12U\n\x08\x62\x65havior\x18\x01 \x01(\x0e\x32\x39.steeleagle_protocol.v1.services.vehicle.FailsafeBehaviorR\x08\x62\x65havior\"!\n\x1fSetDataFailsafeBehaviorResponse*\xaa\x01\n\rFailsafeState\x12\x1e\n\x1a\x46\x41ILSAFE_STATE_UNSPECIFIED\x10\x00\x12\x17\n\x13\x46\x41ILSAFE_STATE_NONE\x10\x01\x12\x1d\n\x19\x46\x41ILSAFE_STATE_NO_CONTROL\x10\x02\x12\x1a\n\x16\x46\x41ILSAFE_STATE_NO_DATA\x10\x03\x12%\n!FAILSAFE_STATE_NO_CONTROL_NO_DATA\x10\x04*\xa7\x01\n\x10\x46\x61ilsafeBehavior\x12!\n\x1d\x46\x41ILSAFE_BEHAVIOR_UNSPECIFIED\x10\x00\x12\x1a\n\x16\x46\x41ILSAFE_BEHAVIOR_HOLD\x10\x01\x12\x19\n\x15\x46\x41ILSAFE_BEHAVIOR_RTH\x10\x02\x12\x1d\n\x19\x46\x41ILSAFE_BEHAVIOR_MISSION\x10\x03\x12\x1a\n\x16\x46\x41ILSAFE_BEHAVIOR_NONE\x10\x04\x32\xbb\x05\n\rSafetyService\x12\xa2\x01\n\x13NotifyControlStatus\x12\x43.steeleagle_protocol.v1.services.vehicle.NotifyControlStatusRequest\x1a\x44.steeleagle_protocol.v1.services.vehicle.NotifyControlStatusResponse\"\x00\x12\x99\x01\n\x10GetFailsafeState\x12@.steeleagle_protocol.v1.services.vehicle.GetFailsafeStateRequest\x1a\x41.steeleagle_protocol.v1.services.vehicle.GetFailsafeStateResponse\"\x00\x12\xb7\x01\n\x1aSetControlFailsafeBehavior\x12J.steeleagle_protocol.v1.services.vehicle.SetControlFailsafeBehaviorRequest\x1aK.steeleagle_protocol.v1.services.vehicle.SetControlFailsafeBehaviorResponse\"\x00\x12\xae\x01\n\x17SetDataFailsafeBehavior\x12G.steeleagle_protocol.v1.services.vehicle.SetDataFailsafeBehaviorRequest\x1aH.steeleagle_protocol.v1.services.vehicle.SetDataFailsafeBehaviorResponse\"\x00\x42\xc8\x02\n+com.steeleagle_protocol.v1.services.vehicleB\x0bSafetyProtoP\x01ZPgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle\xa2\x02\x04SVSV\xaa\x02&SteeleagleProtocol.V1.Services.Vehicle\xca\x02&SteeleagleProtocol\\V1\\Services\\Vehicle\xe2\x02\x32SteeleagleProtocol\\V1\\Services\\Vehicle\\GPBMetadata\xea\x02)SteeleagleProtocol::V1::Services::Vehicleb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n4steeleagle_protocol/v1/services/vehicle/safety.proto\x12\'steeleagle_protocol.v1.services.vehicle\x1a\x1egoogle/protobuf/duration.proto\"\x19\n\x17GetFailsafeStateRequest\"\x97\x01\n\x18GetFailsafeStateResponse\x12L\n\x05state\x18\x01 \x01(\x0e\x32\x36.steeleagle_protocol.v1.services.vehicle.FailsafeStateR\x05state\x12-\n\x04time\x18\x02 \x01(\x0b\x32\x19.google.protobuf.DurationR\x04time\"z\n!SetControlFailsafeBehaviorRequest\x12U\n\x08\x62\x65havior\x18\x01 \x01(\x0e\x32\x39.steeleagle_protocol.v1.services.vehicle.FailsafeBehaviorR\x08\x62\x65havior\"$\n\"SetControlFailsafeBehaviorResponse\"w\n\x1eSetDataFailsafeBehaviorRequest\x12U\n\x08\x62\x65havior\x18\x01 \x01(\x0e\x32\x39.steeleagle_protocol.v1.services.vehicle.FailsafeBehaviorR\x08\x62\x65havior\"!\n\x1fSetDataFailsafeBehaviorResponse*\xaa\x01\n\rFailsafeState\x12\x1e\n\x1a\x46\x41ILSAFE_STATE_UNSPECIFIED\x10\x00\x12\x17\n\x13\x46\x41ILSAFE_STATE_NONE\x10\x01\x12\x1d\n\x19\x46\x41ILSAFE_STATE_NO_CONTROL\x10\x02\x12\x1a\n\x16\x46\x41ILSAFE_STATE_NO_DATA\x10\x03\x12%\n!FAILSAFE_STATE_NO_CONTROL_NO_DATA\x10\x04*\xa7\x01\n\x10\x46\x61ilsafeBehavior\x12!\n\x1d\x46\x41ILSAFE_BEHAVIOR_UNSPECIFIED\x10\x00\x12\x1a\n\x16\x46\x41ILSAFE_BEHAVIOR_HOLD\x10\x01\x12\x19\n\x15\x46\x41ILSAFE_BEHAVIOR_RTH\x10\x02\x12\x1d\n\x19\x46\x41ILSAFE_BEHAVIOR_MISSION\x10\x03\x12\x1a\n\x16\x46\x41ILSAFE_BEHAVIOR_NONE\x10\x04\x32\x96\x04\n\rSafetyService\x12\x99\x01\n\x10GetFailsafeState\x12@.steeleagle_protocol.v1.services.vehicle.GetFailsafeStateRequest\x1a\x41.steeleagle_protocol.v1.services.vehicle.GetFailsafeStateResponse\"\x00\x12\xb7\x01\n\x1aSetControlFailsafeBehavior\x12J.steeleagle_protocol.v1.services.vehicle.SetControlFailsafeBehaviorRequest\x1aK.steeleagle_protocol.v1.services.vehicle.SetControlFailsafeBehaviorResponse\"\x00\x12\xae\x01\n\x17SetDataFailsafeBehavior\x12G.steeleagle_protocol.v1.services.vehicle.SetDataFailsafeBehaviorRequest\x1aH.steeleagle_protocol.v1.services.vehicle.SetDataFailsafeBehaviorResponse\"\x00\x42\xc8\x02\n+com.steeleagle_protocol.v1.services.vehicleB\x0bSafetyProtoP\x01ZPgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle\xa2\x02\x04SVSV\xaa\x02&SteeleagleProtocol.V1.Services.Vehicle\xca\x02&SteeleagleProtocol\\V1\\Services\\Vehicle\xe2\x02\x32SteeleagleProtocol\\V1\\Services\\Vehicle\\GPBMetadata\xea\x02)SteeleagleProtocol::V1::Services::Vehicleb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,26 +33,22 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'steeleagle_protocol.v1.serv
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'\n+com.steeleagle_protocol.v1.services.vehicleB\013SafetyProtoP\001ZPgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle\242\002\004SVSV\252\002&SteeleagleProtocol.V1.Services.Vehicle\312\002&SteeleagleProtocol\\V1\\Services\\Vehicle\342\0022SteeleagleProtocol\\V1\\Services\\Vehicle\\GPBMetadata\352\002)SteeleagleProtocol::V1::Services::Vehicle'
-  _globals['_FAILSAFESTATE']._serialized_start=714
-  _globals['_FAILSAFESTATE']._serialized_end=884
-  _globals['_FAILSAFEBEHAVIOR']._serialized_start=887
-  _globals['_FAILSAFEBEHAVIOR']._serialized_end=1054
-  _globals['_NOTIFYCONTROLSTATUSREQUEST']._serialized_start=129
-  _globals['_NOTIFYCONTROLSTATUSREQUEST']._serialized_end=181
-  _globals['_NOTIFYCONTROLSTATUSRESPONSE']._serialized_start=183
-  _globals['_NOTIFYCONTROLSTATUSRESPONSE']._serialized_end=212
-  _globals['_GETFAILSAFESTATEREQUEST']._serialized_start=214
-  _globals['_GETFAILSAFESTATEREQUEST']._serialized_end=239
-  _globals['_GETFAILSAFESTATERESPONSE']._serialized_start=242
-  _globals['_GETFAILSAFESTATERESPONSE']._serialized_end=393
-  _globals['_SETCONTROLFAILSAFEBEHAVIORREQUEST']._serialized_start=395
-  _globals['_SETCONTROLFAILSAFEBEHAVIORREQUEST']._serialized_end=517
-  _globals['_SETCONTROLFAILSAFEBEHAVIORRESPONSE']._serialized_start=519
-  _globals['_SETCONTROLFAILSAFEBEHAVIORRESPONSE']._serialized_end=555
-  _globals['_SETDATAFAILSAFEBEHAVIORREQUEST']._serialized_start=557
-  _globals['_SETDATAFAILSAFEBEHAVIORREQUEST']._serialized_end=676
-  _globals['_SETDATAFAILSAFEBEHAVIORRESPONSE']._serialized_start=678
-  _globals['_SETDATAFAILSAFEBEHAVIORRESPONSE']._serialized_end=711
-  _globals['_SAFETYSERVICE']._serialized_start=1057
-  _globals['_SAFETYSERVICE']._serialized_end=1756
+  _globals['_FAILSAFESTATE']._serialized_start=629
+  _globals['_FAILSAFESTATE']._serialized_end=799
+  _globals['_FAILSAFEBEHAVIOR']._serialized_start=802
+  _globals['_FAILSAFEBEHAVIOR']._serialized_end=969
+  _globals['_GETFAILSAFESTATEREQUEST']._serialized_start=129
+  _globals['_GETFAILSAFESTATEREQUEST']._serialized_end=154
+  _globals['_GETFAILSAFESTATERESPONSE']._serialized_start=157
+  _globals['_GETFAILSAFESTATERESPONSE']._serialized_end=308
+  _globals['_SETCONTROLFAILSAFEBEHAVIORREQUEST']._serialized_start=310
+  _globals['_SETCONTROLFAILSAFEBEHAVIORREQUEST']._serialized_end=432
+  _globals['_SETCONTROLFAILSAFEBEHAVIORRESPONSE']._serialized_start=434
+  _globals['_SETCONTROLFAILSAFEBEHAVIORRESPONSE']._serialized_end=470
+  _globals['_SETDATAFAILSAFEBEHAVIORREQUEST']._serialized_start=472
+  _globals['_SETDATAFAILSAFEBEHAVIORREQUEST']._serialized_end=591
+  _globals['_SETDATAFAILSAFEBEHAVIORRESPONSE']._serialized_start=593
+  _globals['_SETDATAFAILSAFEBEHAVIORRESPONSE']._serialized_end=626
+  _globals['_SAFETYSERVICE']._serialized_start=972
+  _globals['_SAFETYSERVICE']._serialized_end=1506
 # @@protoc_insertion_point(module_scope)

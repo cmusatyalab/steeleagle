@@ -17,17 +17,6 @@ import "google/protobuf/duration.proto";
  */
 service SafetyService {
   /*
-   * Notifies the vehicle of the orchestrator link status.
-   *
-   * Tells the vehicle when the daemon has lost connection to its orchestrator
-   * which then enters `FAILSAFE_NO_CONTROL` or `FAILSAFE_NO_CONTROL_NO_DATA`.
-   * Also tells the vehicle when the connection is restored so it can exit the
-   * failsafe state. This is usually called by the daemon.
-   */
-  rpc NotifyControlStatus (NotifyControlStatusRequest)
-    returns (NotifyControlStatusResponse) {}
-
-  /*
    * Query the vehicle failsafe state.
    *
    * Gets the current failsafe state of the vehicle, along with the downtime
@@ -74,12 +63,6 @@ enum FailsafeBehavior {
   FAILSAFE_BEHAVIOR_MISSION = 3;     // start the last uploaded mission
   FAILSAFE_BEHAVIOR_NONE = 4;        // do nothing
 }
-
-message NotifyControlStatusRequest {
-  bool active = 1; // whether or not controls are active
-}
-
-message NotifyControlStatusResponse {}
 
 message GetFailsafeStateRequest {}
 

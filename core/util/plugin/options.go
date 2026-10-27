@@ -172,8 +172,8 @@ func WithEnvironment(key, value string) PluginOption {
 	}
 }
 
-// WithParent scopes the plugin under a parent directory so the run directory
-// is its child.
+// WithParentDir sets the directory the plugin's run directory (named after the
+// plugin) is created under. If unset, the working directory is used.
 func WithParentDir(parentDir string) PluginOption {
 	return func(k *BasePlugin) {
 		k.parentDir = parentDir

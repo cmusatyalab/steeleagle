@@ -88,7 +88,6 @@ func (p *SandboxPlugin) createSandbox() error {
 		"--ro-bind", "/lib", "/lib",
 		"--ro-bind", "/lib64", "/lib64",
 		"--ro-bind", "/bin", "/bin",
-		"--bind", p.runDir, p.runDir,
 		"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
 		"--ro-bind", "/etc/nsswitch.conf", "/etc/nsswitch.conf",
 		// CA certificates and a temp directory are required by pixi
@@ -96,6 +95,8 @@ func (p *SandboxPlugin) createSandbox() error {
 		"--ro-bind-try", "/etc/ca-certificates", "/etc/ca-certificates",
 		"--ro-bind-try", "/etc/pki", "/etc/pki",
 		"--tmpfs", "/tmp",
+		// Bound after /tmp so a run directory under /tmp is not hidden by the tmpfs
+		"--bind", p.runDir, p.runDir,
 		"--proc", "/proc",
 		"--dev", "/dev",
 		"--die-with-parent",

@@ -35,6 +35,14 @@ service DaemonService {
     returns (stream RegisterOrchestratorResponse) {}
 
   /*
+   * Gets the connection status of this daemon
+   *
+   * Returns the status of this daemon's connection to its orchestrator daemon.
+   */
+  rpc GetConnectionStatus (GetConnectionStatusRequest)
+    returns (GetConnectionStatusResponse) {}
+
+  /*
    * Load a TOML config.
    *
    * Configures the daemon with a TOML config according to eagled specification.
@@ -139,12 +147,30 @@ message Service {
   string auth = 8;                     // auth level of this service
 }
 
+// An unavailable daemon.
+message Unavailable {
+  string ip = 1;        // IP address
+  string hostname = 2;  // hostname
+  string reason = 3;    // reason for unavailability
+}
+
 message RegisterOrchestratorRequest {
   repeated Service services = 1; // services of the daemon registering
+  string hostname = 2;           // hostname of the daemon registering
+  int32 port = 3;                // port of the daemon registering
 }
 
 message RegisterOrchestratorResponse {
   repeated Service services = 1; // services of the orchestrator
+  string hostname = 2;           // hostname of the orchestrator
+  bytes cert = 3;                // DER cert of the orchestrator's local compute service
+  int32 lcs_port = 4;            // port of the orchestrator's local compute service
+}
+
+message GetConnectionStatusRequest {}
+
+message GetConnectionStatusResponse {
+  bool connected = 1; // whether or not the daemon is connected
 }
 
 message ConfigureRequest {
@@ -165,7 +191,7 @@ message ListServicesResponse {
   // services on the daemon (merged services on orchestrator)
   repeated Service services = 1;
   // remote daemons that were unavailable (orchestrator only)
-  repeated string unavailable = 2;
+  repeated Unavailable unavailable = 2;
 }
 
 message RestartServiceRequest {

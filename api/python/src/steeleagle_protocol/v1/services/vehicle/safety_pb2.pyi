@@ -35,16 +35,6 @@ FAILSAFE_BEHAVIOR_RTH: FailsafeBehavior
 FAILSAFE_BEHAVIOR_MISSION: FailsafeBehavior
 FAILSAFE_BEHAVIOR_NONE: FailsafeBehavior
 
-class NotifyControlStatusRequest(_message.Message):
-    __slots__ = ("active",)
-    ACTIVE_FIELD_NUMBER: _ClassVar[int]
-    active: bool
-    def __init__(self, active: _Optional[bool] = ...) -> None: ...
-
-class NotifyControlStatusResponse(_message.Message):
-    __slots__ = ()
-    def __init__(self) -> None: ...
-
 class GetFailsafeStateRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...

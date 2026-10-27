@@ -16,7 +16,22 @@ orchestrator = "homebase:9000"
 # subdirectory). Versions (a commit SHA, a branch, or a tag) are supported by
 # appending them with an `@`, as in Go (optional, defaults to latest)
 package = "github.com/cmusatyalab/steeleagle_plugins//simulator"
-[[simulator.actors]] # Movable simulator actors
+[simulator.args] # Simulator args
+[[simulator.args.vehicles]]
+# Name of the vehicle (should match the later service declaration)
+name = "cassowary"
+# Interface name to use
+interface = "steeleagle"
+# Origin point of the vehicle
+origin = [40.33862, -79.86521, 0.0]
+[simulator.args.vehicles.args] # Optional arguments
+
+[[simulator.args.engines]]
+# Name of the service
+name = "yolo_sim"
+[simulator.args.engines.args] # Optional arguments
+
+[[simulator.args.actors]]
 # Tag of the actor
 tag = "person"
 # Waypoints to travel
@@ -33,13 +48,14 @@ name = "harpy"
 # Type of the service: (vehicle, engine, extra)
 type = "vehicle"
 # Auth level of the service: (admin, privileged, user, external, unknown)
-# (optional, defaults to unknown)
+# (optional, defaults to privileged for vehicles, and external for engines
+# and extras)
 auth = "admin"
 [services.plugin] # Plugin for this service
 # Plugin to use
 plugin = "parrot_anafi"
 # Package (a git repository where a double slash indicates the
-# subdirectory, required unless the service is simulated). Versions (a commit
+# subdirectory). Versions (a commit
 # SHA, a branch, or a tag) are supported by appending them with an `@`, as in
 # Go (optional, defaults to latest)
 package = "github.com/cmusatyalab/steeleagle_plugins//drivers/parrot@asdef9"
@@ -51,7 +67,7 @@ ip = "10.202.0.1"
 name = "yolo"
 # Type of the service
 type = "engine"
-# Auth level of the service (optional, defaults to unknown)
+# Auth level of the service (optional, defaults to external for engines)
 auth = "external"
 [services.plugin] # Plugin for this service
 # Plugin to use
@@ -60,7 +76,7 @@ plugin = "yolo_qnn"
 # subdirectory)
 package = "github.com/cmusatyalab/steeleagle_plugins//engines/yolo"
 # Isolation type (optional, sandbox or container url with tag)
-isolate = "sandbox"
+isolation = "sandbox"
 [services.plugin.args] # Args for this plugin (can be empty)
 confidence = 0.7
 
@@ -69,7 +85,7 @@ confidence = 0.7
 name = "yolo_nq"
 # Type of the service
 type = "engine"
-# Auth level of the service (optional, defaults to unknown)
+# Auth level of the service (optional, defaults to external for engines)
 auth = "external"
 [services.plugin] # Plugin for this service
 # Plugin to use
@@ -78,7 +94,7 @@ plugin = "yolo_qnn"
 # subdirectory)
 package = "github.com/cmusatyalab/steeleagle_plugins//engines/yolo"
 # Isolation type (optional, sandbox or container url with tag)
-isolate = "docker.io/library/alpine:latest"
+isolation = "docker.io/library/alpine:latest"
 [services.plugin.args] # Args for this plugin (can be empty)
 
 [[services]]
@@ -88,11 +104,13 @@ name = "cassowary"
 type = "vehicle"
 # Run the service in the simulator (optional, defaults to false)
 simulate = true
-[services.plugin] # Plugin from the simulator's package (package and isolate are ignored)
+[services.plugin] # Plugin for this service
 # Plugin to use
 plugin = "sim_vehicle"
-[services.plugin.args] # Args for this plugin (can be empty)
-origin = [40.33862, -79.86521, 0.0]
+# Package (usually the simulator package for simulated services)
+package = "github.com/cmusatyalab/steeleagle_plugins//simulator"
+# Isolation and args are ignored for simulated services, which are configured
+# through the simulator args
 
 [[services]]
 # Name of the service
@@ -101,7 +119,8 @@ name = "yolo_sim"
 type = "engine"
 # Run the service in the simulator (optional, defaults to false)
 simulate = true
-[services.plugin] # Plugin from the simulator's package (package and isolate are ignored)
+[services.plugin] # Plugin for this service
 # Plugin to use
 plugin = "sim_detector"
-[services.plugin.args] # Args for this plugin (can be empty)
+# Package (usually the simulator package for simulated services)
+package = "github.com/cmusatyalab/steeleagle_plugins//simulator"

@@ -23,7 +23,6 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SafetyService_NotifyControlStatus_FullMethodName        = "/steeleagle_protocol.v1.services.vehicle.SafetyService/NotifyControlStatus"
 	SafetyService_GetFailsafeState_FullMethodName           = "/steeleagle_protocol.v1.services.vehicle.SafetyService/GetFailsafeState"
 	SafetyService_SetControlFailsafeBehavior_FullMethodName = "/steeleagle_protocol.v1.services.vehicle.SafetyService/SetControlFailsafeBehavior"
 	SafetyService_SetDataFailsafeBehavior_FullMethodName    = "/steeleagle_protocol.v1.services.vehicle.SafetyService/SetDataFailsafeBehavior"
@@ -38,13 +37,6 @@ const (
 // This service is used to set the vehicle disconnect behavior, geofences,
 // and to query failsafe states.
 type SafetyServiceClient interface {
-	// Notifies the vehicle of the orchestrator link status.
-	//
-	// Tells the vehicle when the daemon has lost connection to its orchestrator
-	// which then enters `FAILSAFE_NO_CONTROL` or `FAILSAFE_NO_CONTROL_NO_DATA`.
-	// Also tells the vehicle when the connection is restored so it can exit the
-	// failsafe state. This is usually called by the daemon.
-	NotifyControlStatus(ctx context.Context, in *NotifyControlStatusRequest, opts ...grpc.CallOption) (*NotifyControlStatusResponse, error)
 	// Query the vehicle failsafe state.
 	//
 	// Gets the current failsafe state of the vehicle, along with the downtime
@@ -70,16 +62,6 @@ type safetyServiceClient struct {
 
 func NewSafetyServiceClient(cc grpc.ClientConnInterface) SafetyServiceClient {
 	return &safetyServiceClient{cc}
-}
-
-func (c *safetyServiceClient) NotifyControlStatus(ctx context.Context, in *NotifyControlStatusRequest, opts ...grpc.CallOption) (*NotifyControlStatusResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(NotifyControlStatusResponse)
-	err := c.cc.Invoke(ctx, SafetyService_NotifyControlStatus_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *safetyServiceClient) GetFailsafeState(ctx context.Context, in *GetFailsafeStateRequest, opts ...grpc.CallOption) (*GetFailsafeStateResponse, error) {
@@ -121,13 +103,6 @@ func (c *safetyServiceClient) SetDataFailsafeBehavior(ctx context.Context, in *S
 // This service is used to set the vehicle disconnect behavior, geofences,
 // and to query failsafe states.
 type SafetyServiceServer interface {
-	// Notifies the vehicle of the orchestrator link status.
-	//
-	// Tells the vehicle when the daemon has lost connection to its orchestrator
-	// which then enters `FAILSAFE_NO_CONTROL` or `FAILSAFE_NO_CONTROL_NO_DATA`.
-	// Also tells the vehicle when the connection is restored so it can exit the
-	// failsafe state. This is usually called by the daemon.
-	NotifyControlStatus(context.Context, *NotifyControlStatusRequest) (*NotifyControlStatusResponse, error)
 	// Query the vehicle failsafe state.
 	//
 	// Gets the current failsafe state of the vehicle, along with the downtime
@@ -155,9 +130,6 @@ type SafetyServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedSafetyServiceServer struct{}
 
-func (UnimplementedSafetyServiceServer) NotifyControlStatus(context.Context, *NotifyControlStatusRequest) (*NotifyControlStatusResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method NotifyControlStatus not implemented")
-}
 func (UnimplementedSafetyServiceServer) GetFailsafeState(context.Context, *GetFailsafeStateRequest) (*GetFailsafeStateResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetFailsafeState not implemented")
 }
@@ -186,24 +158,6 @@ func RegisterSafetyServiceServer(s grpc.ServiceRegistrar, srv SafetyServiceServe
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&SafetyService_ServiceDesc, srv)
-}
-
-func _SafetyService_NotifyControlStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(NotifyControlStatusRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SafetyServiceServer).NotifyControlStatus(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SafetyService_NotifyControlStatus_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SafetyServiceServer).NotifyControlStatus(ctx, req.(*NotifyControlStatusRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _SafetyService_GetFailsafeState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -267,10 +221,6 @@ var SafetyService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "steeleagle_protocol.v1.services.vehicle.SafetyService",
 	HandlerType: (*SafetyServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "NotifyControlStatus",
-			Handler:    _SafetyService_NotifyControlStatus_Handler,
-		},
 		{
 			MethodName: "GetFailsafeState",
 			Handler:    _SafetyService_GetFailsafeState_Handler,

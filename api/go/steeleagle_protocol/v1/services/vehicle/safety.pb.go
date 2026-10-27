@@ -127,106 +127,6 @@ func (x FailsafeBehavior) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-type NotifyControlStatusRequest struct {
-	state             protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Active bool                   `protobuf:"varint,1,opt,name=active,proto3"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
-}
-
-func (x *NotifyControlStatusRequest) Reset() {
-	*x = NotifyControlStatusRequest{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *NotifyControlStatusRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*NotifyControlStatusRequest) ProtoMessage() {}
-
-func (x *NotifyControlStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *NotifyControlStatusRequest) GetActive() bool {
-	if x != nil {
-		return x.xxx_hidden_Active
-	}
-	return false
-}
-
-func (x *NotifyControlStatusRequest) SetActive(v bool) {
-	x.xxx_hidden_Active = v
-}
-
-type NotifyControlStatusRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Active bool
-}
-
-func (b0 NotifyControlStatusRequest_builder) Build() *NotifyControlStatusRequest {
-	m0 := &NotifyControlStatusRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Active = b.Active
-	return m0
-}
-
-type NotifyControlStatusResponse struct {
-	state         protoimpl.MessageState `protogen:"opaque.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *NotifyControlStatusResponse) Reset() {
-	*x = NotifyControlStatusResponse{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *NotifyControlStatusResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*NotifyControlStatusResponse) ProtoMessage() {}
-
-func (x *NotifyControlStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-type NotifyControlStatusResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-}
-
-func (b0 NotifyControlStatusResponse_builder) Build() *NotifyControlStatusResponse {
-	m0 := &NotifyControlStatusResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
-	return m0
-}
-
 type GetFailsafeStateRequest struct {
 	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -235,7 +135,7 @@ type GetFailsafeStateRequest struct {
 
 func (x *GetFailsafeStateRequest) Reset() {
 	*x = GetFailsafeStateRequest{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[2]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -247,7 +147,7 @@ func (x *GetFailsafeStateRequest) String() string {
 func (*GetFailsafeStateRequest) ProtoMessage() {}
 
 func (x *GetFailsafeStateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[2]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -280,7 +180,7 @@ type GetFailsafeStateResponse struct {
 
 func (x *GetFailsafeStateResponse) Reset() {
 	*x = GetFailsafeStateResponse{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[3]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -292,7 +192,7 @@ func (x *GetFailsafeStateResponse) String() string {
 func (*GetFailsafeStateResponse) ProtoMessage() {}
 
 func (x *GetFailsafeStateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[3]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -361,7 +261,7 @@ type SetControlFailsafeBehaviorRequest struct {
 
 func (x *SetControlFailsafeBehaviorRequest) Reset() {
 	*x = SetControlFailsafeBehaviorRequest{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[4]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -373,7 +273,7 @@ func (x *SetControlFailsafeBehaviorRequest) String() string {
 func (*SetControlFailsafeBehaviorRequest) ProtoMessage() {}
 
 func (x *SetControlFailsafeBehaviorRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[4]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -417,7 +317,7 @@ type SetControlFailsafeBehaviorResponse struct {
 
 func (x *SetControlFailsafeBehaviorResponse) Reset() {
 	*x = SetControlFailsafeBehaviorResponse{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[5]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -429,7 +329,7 @@ func (x *SetControlFailsafeBehaviorResponse) String() string {
 func (*SetControlFailsafeBehaviorResponse) ProtoMessage() {}
 
 func (x *SetControlFailsafeBehaviorResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[5]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -461,7 +361,7 @@ type SetDataFailsafeBehaviorRequest struct {
 
 func (x *SetDataFailsafeBehaviorRequest) Reset() {
 	*x = SetDataFailsafeBehaviorRequest{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[6]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -473,7 +373,7 @@ func (x *SetDataFailsafeBehaviorRequest) String() string {
 func (*SetDataFailsafeBehaviorRequest) ProtoMessage() {}
 
 func (x *SetDataFailsafeBehaviorRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[6]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -517,7 +417,7 @@ type SetDataFailsafeBehaviorResponse struct {
 
 func (x *SetDataFailsafeBehaviorResponse) Reset() {
 	*x = SetDataFailsafeBehaviorResponse{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[7]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -529,7 +429,7 @@ func (x *SetDataFailsafeBehaviorResponse) String() string {
 func (*SetDataFailsafeBehaviorResponse) ProtoMessage() {}
 
 func (x *SetDataFailsafeBehaviorResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[7]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -556,10 +456,7 @@ var File_steeleagle_protocol_v1_services_vehicle_safety_proto protoreflect.FileD
 
 const file_steeleagle_protocol_v1_services_vehicle_safety_proto_rawDesc = "" +
 	"\n" +
-	"4steeleagle_protocol/v1/services/vehicle/safety.proto\x12'steeleagle_protocol.v1.services.vehicle\x1a\x1egoogle/protobuf/duration.proto\"4\n" +
-	"\x1aNotifyControlStatusRequest\x12\x16\n" +
-	"\x06active\x18\x01 \x01(\bR\x06active\"\x1d\n" +
-	"\x1bNotifyControlStatusResponse\"\x19\n" +
+	"4steeleagle_protocol/v1/services/vehicle/safety.proto\x12'steeleagle_protocol.v1.services.vehicle\x1a\x1egoogle/protobuf/duration.proto\"\x19\n" +
 	"\x17GetFailsafeStateRequest\"\x97\x01\n" +
 	"\x18GetFailsafeStateResponse\x12L\n" +
 	"\x05state\x18\x01 \x01(\x0e26.steeleagle_protocol.v1.services.vehicle.FailsafeStateR\x05state\x12-\n" +
@@ -581,47 +478,42 @@ const file_steeleagle_protocol_v1_services_vehicle_safety_proto_rawDesc = "" +
 	"\x16FAILSAFE_BEHAVIOR_HOLD\x10\x01\x12\x19\n" +
 	"\x15FAILSAFE_BEHAVIOR_RTH\x10\x02\x12\x1d\n" +
 	"\x19FAILSAFE_BEHAVIOR_MISSION\x10\x03\x12\x1a\n" +
-	"\x16FAILSAFE_BEHAVIOR_NONE\x10\x042\xbb\x05\n" +
-	"\rSafetyService\x12\xa2\x01\n" +
-	"\x13NotifyControlStatus\x12C.steeleagle_protocol.v1.services.vehicle.NotifyControlStatusRequest\x1aD.steeleagle_protocol.v1.services.vehicle.NotifyControlStatusResponse\"\x00\x12\x99\x01\n" +
+	"\x16FAILSAFE_BEHAVIOR_NONE\x10\x042\x96\x04\n" +
+	"\rSafetyService\x12\x99\x01\n" +
 	"\x10GetFailsafeState\x12@.steeleagle_protocol.v1.services.vehicle.GetFailsafeStateRequest\x1aA.steeleagle_protocol.v1.services.vehicle.GetFailsafeStateResponse\"\x00\x12\xb7\x01\n" +
 	"\x1aSetControlFailsafeBehavior\x12J.steeleagle_protocol.v1.services.vehicle.SetControlFailsafeBehaviorRequest\x1aK.steeleagle_protocol.v1.services.vehicle.SetControlFailsafeBehaviorResponse\"\x00\x12\xae\x01\n" +
 	"\x17SetDataFailsafeBehavior\x12G.steeleagle_protocol.v1.services.vehicle.SetDataFailsafeBehaviorRequest\x1aH.steeleagle_protocol.v1.services.vehicle.SetDataFailsafeBehaviorResponse\"\x00B\xc8\x02\n" +
 	"+com.steeleagle_protocol.v1.services.vehicleB\vSafetyProtoP\x01ZPgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle\xa2\x02\x04SVSV\xaa\x02&SteeleagleProtocol.V1.Services.Vehicle\xca\x02&SteeleagleProtocol\\V1\\Services\\Vehicle\xe2\x022SteeleagleProtocol\\V1\\Services\\Vehicle\\GPBMetadata\xea\x02)SteeleagleProtocol::V1::Services::Vehicleb\x06proto3"
 
 var file_steeleagle_protocol_v1_services_vehicle_safety_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_steeleagle_protocol_v1_services_vehicle_safety_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_steeleagle_protocol_v1_services_vehicle_safety_proto_goTypes = []any{
 	(FailsafeState)(0),                         // 0: steeleagle_protocol.v1.services.vehicle.FailsafeState
 	(FailsafeBehavior)(0),                      // 1: steeleagle_protocol.v1.services.vehicle.FailsafeBehavior
-	(*NotifyControlStatusRequest)(nil),         // 2: steeleagle_protocol.v1.services.vehicle.NotifyControlStatusRequest
-	(*NotifyControlStatusResponse)(nil),        // 3: steeleagle_protocol.v1.services.vehicle.NotifyControlStatusResponse
-	(*GetFailsafeStateRequest)(nil),            // 4: steeleagle_protocol.v1.services.vehicle.GetFailsafeStateRequest
-	(*GetFailsafeStateResponse)(nil),           // 5: steeleagle_protocol.v1.services.vehicle.GetFailsafeStateResponse
-	(*SetControlFailsafeBehaviorRequest)(nil),  // 6: steeleagle_protocol.v1.services.vehicle.SetControlFailsafeBehaviorRequest
-	(*SetControlFailsafeBehaviorResponse)(nil), // 7: steeleagle_protocol.v1.services.vehicle.SetControlFailsafeBehaviorResponse
-	(*SetDataFailsafeBehaviorRequest)(nil),     // 8: steeleagle_protocol.v1.services.vehicle.SetDataFailsafeBehaviorRequest
-	(*SetDataFailsafeBehaviorResponse)(nil),    // 9: steeleagle_protocol.v1.services.vehicle.SetDataFailsafeBehaviorResponse
-	(*durationpb.Duration)(nil),                // 10: google.protobuf.Duration
+	(*GetFailsafeStateRequest)(nil),            // 2: steeleagle_protocol.v1.services.vehicle.GetFailsafeStateRequest
+	(*GetFailsafeStateResponse)(nil),           // 3: steeleagle_protocol.v1.services.vehicle.GetFailsafeStateResponse
+	(*SetControlFailsafeBehaviorRequest)(nil),  // 4: steeleagle_protocol.v1.services.vehicle.SetControlFailsafeBehaviorRequest
+	(*SetControlFailsafeBehaviorResponse)(nil), // 5: steeleagle_protocol.v1.services.vehicle.SetControlFailsafeBehaviorResponse
+	(*SetDataFailsafeBehaviorRequest)(nil),     // 6: steeleagle_protocol.v1.services.vehicle.SetDataFailsafeBehaviorRequest
+	(*SetDataFailsafeBehaviorResponse)(nil),    // 7: steeleagle_protocol.v1.services.vehicle.SetDataFailsafeBehaviorResponse
+	(*durationpb.Duration)(nil),                // 8: google.protobuf.Duration
 }
 var file_steeleagle_protocol_v1_services_vehicle_safety_proto_depIdxs = []int32{
-	0,  // 0: steeleagle_protocol.v1.services.vehicle.GetFailsafeStateResponse.state:type_name -> steeleagle_protocol.v1.services.vehicle.FailsafeState
-	10, // 1: steeleagle_protocol.v1.services.vehicle.GetFailsafeStateResponse.time:type_name -> google.protobuf.Duration
-	1,  // 2: steeleagle_protocol.v1.services.vehicle.SetControlFailsafeBehaviorRequest.behavior:type_name -> steeleagle_protocol.v1.services.vehicle.FailsafeBehavior
-	1,  // 3: steeleagle_protocol.v1.services.vehicle.SetDataFailsafeBehaviorRequest.behavior:type_name -> steeleagle_protocol.v1.services.vehicle.FailsafeBehavior
-	2,  // 4: steeleagle_protocol.v1.services.vehicle.SafetyService.NotifyControlStatus:input_type -> steeleagle_protocol.v1.services.vehicle.NotifyControlStatusRequest
-	4,  // 5: steeleagle_protocol.v1.services.vehicle.SafetyService.GetFailsafeState:input_type -> steeleagle_protocol.v1.services.vehicle.GetFailsafeStateRequest
-	6,  // 6: steeleagle_protocol.v1.services.vehicle.SafetyService.SetControlFailsafeBehavior:input_type -> steeleagle_protocol.v1.services.vehicle.SetControlFailsafeBehaviorRequest
-	8,  // 7: steeleagle_protocol.v1.services.vehicle.SafetyService.SetDataFailsafeBehavior:input_type -> steeleagle_protocol.v1.services.vehicle.SetDataFailsafeBehaviorRequest
-	3,  // 8: steeleagle_protocol.v1.services.vehicle.SafetyService.NotifyControlStatus:output_type -> steeleagle_protocol.v1.services.vehicle.NotifyControlStatusResponse
-	5,  // 9: steeleagle_protocol.v1.services.vehicle.SafetyService.GetFailsafeState:output_type -> steeleagle_protocol.v1.services.vehicle.GetFailsafeStateResponse
-	7,  // 10: steeleagle_protocol.v1.services.vehicle.SafetyService.SetControlFailsafeBehavior:output_type -> steeleagle_protocol.v1.services.vehicle.SetControlFailsafeBehaviorResponse
-	9,  // 11: steeleagle_protocol.v1.services.vehicle.SafetyService.SetDataFailsafeBehavior:output_type -> steeleagle_protocol.v1.services.vehicle.SetDataFailsafeBehaviorResponse
-	8,  // [8:12] is the sub-list for method output_type
-	4,  // [4:8] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	0, // 0: steeleagle_protocol.v1.services.vehicle.GetFailsafeStateResponse.state:type_name -> steeleagle_protocol.v1.services.vehicle.FailsafeState
+	8, // 1: steeleagle_protocol.v1.services.vehicle.GetFailsafeStateResponse.time:type_name -> google.protobuf.Duration
+	1, // 2: steeleagle_protocol.v1.services.vehicle.SetControlFailsafeBehaviorRequest.behavior:type_name -> steeleagle_protocol.v1.services.vehicle.FailsafeBehavior
+	1, // 3: steeleagle_protocol.v1.services.vehicle.SetDataFailsafeBehaviorRequest.behavior:type_name -> steeleagle_protocol.v1.services.vehicle.FailsafeBehavior
+	2, // 4: steeleagle_protocol.v1.services.vehicle.SafetyService.GetFailsafeState:input_type -> steeleagle_protocol.v1.services.vehicle.GetFailsafeStateRequest
+	4, // 5: steeleagle_protocol.v1.services.vehicle.SafetyService.SetControlFailsafeBehavior:input_type -> steeleagle_protocol.v1.services.vehicle.SetControlFailsafeBehaviorRequest
+	6, // 6: steeleagle_protocol.v1.services.vehicle.SafetyService.SetDataFailsafeBehavior:input_type -> steeleagle_protocol.v1.services.vehicle.SetDataFailsafeBehaviorRequest
+	3, // 7: steeleagle_protocol.v1.services.vehicle.SafetyService.GetFailsafeState:output_type -> steeleagle_protocol.v1.services.vehicle.GetFailsafeStateResponse
+	5, // 8: steeleagle_protocol.v1.services.vehicle.SafetyService.SetControlFailsafeBehavior:output_type -> steeleagle_protocol.v1.services.vehicle.SetControlFailsafeBehaviorResponse
+	7, // 9: steeleagle_protocol.v1.services.vehicle.SafetyService.SetDataFailsafeBehavior:output_type -> steeleagle_protocol.v1.services.vehicle.SetDataFailsafeBehaviorResponse
+	7, // [7:10] is the sub-list for method output_type
+	4, // [4:7] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_steeleagle_protocol_v1_services_vehicle_safety_proto_init() }
@@ -635,7 +527,7 @@ func file_steeleagle_protocol_v1_services_vehicle_safety_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_services_vehicle_safety_proto_rawDesc), len(file_steeleagle_protocol_v1_services_vehicle_safety_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   8,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

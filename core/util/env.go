@@ -66,10 +66,10 @@ func GetVpnDir() (string, error) {
 	return vpnPath, nil
 }
 
-// GetPackageDirByCategory returns the persistent directory for installed packages
-// by category, creating it if it does not exist.
-func GetPackageDirByCategory(category string) (string, error) {
-	dir := filepath.Join(GetDataHome(), projectDir, packageDir, category)
+// GetPackageDir returns the persistent directory for installed packages, creating
+// it if it does not exist.
+func GetPackageDir() (string, error) {
+	dir := filepath.Join(GetDataHome(), projectDir, packageDir)
 	err := os.MkdirAll(dir, 0755)
 	if err != nil {
 		return "", err
@@ -77,10 +77,10 @@ func GetPackageDirByCategory(category string) (string, error) {
 	return dir, nil
 }
 
-// GetPackageDirByCategoryAndName returns the directory for a package by name
-// and category, returning an error if it does not exist.
-func GetPackageDirByCategoryAndName(category, name string) (string, error) {
-	dir, err := GetPackageDirByCategory(category)
+// GetPackageDirByName returns the directory for an installed package by name,
+// returning an error if it does not exist.
+func GetPackageDirByName(name string) (string, error) {
+	dir, err := GetPackageDir()
 	if err != nil {
 		return "", err
 	}
@@ -91,11 +91,11 @@ func GetPackageDirByCategoryAndName(category, name string) (string, error) {
 	return path, nil
 }
 
-// GetLogByName returns the log file for a service by name, creating it if it does
-// not exist.
+// GetLogByName returns the log file for a service by name, creating its
+// directory if it does not exist.
 func GetLogByName(name string) (string, error) {
 	file := filepath.Join(GetDataHome(), projectDir, logDir, name+logSuffix)
-	err := os.MkdirAll(file, 0755)
+	err := os.MkdirAll(filepath.Dir(file), 0755)
 	if err != nil {
 		return "", err
 	}
@@ -106,17 +106,6 @@ func GetLogByName(name string) (string, error) {
 // not exist.
 func GetPendingDir() (string, error) {
 	dir := filepath.Join(GetDataHome(), projectDir, pendingDir)
-	err := os.MkdirAll(dir, 0755)
-	if err != nil {
-		return "", err
-	}
-	return dir, nil
-}
-
-// GetPendingDirByCategory returns the pending directory for a package category,
-// creating it if it does not exist.
-func GetPendingDirByCategory(category string) (string, error) {
-	dir := filepath.Join(GetDataHome(), projectDir, pendingDir, category)
 	err := os.MkdirAll(dir, 0755)
 	if err != nil {
 		return "", err
@@ -154,10 +143,10 @@ func GetPluginDir() (string, error) {
 	return pluginPath, nil
 }
 
-// GetPluginDirByCategory returns the runtime directory for plugins given a category,
-// creating it if it does not exist.
-func GetPluginDirByCategory(category string) (string, error) {
-	pluginPath := filepath.Join(GetRuntimeDir(), projectDir, pluginDir, category)
+// GetPluginDirByName returns the runtime directory for the plugin of the
+// service with the given name, creating it if it does not exist.
+func GetPluginDirByName(name string) (string, error) {
+	pluginPath := filepath.Join(GetRuntimeDir(), projectDir, pluginDir, name)
 	err := os.MkdirAll(pluginPath, 0755)
 	if err != nil {
 		return "", err
@@ -165,10 +154,10 @@ func GetPluginDirByCategory(category string) (string, error) {
 	return pluginPath, nil
 }
 
-// GetPluginDirByCategoryAndName returns the runtime directory for the plugin with the given category
-// and name, creating it if it does not exist.
-func GetPluginDirByCategoryAndName(category, name string) (string, error) {
-	pluginPath := filepath.Join(GetRuntimeDir(), projectDir, pluginDir, category, name)
+// GetSimPluginDirByName returns the runtime directory for the sim plugin of
+// the service with the given name, creating it if it does not exist.
+func GetSimPluginDirByName(name string) (string, error) {
+	pluginPath := filepath.Join(GetRuntimeDir(), projectDir, pluginDir, simDir, name)
 	err := os.MkdirAll(pluginPath, 0755)
 	if err != nil {
 		return "", err

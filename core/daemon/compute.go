@@ -4,6 +4,7 @@ import (
 	"net"
 	"strconv"
 
+	daemonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon"
 	"github.com/cmusatyalab/steeleagle/v4/core/util"
 	uriel "github.com/cmusatyalab/uriel/go"
 )
@@ -17,17 +18,21 @@ func (d *Daemon) startComputeServer() error {
 	}
 	addr := net.JoinHostPort(LcsBindHost, strconv.Itoa(d.Config.Daemon.Lcs))
 	server, err := uriel.NewServer(
-		d.Config.Daemon.Hostname,
+		d.Hostname,
 		uriel.WithBindAddr(addr),
 		uriel.WithIdentityDir(path),
 	)
 	if err != nil {
 		return err
 	}
-	for endpoint, _ := range d.engines {
-		if err := server.AddEngine(endpoint); err != nil {
-			server.Close()
-			return err
+	d.svcMu.RLock()
+	defer d.svcMu.RUnlock()
+	for _, svc := range d.services {
+		if svc.category == daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE {
+			if err := server.AddEngine(svc.name); err != nil {
+				server.Close()
+				return err
+			}
 		}
 	}
 	d.lcs = server

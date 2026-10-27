@@ -6,7 +6,6 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/pem"
 	"fmt"
 	"math/big"
 	"os"
@@ -16,36 +15,36 @@ import (
 	"github.com/cmusatyalab/steeleagle/v4/core/util"
 )
 
-// getCert gets the PEM encoded cert from the creds/ directory, which remote daemons
-// use to verify the local compute server.
-func (d *Daemon) getCert() (string, error) {
+// getCert gets the DER encoded cert from the creds/ directory, which remote
+// daemons use to verify the local compute server.
+func (d *Daemon) getCert() ([]byte, error) {
 	path, err := util.GetCredsDir()
 	if err != nil {
 		d.log.Error().Err(err).Str("path", path).Msg("failed to read creds directory")
-		return "", err
+		return nil, err
 	}
 	certPath := filepath.Join(path, LcsCertFileName)
 	keyPath := filepath.Join(path, LcsKeyFileName)
 	// If a valid cert is found, return it
 	if cert, err := readCert(certPath, keyPath); err == nil {
-		return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert})), nil
+		return cert, nil
 	}
 
 	// Generate new keys, then return the cert
 	d.log.Info().Str("path", certPath).Msg("replacing invalid or missing certificate")
 	cert, key, err := generateCert(LcsServerName)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	// The key is written first, so a cert on disk always has its key
 	if err := os.WriteFile(keyPath, key, 0600); err != nil {
-		return "", err
+		return nil, err
 	}
 	if err := os.WriteFile(certPath, cert, 0644); err != nil {
-		return "", err
+		return nil, err
 	}
 	d.log.Info().Str("path", certPath).Msg("generated local compute cert")
-	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert})), nil
+	return cert, nil
 }
 
 // readCert reads the DER cert at certPath, checking that its key exists, that

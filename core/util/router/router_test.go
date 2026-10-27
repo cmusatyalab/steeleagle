@@ -86,6 +86,30 @@ func TestAddRouteOverwrite(t *testing.T) {
 	}
 }
 
+// TestRemoveRoute ensures that removed routes no longer resolve, without the
+// router closing their conns, and that removing a missing route is a no-op.
+func TestRemoveRoute(t *testing.T) {
+	_, addr := startBackend(t, "a")
+	r := newRouter(t, map[string]string{"key": addr}, map[string]string{"pkg.Service": addr})
+	header, service := r.headers["key"], r.services["pkg.Service"]
+
+	r.RemoveHeaderRoute("key")
+	r.RemoveServiceRoute("pkg/Service") // type paths are sanitized
+	r.RemoveHeaderRoute("missing")
+	r.RemoveServiceRoute("missing.Service")
+
+	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs(routeHeader, "key"))
+	if _, err := r.resolve(ctx, "/other.Service/Method"); status.Code(err) != codes.NotFound {
+		t.Errorf("removed header route: expected NotFound, got %v", err)
+	}
+	if _, err := r.resolve(context.Background(), "/pkg.Service/Method"); status.Code(err) != codes.Unimplemented {
+		t.Errorf("removed service route: expected Unimplemented, got %v", err)
+	}
+	if header.GetState() == connectivity.Shutdown || service.GetState() == connectivity.Shutdown {
+		t.Errorf("removed conn was closed by router")
+	}
+}
+
 // TestNewRouter ensures that initial routes are registered on creation and
 // nil route maps are allowed.
 func TestNewRouter(t *testing.T) {

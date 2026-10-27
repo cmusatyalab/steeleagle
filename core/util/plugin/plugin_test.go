@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cmusatyalab/steeleagle/v4/core/util"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
 )
 
@@ -60,13 +59,6 @@ func TestPluginWithParent(t *testing.T) {
 	if err != nil {
 		t.Errorf("encountered error with plugin RPC handshake: %v", err)
 	}
-
-	path, err = util.GetVehicleRunDirByName("foo")
-	if err != nil {
-		t.Errorf("couldn't get vehicle directory: %v", err)
-	}
-
-	os.RemoveAll(path)
 }
 
 // TestPluginPixi ensures that a Go package plugin can be started through its

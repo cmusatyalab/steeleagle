@@ -2,6 +2,7 @@ package daemon
 
 import (
 	_ "embed"
+	"errors"
 	"net/netip"
 	"time"
 )
@@ -11,6 +12,10 @@ var DefaultLaw []byte // DefaultLaw is the control law for the daemon.
 
 //go:embed defaults/config.toml
 var DefaultConfig []byte // DefaultConfig is written as the config if none exists.
+
+// ErrRestart is returned by Run when the daemon stopped for a restart, after a
+// Restart or Configure call, so that its supervisor starts it again.
+var ErrRestart = errors.New("daemon restart requested")
 
 // ConfigFileName is the ame of the daemon config file within the config directory.
 const ConfigFileName = "config.toml"
@@ -24,24 +29,27 @@ const SimulatorName = "simulator"
 // LockedState is the law state entered when the daemon is managed by an orchestrator.
 const LockedState = "LOCKED"
 
-// PendingDirName is the directory within the package directory holding the pending
-// copy of the packages, which replaces the package directory on restart.
-const PendingDirName = ".pending"
+// PackageUrlFileName is the name of the file at the root of each installed
+// package holding the url it was installed from.
+const PackageUrlFileName = ".url"
 
-// PackageInfoFilename is the name of the metadata file stored in each installed package.
-const PackageInfoFileName = ".package.toml"
+// PendingRemovePrefix starts the name of a file in the pending directory that
+// marks the package named by the rest of it for removal.
+const PendingRemovePrefix = "remove."
 
 // PluginFileSuffix is the suffix of the plugin files at the root of a package; the plugin
 // name is the file name without it.
 const PluginFileSuffix = ".plugin.toml"
 
-// Category directory names, where runtime service/plugin files are stored.
+// PluginRunDirName is the name of the run directory of a plugin, within the
+// plugin directory of its service, where its sockets are made. It is short,
+// since socket paths are limited to 107 bytes.
+const PluginRunDirName = "run"
+
+// Shim socket paths for simulated plugins.
 const (
-	SimulatorDir = "simulator"
-	EngineDir    = "engines"
-	VehicleDir   = "vehicles"
-	ExtraDir     = "extras"
-	UnknownDir   = "unknown"
+	ShimClientSock = "in.sock"
+	ShimListenSock = "out.sock"
 )
 
 // Environment variables passed to every plugin: the name of the plugin to run
@@ -49,6 +57,8 @@ const (
 const (
 	PluginNameEnv = "STEELEAGLE_PLUGIN"
 	PluginArgsEnv = "STEELEAGLE_PLUGIN_ARGS"
+	ModelNameEnv  = "STEELEAGLE_MODELS"
+	FileNameEnv   = "STEELEAGLE_FILES"
 )
 
 // Environment variable passed to engines, naming the iceoryx service they
@@ -57,6 +67,12 @@ const IceoryxServiceEnv = "ICEORYX_SERVICE"
 
 // Deadline is the default RPC deadline between daemons for DaemonService calls.
 const Deadline = 1 * time.Second
+
+// RestartDeadline is the RPC deadline for RestartService calls between
+// daemons, which wait for the plugin to start listening, for up to its
+// timeout (15s by default). It is a variable so it can be modified for
+// testing.
+var RestartDeadline = 20 * time.Second
 
 // Registration deadlines, variables so they can be modified for testing.
 var (

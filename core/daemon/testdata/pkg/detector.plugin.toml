@@ -1,0 +1,8 @@
+[plugin]
+name = "Detector"
+type = "engine"
+description = "Test engine plugin that serves the gRPC health service"
+
+[engine]
+type = "detection"
+inputs = ["frame"]

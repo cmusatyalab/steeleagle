@@ -29,3 +29,19 @@ func (c AuthCode) String() string {
 		return "unknown"
 	}
 }
+
+// Converts a string AuthCode to its AuthCode representation.
+func ToCode(c string) AuthCode {
+	switch c {
+	case "admin":
+		return AdminCode
+	case "privileged":
+		return PrivilegedCode
+	case "user":
+		return UserCode
+	case "external":
+		return ExternalCode
+	default:
+		return UnknownCode
+	}
+}

@@ -29,6 +29,7 @@ func newTestBasePlugin(t *testing.T, options ...PluginOption) (*BasePlugin, erro
 	t.Helper()
 	out := testLogger{t}
 	logger := zerolog.New(zerolog.ConsoleWriter{Out: out})
+	options = append([]PluginOption{WithParentDir(t.TempDir())}, options...)
 	options = append(options, WithProcessOutputStream(out), WithLogger(logger))
 	return NewBasePlugin(options...)
 }
@@ -39,6 +40,7 @@ func newTestContainerPlugin(t *testing.T, imageRef string, options ...PluginOpti
 	t.Helper()
 	out := testLogger{t}
 	logger := zerolog.New(zerolog.ConsoleWriter{Out: out})
+	options = append([]PluginOption{WithParentDir(t.TempDir())}, options...)
 	options = append(options, WithProcessOutputStream(out), WithLogger(logger))
 	return NewContainerPlugin(imageRef, options...)
 }
@@ -49,6 +51,7 @@ func newTestSandboxPlugin(t *testing.T, options ...PluginOption) (*SandboxPlugin
 	t.Helper()
 	out := testLogger{t}
 	logger := zerolog.New(zerolog.ConsoleWriter{Out: out})
+	options = append([]PluginOption{WithParentDir(t.TempDir())}, options...)
 	options = append(options, WithProcessOutputStream(out), WithLogger(logger))
 	return NewSandboxPlugin(options...)
 }
@@ -59,6 +62,7 @@ func newTestShimPlugin(t *testing.T, client string, listener string, options ...
 	t.Helper()
 	out := testLogger{t}
 	logger := zerolog.New(zerolog.ConsoleWriter{Out: out})
+	options = append([]PluginOption{WithParentDir(t.TempDir())}, options...)
 	options = append(options, WithProcessOutputStream(out), WithLogger(logger))
 	return NewShimPlugin(client, listener, options...)
 }

@@ -19,11 +19,6 @@ class SafetyServiceStub:
         Args:
             channel: A grpc.Channel.
         """
-        self.NotifyControlStatus = channel.unary_unary(
-                '/steeleagle_protocol.v1.services.vehicle.SafetyService/NotifyControlStatus',
-                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_safety__pb2.NotifyControlStatusRequest.SerializeToString,
-                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_safety__pb2.NotifyControlStatusResponse.FromString,
-                _registered_method=True)
         self.GetFailsafeState = channel.unary_unary(
                 '/steeleagle_protocol.v1.services.vehicle.SafetyService/GetFailsafeState',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_safety__pb2.GetFailsafeStateRequest.SerializeToString,
@@ -48,19 +43,6 @@ class SafetyServiceServicer:
     This service is used to set the vehicle disconnect behavior, geofences,
     and to query failsafe states.
     """
-
-    def NotifyControlStatus(self, request, context):
-        """
-        Notifies the vehicle of the orchestrator link status.
-
-        Tells the vehicle when the daemon has lost connection to its orchestrator
-        which then enters `FAILSAFE_NO_CONTROL` or `FAILSAFE_NO_CONTROL_NO_DATA`.
-        Also tells the vehicle when the connection is restored so it can exit the
-        failsafe state. This is usually called by the daemon.
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
 
     def GetFailsafeState(self, request, context):
         """
@@ -100,11 +82,6 @@ class SafetyServiceServicer:
 
 def add_SafetyServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'NotifyControlStatus': grpc.unary_unary_rpc_method_handler(
-                    servicer.NotifyControlStatus,
-                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_safety__pb2.NotifyControlStatusRequest.FromString,
-                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_safety__pb2.NotifyControlStatusResponse.SerializeToString,
-            ),
             'GetFailsafeState': grpc.unary_unary_rpc_method_handler(
                     servicer.GetFailsafeState,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_safety__pb2.GetFailsafeStateRequest.FromString,
@@ -135,33 +112,6 @@ class SafetyService:
     This service is used to set the vehicle disconnect behavior, geofences,
     and to query failsafe states.
     """
-
-    @staticmethod
-    def NotifyControlStatus(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/steeleagle_protocol.v1.services.vehicle.SafetyService/NotifyControlStatus',
-            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_safety__pb2.NotifyControlStatusRequest.SerializeToString,
-            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_safety__pb2.NotifyControlStatusResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
 
     @staticmethod
     def GetFailsafeState(request,

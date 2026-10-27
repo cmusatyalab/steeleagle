@@ -4,12 +4,26 @@ import (
 	"context"
 	"net"
 	"net/netip"
+	"strings"
 
 	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
+	"google.golang.org/grpc/status"
 )
+
+// orchestratorHost returns the orchestrator from the daemon config without
+// its port, if it has one. The host may be a name or an IP address, including
+// a bracketed ("[fd7a::1]:9000") or bare ("fd7a::1") IPv6 address.
+func (d *Daemon) orchestratorHost() string {
+	host := d.Config.Daemon.Orchestrator
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		return h
+	}
+	return strings.TrimSuffix(strings.TrimPrefix(host, "["), "]")
+}
 
 // setLocalAddr sets the local address of the daemon on the current network.
 // Over a VPN, this is the virtual address, otherwise the daemon probes a
@@ -17,11 +31,7 @@ import (
 func (d *Daemon) setLocalAddr() {
 	remote := DefaultRouteProbe
 	if d.Config.Daemon.Orchestrator != "" {
-		host := d.Config.Daemon.Orchestrator
-		if h, _, err := net.SplitHostPort(host); err == nil {
-			host = h
-		}
-		if addrs, err := d.network.Resolve(d.ctx, host); err == nil {
+		if addrs, err := d.network.Resolve(d.ctx, d.orchestratorHost()); err == nil {
 			remote = addrs[0]
 		}
 	}
@@ -29,8 +39,9 @@ func (d *Daemon) setLocalAddr() {
 	if err != nil {
 		d.log.Warn().Err(err).Msg("could not find daemon address, using loopback")
 		d.netAddr = netip.AddrFrom4([4]byte{127, 0, 0, 1})
+	} else {
+		d.netAddr = addr
 	}
-	d.netAddr = addr
 }
 
 // qualify returns name qualified with the daemon's address, as "{daemon
@@ -73,4 +84,24 @@ func newCallerInterceptor() grpc.StreamServerInterceptor {
 type callerStream struct {
 	grpc.ServerStream
 	ctx context.Context
+}
+
+// Context returns the stream context with the caller address in its metadata.
+func (s *callerStream) Context() context.Context {
+	return s.ctx
+}
+
+// callerIp returns the IP address of the caller of a daemon service, as
+// recorded by the caller interceptor.
+func callerIp(ctx context.Context) (string, error) {
+	md, _ := metadata.FromIncomingContext(ctx)
+	v := md.Get(callerHeader)
+	if len(v) == 0 {
+		return "", status.Error(codes.Internal, "no caller address in call")
+	}
+	ap, err := netip.ParseAddrPort(v[0])
+	if err != nil {
+		return "", status.Errorf(codes.InvalidArgument, "caller %s has no IP address", v[0])
+	}
+	return ap.Addr().Unmap().String(), nil
 }

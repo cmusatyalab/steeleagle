@@ -4,10 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"net"
 	"net/netip"
 	"os"
+	"path/filepath"
+	"slices"
 	"sync"
 	"sync/atomic"
 
@@ -19,24 +22,54 @@ import (
 	"github.com/cmusatyalab/steeleagle/v4/core/util/plugin"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/policy"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/router"
+	"github.com/cmusatyalab/steeleagle/v4/core/vehicle"
 	uriel "github.com/cmusatyalab/uriel/go"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// service is a vehicle, engine, or generic service running on the daemon.
-type service struct {
+// daemonService is a vehicle, engine, or generic service running on the daemon.
+type daemonService struct {
 	name       string                   // name of the service
 	category   daemonpb.ServiceCategory // service category (simulator, vehicle, engine, extra)
 	uri        string                   // package uri for this service
 	pluginName string                   // plugin file name
 	config     *config.PluginConfig     // service plugin config
-	ln         net.Listener             // listener for the plugin
-	conn       *grpc.ClientConn         // gRPC connection to the plugin
-	plugin     plugin.Plugin            // running plugin reference
+	auth       listener.AuthCode        // authentication code
+	isolation  daemonpb.Isolation       // isolation type
+	container  string                   // container url with tag, if isolated in a container
+	path       string                   // package directory of the plugin
+	args       string                   // plugin args from the daemon config, as a JSON object
+	local      bool                     // whether or not the service is local
 	simulated  bool                     // whether or not the service belongs to the simulator
-	cancel     context.CancelFunc       // cancel function to stop service
+}
+
+// daemonPlugin is a plugin running under a daemon service.
+type daemonPlugin struct {
+	ln        net.Listener       // listener for the plugin
+	conn      *grpc.ClientConn   // gRPC connection to the plugin
+	plugin    plugin.Plugin      // running plugin reference
+	vehicle   *vehicle.Vehicle   // vehicle for this plugin (nil if not a vehicle)
+	logStream io.Writer          // log stream
+	cancel    context.CancelFunc // cancel function to stop service
+}
+
+// orchInfo gives information about this daemon's orchestrator.
+type orchInfo struct {
+	hostname string           // hostname for the orchestrator
+	ip       string           // IP of the orchestrator, where its compute service is
+	lcsPort  int              // port of the orchestrator's compute service
+	cert     []byte           // DER cert of the orchestrator's compute service
+	services []*daemonService // services on the orchestrator
+}
+
+// childInfo gives information about a child daemon.
+type childInfo struct {
+	ip       string           // ip address
+	hostname string           // hostname
+	conn     *grpc.ClientConn // connection to the child's daemon port
+	services []*daemonService // services on the child
 }
 
 // Daemon is the SteelEagle daemon. It is responsible for orchestrating
@@ -46,36 +79,47 @@ type service struct {
 type Daemon struct {
 	daemonpb.UnimplementedDaemonServiceServer
 	daemonpb.UnimplementedTransferServiceServer
-	Config     *config.DaemonConfig // daemon config
-	Running    atomic.Bool          // whether or not the daemon is currently running
-	orchConfig *config.DaemonConfig // orchestrator daemon config, nil if no orchestrator
-	policy     *policy.Policy       // policy for command authorization
-	netAuth    string               // network auth key for this daemon (usually for VPNs)
-	netAddr    netip.Addr           // local address of this daemon
-	network    *network.Server      // network server object this
-	connected  atomic.Bool          // whether or not the daemon is connected to its orchestrator
-	router     *router.Router       // network router
-	relay      *grpc.Server         // relay gRPC server reference
-	server     *grpc.Server         // main gRPC server reference
-	engines    map[string]*service  // engine services
-	vehicles   map[string]*service  // vehicle services
-	extras     map[string]*service  // extra services
-	simulated  map[string]*service  // simulated services
-	all        map[string]*service  // all services
-	lcs        *uriel.Server        // local compute server reference
-	cert       []byte               // DER cert for uriel
-	restarting atomic.Bool          // whether or not the daemon is currently restarting
-	srvMu      sync.RWMutex         // mutex for reading or writing services
-	pkgMu      sync.RWMutex         // mutex for reading or writing packages to .pending
-	ctx        context.Context      // context for the daemon
-	cancel     context.CancelFunc   // cancel function for active contexts
-	log        zerolog.Logger       // logger object
+	Hostname   string                    // daemon hostname
+	Config     *config.DaemonConfig      // daemon config
+	configPath string                    // path to the daemon config
+	Running    atomic.Bool               // whether or not the daemon is currently running
+	orch       *orchInfo                 // information about the orchestrator, nil if none
+	orchMu     sync.RWMutex              // mutex for orch, which changes on each registration
+	regWg      sync.WaitGroup            // registration goroutines
+	regCtx     context.Context           // context of the registration, which outlives ctx until the relay stops
+	remotes    map[string]*childInfo     // child daemons connected to this daemon as an orchestrator, by IP
+	policy     *policy.Policy            // policy for command authorization
+	netAuth    string                    // network auth key for this daemon (usually for VPNs)
+	netAddr    netip.Addr                // local address of this daemon
+	network    network.Network           // network the daemon is on, joined in Run unless given
+	socketPath string                    // path of the control socket
+	connected  atomic.Bool               // whether or not the daemon is connected to its orchestrator
+	router     *router.Router            // network router
+	relay      *grpc.Server              // relay gRPC server reference
+	server     *grpc.Server              // main gRPC server reference
+	lookup     map[string]*daemonService // service lookup table (maps name -> service info)
+	services   []*daemonService          // local service list
+	plugins    map[string]*daemonPlugin  // plugin info map (maps service name -> plugin info)
+	lcs        *uriel.Server             // local compute server reference
+	cert       []byte                    // DER cert of the local compute service
+	restarting atomic.Bool               // whether or not the daemon is currently restarting
+	svcMu      sync.RWMutex              // mutex for lookup, services, plugins, and the plugins themselves
+	pkgMu      sync.RWMutex              // mutex for reading or writing packages to .pending
+	remMu      sync.RWMutex              // mutex for adding new child daemons
+	err        error                     // startup error, if any
+	ctx        context.Context           // context for the daemon
+	cancel     context.CancelFunc        // cancel function for active contexts
+	log        zerolog.Logger            // logger object
 }
 
 // Creates a new daemon from the config in the config directory.
 func NewDaemon(options ...DaemonOption) (*Daemon, error) {
 	daemon := &Daemon{
-		log: zerolog.New(os.Stderr).With().Timestamp().Logger(),
+		Hostname: DefaultHostname,
+		log:      zerolog.New(os.Stderr).With().Timestamp().Logger(),
+		lookup:   make(map[string]*daemonService),
+		plugins:  make(map[string]*daemonPlugin),
+		remotes:  make(map[string]*childInfo),
 	}
 	for _, option := range options {
 		option(daemon)
@@ -83,12 +127,16 @@ func NewDaemon(options ...DaemonOption) (*Daemon, error) {
 
 	// Parse the config or write a new one if it doesn't exist
 	var err error
-	configPath, err := util.GetConfigDir()
-	if err != nil {
-		daemon.log.Error().Err(err).Str("path", configPath).
-			Msg("failed to get config directory")
-		return nil, err
+	if daemon.configPath == "" {
+		configDir, err := util.GetConfigDir()
+		if err != nil {
+			daemon.log.Error().Err(err).Str("path", configDir).
+				Msg("failed to get config directory")
+			return nil, err
+		}
+		daemon.configPath = filepath.Join(configDir, ConfigFileName)
 	}
+	configPath := daemon.configPath
 	if _, err = os.Stat(configPath); errors.Is(err, fs.ErrNotExist) {
 		daemon.log.Warn().Str("path", configPath).
 			Msg("no daemon config found at path, writing an empty config")
@@ -108,7 +156,7 @@ func NewDaemon(options ...DaemonOption) (*Daemon, error) {
 
 	// Set hostname from config
 	if daemon.Config.Daemon.Hostname != "" {
-		daemon.Config.Daemon.Hostname = DefaultHostname
+		daemon.Hostname = daemon.Config.Daemon.Hostname
 	}
 
 	// Commit pending installs and removals, which copies packages in the
@@ -147,27 +195,47 @@ func NewDaemon(options ...DaemonOption) (*Daemon, error) {
 	daemonpb.RegisterTransferServiceServer(daemon.server, daemon)
 	daemon.log.Debug().Msg("daemon services registered")
 
+	// Get the cert for the daemon
+	daemon.cert, err = daemon.getCert()
+	if err != nil {
+		daemon.log.Error().Err(err).Msg("couldn't get certificate")
+		return nil, err
+	}
+
 	return daemon, nil
 }
 
 // Run runs the daemon until either the context is cancelled, or an error occurs.
+// It returns ErrRestart if it stopped for a restart.
 func (d *Daemon) Run(ctx context.Context) error {
 	if !d.Running.CompareAndSwap(false, true) {
 		return fmt.Errorf("daemon already running")
 	}
 	defer d.Running.Store(false)
 
+	// Reset error state
+	d.err = nil
+
 	// Set up new context
 	ctx, cancel := context.WithCancel(ctx)
 	d.ctx, d.cancel = ctx, cancel
 	defer cancel()
+	// The registration is kept until the relay has finished its calls, so
+	// that the answer to an orchestrator's call that stops the daemon, like
+	// Restart, reaches it before it drops this daemon and its connection here
+	regCtx, regCancel := context.WithCancel(context.WithoutCancel(ctx))
+	d.regCtx = regCtx
+	defer regCancel()
 
-	// Join the network (without a VPN, this is the host network)
+	// Join the network (without a VPN, this is the host network), unless one
+	// was given
 	var err error
-	d.network, err = network.NewServer(ctx, d.Config.Daemon.Hostname, d.netAuth)
-	if err != nil {
-		d.log.Error().Err(err).Msg("couldn't join network")
-		return err
+	if d.network == nil {
+		d.network, err = network.NewServer(ctx, d.Hostname, d.netAuth)
+		if err != nil {
+			d.log.Error().Err(err).Msg("couldn't join network")
+			return err
+		}
 	}
 	defer d.network.Close()
 	// Get the local address of this daemon on the network
@@ -180,6 +248,20 @@ func (d *Daemon) Run(ctx context.Context) error {
 		if err = d.policy.SafeTransit(LockedState); err != nil {
 			d.log.Error().Err(err).Msg("couldn't lock daemon")
 			return err
+		}
+		ips, err := d.network.Resolve(ctx, d.orchestratorHost())
+		if err != nil {
+			d.log.Error().Err(err).Str("orchestrator", d.Config.Daemon.Orchestrator).
+				Msg("couldn't resolve orchestrator host")
+			return err
+		}
+		for _, ip := range ips {
+			err = acl.AddIp(ip.String(), listener.AdminCode)
+			if err != nil {
+				d.log.Error().Err(err).Str("address", ip.String()).
+					Msg("failed to add orchestrator IP to ACL")
+				return err
+			}
 		}
 		d.log.Info().Str("orchestrator", d.Config.Daemon.Orchestrator).
 			Msg("daemon locked to orchestrator")
@@ -196,7 +278,10 @@ func (d *Daemon) Run(ctx context.Context) error {
 
 	// Host the control socket, which is the endpoint for local tools like `eagle`
 	// to connect to the daemon
-	path := util.GetDaemonSocketPath()
+	path := d.socketPath
+	if path == "" {
+		path = util.GetDaemonSocketPath()
+	}
 	os.Remove(path) // remove the path so we can host a new socket
 	ln, err = net.Listen("unix", path)
 	if err != nil {
@@ -220,33 +305,51 @@ func (d *Daemon) Run(ctx context.Context) error {
 			Msg("couldn't set up in-memory channel to internal services")
 		return err
 	}
+	// Add header routes for calls targeting this daemon
+	d.router.AddHeaderRoute(d.Hostname, conn)
+	d.router.AddHeaderRoute(d.netAddr.String(), conn)
+	// If no header is set, check service headers
 	d.router.AddServiceRoute(daemonpb.DaemonService_ServiceDesc.ServiceName, conn)
 	d.router.AddServiceRoute(daemonpb.TransferService_ServiceDesc.ServiceName, conn)
+	// Calls routed here by this daemon's IP, as an orchestrator does, are for
+	// its own services
+	d.router.AddHeaderRoute(d.netAddr.String(), conn)
 	d.log.Debug().Msg("router configured")
 
+	// Populate services; a daemon whose services can't be set up, like when a
+	// package isn't installed, runs without them, as when they fail to start
+	if err := d.populateServices(); err != nil {
+		d.svcMu.Lock()
+		d.services, d.lookup = nil, make(map[string]*daemonService)
+		d.svcMu.Unlock()
+		d.err = fmt.Errorf("failed to set up services: %v", err)
+		d.log.Error().Err(err).Msg("couldn't populate services")
+	}
+
 	// Register with orchestrator daemon, if applicable
-	d.orchConfig, err = d.register()
-	if err != nil {
+	if err = d.register(); err != nil {
 		d.log.Error().Err(err).Msg("couldn't establish initial connection to orchestrator")
 		return err
 	}
-	d.log.Info().Msg("daemon connected to orchestrator")
 
-	// Start services
-	err = d.startServices()
-	if err != nil {
-		d.log.Error().Err(err).Msg("failed to start services")
-		return err
+	// Start services, unless they couldn't be set up. Startup errors are kept
+	// in d.err, and not returned from Run, since the daemon keeps running.
+	if d.err == nil {
+		if err := d.startServices(); err != nil { // there was an error, start in safe mode (no services)
+			d.shutdownAll()
+			d.err = err
+			d.log.Error().Err(err).Msg("failed to start services")
+		} else if err := d.startComputeServer(); err != nil { // no error, proceed to start compute server
+			d.shutdownAll()
+			d.err = fmt.Errorf("failed to start compute server: %v", err)
+			d.log.Error().Err(err).Msg("failed to start compute server")
+		} else {
+			d.log.Info().Msg("daemon services started")
+		}
 	}
-	d.log.Info().Msg("daemon services started")
-	defer d.waitForTermination()
-
-	// Start the local computer server
-	d.startComputeServer()
-	defer d.stopComputeServer()
 
 	// Serve listeners on relay server
-	errChan := make(chan error, 1)
+	errChan := make(chan error, 3)
 	go func() {
 		errChan <- d.server.Serve(sLn)
 	}()
@@ -256,9 +359,7 @@ func (d *Daemon) Run(ctx context.Context) error {
 	go func() {
 		errChan <- d.relay.Serve(ctlLn)
 	}()
-	d.log.Info().Msgf("hosting daemon as %s (%s)", d.Config.Daemon.Hostname, d.netAddr.String())
-	defer d.relay.GracefulStop()
-	defer d.server.GracefulStop()
+	d.log.Info().Msgf("hosting daemon as %s (%s)", d.Hostname, d.netAddr.String())
 
 	// Wait for the context to be cancelled or for an error
 	select {
@@ -267,15 +368,33 @@ func (d *Daemon) Run(ctx context.Context) error {
 	case err = <-errChan:
 		d.log.Error().Err(err).Msg("internal server exited with error, shutting down")
 	}
-	return nil
+
+	// Cancellation procedure
+	cancel()
+	d.stopComputeServer()
+	d.shutdownAll()
+	d.closeRemotes()
+	d.relay.GracefulStop()
+	// Cancel the registration context
+	regCancel()
+	d.regWg.Wait()
+	conn.Close()
+	d.server.GracefulStop()
+	sLn.Close()
+	if err == nil && d.restarting.Load() {
+		return ErrRestart
+	}
+	return err
 }
 
-// waitForTermination waits on all daemon services to exit before returning.
-func (d *Daemon) waitForTermination() {
-	for _, s := range d.all {
-		_ = s.plugin.Wait()
-		if s.conn != nil {
-			s.conn.Close()
+// shutdownAll shuts down all daemon service plugins/vehicles.
+func (d *Daemon) shutdownAll() {
+	d.svcMu.Lock()
+	defer d.svcMu.Unlock()
+	for _, s := range slices.Backward(d.services) {
+		d.router.RemoveHeaderRoute(s.name)
+		if p, ok := d.plugins[s.name]; ok {
+			closePlugin(p)
 		}
 	}
 }

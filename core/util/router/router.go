@@ -73,6 +73,33 @@ func (r *Router) AddServiceRoute(service string, c *grpc.ClientConn) {
 	r.log.Debug().Str("service", service).Str("addr", c.Target()).Msg("adding service route")
 }
 
+// RemoveHeaderRoute removes the header-based routing rule for a key, if any.
+// The router does not close the conn; the caller is responsible for it.
+func (r *Router) RemoveHeaderRoute(header string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if _, ok := r.headers[header]; !ok {
+		return
+	}
+	delete(r.headers, header)
+	r.log.Debug().Str("header", header).Msg("removing header route")
+}
+
+// RemoveServiceRoute removes the service-based routing rule for a service, if
+// any. The service may also be given as a type path ("pkg/Service"), which is
+// sanitized to "pkg.Service". The router does not close the conn; the caller
+// is responsible for it.
+func (r *Router) RemoveServiceRoute(service string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	service = sanitizeService(service)
+	if _, ok := r.services[service]; !ok {
+		return
+	}
+	delete(r.services, service)
+	r.log.Debug().Str("service", service).Msg("removing service route")
+}
+
 // Handle proxies a gRPC call to the backend resolved by header or service.
 // Use it as a grpc.UnknownServiceHandler alongside grpc.ForceServerCodec(RawCodec{}).
 func (r *Router) Handle(_ any, down grpc.ServerStream) error {
