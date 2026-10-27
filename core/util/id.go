@@ -2,7 +2,8 @@ package util
 
 import (
 	"encoding/hex"
-	"uuid"
+
+	"github.com/google/uuid"
 )
 
 // shortId returns a short random ID, which saves space when socket path lengths
