@@ -648,3 +648,47 @@ func TestChainedRouting(t *testing.T) {
 		t.Errorf("expected call routed to harpy, got %q", resp.GetServerId())
 	}
 }
+
+// TestUpstream ensures that calls with a routing key the router doesn't know
+// go upstream, and that calls with the router's own key or none are routed by
+// service, never upstream.
+func TestUpstream(t *testing.T) {
+	_, addrA := startBackend(t, "a")
+	_, addrUp := startBackend(t, "upstream")
+	_, addrLocal := startBackend(t, "local")
+	r := newRouter(t, map[string]string{"a": addrA}, nil, WithUpstream("self", dial(t, addrUp)))
+	r.AddServiceRoute("pkg.Service", dial(t, addrLocal))
+
+	withHeader := func(v string) context.Context {
+		return metadata.NewIncomingContext(context.Background(), metadata.Pairs(routeHeader, v))
+	}
+	tests := []struct {
+		name   string
+		ctx    context.Context
+		method string
+		want   *grpc.ClientConn
+	}{
+		{"known key", withHeader("a"), "/pkg.Service/Method", r.headers["a"]},
+		{"unknown key", withHeader("other"), "/pkg.Service/Method", r.upstream},
+		{"own key", withHeader("self"), "/pkg.Service/Method", r.services["pkg.Service"]},
+		{"no key", context.Background(), "/pkg.Service/Method", r.services["pkg.Service"]},
+		{"own key without service", withHeader("self"), "/other.Service/Method", nil},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := r.resolve(tc.ctx, tc.method)
+			if tc.want == nil {
+				if status.Code(err) != codes.Unimplemented {
+					t.Errorf("expected Unimplemented, got conn %v and err %v", got, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got != tc.want {
+				t.Errorf("resolved to wrong conn: got %p, want %p", got, tc.want)
+			}
+		})
+	}
+}

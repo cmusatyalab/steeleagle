@@ -1,6 +1,9 @@
 package router
 
-import "github.com/rs/zerolog"
+import (
+	"github.com/rs/zerolog"
+	"google.golang.org/grpc"
+)
 
 type RouterOption func(*Router)
 
@@ -11,6 +14,16 @@ type RouterOption func(*Router)
 func WithHeaderFallback() RouterOption {
 	return func(r *Router) {
 		r.fallback = true
+	}
+}
+
+// WithUpstream routes calls whose routing key names anything other than self
+// to conn, the route out of a router at the end of a route, like a vehicle's.
+// Calls with self as their key are routed as if they had none, so they never
+// go back out.
+func WithUpstream(self string, conn *grpc.ClientConn) RouterOption {
+	return func(r *Router) {
+		r.self, r.upstream = self, conn
 	}
 }
 

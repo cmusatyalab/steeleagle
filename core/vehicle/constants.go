@@ -28,6 +28,10 @@ const (
 	StreamTimeout         = 10 * time.Second
 )
 
+// How long the vehicle waits after a SetVelocityTarget call for another
+// ControlService call before it holds. A variable so tests can shorten it.
+var DmsTimeout = 3 * time.Second
+
 // Locations of engines in a dataflow: served by the local compute service, or
 // by the remote one.
 const (

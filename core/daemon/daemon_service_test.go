@@ -10,6 +10,7 @@ import (
 	"time"
 
 	daemonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon"
+	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
 	"github.com/cmusatyalab/steeleagle/config"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
 	"google.golang.org/grpc/codes"
@@ -315,5 +316,35 @@ func TestVehicleEngineMap(t *testing.T) {
 	}
 	if m := getVehicleEngineMap(nil, nil); len(m) != 0 {
 		t.Errorf("engine map without services = %+v, want empty", m)
+	}
+}
+
+// TestRestartVehicle checks that a vehicle service can be restarted, and
+// that the vehicle is reachable through the daemon after each start.
+func TestRestartVehicle(t *testing.T) {
+	requirePixi(t)
+	d := standalone(t, testService{name: "v", typ: "vehicle", plugin: "driver"})
+	d.run()
+	const v = "127.0.0.1.v"
+	for i := range 3 {
+		if i > 0 {
+			_, err := d.client.RestartService(callCtx(t, 30*time.Second),
+				daemonpb.RestartServiceRequest_builder{ServiceNames: v}.Build())
+			if err != nil {
+				t.Fatalf("restart %d: %v", i, err)
+			}
+		}
+		resp, err := d.listServices()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !running(resp)[v] {
+			t.Errorf("run %d: vehicle isn't running", i)
+		}
+		_, err = vehiclepb.NewSafetyServiceClient(d.ctl).GetFailsafeState(routed(t, v),
+			&vehiclepb.GetFailsafeStateRequest{})
+		if err != nil {
+			t.Errorf("run %d: couldn't reach the vehicle: %v", i, err)
+		}
 	}
 }

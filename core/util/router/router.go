@@ -26,6 +26,8 @@ type Router struct {
 	headers  map[string]*grpc.ClientConn // x-route-key value
 	services map[string]*grpc.ClientConn // "pkg.Service"
 	fallback bool                        // route calls with unknown keys by service
+	self     string                      // routing key naming this router, with an upstream
+	upstream *grpc.ClientConn            // route for calls with any other unknown key, if any
 	log      zerolog.Logger              // logger object
 }
 
@@ -227,9 +229,14 @@ func (r *Router) resolve(ctx context.Context, fullMethod string) (*grpc.ClientCo
 			r.log.Debug().Str("method", fullMethod).Str("addr", c.Target()).Msg("dispatching method")
 			return c, nil
 		}
-		// A call for a backend the router doesn't know must not be handled by
-		// another one instead
-		if !r.fallback {
+		// A call for a backend the router doesn't know goes upstream, or must
+		// not be handled by another one instead
+		if r.upstream != nil {
+			if v[0] != r.self {
+				r.log.Debug().Str("method", fullMethod).Str("key", v[0]).Msg("dispatching method upstream")
+				return r.upstream, nil
+			}
+		} else if !r.fallback {
 			r.log.Error().Str("method", fullMethod).Str("key", v[0]).Msg("no route for key")
 			return nil, status.Errorf(codes.NotFound, "no route for key %q", v[0])
 		}

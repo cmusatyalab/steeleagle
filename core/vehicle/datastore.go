@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -25,15 +26,25 @@ func (v *Vehicle) openDatastore() error {
 		v.log.Error().Err(err).Msg("failed to open vehicle data directory")
 		return err
 	}
+	os.Remove(filepath.Join(dir, DataDbName)) // clear previous datastore, if it exists
 	v.db, err = bbolt.Open(filepath.Join(dir, DataDbName), 0600, &bbolt.Options{Timeout: time.Second})
 	if err != nil {
 		v.log.Error().Err(err).Msg("failed to open datastore")
 		return err
 	}
-	go v.storeTelemetry(v.ctx, v.streamInfo.telemetry)
-	for _, c := range v.streamInfo.cameras {
-		go v.storeProducerResults(v.ctx, c)
+	// Uriel handles are created one at a time, and all exist once this
+	// returns: creating them concurrently can briefly change the process umask
+	// (see helper_test.go), and nothing published after this is missed
+	ready := make(chan struct{})
+	v.dataWg.Add(1)
+	go v.storeTelemetry(v.ctx, v.streamInfo.telemetry, ready)
+	<-ready
+	for _, p := range append([]string{v.streamInfo.telemetry}, v.streamInfo.cameras...) {
+		v.dataWg.Add(1)
+		go v.storeProducerResults(v.ctx, p, ready)
+		<-ready
 	}
+	return nil
 }
 
 // store writes value to bucket under time at. Keys are the time in Unix
@@ -94,66 +105,65 @@ func (v *Vehicle) query(bucket string, start, end time.Time, f func([]byte) erro
 }
 
 // storeTelemetry stores the telemetry the driver publishes on `producer` until
-// ctx is done.
-func (v *Vehicle) storeTelemetry(ctx context.Context, producer string, errCh chan<- error) {
+// ctx is done. ready is signaled once its reader is created.
+func (v *Vehicle) storeTelemetry(ctx context.Context, producer string, ready chan<- struct{}) {
+	defer v.dataWg.Done()
 	reader, err := uriel.NewReader(producer)
+	ready <- struct{}{}
 	if err != nil {
 		v.log.Error().Err(err).Str("producer", producer).Msg("failed to subscribe to telemetry")
-		return err
+		return // this shouldn't happen
 	}
 	// A reader must be closed on the goroutine that created it
 	defer reader.Close()
 	for {
-		select {
-		case <-ctx.Done():
+		input, err := reader.Next(ctx)
+		if ctx.Err() != nil {
 			return
-		case input, err := reader.Next(ctx):
-			if err != nil {
-				v.log.Error().Err(err).Str("producer", producer).Msg("failed to read telemetry")
-				continue
-			}
-			if err := v.store(TelemetryBucket, time.Now(), input.Data); err != nil {
-				v.log.Error().Err(err).Msg("could not store telemetry")
-			}
+		} else if err != nil {
+			v.log.Error().Err(err).Str("producer", producer).Msg("failed to read telemetry")
+			continue
+		}
+		if err := v.store(TelemetryBucket, time.Now(), input.Data); err != nil {
+			v.log.Error().Err(err).Msg("could not store telemetry")
 		}
 	}
 }
 
 // storeProducerResults stores the results that come back for `producer` until
-// ctx is done.
-func (v *Vehicle) storeProducerResults(ctx context.Context, producer string, errCh chan<- error) {
+// ctx is done. ready is signaled once its subscription is created.
+func (v *Vehicle) storeProducerResults(ctx context.Context, producer string, ready chan<- struct{}) {
+	defer v.dataWg.Done()
 	sub, err := uriel.SubscribeProducer(producer)
+	ready <- struct{}{}
 	if err != nil {
 		v.log.Error().Err(err).Str("producer", producer).Msg("failed to subscribe to producer")
-		return err
+		return // this shouldn't happen
 	}
 	// A subscriber must be closed on the goroutine that created it
 	defer sub.Close()
 	for {
-		select {
-		case <-ctx.Done():
+		event, err := sub.Next(ctx)
+		if ctx.Err() != nil {
 			return
-		case event, err := sub.Next(ctx):
-			if err != nil {
-				v.log.Error().Err(err).Str("producer", producer).Msg("failed to read producer event")
-				continue
-			}
-			if event.Kind == uriel.EventResult {
-				v.flow.mu.Lock()
-				if event.Flow != v.flow.name || event.Engine == "" || len(event.Result) == 0 {
-					continue
-				}
-				v.flow.mu.Unlock()
-				t := time.Now()
-				bytes, err := v.getResult(event, t)
-				if err != nil {
-					v.log.Error().Err(err).Str("producer", producer).Msg("couldn't marshal result, skipping")
-					continue
-				}
-				if err := v.store(event.Engine, t, bytes); err != nil {
-					v.log.Error().Err(err).Str("producer", producer).Msg("couldn't store result")
-				}
-			}
+		} else if err != nil {
+			v.log.Error().Err(err).Str("producer", producer).Msg("failed to read producer event")
+			continue
+		}
+		v.flowInfo.mu.Lock()
+		current := event.Flow == v.flowInfo.name
+		v.flowInfo.mu.Unlock()
+		if event.Kind != uriel.EventResult || !current || event.Engine == "" || len(event.Result) == 0 {
+			continue
+		}
+		t := time.Now()
+		bytes, err := v.getResult(event, t)
+		if err != nil {
+			v.log.Error().Err(err).Str("producer", producer).Msg("couldn't marshal result, skipping")
+			continue
+		}
+		if err := v.store(event.Engine, t, bytes); err != nil {
+			v.log.Error().Err(err).Str("producer", producer).Msg("couldn't store result")
 		}
 	}
 }

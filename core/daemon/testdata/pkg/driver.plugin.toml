@@ -1,0 +1,7 @@
+[plugin]
+name = "Driver"
+type = "driver"
+description = "Test driver plugin that serves the gRPC health service"
+
+[driver]
+type = "copter"

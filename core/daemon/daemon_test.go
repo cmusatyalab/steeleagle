@@ -20,7 +20,7 @@ func TestRunServices(t *testing.T) {
 	requirePixi(t)
 	d := standalone(t,
 		testService{name: "x", typ: "extra", plugin: "echo", args: `{ n = 1 }`, auth: "user"},
-		testService{name: "v", typ: "vehicle", plugin: "echo"},
+		testService{name: "v", typ: "vehicle", plugin: "driver"},
 		testService{name: "e", typ: "engine", plugin: "detector"},
 	)
 	d.run()

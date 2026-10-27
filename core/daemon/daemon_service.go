@@ -480,7 +480,7 @@ func (d *Daemon) startService(s *daemonService) error {
 					),
 				)
 			}
-			plug.vehicle, err = vehicle.NewVehicle(p, vehicleOptions...)
+			plug.vehicle, err = vehicle.NewVehicle(p, s.config, vehicleOptions...)
 			if err != nil {
 				d.log.Error().Err(err).Str("vehicle", s.name).Msg("failed to create vehicle")
 				return err
@@ -529,16 +529,15 @@ func (d *Daemon) startService(s *daemonService) error {
 // stopPluginOrVehicle stops the current run of a plugin or vehicle, so that it
 // can be started again. The caller must hold svcMu.
 func stopPluginOrVehicle(plug *daemonPlugin) {
-	if plug.vehicle == nil && plug.plugin.Running() {
+	if plug.cancel != nil {
 		plug.cancel()
-		plug.plugin.Wait()
-	} else if plug.vehicle != nil && plug.plugin.Running() {
-		plug.cancel()
+	}
+	// A vehicle's run may still be stopping after its driver exited, so it is
+	// always waited for; it waits for its driver
+	if plug.vehicle != nil {
 		plug.vehicle.Wait()
-	} else {
-		if plug.cancel != nil {
-			plug.cancel()
-		}
+	} else if plug.plugin.Running() {
+		plug.plugin.Wait()
 	}
 	if plug.conn != nil {
 		plug.conn.Close()

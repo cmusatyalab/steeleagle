@@ -29,8 +29,9 @@ import (
 )
 
 // testPkg is the uri of the test package, which TestMain installs as pending,
-// so that every daemon commits it. Its plugins are echo (an extra) and
-// detector (an engine), both run by the binary built from testdata/plugin.
+// so that every daemon commits it. Its plugins are echo (an extra), detector
+// (an engine) and driver (a vehicle driver), all run by the binary built from
+// testdata/plugin.
 const testPkg = "example.com/steeleagle/test//pkg"
 
 // Loopback addresses that test daemons are at, so that two daemons in one
