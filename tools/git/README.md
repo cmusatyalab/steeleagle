@@ -1,9 +1,9 @@
 # Git Scripts
 
-## `release.sh`: tagging Go module releases
+## `release.sh`: tagging Go module and Python package releases
 
-The repo holds several Go modules, and each one is versioned and tagged
-separately:
+The repo holds several Go modules and a Python package, and each one is
+versioned and tagged separately:
 
 | Module | Directory | Tag format |
 |---|---|---|
@@ -11,11 +11,46 @@ separately:
 | `github.com/cmusatyalab/steeleagle/api/go` | `api/go` | `api/go/v0.4.0` |
 | `github.com/cmusatyalab/steeleagle/sdk` | `sdk` | `sdk/v0.2.0` |
 | `github.com/cmusatyalab/steeleagle/config` | `config` | `config/v0.1.0` |
+| `steeleagle-protocol` (PyPI) | `api/python` | `api/python/v0.4.0` |
 
 Go finds a nested module's versions through tags prefixed with that module's
 directory. `release.sh` works out the next version of every module, creates
 those tags, and pushes them. It discovers modules from the `go.mod` files
 tracked in git, so a new module is included automatically.
+
+### Python packages
+
+A Python package is released the same way when its `pyproject.toml` has a
+`[tool.setuptools_scm]` table. `setuptools-scm` then reads the version from
+the package's newest tag, so there is no version number in `pyproject.toml`
+to bump. Prerelease tags become PEP 440 versions: `api/python/v0.4.0-alpha.1`
+builds `0.4.0a1`, and `-beta.N` builds `0.4.0bN`. A build from a commit after
+the tag gets a dev version such as `0.4.1.dev3+g1a2b3c4`.
+
+Pushing an `api/python/v*` tag runs
+`.github/workflows/publish-steeleagle-protocol.yml`, which builds the package,
+checks that its version matches the tag, and uploads it to PyPI. pip installs
+prereleases only when asked (`pip install --pre steeleagle-protocol`).
+
+The script doesn't sync dependencies for Python packages. It doesn't apply
+the Go rules on major versions to them either.
+
+### Lockstep groups
+
+Some modules are always released together, on the same version. They are
+listed in `lockstep` near the top of `release.sh`:
+
+| Group | Modules |
+|---|---|
+| `api` | `api/go`, `api/python` |
+
+- **Selection:** `--only api` releases the whole group. Naming one member, such
+  as `--only api/go`, releases the others as well.
+- **Version:** the group's next version is bumped from the newest release of
+  any member. A prerelease series that one member has open is continued by
+  all of them. A member that fell behind therefore jumps ahead to match the
+  others. For example, with `api/go/v0.3.3` and `api/python/v0.3.0`, the next
+  patch release is `v0.3.4` for both.
 
 ### Setup (once per clone)
 
@@ -38,8 +73,8 @@ git release <patch|minor|major> [alpha|beta|prod] [options]
 
 | Option | Effect |
 |---|---|
-| `--only root,api/go,...` | Release only these modules (`root` is the root module) |
-| `--push` | Push the branch and tags, then ask proxy.golang.org to cache the new versions |
+| `--only root,api,api/go,...` | Release only these modules (`root` is the root module, `api` is a [lockstep group](#lockstep-groups)) |
+| `--push` | Push the branch and tags, then ask proxy.golang.org to cache the new Go versions |
 | `--no-sync` | Don't move modules onto new versions of other repo modules (see below) |
 | `--no-update` | Don't run `git update-deps` after releasing (see below) |
 | `--remote <name>` | Remote to fetch from and push to (default `origin`) |

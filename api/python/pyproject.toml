@@ -1,6 +1,11 @@
+[build-system]
+requires = ["setuptools>=77", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "steeleagle-protocol"
-version = "0.3.0"
+# Taken from the newest api/python/v* tag by setuptools-scm; see [tool.setuptools_scm].
+dynamic = ["version"]
 requires-python = ">=3.10"
 dependencies = [
     "grpcio>=1.82.1",
@@ -33,3 +38,14 @@ classifiers = [
 [project.urls]
 Homepage = "https://cmusatyalab.github.io/steeleagle/"
 Repository = "https://github.com/cmusatyalab/steeleagle/"
+
+# The version comes from git tags of the form api/python/vX.Y.Z (or
+# vX.Y.Z-alpha.N / vX.Y.Z-beta.N), created by `git release` (tools/git/README.md).
+# Prereleases normalize to PEP 440 (0.4.0-alpha.1 -> 0.4.0a1); commits after a
+# tag build as dev versions (0.4.1.devN+gHASH after v0.4.0).
+[tool.setuptools_scm]
+root = "../.."
+tag_regex = '^api/python/(?P<version>v\d+\.\d+\.\d+(?:-(?:alpha|beta)\.\d+)?)$'
+
+[tool.setuptools_scm.scm.git]
+describe_command = ["git", "describe", "--dirty", "--tags", "--long", "--match", "api/python/v*"]

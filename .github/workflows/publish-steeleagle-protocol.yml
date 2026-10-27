@@ -1,0 +1,66 @@
+name: Publish steeleagle-protocol to PyPI
+
+# Tags are created by `git release` (tools/git/README.md). setuptools-scm reads
+# the version from the tag, so api/python/v0.4.0-alpha.1 publishes 0.4.0a1.
+on:
+  push:
+    tags:
+      - "api/python/v*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # setuptools-scm needs the tag history to work out the version.
+          fetch-depth: 0
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Build distribution
+        working-directory: api/python
+        run: uv build --out-dir dist
+
+      - name: Check the version matches the tag
+        working-directory: api/python
+        run: |
+          expected=$(uv run --no-project --with packaging python -c \
+            'import sys; from packaging.version import Version; print(Version(sys.argv[1]))' \
+            "${GITHUB_REF_NAME#api/python/v}")
+          ls dist
+          for f in dist/*; do
+            case $(basename "$f") in
+            steeleagle_protocol-"$expected"-*.whl | steeleagle_protocol-"$expected".tar.gz) ;;
+            *)
+              echo "::error::$f does not match version $expected from $GITHUB_REF_NAME"
+              exit 1
+              ;;
+            esac
+          done
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: steeleagle-protocol-dist
+          path: api/python/dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/steeleagle-protocol/
+    permissions:
+      id-token: write
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: steeleagle-protocol-dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

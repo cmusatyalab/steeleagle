@@ -1,10 +1,17 @@
 #!/usr/bin/env bash
-# Tag every Go module in the repo with its next version in one step.
+# Tag every Go module and Python package in the repo with its next version in
+# one step.
 #
 # The root module gets plain tags (v4.1.0); nested modules get path-prefixed
 # tags (api/go/v0.4.0, sdk/v0.2.0, config/v0.1.0), which is how Go resolves
 # versions for modules that live in subdirectories. Modules are discovered from
 # the go.mod files tracked in git, so new ones are picked up automatically.
+# Python packages that take their version from git through setuptools-scm
+# (api/python) are tagged the same way (api/python/v0.4.0), and pushing such a
+# tag publishes the package to PyPI.
+#
+# Modules in a lockstep group (api = api/go + api/python) are always released
+# together, on one shared version.
 #
 # Set up the alias once per clone:
 #   tools/git/alias.sh
@@ -24,13 +31,15 @@ usage() {
 	cat <<'EOF'
 usage: git release <patch|minor|major> [alpha|beta|prod] [options]
 
-Bumps every Go module in the repo and creates an annotated tag for each one.
+Bumps every Go module and tag-versioned Python package in the repo and
+creates an annotated tag for each one.
 Prerelease stages continue an existing series for the same version
 (alpha.1 -> alpha.2 -> beta.1 -> prod); going back from beta to alpha is
 refused.
 
 options:
-  --only <mods>    comma-separated modules to release: root, api/go, sdk, ...
+  --only <mods>    comma-separated modules or lockstep groups to release:
+                   root, api, api/go, api/python, sdk, ...
   --push           push the branch and tags atomically, then warm the Go proxy
   --no-sync        leave require lines on other repo modules as they are
   --no-update      don't run git update-deps after releasing
@@ -124,10 +133,25 @@ while IFS= read -r f; do
 	[[ $d == vendor/* || $d == */vendor/* ]] && continue
 	dirs+=("$d")
 done < <(git ls-files -- go.mod '*/go.mod')
+go_dirs=("${dirs[@]}")
+
+# Python packages whose version setuptools-scm reads from these tags. Ones
+# without a [tool.setuptools_scm] table keep a hand-written version and are
+# left alone.
+py_dirs=()
+while IFS= read -r f; do
+	d=$(dirname "$f")
+	[[ $d == testdata || $d == */testdata || $d == */testdata/* || $d == testdata/* ]] && continue
+	grep -q '^\[tool\.setuptools_scm\]' "$f" || continue
+	py_dirs+=("$d")
+	dirs+=("$d")
+done < <(git ls-files -- pyproject.toml '*/pyproject.toml')
+
+is_py() { [[ " ${py_dirs[*]} " == *" $1 "* ]]; }
 
 # Consumers ignore replace directives (and go install refuses them), so a
 # tagged go.mod must not depend on one; use go.work for local development.
-for d in "${dirs[@]}"; do
+for d in "${go_dirs[@]}"; do
 	if grep -Eq '^[[:space:]]*replace([[:space:]]|\()' "$d/go.mod"; then
 		die "$d/go.mod has a replace directive; drop it and use go.work instead"
 	fi
@@ -136,6 +160,8 @@ done
 name_of() { [[ $1 == . ]] && echo root || echo "$1"; }
 prefix_of() { [[ $1 == . ]] && echo "" || echo "$1/"; }
 path_of() { awk '$1 == "module" { print $2; exit }' "$1/go.mod"; }
+# The [project] name in a pyproject.toml, e.g. steeleagle-protocol.
+py_name_of() { sed -nE '/^\[project\]/,/^\[/ s/^name[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' "$1/pyproject.toml" | head -1; }
 
 # Version of dep_path that the go.mod in dir requires, if any.
 required_of() {
@@ -143,10 +169,35 @@ required_of() {
 }
 
 declare -A mod_path
-for d in "${dirs[@]}"; do
+for d in "${go_dirs[@]}"; do
 	mod_path[$d]=$(path_of "$d")
 	[[ -n ${mod_path[$d]} ]] || die "$d/go.mod has no module line"
 done
+for d in "${py_dirs[@]}"; do
+	mod_path[$d]=$(py_name_of "$d")
+	[[ -n ${mod_path[$d]} ]] || die "$d/pyproject.toml has no [project] name"
+done
+
+# Modules released in lockstep: selecting one selects them all, and they share
+# one version, bumped from the newest release of any of them. The group's name
+# also works with --only.
+lockstep=(
+	"api=api/go,api/python"
+)
+
+declare -A group_members group_named
+for g in "${lockstep[@]}"; do
+	gname=${g%%=*}
+	IFS=, read -ra members <<<"${g#*=}"
+	for m in "${members[@]}"; do
+		[[ -n ${mod_path[$m]:-} ]] || die "lockstep group $gname names $m, which isn't a module"
+		group_members[$m]="${members[*]}"
+	done
+	group_named[$gname]="${members[*]}"
+done
+
+# Every module released together with dir, including dir.
+members_of() { echo "${group_members[$1]:-$1}"; }
 
 # The repo's import path prefix, e.g. github.com/cmusatyalab/steeleagle.
 repo_path=${mod_path[.]:-}
@@ -154,16 +205,27 @@ repo_path=${repo_path%/v[0-9]*}
 
 selected=()
 if [[ -n $only ]]; then
+	declare -A want_dir
 	IFS=, read -ra wanted <<<"$only"
 	for w in "${wanted[@]}"; do
 		w=${w%/}
 		[[ $w == . ]] && w=root
+		if [[ -n ${group_named[$w]:-} ]]; then
+			for m in ${group_named[$w]}; do want_dir[$m]=1; done
+			continue
+		fi
 		found=
 		for d in "${dirs[@]}"; do
 			[[ $(name_of "$d") == "$w" ]] && found=$d
 		done
-		[[ -n $found ]] || die "no Go module named '$w' (have: $(for d in "${dirs[@]}"; do printf '%s ' "$(name_of "$d")"; done))"
-		selected+=("$found")
+		if [[ -z $found ]]; then
+			have=$(for d in "${dirs[@]}"; do printf '%s ' "$(name_of "$d")"; done)
+			die "no module named '$w' (have: ${have% }${group_named[*]:+; groups: ${!group_named[*]}})"
+		fi
+		for m in $(members_of "$found"); do want_dir[$m]=1; done
+	done
+	for d in "${dirs[@]}"; do
+		[[ -n ${want_dir[$d]:-} ]] && selected+=("$d")
 	done
 else
 	selected=("${dirs[@]}")
@@ -203,15 +265,21 @@ module_pathspec() {
 }
 
 # Sets best (newest tag), best_core, best_stage, best_n, stable (newest
-# release as "MAJOR MINOR PATCH") and path_major for the module in dir.
+# release as "MAJOR MINOR PATCH"), their sort keys best_key and stable_key, and
+# path_major and max_major for the module in dir.
 scan_tags() {
-	local dir=$1 prefix t v ma mi pa st n k best_key= stable_key=
+	local dir=$1 prefix t v ma mi pa st n k
 	prefix=$(prefix_of "$dir")
-	best= best_core= best_stage= best_n=0 stable=
+	best= best_core= best_stage= best_n=0 stable= best_key= stable_key=
 
-	# A /vN suffix pins the major version; without one, only v0 and v1 are valid.
-	path_major=
-	[[ ${mod_path[$dir]} =~ /v([0-9]+)$ ]] && path_major=${BASH_REMATCH[1]}
+	# A /vN suffix pins the major version; without one, only v0 and v1 are
+	# valid. Python packages have neither rule.
+	path_major= max_major=1
+	if is_py "$dir"; then
+		max_major=
+	elif [[ ${mod_path[$dir]} =~ /v([0-9]+)$ ]]; then
+		path_major=${BASH_REMATCH[1]}
+	fi
 
 	while IFS= read -r t; do
 		v=${t#"$prefix"}
@@ -220,8 +288,8 @@ scan_tags() {
 		st=${BASH_REMATCH[5]:-prod} n=${BASH_REMATCH[6]:-0}
 		if [[ -n $path_major ]]; then
 			((10#$ma == 10#$path_major)) || continue
-		else
-			((10#$ma <= 1)) || continue
+		elif [[ -n $max_major ]]; then
+			((10#$ma <= max_major)) || continue
 		fi
 		k=$(sort_key "$ma" "$mi" "$pa" "$st" "$n")
 		if [[ -z $best_key || $k > $best_key ]]; then
@@ -233,6 +301,30 @@ scan_tags() {
 	done < <(git tag -l "${prefix}v*")
 }
 
+# Like scan_tags, but best and stable are the newest across dir's lockstep
+# group, so every member moves to the same next version. path_major and
+# max_major stay dir's own.
+scan_group() {
+	local dir=$1 m g_best= g_core= g_stage= g_n=0 g_key= g_stable= g_skey=
+	for m in $(members_of "$dir"); do
+		[[ $m == "$dir" ]] && continue
+		scan_tags "$m"
+		if [[ -n $best_key && (-z $g_key || $best_key > $g_key) ]]; then
+			g_key=$best_key g_best=$best g_core=$best_core g_stage=$best_stage g_n=$best_n
+		fi
+		if [[ -n $stable_key && (-z $g_skey || $stable_key > $g_skey) ]]; then
+			g_skey=$stable_key g_stable=$stable
+		fi
+	done
+	scan_tags "$dir"
+	if [[ -n $g_key && (-z $best_key || $g_key > $best_key) ]]; then
+		best=$g_best best_core=$g_core best_stage=$g_stage best_n=$g_n best_key=$g_key
+	fi
+	if [[ -n $g_skey && (-z $stable_key || $g_skey > $stable_key) ]]; then
+		stable=$g_stable stable_key=$g_skey
+	fi
+}
+
 declare -A cur_tag cur_ver next_ver next_tag note
 
 for dir in "${dirs[@]}"; do
@@ -242,7 +334,7 @@ for dir in "${dirs[@]}"; do
 done
 
 for dir in "${selected[@]}"; do
-	scan_tags "$dir"
+	scan_group "$dir"
 	path=${mod_path[$dir]}
 
 	if [[ -n $stable ]]; then
@@ -269,7 +361,7 @@ for dir in "${selected[@]}"; do
 		esac
 	fi
 
-	if [[ -z $path_major ]] && ((ma > 1)); then
+	if [[ -z $path_major && -n $max_major ]] && ((ma > max_major)); then
 		die "v$ma.0.0 of $path needs a /v$ma module path; change it (and its imports) first"
 	fi
 
@@ -296,9 +388,9 @@ for dir in "${selected[@]}"; do
 	next_ver[$dir]=$ver
 	next_tag[$dir]=$tag
 	note[$dir]=
-	if [[ -n $best ]]; then
+	if [[ -n ${cur_tag[$dir]} ]]; then
 		mapfile -t spec < <(module_pathspec "$dir")
-		git diff --quiet "$best" HEAD -- "${spec[@]}" && note[$dir]="no changes since $best"
+		git diff --quiet "${cur_tag[$dir]}" HEAD -- "${spec[@]}" && note[$dir]="no changes since ${cur_tag[$dir]}"
 	fi
 done
 
@@ -308,8 +400,8 @@ done
 # requires: the one being released alongside it, or else its newest tag.
 syncs=() # "dir|dep|version"
 warnings=()
-for dir in "${dirs[@]}"; do
-	for dep in "${dirs[@]}"; do
+for dir in "${go_dirs[@]}"; do
+	for dep in "${go_dirs[@]}"; do
 		[[ $dep == "$dir" ]] && continue
 		required=$(required_of "$dir" "${mod_path[$dep]}")
 		[[ -n $required ]] || continue
@@ -503,6 +595,10 @@ fi
 # when the remote is the repo the module paths point at.
 if [[ $(git remote get-url "$remote") == *"${repo_path#*/}"* ]]; then
 	for dir in "${selected[@]}"; do
+		if is_py "$dir"; then
+			echo "${mod_path[$dir]} ${next_ver[$dir]}: GitHub Actions publishes it to PyPI from ${next_tag[$dir]}"
+			continue
+		fi
 		(cd / && GOWORK=off GOPROXY=https://proxy.golang.org go list -m "${mod_path[$dir]}@${next_ver[$dir]}") ||
 			echo "release: warning: proxy.golang.org has not picked up ${mod_path[$dir]}@${next_ver[$dir]} yet" >&2
 	done
