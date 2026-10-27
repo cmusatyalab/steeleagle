@@ -375,6 +375,8 @@ type RegisterOrchestratorRequest struct {
 	xxx_hidden_Services *[]*Service            `protobuf:"bytes,1,rep,name=services,proto3"`
 	xxx_hidden_Hostname string                 `protobuf:"bytes,2,opt,name=hostname,proto3"`
 	xxx_hidden_Port     int32                  `protobuf:"varint,3,opt,name=port,proto3"`
+	xxx_hidden_Arch     string                 `protobuf:"bytes,4,opt,name=arch,proto3"`
+	xxx_hidden_Os       string                 `protobuf:"bytes,5,opt,name=os,proto3"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -427,6 +429,20 @@ func (x *RegisterOrchestratorRequest) GetPort() int32 {
 	return 0
 }
 
+func (x *RegisterOrchestratorRequest) GetArch() string {
+	if x != nil {
+		return x.xxx_hidden_Arch
+	}
+	return ""
+}
+
+func (x *RegisterOrchestratorRequest) GetOs() string {
+	if x != nil {
+		return x.xxx_hidden_Os
+	}
+	return ""
+}
+
 func (x *RegisterOrchestratorRequest) SetServices(v []*Service) {
 	x.xxx_hidden_Services = &v
 }
@@ -439,12 +455,22 @@ func (x *RegisterOrchestratorRequest) SetPort(v int32) {
 	x.xxx_hidden_Port = v
 }
 
+func (x *RegisterOrchestratorRequest) SetArch(v string) {
+	x.xxx_hidden_Arch = v
+}
+
+func (x *RegisterOrchestratorRequest) SetOs(v string) {
+	x.xxx_hidden_Os = v
+}
+
 type RegisterOrchestratorRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Services []*Service
 	Hostname string
 	Port     int32
+	Arch     string
+	Os       string
 }
 
 func (b0 RegisterOrchestratorRequest_builder) Build() *RegisterOrchestratorRequest {
@@ -454,6 +480,8 @@ func (b0 RegisterOrchestratorRequest_builder) Build() *RegisterOrchestratorReque
 	x.xxx_hidden_Services = &b.Services
 	x.xxx_hidden_Hostname = b.Hostname
 	x.xxx_hidden_Port = b.Port
+	x.xxx_hidden_Arch = b.Arch
+	x.xxx_hidden_Os = b.Os
 	return m0
 }
 
@@ -1586,11 +1614,13 @@ const file_steeleagle_protocol_v1_services_daemon_daemon_proto_rawDesc = "" +
 	"\vUnavailable\x12\x0e\n" +
 	"\x02ip\x18\x01 \x01(\tR\x02ip\x12\x1a\n" +
 	"\bhostname\x18\x02 \x01(\tR\bhostname\x12\x16\n" +
-	"\x06reason\x18\x03 \x01(\tR\x06reason\"\x9a\x01\n" +
+	"\x06reason\x18\x03 \x01(\tR\x06reason\"\xbe\x01\n" +
 	"\x1bRegisterOrchestratorRequest\x12K\n" +
 	"\bservices\x18\x01 \x03(\v2/.steeleagle_protocol.v1.services.daemon.ServiceR\bservices\x12\x1a\n" +
 	"\bhostname\x18\x02 \x01(\tR\bhostname\x12\x12\n" +
-	"\x04port\x18\x03 \x01(\x05R\x04port\"\xb6\x01\n" +
+	"\x04port\x18\x03 \x01(\x05R\x04port\x12\x12\n" +
+	"\x04arch\x18\x04 \x01(\tR\x04arch\x12\x0e\n" +
+	"\x02os\x18\x05 \x01(\tR\x02os\"\xb6\x01\n" +
 	"\x1cRegisterOrchestratorResponse\x12K\n" +
 	"\bservices\x18\x01 \x03(\v2/.steeleagle_protocol.v1.services.daemon.ServiceR\bservices\x12\x1a\n" +
 	"\bhostname\x18\x02 \x01(\tR\bhostname\x12\x12\n" +

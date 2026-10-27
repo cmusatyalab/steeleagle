@@ -6,39 +6,34 @@
 # default. After that, `go build` works on any module that depends on the bindings, with no extra
 # environment.
 #
-# Uriel lives on the uriel branch of the public cmusatyalab/gabriel repo, which has no prebuilt
-# releases of it, so this script builds it from source with cargo-c. It needs git, Rust, libclang
-# and pkg-config. By default it builds the gabriel commit that go.mod's replace directive pins, so
-# the library always matches the bindings.
+# It downloads the prebuilt library from the cmusatyalab/uriel GitHub release (Linux x86_64 and
+# aarch64). By default it installs the version go.mod requires, so the library always matches the
+# bindings.
 #
-#   tools/uriel/install.sh                        # the pinned commit to /usr/local (uses sudo if needed)
+#   tools/uriel/install.sh                        # go.mod's version to /usr/local (uses sudo if needed)
 #   tools/uriel/install.sh --prefix ~/.local      # installs there; prints the PKG_CONFIG_PATH to export
-#   tools/uriel/install.sh --ref uriel            # builds the branch's latest commit instead
+#   tools/uriel/install.sh --version v0.2.0       # installs that release instead
 #
-# Run it again whenever go.mod moves to a new gabriel commit: the build stops with an ABI mismatch
+# Run it again whenever go.mod moves to a new Uriel version: the build stops with an ABI mismatch
 # error when the installed library does not match the bindings.
 
 set -euo pipefail
 
-REPO=cmusatyalab/gabriel
-GIT_URL=${URIEL_GIT_URL:-https://github.com/$REPO.git}
+REPO=cmusatyalab/uriel
 GO_MOD=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/go.mod
 PREFIX=/usr/local
-REF=
+VERSION=
 
 usage() {
     cat <<'EOF'
 usage: tools/uriel/install.sh [options]
 
-Builds and installs liburiel with its header and pkg-config file so that the Uriel Go bindings build.
+Downloads and installs liburiel with its header and pkg-config file so that the Uriel Go bindings build.
 
 options:
-  --prefix <dir>  install prefix (default: /usr/local)
-  --ref <ref>     branch, tag or commit of gabriel to build (default: the commit go.mod pins)
-  -h, --help      show this help
-
-environment:
-  URIEL_GIT_URL   URL to clone (default: https://github.com/cmusatyalab/gabriel.git)
+  --prefix <dir>       install prefix (default: /usr/local)
+  --version <version>  Uriel release to install, e.g. v0.2.0 (default: the version go.mod requires)
+  -h, --help           show this help
 EOF
 }
 
@@ -54,9 +49,9 @@ while (($#)); do
         PREFIX=$2
         shift 2
         ;;
-    --ref)
-        (($# >= 2)) || die "--ref needs a branch, tag or commit"
-        REF=$2
+    --version)
+        (($# >= 2)) || die "--version needs a release version"
+        VERSION=$2
         shift 2
         ;;
     -h | --help)
@@ -71,46 +66,37 @@ while (($#)); do
 done
 
 command -v pkg-config >/dev/null || die "pkg-config is not installed"
-command -v git >/dev/null || die "git is not installed"
-command -v cargo >/dev/null || die "cargo is not installed (see https://rustup.rs)"
+command -v curl >/dev/null || die "curl is not installed"
+command -v tar >/dev/null || die "tar is not installed"
 
-if [[ -z $REF ]]; then
-    # The commit hash at the end of the pseudo-version in go.mod's replace directive.
-    [[ -f $GO_MOD ]] || die "could not find $GO_MOD; pass --ref"
-    REF=$(sed -n 's|.*github.com/cmusatyalab/gabriel/go v[^ ]*-\([0-9a-f]\{12\}\)[[:space:]]*$|\1|p' "$GO_MOD")
-    [[ -n $REF ]] || die "$GO_MOD does not pin a gabriel commit; pass --ref"
+if [[ -z $VERSION ]]; then
+    [[ -f $GO_MOD ]] || die "could not find $GO_MOD; pass --version"
+    VERSION=$(sed -n 's|^[[:space:]]*github.com/cmusatyalab/uriel/go \(v[^ ]*\).*|\1|p' "$GO_MOD")
+    [[ -n $VERSION ]] || die "$GO_MOD does not require github.com/cmusatyalab/uriel/go; pass --version"
 fi
+VERSION=v${VERSION#v}
+[[ $VERSION =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] ||
+    die "$VERSION is not a release version; prebuilt libraries exist only for tagged releases"
+
+[[ $(uname -s) == Linux ]] || die "prebuilt liburiel is only published for Linux"
+case $(uname -m) in
+x86_64 | amd64) arch=x86_64 ;;
+aarch64 | arm64) arch=aarch64 ;;
+*) die "no prebuilt liburiel for $(uname -m)" ;;
+esac
+
+name=liburiel-${VERSION#v}-linux-$arch
+url=https://github.com/$REPO/releases/download/$VERSION/$name.tar.gz
 
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
-stage="$work/stage"
 
-if ! cargo cinstall --version >/dev/null 2>&1; then
-    echo "install: cargo-c not found, installing it"
-    cargo install cargo-c --locked
-fi
-
-# A blobless clone has every branch's commits, so REF can be a branch, a tag or an abbreviated
-# commit hash, while downloading only the files of the commit that is checked out.
-echo "install: fetching $REPO@$REF"
-git clone -q --filter=blob:none --no-checkout "$GIT_URL" "$work/src" ||
-    die "could not clone $GIT_URL"
-git -C "$work/src" -c advice.detachedHead=false checkout -q "$REF" ||
-    die "$GIT_URL has no branch, tag or commit $REF"
-
-# Build and stage as the current user so the Rust toolchain is never run as root; only the copy
-# into the prefix may need elevated permissions. Only the static library, so programs linked
-# with it need nothing of Uriel's where they run.
-echo "install: building liburiel (needs libclang)"
-cargo cinstall --release --locked -p uriel \
-    --manifest-path "$work/src/Cargo.toml" \
-    --target-dir "$work/target" \
-    --library-type staticlib \
-    --prefix /usr/local --libdir lib \
-    --destdir "$work/build"
-mv "$work/build/usr/local" "$stage"
-# Name the directory uriel.pc is in, so the install is relocatable.
-sed -i 's|^prefix=.*|prefix=${pcfiledir}/../..|' "$stage/lib/pkgconfig/uriel.pc"
+echo "install: downloading $url"
+curl -fsSL -o "$work/$name.tar.gz" "$url" || die "could not download $url"
+tar -xzf "$work/$name.tar.gz" -C "$work"
+stage="$work/$name"
+[[ -f $stage/lib/liburiel.a && -f $stage/lib/pkgconfig/uriel.pc && -d $stage/include/uriel ]] ||
+    die "$name.tar.gz does not have the expected layout"
 
 sudo=
 if ! mkdir -p "$PREFIX" 2>/dev/null || [[ ! -w $PREFIX ]]; then

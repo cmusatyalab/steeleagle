@@ -169,6 +169,7 @@ func WithProcessOutputStream(out io.Writer) PluginOption {
 func WithEnvironment(key, value string) PluginOption {
 	return func(k *BasePlugin) {
 		k.environ = append(k.environ, fmt.Sprintf("%s=%s", key, value))
+		k.envVars = append(k.envVars, key)
 	}
 }
 

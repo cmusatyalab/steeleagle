@@ -175,10 +175,10 @@ func TestRegister(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if log := readLog(t, "127.0.0.2.c"); strings.Count(log, "plugin=echo") != 2 {
+	if log := readLog(t, "127.0.0.2.c"); strings.Count(log, "plugin=echo.plugin.toml") != 2 {
 		t.Errorf("child service log = %q, want a line from each run", log)
 	}
-	if log := readLog(t, "127.0.0.1.o"); strings.Count(log, "plugin=echo") != 1 {
+	if log := readLog(t, "127.0.0.1.o"); strings.Count(log, "plugin=echo.plugin.toml") != 1 {
 		t.Errorf("orchestrator service log = %q, want it started once", log)
 	}
 	_, err = p.orch.client.RestartService(callCtx(t, 5*time.Second),

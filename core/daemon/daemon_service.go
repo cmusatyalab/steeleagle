@@ -557,7 +557,8 @@ func (d *Daemon) setPlugin(s *daemonService, p config.PluginField) error {
 	if name == "" || name == "." || name == ".." || filepath.Base(name) != name {
 		return fmt.Errorf("invalid plugin name %q", p.Plugin)
 	}
-	conf, err := config.ParsePluginConfigFromFilepath(filepath.Join(path, name+PluginFileSuffix))
+	name = name + PluginFileSuffix // add the suffix back on
+	conf, err := config.ParsePluginConfigFromFilepath(filepath.Join(path, name))
 	if err != nil {
 		return err
 	}

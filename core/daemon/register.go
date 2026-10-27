@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -126,6 +127,8 @@ func (d *Daemon) connect(ctx context.Context) (orchStream, func(), error) {
 			Services: services,
 			Hostname: d.Hostname,
 			Port:     int32(d.Config.Daemon.Port),
+			Arch:     runtime.GOARCH,
+			Os:       runtime.GOOS,
 		}.Build())
 	}
 	var resp *daemonpb.RegisterOrchestratorResponse

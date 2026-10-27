@@ -1,7 +1,9 @@
 package plugin
 
 import (
+	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -216,5 +218,95 @@ func TestContainerPluginWrongTag(t *testing.T) {
 	)
 	if err == nil {
 		t.Fatalf("no error creating plugin when it was expected")
+	}
+}
+
+// TestContainerEnvArgs ensures that variables are forwarded by name only, once
+// each, and without the socket variables.
+func TestContainerEnvArgs(t *testing.T) {
+	envVars := []string{
+		"STEELEAGLE_PLUGIN",
+		"STEELEAGLE_PLUGIN_ARGS",
+		"STEELEAGLE_PLUGIN", // duplicate
+		ClientSockEnv,
+		ListenSockEnv,
+		"",
+	}
+	got := containerEnvArgs(envVars)
+	want := []string{
+		"-e", "STEELEAGLE_PLUGIN",
+		"-e", "STEELEAGLE_PLUGIN_ARGS",
+	}
+	if !slices.Equal(got, want) {
+		t.Fatalf("got env args %q, want %q", got, want)
+	}
+}
+
+// TestContainerPluginEnvironment ensures that variables added with
+// WithEnvironment reach a containerized plugin verbatim, while the parent's
+// environment isn't forwarded.
+func TestContainerPluginEnvironment(t *testing.T) {
+	requireContainer(t)
+	// The parent's environment is captured when the plugin is created
+	t.Setenv("STEELEAGLE_TEST_PARENT", "parent")
+	multiline := "line one\nline two"
+	args := `{"message": "h\u00fcllo", "quote": "it's \"fine\"", "literal": "$HOME"}`
+
+	// The script writes what it sees into files bound in from the host
+	dir := t.TempDir()
+	script := filepath.Join(dir, "env.sh")
+	err := os.WriteFile(script, []byte(`#!/bin/sh
+printf '%s' "$STEELEAGLE_PLUGIN_ARGS" > args.txt
+printf '%s' "$STEELEAGLE_TEST_MULTILINE" > multiline.txt
+printf '%s' "${STEELEAGLE_TEST_PARENT-unset}" > parent.txt
+printf '%s' "$HOME" > home.txt
+`), 0o755)
+	if err != nil {
+		t.Fatalf("couldn't write env script: %v", err)
+	}
+	outputs := map[string]string{}
+	for _, name := range []string{"args.txt", "multiline.txt", "parent.txt", "home.txt"} {
+		outputs[name] = filepath.Join(dir, name)
+		if err := os.WriteFile(outputs[name], nil, 0o644); err != nil {
+			t.Fatalf("couldn't create output file: %v", err)
+		}
+	}
+
+	plugin, err := newTestContainerPlugin(t,
+		"alpine",
+		WithoutClient(),
+		WithPath(script),
+		WithFiles([]string{
+			outputs["args.txt"], outputs["multiline.txt"],
+			outputs["parent.txt"], outputs["home.txt"],
+		}),
+		WithEnvironment("STEELEAGLE_PLUGIN_ARGS", args),
+		WithEnvironment("STEELEAGLE_TEST_MULTILINE", multiline),
+	)
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
+	_, _, err = plugin.Start(t.Context())
+	if err != nil {
+		t.Fatalf("encountered error spawning plugin: %v", err)
+	}
+	err = plugin.Wait()
+	if err != nil {
+		t.Fatalf("plugin exited with error unexpectedly: %v", err)
+	}
+
+	for name, want := range map[string]string{
+		"args.txt":      args,
+		"multiline.txt": multiline,
+		"parent.txt":    "unset",
+		"home.txt":      "/root", // alpine's HOME, not the host's
+	} {
+		got, err := os.ReadFile(outputs[name])
+		if err != nil {
+			t.Fatalf("couldn't read %s: %v", name, err)
+		}
+		if string(got) != want {
+			t.Errorf("%s: got %q, want %q", name, got, want)
+		}
 	}
 }

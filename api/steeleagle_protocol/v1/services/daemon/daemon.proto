@@ -158,6 +158,8 @@ message RegisterOrchestratorRequest {
   repeated Service services = 1; // services of the daemon registering
   string hostname = 2;           // hostname of the daemon registering
   int32 port = 3;                // port of the daemon registering
+  string arch = 4;               // architecture of the daemon registering (goarch string)
+  string os = 5;                 // operating system of the daemon registering (goos string)
 }
 
 message RegisterOrchestratorResponse {

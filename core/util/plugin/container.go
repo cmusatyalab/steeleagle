@@ -117,6 +117,9 @@ func (p *ContainerPlugin) createContainer() error {
 		fmt.Sprintf("%s:%s:Z", p.runDir, p.runDir),
 	}
 
+	// Forward the variables added with WithEnvironment into the container
+	args = append(args, containerEnvArgs(p.envVars)...)
+
 	// Link in files
 	for f, w := range p.files {
 		if w == 2 { // executables
@@ -186,6 +189,26 @@ func (p *ContainerPlugin) createContainer() error {
 	}
 	p.prepared = true
 	return nil
+}
+
+// containerEnvArgs returns the podman args that forward the named variables
+// into a container. Only names are passed, so podman takes each value from its
+// own environment, which keeps values verbatim and out of the process list.
+func containerEnvArgs(envVars []string) []string {
+	var args []string
+	seen := make(map[string]bool)
+	for _, key := range envVars {
+		if key == "" || seen[key] {
+			continue
+		}
+		// The socket variables are set explicitly for the container
+		if key == ClientSockEnv || key == ListenSockEnv {
+			continue
+		}
+		seen[key] = true
+		args = append(args, "-e", key)
+	}
+	return args
 }
 
 // addPid adds the host PID of the running container to the plugin's ACL.

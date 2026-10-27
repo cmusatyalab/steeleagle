@@ -53,10 +53,10 @@ func TestRunServices(t *testing.T) {
 		t.Error("engine has no plugin config")
 	}
 
-	if log := readLog(t, "127.0.0.1.x"); !strings.Contains(log, `plugin=echo args={"n":1} iceoryx=`+"\n") {
+	if log := readLog(t, "127.0.0.1.x"); !strings.Contains(log, `plugin=echo.plugin.toml args={"n":1} iceoryx=`+"\n") {
 		t.Errorf("extra log = %q, want its plugin and args, and no iceoryx service", log)
 	}
-	if log := readLog(t, "127.0.0.1.e"); !strings.Contains(log, "plugin=detector args={} iceoryx=127.0.0.1.e\n") {
+	if log := readLog(t, "127.0.0.1.e"); !strings.Contains(log, "plugin=detector.plugin.toml args={} iceoryx=127.0.0.1.e\n") {
 		t.Errorf("engine log = %q, want its plugin, empty args, and its service name as its iceoryx service", log)
 	}
 

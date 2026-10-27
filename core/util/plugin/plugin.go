@@ -80,6 +80,7 @@ type BasePlugin struct {
 	log         zerolog.Logger     // logger object
 	outStream   io.Writer          // replacement out file for Stdout/err
 	environ     []string           // environment to run the plugin in
+	envVars     []string           // names of variables added with WithEnvironment
 	ctx         context.Context    // context
 	cancel      context.CancelFunc // cancellation function
 	waitOnce    sync.Once          // guards against calling cmd.Wait() more than once

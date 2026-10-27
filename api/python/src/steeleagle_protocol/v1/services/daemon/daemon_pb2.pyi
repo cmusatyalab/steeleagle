@@ -66,14 +66,18 @@ class Unavailable(_message.Message):
     def __init__(self, ip: _Optional[str] = ..., hostname: _Optional[str] = ..., reason: _Optional[str] = ...) -> None: ...
 
 class RegisterOrchestratorRequest(_message.Message):
-    __slots__ = ("services", "hostname", "port")
+    __slots__ = ("services", "hostname", "port", "arch", "os")
     SERVICES_FIELD_NUMBER: _ClassVar[int]
     HOSTNAME_FIELD_NUMBER: _ClassVar[int]
     PORT_FIELD_NUMBER: _ClassVar[int]
+    ARCH_FIELD_NUMBER: _ClassVar[int]
+    OS_FIELD_NUMBER: _ClassVar[int]
     services: _containers.RepeatedCompositeFieldContainer[Service]
     hostname: str
     port: int
-    def __init__(self, services: _Optional[_Iterable[_Union[Service, _Mapping]]] = ..., hostname: _Optional[str] = ..., port: _Optional[int] = ...) -> None: ...
+    arch: str
+    os: str
+    def __init__(self, services: _Optional[_Iterable[_Union[Service, _Mapping]]] = ..., hostname: _Optional[str] = ..., port: _Optional[int] = ..., arch: _Optional[str] = ..., os: _Optional[str] = ...) -> None: ...
 
 class RegisterOrchestratorResponse(_message.Message):
     __slots__ = ("services", "hostname", "cert", "lcs_port")

@@ -50,7 +50,7 @@ func TestRestartService(t *testing.T) {
 		t.Error("restarted service isn't running")
 	}
 	// Restarts write to the same log
-	if log := readLog(t, crash); strings.Count(log, "plugin=echo") != 2 {
+	if log := readLog(t, crash); strings.Count(log, "plugin=echo.plugin.toml") != 2 {
 		t.Errorf("log = %q, want a line from each run", log)
 	}
 
@@ -60,7 +60,7 @@ func TestRestartService(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if log := readLog(t, "127.0.0.1.a"); strings.Count(log, "plugin=echo") != 2 {
+	if log := readLog(t, "127.0.0.1.a"); strings.Count(log, "plugin=echo.plugin.toml") != 2 {
 		t.Errorf("log = %q, want a line from each run", log)
 	}
 	if running, _ := d.pluginRunning("127.0.0.1.a"); !running {
@@ -216,15 +216,15 @@ func TestPopulateServices(t *testing.T) {
 		t.Errorf("simulator = %+v, want the simulator package, with its args and no plugin", simulator)
 	}
 	if e.auth != listener.ExternalCode || e.isolation != daemonpb.Isolation_ISOLATION_SANDBOX ||
-		e.pluginName != "detector" || e.config == nil || e.config.Engine == nil || e.args != "{}" {
+		e.pluginName != "detector.plugin.toml" || e.config == nil || e.config.Engine == nil || e.args != "{}" {
 		t.Errorf("engine = %+v, want an external, sandboxed detector with its config", e)
 	}
-	if v.auth != listener.PrivilegedCode || !v.simulated || v.uri != sim || v.pluginName != "sim_vehicle" ||
+	if v.auth != listener.PrivilegedCode || !v.simulated || v.uri != sim || v.pluginName != "sim_vehicle.plugin.toml" ||
 		v.args != "{}" || v.isolation != daemonpb.Isolation_ISOLATION_PROCESS || v.container != "" || v.config == nil {
 		t.Errorf("vehicle = %+v, want a privileged simulated vehicle, ignoring its plugin's args and isolation", v)
 	}
 	if x.auth != listener.AdminCode || x.isolation != daemonpb.Isolation_ISOLATION_CONTAINER ||
-		x.container != "docker.io/library/alpine:3" || x.pluginName != "echo" || x.args != `{"n":1}` ||
+		x.container != "docker.io/library/alpine:3" || x.pluginName != "echo.plugin.toml" || x.args != `{"n":1}` ||
 		!strings.HasSuffix(x.path, getPackageDir(testPkg)) {
 		t.Errorf("extra = %+v, want an admin echo plugin in a container", x)
 	}

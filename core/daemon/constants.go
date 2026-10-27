@@ -52,8 +52,9 @@ const (
 	ShimListenSock = "out.sock"
 )
 
-// Environment variables passed to every plugin: the name of the plugin to run
-// within its package, and its args from the daemon config as a JSON object.
+// Environment variables passed to every plugin: the file name of the plugin to
+// run within its package (e.g. detector.plugin.toml), and its args from the
+// daemon config as a JSON object.
 const (
 	PluginNameEnv = "STEELEAGLE_PLUGIN"
 	PluginArgsEnv = "STEELEAGLE_PLUGIN_ARGS"

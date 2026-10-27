@@ -23,7 +23,7 @@ func TestServiceProto(t *testing.T) {
 		name:       "100.64.0.2.e",
 		category:   daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE,
 		uri:        testPkg,
-		pluginName: "detector",
+		pluginName: "detector.plugin.toml",
 		config:     conf,
 		auth:       listener.UserCode,
 		isolation:  daemonpb.Isolation_ISOLATION_SANDBOX,
