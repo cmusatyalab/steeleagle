@@ -46,8 +46,8 @@ func TestRunServices(t *testing.T) {
 	if want := []string{"external", "privileged", "user"}; !slices.Equal(auths, want) {
 		t.Errorf("auths = %v, want %v", auths, want)
 	}
-	if len(resp.GetUnavailable()) != 0 {
-		t.Errorf("unavailable = %v, want none", resp.GetUnavailable())
+	if len(resp.GetRemotes()) != 0 {
+		t.Errorf("remotes = %v, want none", resp.GetRemotes())
 	}
 	if resp.GetServices()[0].GetConfig() == nil {
 		t.Error("engine has no plugin config")

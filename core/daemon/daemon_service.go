@@ -94,9 +94,10 @@ func (d *Daemon) GetConfiguration(
 
 // ListServices lists all services from the config, whether they are running or
 // stopped. On an orchestrator, the services of every registered remote daemon
-// are listed too, by their qualified names, "{daemon IP}.{name}"; a remote
-// daemon that can't be reached is left out and listed as unavailable. If the
-// daemon failed to start its services, it returns that error instead.
+// are listed too, by their qualified names, "{daemon IP}.{name}", and every
+// remote daemon is listed as a remote; one that can't be reached has its
+// services left out, and its error set to why. If the daemon failed to start
+// its services, it returns that error instead.
 func (d *Daemon) ListServices(
 	ctx context.Context,
 	req *daemonpb.ListServicesRequest,
@@ -110,27 +111,31 @@ func (d *Daemon) ListServices(
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "couldn't encode services: %v", err)
 	}
-	var unavailable []*daemonpb.Unavailable
+	var remotes []*daemonpb.Daemon
 	for _, child := range d.listRemotes() {
+		remote := daemonpb.Daemon_builder{
+			Ip:       child.ip,
+			Hostname: child.hostname,
+			Arch:     child.arch,
+			Os:       child.os,
+		}
 		// The child routes its own IP to its own services
 		cctx, cancel := context.WithTimeout(router.Embed(ctx, child.ip), Deadline)
 		resp, err := daemonpb.NewDaemonServiceClient(child.conn).
 			ListServices(cctx, &daemonpb.ListServicesRequest{})
 		cancel()
 		if err != nil {
-			unavailable = append(unavailable, daemonpb.Unavailable_builder{
-				Ip:       child.ip,
-				Hostname: child.hostname,
-				Reason:   err.Error(),
-			}.Build())
+			remote.Error = err.Error()
+			remotes = append(remotes, remote.Build())
 			continue
 		}
+		remotes = append(remotes, remote.Build())
 		services = append(services, resp.GetServices()...)
-		unavailable = append(unavailable, resp.GetUnavailable()...)
+		remotes = append(remotes, resp.GetRemotes()...)
 	}
 	return daemonpb.ListServicesResponse_builder{
-		Services:    services,
-		Unavailable: unavailable,
+		Services: services,
+		Remotes:  remotes,
 	}.Build(), nil
 }
 

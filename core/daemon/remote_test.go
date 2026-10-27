@@ -18,11 +18,11 @@ func TestRemotes(t *testing.T) {
 		return out
 	}
 
-	b, err := d.addRemote("10.0.0.2", "b", 9000, svc("10.0.0.2.x"))
+	b, err := d.addRemote("10.0.0.2", "b", "linux", "amd64", 9000, svc("10.0.0.2.x"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	old, err := d.addRemote("10.0.0.10", "c", 9000, svc("10.0.0.10.x", "10.0.0.10.y"))
+	old, err := d.addRemote("10.0.0.10", "c", "linux", "amd64", 9000, svc("10.0.0.10.x", "10.0.0.10.y"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +31,7 @@ func TestRemotes(t *testing.T) {
 	}
 
 	// The child re-registers before its old registration ends
-	child, err := d.addRemote("10.0.0.10", "c", 9001, svc("10.0.0.10.z"))
+	child, err := d.addRemote("10.0.0.10", "c", "linux", "amd64", 9001, svc("10.0.0.10.z"))
 	if err != nil {
 		t.Fatal(err)
 	}

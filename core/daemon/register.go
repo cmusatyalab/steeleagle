@@ -242,7 +242,7 @@ func (d *Daemon) serveRegistration(
 	if err != nil {
 		return status.Errorf(codes.Internal, "couldn't encode services: %v", err)
 	}
-	child, err := d.addRemote(caller, req.GetHostname(), req.GetPort(), services)
+	child, err := d.addRemote(caller, req.GetHostname(), req.GetOs(), req.GetArch(), req.GetPort(), services)
 	if err != nil {
 		return status.Errorf(codes.Internal, "couldn't connect to daemon: %v", err)
 	}

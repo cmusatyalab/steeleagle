@@ -284,30 +284,32 @@ func (b0 Service_builder) Build() *Service {
 	return m0
 }
 
-// An unavailable daemon.
-type Unavailable struct {
+// A daemon in the system.
+type Daemon struct {
 	state               protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Ip       string                 `protobuf:"bytes,1,opt,name=ip,proto3"`
 	xxx_hidden_Hostname string                 `protobuf:"bytes,2,opt,name=hostname,proto3"`
-	xxx_hidden_Reason   string                 `protobuf:"bytes,3,opt,name=reason,proto3"`
+	xxx_hidden_Arch     string                 `protobuf:"bytes,3,opt,name=arch,proto3"`
+	xxx_hidden_Os       string                 `protobuf:"bytes,4,opt,name=os,proto3"`
+	xxx_hidden_Error    string                 `protobuf:"bytes,5,opt,name=error,proto3"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
 
-func (x *Unavailable) Reset() {
-	*x = Unavailable{}
+func (x *Daemon) Reset() {
+	*x = Daemon{}
 	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Unavailable) String() string {
+func (x *Daemon) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Unavailable) ProtoMessage() {}
+func (*Daemon) ProtoMessage() {}
 
-func (x *Unavailable) ProtoReflect() protoreflect.Message {
+func (x *Daemon) ProtoReflect() protoreflect.Message {
 	mi := &file_steeleagle_protocol_v1_services_daemon_daemon_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -319,54 +321,80 @@ func (x *Unavailable) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *Unavailable) GetIp() string {
+func (x *Daemon) GetIp() string {
 	if x != nil {
 		return x.xxx_hidden_Ip
 	}
 	return ""
 }
 
-func (x *Unavailable) GetHostname() string {
+func (x *Daemon) GetHostname() string {
 	if x != nil {
 		return x.xxx_hidden_Hostname
 	}
 	return ""
 }
 
-func (x *Unavailable) GetReason() string {
+func (x *Daemon) GetArch() string {
 	if x != nil {
-		return x.xxx_hidden_Reason
+		return x.xxx_hidden_Arch
 	}
 	return ""
 }
 
-func (x *Unavailable) SetIp(v string) {
+func (x *Daemon) GetOs() string {
+	if x != nil {
+		return x.xxx_hidden_Os
+	}
+	return ""
+}
+
+func (x *Daemon) GetError() string {
+	if x != nil {
+		return x.xxx_hidden_Error
+	}
+	return ""
+}
+
+func (x *Daemon) SetIp(v string) {
 	x.xxx_hidden_Ip = v
 }
 
-func (x *Unavailable) SetHostname(v string) {
+func (x *Daemon) SetHostname(v string) {
 	x.xxx_hidden_Hostname = v
 }
 
-func (x *Unavailable) SetReason(v string) {
-	x.xxx_hidden_Reason = v
+func (x *Daemon) SetArch(v string) {
+	x.xxx_hidden_Arch = v
 }
 
-type Unavailable_builder struct {
+func (x *Daemon) SetOs(v string) {
+	x.xxx_hidden_Os = v
+}
+
+func (x *Daemon) SetError(v string) {
+	x.xxx_hidden_Error = v
+}
+
+type Daemon_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Ip       string
 	Hostname string
-	Reason   string
+	Arch     string
+	Os       string
+	Error    string
 }
 
-func (b0 Unavailable_builder) Build() *Unavailable {
-	m0 := &Unavailable{}
+func (b0 Daemon_builder) Build() *Daemon {
+	m0 := &Daemon{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ip = b.Ip
 	x.xxx_hidden_Hostname = b.Hostname
-	x.xxx_hidden_Reason = b.Reason
+	x.xxx_hidden_Arch = b.Arch
+	x.xxx_hidden_Os = b.Os
+	x.xxx_hidden_Error = b.Error
 	return m0
 }
 
@@ -936,11 +964,11 @@ func (b0 ListServicesRequest_builder) Build() *ListServicesRequest {
 }
 
 type ListServicesResponse struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Services    *[]*Service            `protobuf:"bytes,1,rep,name=services,proto3"`
-	xxx_hidden_Unavailable *[]*Unavailable        `protobuf:"bytes,2,rep,name=unavailable,proto3"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Services *[]*Service            `protobuf:"bytes,1,rep,name=services,proto3"`
+	xxx_hidden_Remotes  *[]*Daemon             `protobuf:"bytes,2,rep,name=remotes,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *ListServicesResponse) Reset() {
@@ -977,10 +1005,10 @@ func (x *ListServicesResponse) GetServices() []*Service {
 	return nil
 }
 
-func (x *ListServicesResponse) GetUnavailable() []*Unavailable {
+func (x *ListServicesResponse) GetRemotes() []*Daemon {
 	if x != nil {
-		if x.xxx_hidden_Unavailable != nil {
-			return *x.xxx_hidden_Unavailable
+		if x.xxx_hidden_Remotes != nil {
+			return *x.xxx_hidden_Remotes
 		}
 	}
 	return nil
@@ -990,8 +1018,8 @@ func (x *ListServicesResponse) SetServices(v []*Service) {
 	x.xxx_hidden_Services = &v
 }
 
-func (x *ListServicesResponse) SetUnavailable(v []*Unavailable) {
-	x.xxx_hidden_Unavailable = &v
+func (x *ListServicesResponse) SetRemotes(v []*Daemon) {
+	x.xxx_hidden_Remotes = &v
 }
 
 type ListServicesResponse_builder struct {
@@ -999,8 +1027,8 @@ type ListServicesResponse_builder struct {
 
 	// services on the daemon (merged services on orchestrator)
 	Services []*Service
-	// remote daemons that were unavailable (orchestrator only)
-	Unavailable []*Unavailable
+	// all remote daemons (orchestrator only)
+	Remotes []*Daemon
 }
 
 func (b0 ListServicesResponse_builder) Build() *ListServicesResponse {
@@ -1008,7 +1036,7 @@ func (b0 ListServicesResponse_builder) Build() *ListServicesResponse {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Services = &b.Services
-	x.xxx_hidden_Unavailable = &b.Unavailable
+	x.xxx_hidden_Remotes = &b.Remotes
 	return m0
 }
 
@@ -1610,11 +1638,13 @@ const file_steeleagle_protocol_v1_services_daemon_daemon_proto_rawDesc = "" +
 	"\x06config\x18\x05 \x01(\fR\x06config\x12O\n" +
 	"\tisolation\x18\x06 \x01(\x0e21.steeleagle_protocol.v1.services.daemon.IsolationR\tisolation\x12\x18\n" +
 	"\arunning\x18\a \x01(\bR\arunning\x12\x12\n" +
-	"\x04auth\x18\b \x01(\tR\x04auth\"Q\n" +
-	"\vUnavailable\x12\x0e\n" +
+	"\x04auth\x18\b \x01(\tR\x04auth\"n\n" +
+	"\x06Daemon\x12\x0e\n" +
 	"\x02ip\x18\x01 \x01(\tR\x02ip\x12\x1a\n" +
-	"\bhostname\x18\x02 \x01(\tR\bhostname\x12\x16\n" +
-	"\x06reason\x18\x03 \x01(\tR\x06reason\"\xbe\x01\n" +
+	"\bhostname\x18\x02 \x01(\tR\bhostname\x12\x12\n" +
+	"\x04arch\x18\x03 \x01(\tR\x04arch\x12\x0e\n" +
+	"\x02os\x18\x04 \x01(\tR\x02os\x12\x14\n" +
+	"\x05error\x18\x05 \x01(\tR\x05error\"\xbe\x01\n" +
 	"\x1bRegisterOrchestratorRequest\x12K\n" +
 	"\bservices\x18\x01 \x03(\v2/.steeleagle_protocol.v1.services.daemon.ServiceR\bservices\x12\x1a\n" +
 	"\bhostname\x18\x02 \x01(\tR\bhostname\x12\x12\n" +
@@ -1637,10 +1667,10 @@ const file_steeleagle_protocol_v1_services_daemon_daemon_proto_rawDesc = "" +
 	"\x18GetConfigurationResponse\x12\x1f\n" +
 	"\vconfig_toml\x18\x01 \x01(\fR\n" +
 	"configToml\"\x15\n" +
-	"\x13ListServicesRequest\"\xba\x01\n" +
+	"\x13ListServicesRequest\"\xad\x01\n" +
 	"\x14ListServicesResponse\x12K\n" +
-	"\bservices\x18\x01 \x03(\v2/.steeleagle_protocol.v1.services.daemon.ServiceR\bservices\x12U\n" +
-	"\vunavailable\x18\x02 \x03(\v23.steeleagle_protocol.v1.services.daemon.UnavailableR\vunavailable\"<\n" +
+	"\bservices\x18\x01 \x03(\v2/.steeleagle_protocol.v1.services.daemon.ServiceR\bservices\x12H\n" +
+	"\aremotes\x18\x02 \x03(\v2..steeleagle_protocol.v1.services.daemon.DaemonR\aremotes\"<\n" +
 	"\x15RestartServiceRequest\x12#\n" +
 	"\rservice_names\x18\x01 \x01(\tR\fserviceNames\"\x18\n" +
 	"\x16RestartServiceResponse\"\x10\n" +
@@ -1692,7 +1722,7 @@ var file_steeleagle_protocol_v1_services_daemon_daemon_proto_goTypes = []any{
 	(ServiceCategory)(0),                 // 0: steeleagle_protocol.v1.services.daemon.ServiceCategory
 	(Isolation)(0),                       // 1: steeleagle_protocol.v1.services.daemon.Isolation
 	(*Service)(nil),                      // 2: steeleagle_protocol.v1.services.daemon.Service
-	(*Unavailable)(nil),                  // 3: steeleagle_protocol.v1.services.daemon.Unavailable
+	(*Daemon)(nil),                       // 3: steeleagle_protocol.v1.services.daemon.Daemon
 	(*RegisterOrchestratorRequest)(nil),  // 4: steeleagle_protocol.v1.services.daemon.RegisterOrchestratorRequest
 	(*RegisterOrchestratorResponse)(nil), // 5: steeleagle_protocol.v1.services.daemon.RegisterOrchestratorResponse
 	(*GetConnectionStatusRequest)(nil),   // 6: steeleagle_protocol.v1.services.daemon.GetConnectionStatusRequest
@@ -1723,7 +1753,7 @@ var file_steeleagle_protocol_v1_services_daemon_daemon_proto_depIdxs = []int32{
 	2,  // 2: steeleagle_protocol.v1.services.daemon.RegisterOrchestratorRequest.services:type_name -> steeleagle_protocol.v1.services.daemon.Service
 	2,  // 3: steeleagle_protocol.v1.services.daemon.RegisterOrchestratorResponse.services:type_name -> steeleagle_protocol.v1.services.daemon.Service
 	2,  // 4: steeleagle_protocol.v1.services.daemon.ListServicesResponse.services:type_name -> steeleagle_protocol.v1.services.daemon.Service
-	3,  // 5: steeleagle_protocol.v1.services.daemon.ListServicesResponse.unavailable:type_name -> steeleagle_protocol.v1.services.daemon.Unavailable
+	3,  // 5: steeleagle_protocol.v1.services.daemon.ListServicesResponse.remotes:type_name -> steeleagle_protocol.v1.services.daemon.Daemon
 	25, // 6: steeleagle_protocol.v1.services.daemon.Package.plugins:type_name -> steeleagle_protocol.v1.services.daemon.Package.PluginsEntry
 	26, // 7: steeleagle_protocol.v1.services.daemon.Package.modified:type_name -> google.protobuf.Timestamp
 	20, // 8: steeleagle_protocol.v1.services.daemon.ListPackagesResponse.packages:type_name -> steeleagle_protocol.v1.services.daemon.Package

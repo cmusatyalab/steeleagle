@@ -68,6 +68,8 @@ type orchInfo struct {
 type childInfo struct {
 	ip       string           // ip address
 	hostname string           // hostname
+	arch     string           // architecture
+	os       string           // operating system
 	conn     *grpc.ClientConn // connection to the child's daemon port
 	services []*daemonService // services on the child
 }

@@ -55,15 +55,19 @@ class Service(_message.Message):
     auth: str
     def __init__(self, name: _Optional[str] = ..., category: _Optional[_Union[ServiceCategory, str]] = ..., plugin: _Optional[str] = ..., uri: _Optional[str] = ..., config: _Optional[bytes] = ..., isolation: _Optional[_Union[Isolation, str]] = ..., running: _Optional[bool] = ..., auth: _Optional[str] = ...) -> None: ...
 
-class Unavailable(_message.Message):
-    __slots__ = ("ip", "hostname", "reason")
+class Daemon(_message.Message):
+    __slots__ = ("ip", "hostname", "arch", "os", "error")
     IP_FIELD_NUMBER: _ClassVar[int]
     HOSTNAME_FIELD_NUMBER: _ClassVar[int]
-    REASON_FIELD_NUMBER: _ClassVar[int]
+    ARCH_FIELD_NUMBER: _ClassVar[int]
+    OS_FIELD_NUMBER: _ClassVar[int]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
     ip: str
     hostname: str
-    reason: str
-    def __init__(self, ip: _Optional[str] = ..., hostname: _Optional[str] = ..., reason: _Optional[str] = ...) -> None: ...
+    arch: str
+    os: str
+    error: str
+    def __init__(self, ip: _Optional[str] = ..., hostname: _Optional[str] = ..., arch: _Optional[str] = ..., os: _Optional[str] = ..., error: _Optional[str] = ...) -> None: ...
 
 class RegisterOrchestratorRequest(_message.Message):
     __slots__ = ("services", "hostname", "port", "arch", "os")
@@ -126,12 +130,12 @@ class ListServicesRequest(_message.Message):
     def __init__(self) -> None: ...
 
 class ListServicesResponse(_message.Message):
-    __slots__ = ("services", "unavailable")
+    __slots__ = ("services", "remotes")
     SERVICES_FIELD_NUMBER: _ClassVar[int]
-    UNAVAILABLE_FIELD_NUMBER: _ClassVar[int]
+    REMOTES_FIELD_NUMBER: _ClassVar[int]
     services: _containers.RepeatedCompositeFieldContainer[Service]
-    unavailable: _containers.RepeatedCompositeFieldContainer[Unavailable]
-    def __init__(self, services: _Optional[_Iterable[_Union[Service, _Mapping]]] = ..., unavailable: _Optional[_Iterable[_Union[Unavailable, _Mapping]]] = ...) -> None: ...
+    remotes: _containers.RepeatedCompositeFieldContainer[Daemon]
+    def __init__(self, services: _Optional[_Iterable[_Union[Service, _Mapping]]] = ..., remotes: _Optional[_Iterable[_Union[Daemon, _Mapping]]] = ...) -> None: ...
 
 class RestartServiceRequest(_message.Message):
     __slots__ = ("service_names",)

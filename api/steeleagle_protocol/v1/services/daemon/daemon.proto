@@ -147,11 +147,13 @@ message Service {
   string auth = 8;                     // auth level of this service
 }
 
-// An unavailable daemon.
-message Unavailable {
+// A daemon in the system.
+message Daemon {
   string ip = 1;        // IP address
   string hostname = 2;  // hostname
-  string reason = 3;    // reason for unavailability
+  string arch = 3;      // architecture of the daemon registering (goarch string)
+  string os = 4;        // operating system of the daemon registering (goos string)
+  string error = 5;     // reason for unavailability
 }
 
 message RegisterOrchestratorRequest {
@@ -192,8 +194,8 @@ message ListServicesRequest {}
 message ListServicesResponse {
   // services on the daemon (merged services on orchestrator)
   repeated Service services = 1;
-  // remote daemons that were unavailable (orchestrator only)
-  repeated Unavailable unavailable = 2;
+  // all remote daemons (orchestrator only)
+  repeated Daemon remotes = 2;
 }
 
 message RestartServiceRequest {

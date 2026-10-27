@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/netip"
 	"os"
+	"runtime"
 	"slices"
 	"strings"
 	"sync"
@@ -132,6 +133,17 @@ func TestRegister(t *testing.T) {
 	expectListing(t, p.orch, time.Second, both, nil)
 	// The child only lists its own
 	expectListing(t, p.child, time.Second, childOnly, nil)
+
+	// The orchestrator lists the child as a remote, with its platform
+	listing, err := p.orch.listServices()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r := listing.GetRemotes(); len(r) != 1 || r[0].GetIp() != "127.0.0.2" ||
+		r[0].GetHostname() != "child" || r[0].GetOs() != runtime.GOOS ||
+		r[0].GetArch() != runtime.GOARCH || r[0].GetError() != "" {
+		t.Errorf("remotes = %v, want the child on this platform", r)
+	}
 
 	// The child knows its orchestrator's services
 	p.child.orchMu.RLock()
@@ -263,8 +275,8 @@ func TestBlackhole(t *testing.T) {
 	}
 	if got := unavailable(resp); !slices.Equal(got, []string{"127.0.0.2"}) {
 		t.Errorf("unavailable = %v, want the child", got)
-	} else if u := resp.GetUnavailable()[0]; u.GetHostname() != "child" || u.GetReason() == "" {
-		t.Errorf("unavailable child = %v, want its hostname and a reason", u)
+	} else if r := resp.GetRemotes()[0]; r.GetHostname() != "child" || r.GetError() == "" {
+		t.Errorf("unavailable child = %v, want its hostname and a reason", r)
 	}
 	// Calls to the child fail at their deadline, and don't hang
 	start = time.Now()
@@ -390,8 +402,8 @@ func TestDegradedChild(t *testing.T) {
 	if got := running(resp); len(got) != 1 || !got["127.0.0.1.o"] {
 		t.Errorf("services = %v, want only the orchestrator's", got)
 	}
-	if u := resp.GetUnavailable(); len(u) != 1 || u[0].GetIp() != "127.0.0.2" ||
-		!strings.Contains(u[0].GetReason(), "127.0.0.2.c") {
+	if u := resp.GetRemotes(); len(u) != 1 || u[0].GetIp() != "127.0.0.2" ||
+		!strings.Contains(u[0].GetError(), "127.0.0.2.c") {
 		t.Errorf("unavailable = %v, want the child, with the service that failed", u)
 	}
 	_, err = p.orch.client.RestartService(callCtx(t, 5*time.Second),

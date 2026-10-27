@@ -536,11 +536,13 @@ func running(resp *daemonpb.ListServicesResponse) map[string]bool {
 	return out
 }
 
-// unavailable returns the IPs listed as unavailable in a listing.
+// unavailable returns the IPs of the remotes in a listing that have an error.
 func unavailable(resp *daemonpb.ListServicesResponse) []string {
 	var out []string
-	for _, u := range resp.GetUnavailable() {
-		out = append(out, u.GetIp())
+	for _, r := range resp.GetRemotes() {
+		if r.GetError() != "" {
+			out = append(out, r.GetIp())
+		}
 	}
 	return out
 }

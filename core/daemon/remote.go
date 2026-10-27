@@ -11,11 +11,15 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// addRemote adds a child daemon at ip, which registered with this daemon as
-// its orchestrator and is dialed at port, replacing any earlier registration
-// from the same IP. The child's IP and each of its services become header
-// routes to it.
-func (d *Daemon) addRemote(ip, hostname string, port int32, services []*daemonService) (*childInfo, error) {
+// addRemote adds a child daemon at ip, running on os and arch, which
+// registered with this daemon as its orchestrator and is dialed at port,
+// replacing any earlier registration from the same IP. The child's IP
+// and each of its services become header routes to it.
+func (d *Daemon) addRemote(
+	ip, hostname, os, arch string,
+	port int32,
+	services []*daemonService,
+) (*childInfo, error) {
 	conn, err := grpc.NewClient(
 		"passthrough:///"+net.JoinHostPort(ip, strconv.Itoa(int(port))),
 		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
@@ -26,7 +30,14 @@ func (d *Daemon) addRemote(ip, hostname string, port int32, services []*daemonSe
 	if err != nil {
 		return nil, err
 	}
-	child := &childInfo{ip: ip, hostname: hostname, conn: conn, services: services}
+	child := &childInfo{
+		ip:       ip,
+		hostname: hostname,
+		os:       os,
+		arch:     arch,
+		conn:     conn,
+		services: services,
+	}
 	d.remMu.Lock()
 	defer d.remMu.Unlock()
 	if old, ok := d.remotes[ip]; ok {
