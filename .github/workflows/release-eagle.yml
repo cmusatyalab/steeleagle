@@ -37,6 +37,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The container user doesn't own the mounted workspace, so git refuses to
+      # read it and `go build` can't stamp VCS info.
+      - name: Trust the workspace
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
