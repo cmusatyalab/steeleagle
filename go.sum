@@ -60,6 +60,8 @@ github.com/cmusatyalab/steeleagle/api/go v0.3.1 h1:KVNtD2wdxtjrBjqVijeT10r3uaqCA
 github.com/cmusatyalab/steeleagle/api/go v0.3.1/go.mod h1:Ul2ATWzzXHpxT6/rK+aeUZpkIJsk+veD8BvxYPdnpMo=
 github.com/cmusatyalab/steeleagle/api/go v0.3.3 h1:ugekmNafhhMncXemK0C3oiHMTZDWvnjSZ7J+JwWbRHk=
 github.com/cmusatyalab/steeleagle/api/go v0.3.3/go.mod h1:Ul2ATWzzXHpxT6/rK+aeUZpkIJsk+veD8BvxYPdnpMo=
+github.com/cmusatyalab/steeleagle/api/go v0.3.4 h1:vjbZ72xeJNW4Gc7VKV8pjFND2uvi4LGxdtYPucewt3U=
+github.com/cmusatyalab/steeleagle/api/go v0.3.4/go.mod h1:Ul2ATWzzXHpxT6/rK+aeUZpkIJsk+veD8BvxYPdnpMo=
 github.com/cmusatyalab/steeleagle/config v0.0.2 h1:JKi+Ehf6eEkjs+AOznah8xfAodbanyi0C+4aRBbFjC4=
 github.com/cmusatyalab/steeleagle/config v0.0.2/go.mod h1:ufbS1yFbr6eExvEp9JRqNMsXuqmh7QfR/CTqCyRwDLk=
 github.com/cmusatyalab/steeleagle/config v0.0.3 h1:Mh3MWxT/FLj7Pv3le+3Ow1PHBnHWzFQGtHHeaYTajHM=

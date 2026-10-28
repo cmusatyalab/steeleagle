@@ -61,8 +61,9 @@ const (
 	ModelNameEnv       = "STEELEAGLE_MODELS"
 	FileNameEnv        = "STEELEAGLE_FILES"
 	IceoryxServiceEnv  = "STEELEAGLE_ENGINE_ENDPOINT"
+	LocalQualEnv       = "STEELEAGLE_LOCAL_QUALIFIER"
+	RemoteQualEnv      = "STEELEAGLE_REMOTE_QUALIFIER"
 	SimulatorDirEnv    = "STEELEAGLE_SIMULATOR_DIR"
-	SimulatorQualEnv   = "STEELEAGLE_SIMULATOR_QUALIFIER"
 	SimulatedClientEnv = "STEELEAGLE_SIMULATOR_CLIENT"
 	SimulatedListenEnv = "STEELEAGLE_SIMULATOR_LISTEN"
 )

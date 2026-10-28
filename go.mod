@@ -4,7 +4,7 @@ go 1.26.5
 
 require (
 	github.com/adrg/xdg v0.5.3
-	github.com/cmusatyalab/steeleagle/api/go v0.3.3
+	github.com/cmusatyalab/steeleagle/api/go v0.3.4
 	github.com/cmusatyalab/steeleagle/config v0.0.3
 	github.com/cmusatyalab/uriel/go v0.2.0
 	github.com/google/uuid v1.6.0

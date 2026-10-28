@@ -370,6 +370,10 @@ func (d *Daemon) startService(s *daemonService) error {
 				logStream.Close() // cleanup the log if the plugin failed
 			}
 		}()
+		remoteIp := ""
+		if d.orch != nil {
+			remoteIp = d.orch.ip
+		}
 		options := []plugin.PluginOption{
 			plugin.WithLogger(
 				d.log.With().Str("service", s.name).Str("plugin", s.pluginName).Logger(),
@@ -383,6 +387,9 @@ func (d *Daemon) startService(s *daemonService) error {
 			plugin.WithAuthCode(s.auth),
 			plugin.WithEnvironment(PluginArgsEnv, s.args),
 			plugin.WithEnvironment(PluginNameEnv, s.pluginName), // this will be empty for the simulator
+			// Qualifiers for local and remote daemons
+			plugin.WithEnvironment(LocalQualEnv, d.netAddr.String()),
+			plugin.WithEnvironment(RemoteQualEnv, remoteIp),
 		}
 		switch s.category {
 		case daemonpb.ServiceCategory_SERVICE_CATEGORY_SIMULATOR: // sim options
@@ -396,9 +403,6 @@ func (d *Daemon) startService(s *daemonService) error {
 				plugin.WithoutListener(),
 				plugin.WithoutClient(),
 				plugin.WithEnvironment(SimulatorDirEnv, plugins),
-				// The simulator needs this so it can correctly qualify its
-				// names to match the daemon
-				plugin.WithEnvironment(SimulatorQualEnv, d.netAddr.String()),
 				// Intentionally flip these so the simulated vehicle can swap
 				// its endpoints
 				plugin.WithEnvironment(SimulatedClientEnv, ShimListenSock),
