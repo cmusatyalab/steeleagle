@@ -167,6 +167,49 @@ func TestConfigureMissingFile(t *testing.T) {
 	}
 }
 
+// TestSetOrchestrator checks that set-orchestrator sends back the daemon's
+// config with only its orchestrator changed.
+func TestSetOrchestrator(t *testing.T) {
+	for _, tc := range []struct{ host, want string }{
+		{"orch.example.com", `orchestrator = "orch.example.com:9100"`},
+		{"10.0.0.1", `orchestrator = "10.0.0.1:9100"`},
+		{"fd7a::1", `orchestrator = "[fd7a::1]:9100"`},
+	} {
+		daemon := &fakeDaemon{config: "[daemon]\nport = 9000\nhostname = \"drone\"\norchestrator = \"old:1\"\n"}
+		socket := serveFake(t, daemon)
+		code, out, errOut := runEagle(t, socket, "set-orchestrator", tc.host, "9100")
+		if code != 0 {
+			t.Fatalf("%s: exit = %d, stderr = %s", tc.host, code, errOut)
+		}
+		if got := strings.Join(daemon.calls, ","); got != "GetConfiguration,Configure" {
+			t.Errorf("%s: calls = %s, want GetConfiguration,Configure", tc.host, got)
+		}
+		for _, want := range []string{tc.want, "port = 9000", `hostname = "drone"`} {
+			if !strings.Contains(daemon.config, want) {
+				t.Errorf("%s: config sent = %q, want it to contain %q", tc.host, daemon.config, want)
+			}
+		}
+		if !strings.Contains(out, "restarting") {
+			t.Errorf("%s: output = %q, want it to say the daemon is restarting", tc.host, out)
+		}
+	}
+}
+
+// TestSetOrchestratorBadPort checks that an invalid port is a usage error
+// that doesn't call the daemon.
+func TestSetOrchestratorBadPort(t *testing.T) {
+	for _, port := range []string{"x", "0", "65536"} {
+		daemon := &fakeDaemon{}
+		socket := serveFake(t, daemon)
+		if code, _, _ := runEagle(t, socket, "set-orchestrator", "host", port); code != 2 {
+			t.Errorf("port %q: exit = %d, want 2", port, code)
+		}
+		if len(daemon.calls) > 0 {
+			t.Errorf("port %q: calls = %v, want none", port, daemon.calls)
+		}
+	}
+}
+
 // TestRestart checks that restart calls Restart.
 func TestRestart(t *testing.T) {
 	daemon := &fakeDaemon{}

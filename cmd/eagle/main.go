@@ -7,6 +7,7 @@
 //
 //	configure <config.toml>         replace the daemon's config, restarting it
 //	get-config                      print the daemon's config
+//	set-orchestrator <host> <port>  point the daemon at an orchestrator, restarting it
 //	status                          print whether the daemon reaches its orchestrator
 //	restart                         restart the daemon and all of its services
 //	restart-service <name>          restart one service
@@ -29,15 +30,18 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"net"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
 
 	daemonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon"
+	"github.com/cmusatyalab/steeleagle/config"
 	"github.com/cmusatyalab/steeleagle/v4/core/util"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -50,6 +54,7 @@ const usage = `usage: eagle [flags] <command> [args]
 Commands:
   configure <config.toml>            replace the daemon's config, restarting it
   get-config                         print the daemon's config
+  set-orchestrator <host> <port>     point the daemon at an orchestrator, restarting it
   status                             print whether the daemon reaches its orchestrator
   restart                            restart the daemon and all of its services
   restart-service <name>             restart one service
@@ -79,17 +84,18 @@ type command struct {
 }
 
 var commands = map[string]command{
-	"configure":       {"<config.toml>", configure},
-	"get-config":      {"", getConfig},
-	"status":          {"", connectionStatus},
-	"restart":         {"", restart},
-	"restart-service": {"<name>", restartService},
-	"list-services":   {"", listServices},
-	"install-package": {"<uri>", installPackage},
-	"remove-package":  {"<uri>", removePackage},
-	"list-packages":   {"", listPackages},
-	"transfer-file":   {"[-name name] <path>", transferFile},
-	"transfer-model":  {"[-name name] <path>", transferModel},
+	"configure":        {"<config.toml>", configure},
+	"get-config":       {"", getConfig},
+	"set-orchestrator": {"<host> <port>", setOrchestrator},
+	"status":           {"", connectionStatus},
+	"restart":          {"", restart},
+	"restart-service":  {"<name>", restartService},
+	"list-services":    {"", listServices},
+	"install-package":  {"<uri>", installPackage},
+	"remove-package":   {"<uri>", removePackage},
+	"list-packages":    {"", listPackages},
+	"transfer-file":    {"[-name name] <path>", transferFile},
+	"transfer-model":   {"[-name name] <path>", transferModel},
 }
 
 func main() {
@@ -216,6 +222,42 @@ func getConfig(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.Flag
 	}
 	_, err = out.Write(resp.GetConfigToml())
 	return err
+}
+
+// setOrchestrator replaces the daemon's config with the same config, but
+// with its orchestrator set to host and port.
+func setOrchestrator(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.FlagSet, args []string, out io.Writer) error {
+	if err := parseArgs(fs, args, 2); err != nil {
+		return err
+	}
+	host := fs.Arg(0)
+	if host == "" {
+		return usageError{"host must not be empty"}
+	}
+	port, err := strconv.Atoi(fs.Arg(1))
+	if err != nil || port < 1 || port > 65535 {
+		return usageError{fmt.Sprintf("invalid port %q", fs.Arg(1))}
+	}
+	client := daemonpb.NewDaemonServiceClient(conn)
+	resp, err := client.GetConfiguration(ctx, &daemonpb.GetConfigurationRequest{})
+	if err != nil {
+		return err
+	}
+	cfg, err := config.ParseDaemonConfigFromBytes(resp.GetConfigToml())
+	if err != nil {
+		return fmt.Errorf("daemon's config is invalid: %w", err)
+	}
+	cfg.Daemon.Orchestrator = net.JoinHostPort(host, strconv.Itoa(port))
+	content, err := cfg.ToBytes()
+	if err != nil {
+		return err
+	}
+	req := daemonpb.ConfigureRequest_builder{ConfigToml: string(content)}.Build()
+	if _, err := client.Configure(ctx, req); err != nil {
+		return err
+	}
+	fmt.Fprintf(out, "orchestrator set to %s; eagled is restarting\n", cfg.Daemon.Orchestrator)
+	return nil
 }
 
 // connectionStatus prints whether the daemon is connected to its
