@@ -23,7 +23,8 @@ type Server struct {
 
 // NewServer starts a tsnet node under the given hostname and blocks until it
 // joins the tailnet or ctx is done, whichever comes first. If authKey
-// is non-empty it's used to join the tailnet non-interactively.
+// is non-empty it's used to join the tailnet non-interactively. If the
+// control server rejects the login, the error wraps ErrLogin.
 func NewServer(ctx context.Context, hostname, authKey string) (*Server, error) {
 	server := new(tsnet.Server)
 	server.Hostname = hostname
@@ -41,6 +42,12 @@ func NewServer(ctx context.Context, hostname, authKey string) (*Server, error) {
 	}
 	if _, err = server.Up(ctx); err != nil {
 		server.Close()
+		// Up fails with the backend's error message, which it only has once
+		// the control server refuses the login (a network that can't be
+		// reached leaves Up waiting instead)
+		if strings.HasPrefix(err.Error(), "tsnet.Up: backend: ") {
+			return nil, fmt.Errorf("%w: %v", ErrLogin, err)
+		}
 		return nil, fmt.Errorf("waiting for tailscale node %q to come up: %w", hostname, err)
 	}
 

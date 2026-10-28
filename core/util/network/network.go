@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/netip"
 )
@@ -23,3 +24,7 @@ type Network interface {
 }
 
 var _ Network = (*Server)(nil)
+
+// ErrLogin is returned by NewServer when the network rejects the login, as
+// with an invalid or expired auth key. Retrying with the same key won't help.
+var ErrLogin = errors.New("network rejected the login")

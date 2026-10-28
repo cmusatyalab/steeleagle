@@ -3,16 +3,12 @@
 # It runs as a user service, since plugins run under rootless podman and
 # bwrap, which need the user's session (HOME and XDG_RUNTIME_DIR). It reads
 # its config from ~/.config/steeleagle/config.toml, and keeps its data in
-# ~/.local/share/steeleagle. To install it:
+# ~/.local/share/steeleagle. eagle embeds this file, and installs it with:
 #
-#   go build -o ~/.local/bin/eagled ./cmd/eagled
-#   mkdir -p ~/.config/systemd/user ~/.config/steeleagle
-#   cp cmd/eagled/eagled.service ~/.config/systemd/user/
-#   cp cmd/eagled/eagled.env ~/.config/steeleagle/   # then edit it
-#   chmod 600 ~/.config/steeleagle/eagled.env
-#   systemctl --user daemon-reload
-#   systemctl --user enable --now eagled
-#   sudo loginctl enable-linger "$USER"   # start at boot, without a login
+#   eagle init   # points ExecStart at the eagled it finds, then enables and starts the service
+#
+# eagle init also offers to run `sudo loginctl enable-linger "$USER"`, which
+# starts the service at boot, without a login.
 #
 # Logs are in the journal: journalctl --user -u eagled -f
 [Unit]
@@ -32,9 +28,11 @@ EnvironmentFile=-%h/.config/steeleagle/eagled.env
 Environment=PATH=%h/.local/bin:%h/.pixi/bin:/usr/local/bin:/usr/bin:/bin
 ExecStart=%h/.local/bin/eagled $EAGLED_ARGS
 # eagled exits 75 when the daemon stops for a restart (after a Restart or
-# Configure call), which is always restarted; other failures are too
+# Configure call), which is always restarted; other failures are too, except
+# for 78, when the VPN rejects the auth key, which would only be rejected again
 Restart=on-failure
 RestartForceExitStatus=75
+RestartPreventExitStatus=78
 RestartSec=2
 # Only eagled is sent SIGTERM, so it stops its plugins itself; anything left
 # once it exits is killed

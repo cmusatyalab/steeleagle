@@ -1,0 +1,79 @@
+name: Release eagle and eagled
+
+# Tags are created by `git release` (tools/git/README.md). A root module tag,
+# such as v4.1.0 or v4.1.0-alpha.1, publishes eagle and eagled as assets of a
+# GitHub release, which tools/install.sh downloads. Alpha and beta tags make
+# a prerelease.
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          # eagled links liburiel through cgo, so each architecture is built
+          # natively. The oldest supported runners keep the glibc that the
+          # binaries need low.
+          - arch: amd64
+            runner: ubuntu-22.04
+          - arch: arm64
+            runner: ubuntu-22.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # liburiel.a, linked statically into eagled
+      - name: Install liburiel
+        run: tools/uriel/install.sh
+
+      - name: Build
+        run: |
+          mkdir dist
+          CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o dist/eagle-linux-${{ matrix.arch }} ./cmd/eagle
+          CGO_ENABLED=1 go build -trimpath -ldflags='-s -w' -o dist/eagled-linux-${{ matrix.arch }} ./cmd/eagled
+
+      - name: Check that liburiel is linked statically
+        run: |
+          ldd dist/eagled-linux-${{ matrix.arch }}
+          if ldd dist/eagled-linux-${{ matrix.arch }} | grep -q uriel; then
+            echo "::error::eagled links liburiel dynamically"
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eagle-${{ matrix.arch }}
+          path: dist/
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: eagle-*
+          path: dist
+          merge-multiple: true
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          cd dist
+          sha256sum eagle-* eagled-* > SHA256SUMS
+          # Prerelease versions, such as v4.1.0-alpha.1, have a hyphen
+          flags=
+          case $TAG in *-*) flags=--prerelease ;; esac
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title "SteelEagle $TAG" --generate-notes $flags ./*

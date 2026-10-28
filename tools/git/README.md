@@ -32,6 +32,15 @@ Pushing an `api/python/v*` tag runs
 checks that its version matches the tag, and uploads it to PyPI. pip installs
 prereleases only when asked (`pip install --pre steeleagle-protocol`).
 
+### Binaries
+
+Pushing a root module tag (`v4.1.0`) runs `.github/workflows/release-eagle.yml`,
+which builds `eagle` and `eagled` (with liburiel linked statically) for Linux
+amd64 and arm64 and attaches them to a GitHub release. Pushing an `sdk/v*` tag
+runs `.github/workflows/release-eaglec.yml`, which does the same for `eaglec`.
+Alpha and beta tags make prereleases. `tools/install.sh` installs from these
+releases.
+
 The script doesn't sync dependencies for Python packages. It doesn't apply
 the Go rules on major versions to them either.
 

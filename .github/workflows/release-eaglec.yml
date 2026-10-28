@@ -1,0 +1,48 @@
+name: Release eaglec
+
+# Tags are created by `git release` (tools/git/README.md). An sdk module tag,
+# such as sdk/v0.2.0 or sdk/v0.2.0-beta.1, publishes eaglec as an asset of a
+# GitHub release, which `tools/install.sh --sdk` downloads. Alpha and beta
+# tags make a prerelease.
+on:
+  push:
+    tags:
+      - "sdk/v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: sdk/go.mod
+          cache-dependency-path: sdk/go.sum
+
+      # eaglec doesn't use cgo, so both architectures are cross-compiled
+      - name: Build
+        working-directory: sdk
+        run: |
+          mkdir ../dist
+          for arch in amd64 arm64; do
+            CGO_ENABLED=0 GOOS=linux GOARCH=$arch go build -trimpath -ldflags='-s -w' \
+              -o ../dist/eaglec-linux-$arch ./cmd/eaglec
+          done
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          cd dist
+          sha256sum eaglec-* > SHA256SUMS
+          # Prerelease versions, such as sdk/v0.2.0-alpha.1, have a hyphen.
+          # SDK releases are never marked latest, so that releases/latest
+          # stays the newest eagle and eagled release.
+          flags=
+          case $TAG in *-*) flags=--prerelease ;; esac
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title "SteelEagle SDK ${TAG#sdk/}" --generate-notes --latest=false $flags ./*
