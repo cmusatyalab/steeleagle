@@ -150,11 +150,18 @@ func (p *SandboxPlugin) createSandbox() error {
 	if p.check {
 		// Bind in the plugin files
 		if p.pkg {
+			// Packages are bound at their own path, since a pixi environment
+			// installed on the host can't be run from anywhere else
+			path, err := filepath.Abs(p.path)
+			if err != nil {
+				p.log.Error().Err(err).Msg("couldn't get absolute package path")
+				return err
+			}
 			p.rargs = append(p.rargs,
 				"--bind",
-				p.path, bindDir,
+				path, path,
 				"--chdir",
-				bindDir,
+				path,
 			)
 		} else {
 			p.rargs = append(p.rargs,

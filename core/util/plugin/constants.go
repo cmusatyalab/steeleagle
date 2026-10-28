@@ -1,6 +1,8 @@
 package plugin
 
-// The directory that plugin files are bound to within sandboxes/containers
+// The directory that plugin files are bound to within containers, and that
+// script plugins and linked files are bound to within sandboxes, which bind
+// package plugins at their own path
 const bindDir string = "steeleagle"
 
 // The executable and task that package plugins are started with (pixi run start)

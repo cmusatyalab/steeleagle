@@ -51,42 +51,50 @@ type Plugin interface {
 // BasePlugin provides common attributes shared across all plugins. It is
 // intended to be embedded in concrete plugin structs to promote its fields.
 type BasePlugin struct {
-	name        string             // name for easier user identification
-	code        listener.AuthCode  // authentication entity
-	pkg         bool               // determines whether the plugin is a package or not
-	path        string             // path to plugin
-	runner      string             // runner target (e.g. bwrap, podman)
-	final       []string           // final args for the most recent subprocess
-	rargs       []string           // runner args, never modified during runtime
-	exec        string             // executable target (e.g. sh)
-	eargs       []string           // executable args
-	script      string             // script target (plugin script)
-	sargs       []string           // script args
-	files       map[string]int     // linked files (only applicable to sandboxes/containers)
-	start       int64              // plugin start time
-	timeout     int                // timeout in seconds waiting for the server to start
-	running     atomic.Bool        // whether or not the plugin is currently running
-	parentDir   string             // directory the run dir is created under (defaults to the working directory)
-	runDir      string             // runtime directory path, parentDir/name (where sockets live)
-	cSock       string             // path of the socket this process dials as a client, and the plugin listens on
-	lnSock      string             // path of the socket this process listens on, and the plugin dials as a client
-	client      bool               // whether or not to support a plugin server
-	listen      bool               // whether or not to support a plugin client
-	check       bool               // whether or not to check existence of files
-	cmd         *exec.Cmd          // command to run
-	acl         *listener.Acl      // ACL for listener connections
-	pids        []int              // PIDs this plugin added to the ACL, removed on cleanup
-	pidsMu      sync.Mutex         // guards pids
-	log         zerolog.Logger     // logger object
-	outStream   io.Writer          // replacement out file for Stdout/err
-	environ     []string           // environment to run the plugin in
-	envVars     []string           // names of variables added with WithEnvironment
-	ctx         context.Context    // context
-	cancel      context.CancelFunc // cancellation function
-	waitOnce    sync.Once          // guards against calling cmd.Wait() more than once
-	waitErr     error              // result of cmd.Wait(), populated exactly once by waitOnce
-	waitDone    chan struct{}      // closed once cmd exits, indicates waitErr is ready to read
-	cleanupDone chan struct{}      // closed once cleanup() finishes running for the current Start()
+	name      string                    // name for easier user identification
+	code      listener.AuthCode         // authentication entity
+	pkg       bool                      // determines whether the plugin is a package or not
+	path      string                    // path to plugin
+	runner    string                    // runner target (e.g. bwrap, podman)
+	final     []string                  // final args for the most recent subprocess
+	rargs     []string                  // runner args, never modified during runtime
+	exec      string                    // executable target (e.g. sh)
+	eargs     []string                  // executable args
+	script    string                    // script target (plugin script)
+	sargs     []string                  // script args
+	files     map[string]int            // linked files (only applicable to sandboxes/containers)
+	start     int64                     // plugin start time
+	timeout   int                       // timeout in seconds waiting for the server to start
+	running   atomic.Bool               // whether or not the plugin is currently running
+	parentDir string                    // directory the run dir is created under (defaults to the working directory)
+	runDir    string                    // runtime directory path, parentDir/name (where sockets live)
+	cSock     string                    // path of the socket this process dials as a client, and the plugin listens on
+	lnSock    string                    // path of the socket this process listens on, and the plugin dials as a client
+	client    bool                      // whether or not to support a plugin server
+	listen    bool                      // whether or not to support a plugin client
+	check     bool                      // whether or not to check existence of files
+	acl       *listener.Acl             // ACL for listener connections
+	pids      []int                     // PIDs this plugin added to the ACL, removed on cleanup
+	pidsMu    sync.Mutex                // guards pids
+	log       zerolog.Logger            // logger object
+	outStream io.Writer                 // replacement out file for Stdout/err
+	environ   []string                  // environment to run the plugin in
+	envVars   []string                  // names of variables added with WithEnvironment
+	ctx       context.Context           // context
+	cancel    context.CancelFunc        // cancellation function
+	current   atomic.Pointer[pluginRun] // the current or last run, nil before the first
+}
+
+// pluginRun is the state of one run of a plugin process. Each Start makes a
+// new one, so a caller still waiting on a previous run keeps that run's state
+// rather than reading the next one's as it is set up.
+type pluginRun struct {
+	cmd         *exec.Cmd       // command being run
+	ctx         context.Context // context of the run
+	waitOnce    sync.Once       // guards against calling cmd.Wait() more than once
+	waitErr     error           // result of cmd.Wait(), populated exactly once by waitOnce
+	waitDone    chan struct{}   // closed once cmd exits, indicates waitErr is ready to read
+	cleanupDone chan struct{}   // closed once cleanup() finishes running for the run
 }
 
 // NewBasePlugin creates an instance of a BasePlugin.
@@ -136,7 +144,7 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 		return nil, nil, err
 	}
 	// Add the process to the ACL so that the returned listener accepts it
-	p.allowPid(p.cmd.Process.Pid)
+	p.allowPid(p.current.Load().cmd.Process.Pid)
 	ln, conn, err := p.createSocketEndpoints()
 	if err != nil {
 		p.abort()
@@ -148,11 +156,12 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 // Watch returns a channel that receives the subprocess exit error when the
 // process terminates.
 func (p *BasePlugin) Watch() <-chan error {
-	if p.cmd == nil {
+	r := p.current.Load()
+	if r == nil {
 		return nil
 	}
 	ch := make(chan error, 1)
-	go func() { ch <- p.Wait() }()
+	go func() { ch <- p.wait(r) }()
 	return ch
 }
 
@@ -160,11 +169,18 @@ func (p *BasePlugin) Watch() <-chan error {
 // then returns the subprocess's exit error. Callers can safely Start() the
 // plugin again once Wait() returns.
 func (p *BasePlugin) Wait() error {
-	if p.cmd == nil {
+	r := p.current.Load()
+	if r == nil {
 		return nil
 	}
-	err := p.waitProcess()
-	<-p.cleanupDone
+	return p.wait(r)
+}
+
+// wait blocks until the process of run r exits and its cleanup has finished,
+// then returns the process's exit error.
+func (p *BasePlugin) wait(r *pluginRun) error {
+	err := p.waitProcess(r)
+	<-r.cleanupDone
 	return err
 }
 
@@ -219,18 +235,21 @@ func (p *BasePlugin) createAndRunCommand(ctx context.Context) error {
 	// Create a new context with a cancel function
 	p.ctx, p.cancel = context.WithCancel(ctx)
 
-	// Reset the per-run wait/cleanup state so a restarted plugin waits on its
-	// new process rather than replaying the previous run's result.
-	p.waitOnce = sync.Once{}
-	p.waitErr = nil
-	p.waitDone = make(chan struct{})
-	p.cleanupDone = make(chan struct{})
+	// Give the run fresh wait/cleanup state, so a restarted plugin waits on its
+	// new process rather than replaying the previous run's result, while
+	// anything still waiting on the previous run keeps its state
+	r := &pluginRun{
+		ctx:         p.ctx,
+		waitDone:    make(chan struct{}),
+		cleanupDone: make(chan struct{}),
+	}
+	p.current.Store(r)
 
 	// Set up the run directory and the client/listen socket
 	err := p.setupRunDir()
 	if err != nil {
 		p.log.Err(err).Msg("error setting up plugin runtime directory")
-		p.cleanup()
+		p.cleanup(r)
 		return err
 	}
 
@@ -239,51 +258,51 @@ func (p *BasePlugin) createAndRunCommand(ctx context.Context) error {
 
 	// Check for argument count
 	if len(p.final) >= 2 {
-		p.cmd = exec.CommandContext(p.ctx, p.final[0], p.final[1:]...)
+		r.cmd = exec.CommandContext(p.ctx, p.final[0], p.final[1:]...)
 	} else if len(p.final) == 1 {
-		p.cmd = exec.CommandContext(p.ctx, p.final[0])
+		r.cmd = exec.CommandContext(p.ctx, p.final[0])
 	} else {
 		err := fmt.Errorf("no arguments provided to plugin")
 		p.log.Error().Err(err).Msg("insufficient arguments to start plugin")
-		p.cleanup()
+		p.cleanup(r)
 		return err
 	}
 	// Run in its own process group and kill the whole group on shutdown, not
 	// just the immediate child
-	p.cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	p.cmd.Cancel = func() error {
-		return syscall.Kill(-p.cmd.Process.Pid, syscall.SIGKILL)
+	r.cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	r.cmd.Cancel = func() error {
+		return syscall.Kill(-r.cmd.Process.Pid, syscall.SIGKILL)
 	}
 	// Run packages from the package directory, and scripts from the script's
 	// directory
 	if p.pkg {
-		p.cmd.Dir = p.path
+		r.cmd.Dir = p.path
 	} else {
-		p.cmd.Dir = filepath.Dir(p.script)
+		r.cmd.Dir = filepath.Dir(p.script)
 	}
 	p.log.Info().Msgf("starting: %v", p.final)
 
 	// Bind in stdout and stderr
-	p.cmd.Stdout = p.outStream
-	p.cmd.Stderr = p.outStream
+	r.cmd.Stdout = p.outStream
+	r.cmd.Stderr = p.outStream
 
 	// Reverse the listener and client; the plugin connects in the opposite way
-	p.cmd.Env = append(
+	r.cmd.Env = append(
 		p.environ,
 		fmt.Sprintf("%s=%s", ListenSockEnv, p.cSock),
 		fmt.Sprintf("%s=%s", ClientSockEnv, p.lnSock),
 	)
-	err = p.run()
+	err = p.run(r.cmd)
 	if err != nil {
 		p.log.Error().Err(err).Msg("error running command")
-		p.cleanup()
+		p.cleanup(r)
 		return err
 	}
-	p.log.Info().Int("pid", p.cmd.Process.Pid).Msg("plugin process launched")
+	p.log.Info().Int("pid", r.cmd.Process.Pid).Msg("plugin process launched")
 
 	// Cleanup goroutine
 	go func() {
-		err := p.waitProcess()
+		err := p.waitProcess(r)
 		if ctx.Err() != nil {
 			p.log.Err(err).Msg("context canceled, initiating cleanup")
 		} else {
@@ -293,7 +312,7 @@ func (p *BasePlugin) createAndRunCommand(ctx context.Context) error {
 					Msgf("plugin exited unexpectedly with exit code %d", exitErr.ExitCode())
 			}
 		}
-		p.cleanup()
+		p.cleanup(r)
 	}()
 	return nil
 }
@@ -370,24 +389,21 @@ func findManifest(dir string) (string, error) {
 	return "", fmt.Errorf("plugin %s does not contain a pixi manifest (one of %v)", dir, pixiManifests)
 }
 
-// waitProcess blocks until the plugin subprocess exits and returns its exit
-// error.
-func (p *BasePlugin) waitProcess() error {
-	if !p.running.Load() {
-		return fmt.Errorf("plugin not running")
-	}
-	if p.cmd == nil {
+// waitProcess blocks until the subprocess of run r exits and returns its exit
+// error, which a run that has already ended returns at once.
+func (p *BasePlugin) waitProcess(r *pluginRun) error {
+	if r.cmd == nil {
 		return nil
 	}
-	p.waitOnce.Do(func() {
-		p.waitErr = p.cmd.Wait()
-		if p.ctx.Err() != nil {
-			p.waitErr = p.ctx.Err()
+	r.waitOnce.Do(func() {
+		r.waitErr = r.cmd.Wait()
+		if r.ctx.Err() != nil {
+			r.waitErr = r.ctx.Err()
 		}
-		close(p.waitDone)
+		close(r.waitDone)
 	})
-	<-p.waitDone
-	return p.waitErr
+	<-r.waitDone
+	return r.waitErr
 }
 
 // createSocketEndpoints listens on the server socket and, when server mode is
@@ -444,12 +460,16 @@ func (p *BasePlugin) createSocketEndpoints() (net.Listener, *grpc.ClientConn, er
 // exits, or the plugin timeout elapses.
 func (p *BasePlugin) waitForSocket(path string) error {
 	deadline := time.Now().Add(time.Duration(p.timeout) * time.Second)
+	var waitDone chan struct{} // nil for shims, which have no run to exit
+	if r := p.current.Load(); r != nil {
+		waitDone = r.waitDone
+	}
 	for time.Now().Before(deadline) {
 		if _, err := os.Stat(path); err == nil {
 			return nil
 		}
 		select {
-		case <-p.waitDone: // nil for shims, which never select this case
+		case <-waitDone:
 			return fmt.Errorf("plugin exited before creating socket: %s", path)
 		default:
 		}
@@ -470,9 +490,9 @@ func (p *BasePlugin) allowPid(pid int) {
 	p.pids = append(p.pids, pid)
 }
 
-// cleanup cleans up system resources, including the runtime directory and the
-// PIDs this plugin added to the ACL.
-func (p *BasePlugin) cleanup() {
+// cleanup cleans up system resources of run r, including the runtime
+// directory and the PIDs this plugin added to the ACL.
+func (p *BasePlugin) cleanup(r *pluginRun) {
 	// Remove the plugin's PIDs from the ACL, since they may be reused by
 	// unrelated processes once the plugin exits
 	p.pidsMu.Lock()
@@ -485,20 +505,17 @@ func (p *BasePlugin) cleanup() {
 	// Remove the plugin run directory
 	err := os.RemoveAll(p.runDir)
 	p.cancel()
-	// The plugin can be started again once it isn't running, which replaces
-	// cleanupDone, so this run's is taken first
-	done := p.cleanupDone
 	p.running.Store(false)
 	if err != nil {
 		p.log.Error().Err(err).Msg("got error while trying to clean up")
 	}
-	close(done)
+	close(r.cleanupDone)
 }
 
-// run starts the plugin command and records the start time.
-func (p *BasePlugin) run() error {
+// run starts the plugin command cmd and records the start time.
+func (p *BasePlugin) run(cmd *exec.Cmd) error {
 	// Run the plugin
-	if err := p.cmd.Start(); err != nil {
+	if err := cmd.Start(); err != nil {
 		p.log.Error().Err(err).Msg("couldn't run target for plugin")
 		return err
 	}

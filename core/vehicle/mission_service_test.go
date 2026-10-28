@@ -2,6 +2,8 @@ package vehicle
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -57,7 +59,87 @@ func TestStartStopMission(t *testing.T) {
 	}
 }
 
-// TestMissionCallsVehicle checks that a running mission can call the
+// missionStartedMarker is what the test mission writes to stderr once its
+// StartMission is called, matching its StartedMarker.
+const missionStartedMarker = "test mission started"
+
+// missionStoppedMarker is what the test mission writes to stderr when its
+// StopMission is called, matching its StoppedMarker.
+const missionStoppedMarker = "test mission stopped"
+
+// expectOutputCount waits until out holds n of marker.
+func expectOutputCount(t *testing.T, out *syncBuffer, marker string, n int) {
+	t.Helper()
+	eventually(t, 5*time.Second, func() error {
+		if got := strings.Count(out.String(), marker); got != n {
+			return fmt.Errorf("output holds %d of %q, want %d; output:\n%s", got, marker, n, out.String())
+		}
+		return nil
+	})
+}
+
+// TestStartMissionStartsMission checks that starting a mission relays
+// StartMission to the launched mission process, which does nothing until it is
+// called, that stopping it relays StopMission before it is killed, and that
+// the mission's output is written to the vehicle's process output stream.
+func TestStartMissionStartsMission(t *testing.T) {
+	out := &syncBuffer{}
+	v, _ := newTestVehicle(t, WithProcessOutputStream(out))
+	installMission(t, v, "idle")
+	if err := loadMission(t, v, "idle"); err != nil {
+		t.Fatal(err)
+	}
+	for i := range 2 {
+		if err := startMission(t, v); err != nil {
+			t.Fatalf("start %d: %v", i, err)
+		}
+		expectOutputCount(t, out, missionStartedMarker, i+1)
+		if err := stopMission(t, v); err != nil {
+			t.Fatalf("stop %d: %v", i, err)
+		}
+		expectOutputCount(t, out, missionStoppedMarker, i+1)
+	}
+}
+
+// TestStopMissionKillsStuckMission checks that a mission whose StopMission
+// doesn't return is killed once the stop timeout passes.
+func TestStopMissionKillsStuckMission(t *testing.T) {
+	out := &syncBuffer{}
+	v, _ := newTestVehicle(t, WithProcessOutputStream(out))
+	installMission(t, v, "stuck")
+	if err := loadMission(t, v, "stuck"); err != nil {
+		t.Fatal(err)
+	}
+	if err := startMission(t, v); err != nil {
+		t.Fatal(err)
+	}
+	if err := stopMission(t, v); err != nil {
+		t.Fatal(err)
+	}
+	expectOutputCount(t, out, missionStoppedMarker, 1)
+	if v.mission.Running() || v.missionInfo != nil {
+		t.Fatal("stuck mission still running")
+	}
+}
+
+// TestStartMissionRejected checks that a mission whose StartMission fails
+// fails the vehicle's StartMission with its error, and is stopped so it can
+// be started again.
+func TestStartMissionRejected(t *testing.T) {
+	v, _ := newTestVehicle(t)
+	installMission(t, v, "reject")
+	if err := loadMission(t, v, "reject"); err != nil {
+		t.Fatal(err)
+	}
+	for range 2 {
+		expectCode(t, startMission(t, v), codes.Aborted, "rejected")
+		if v.mission.Running() || v.missionInfo != nil {
+			t.Fatal("rejected mission still running")
+		}
+	}
+}
+
+// TestMissionCallsVehicle checks that a started mission can call the
 // vehicle's services, and that a mission that exited can be started again.
 func TestMissionCallsVehicle(t *testing.T) {
 	v, _ := newTestVehicle(t)
@@ -69,7 +151,8 @@ func TestMissionCallsVehicle(t *testing.T) {
 		if err := startMission(t, v); err != nil {
 			t.Fatalf("start %d: %v", i, err)
 		}
-		// The mission exits successfully once its call succeeds
+		// The mission makes its call when it is started, and exits
+		// successfully once it succeeds
 		done := make(chan error, 1)
 		go func() { done <- v.mission.Wait() }()
 		select {

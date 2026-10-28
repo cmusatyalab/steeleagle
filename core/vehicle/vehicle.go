@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"sync"
@@ -107,6 +108,7 @@ type Vehicle struct {
 	shutdown        chan struct{}              // shutdown channel, closed when a run stops
 	err             error                      // why the last run stopped, if not canceled
 	log             zerolog.Logger             // logger object
+	out             io.Writer                  // stream the mission's stdout and stderr are written to
 }
 
 // NewVehicle creates a new vehicle that wraps `driver`, configured by its plugin
@@ -131,6 +133,7 @@ func NewVehicle(
 			lcs: DefaultLcsName,
 		},
 		log: zerolog.New(os.Stderr).With().Timestamp().Logger(),
+		out: os.Stderr,
 	}
 	for _, option := range options {
 		option(vehicle)

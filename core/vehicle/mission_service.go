@@ -4,6 +4,7 @@ import (
 	"context"
 
 	missionpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/mission"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -46,6 +47,17 @@ func (v *Vehicle) StartMission(
 			v.log.Debug().Err(err).Str("listener", "mission").Msg("listener closed")
 		}
 	}()
+
+	// The launched mission only serves its MissionService until it is
+	// started, so the call is relayed to it now that it can reach the vehicle
+	startCtx, startCancel := context.WithTimeout(ctx, MissionStartTimeout)
+	defer startCancel()
+	client := missionpb.NewMissionServiceClient(conn)
+	if _, err := client.StartMission(startCtx, req, grpc.WaitForReady(true)); err != nil {
+		v.log.Error().Err(err).Str("mission", v.missionName).Msg("mission did not start")
+		v.stopMission()
+		return nil, err
+	}
 	v.log.Info().Str("mission", v.missionName).Msg("mission started")
 	return &missionpb.StartMissionResponse{}, nil
 }
@@ -60,6 +72,17 @@ func (v *Vehicle) StopMission(
 	defer v.missionMu.Unlock()
 	if v.mission == nil {
 		return nil, status.Error(codes.FailedPrecondition, "no mission loaded")
+	}
+	// The running mission is asked to stop first, so its run can end cleanly,
+	// and is killed whether or not it does
+	if v.missionInfo != nil && v.mission.Running() {
+		stopCtx, stopCancel := context.WithTimeout(ctx, MissionStopTimeout)
+		defer stopCancel()
+		client := missionpb.NewMissionServiceClient(v.missionInfo.conn)
+		if _, err := client.StopMission(stopCtx, req); err != nil {
+			v.log.Warn().Err(err).Str("mission", v.missionName).
+				Msg("mission did not stop, killing it")
+		}
 	}
 	v.stopMission()
 	return &missionpb.StopMissionResponse{}, nil

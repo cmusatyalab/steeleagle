@@ -1,6 +1,7 @@
 package vehicle
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -53,7 +54,8 @@ func TestMain(m *testing.M) {
 }
 
 // runTests sets up isolated XDG directories, builds the test mission,
-// shortens the dead man's switch, and runs the tests.
+// shortens the dead man's switch and the mission stop timeout, and runs the
+// tests.
 func runTests(m *testing.M) (int, error) {
 	// The base is kept short, since plugin sockets are made under it
 	base, err := os.MkdirTemp("", "sev")
@@ -80,6 +82,7 @@ func runTests(m *testing.M) (int, error) {
 	}
 
 	DmsTimeout = 200 * time.Millisecond
+	MissionStopTimeout = 500 * time.Millisecond
 	return m.Run(), nil
 }
 
@@ -106,6 +109,25 @@ func testOutput() io.Writer {
 		return os.Stdout
 	}
 	return io.Discard
+}
+
+// syncBuffer is a bytes.Buffer that is safe to write and read concurrently,
+// such as the output of a plugin process.
+type syncBuffer struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (b *syncBuffer) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.Write(p)
+}
+
+func (b *syncBuffer) String() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.String()
 }
 
 // fakeDriver is a driver plugin, served in process, that records the streams
@@ -271,7 +293,7 @@ func testDriverConfig() *config.PluginConfig {
 // testVehicle is a vehicle that isn't started, wrapping a fake driver that
 // streams testCameras. Its local compute service is a Uriel server serving
 // testEngine, a detection engine.
-func testVehicle(t *testing.T) (*Vehicle, *fakeDriver) {
+func testVehicle(t *testing.T, options ...VehicleOption) (*Vehicle, *fakeDriver) {
 	t.Helper()
 	syscall.Umask(umask)
 	lcs := unique("lcs")
@@ -288,13 +310,15 @@ func testVehicle(t *testing.T) (*Vehicle, *fakeDriver) {
 		Local:  true,
 	}}
 	driver := &fakeDriver{}
-	v, err := NewVehicle(driver, testDriverConfig(),
+	options = append([]VehicleOption{
 		WithName(unique("vehicle")),
 		WithAuthCode(listener.PrivilegedCode),
 		WithMissionDir(t.TempDir()),
 		WithLogger(testLogger()),
+		WithProcessOutputStream(testOutput()),
 		WithLocalCompute(lcs, engines),
-	)
+	}, options...)
+	v, err := NewVehicle(driver, testDriverConfig(), options...)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -308,11 +332,11 @@ func testVehicle(t *testing.T) (*Vehicle, *fakeDriver) {
 	return v, driver
 }
 
-// newTestVehicle returns a running vehicle from testVehicle, whose services
-// are reached through v.conn, as the daemon reaches them.
-func newTestVehicle(t *testing.T) (*Vehicle, *fakeDriver) {
+// newTestVehicle returns a running vehicle from testVehicle, given options,
+// whose services are reached through v.conn, as the daemon reaches them.
+func newTestVehicle(t *testing.T, options ...VehicleOption) (*Vehicle, *fakeDriver) {
 	t.Helper()
-	v, driver := testVehicle(t)
+	v, driver := testVehicle(t, options...)
 	if _, _, err := v.Start(context.Background()); err != nil {
 		t.Fatal(err)
 	}

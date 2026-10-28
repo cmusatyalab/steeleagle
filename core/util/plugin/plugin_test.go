@@ -445,7 +445,7 @@ func TestPluginStartFailureKillsProcess(t *testing.T) {
 		t.Fatal("expected Start() to fail since the plugin never creates its socket")
 	}
 
-	pid := plugin.cmd.Process.Pid
+	pid := plugin.current.Load().cmd.Process.Pid
 	if plugin.Running() {
 		t.Error("expected plugin to not be running after a failed Start()")
 	}
@@ -454,5 +454,56 @@ func TestPluginStartFailureKillsProcess(t *testing.T) {
 	}
 	if ok, _ := acl.AllowsPid(pid); ok {
 		t.Errorf("expected plugin process %d to be removed from the ACL", pid)
+	}
+}
+
+// TestPluginWaitOnPreviousRun ensures that a caller still waiting on a run
+// gets that run's result once it ends, even after the plugin has been started
+// again, rather than waiting on the next run.
+func TestPluginWaitOnPreviousRun(t *testing.T) {
+	script := filepath.Join(t.TempDir(), "sleep.sh")
+	err := os.WriteFile(script, []byte("#!/bin/sh\nexec sleep 30\n"), 0o755)
+	if err != nil {
+		t.Fatalf("couldn't write plugin script: %v", err)
+	}
+	plugin, err := newTestBasePlugin(t,
+		WithPath(script),
+		WithoutClient(),
+		WithoutListener(),
+	)
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
+
+	for i := range 3 {
+		ctx, cancel := context.WithCancel(t.Context())
+		if _, _, err := plugin.Start(ctx); err != nil {
+			t.Fatalf("run %d: encountered error starting plugin: %v", i, err)
+		}
+		run := plugin.current.Load()
+		watch := plugin.Watch()
+		cancel()
+		plugin.Wait()
+
+		// Started again while the watcher of the stopped run may still be
+		// reading its result
+		next, stop := context.WithCancel(t.Context())
+		if _, _, err := plugin.Start(next); err != nil {
+			t.Fatalf("run %d: encountered error restarting plugin: %v", i, err)
+		}
+		done := make(chan error, 1)
+		go func() { done <- plugin.wait(run) }()
+		for _, ch := range []<-chan error{watch, done} {
+			select {
+			case err := <-ch:
+				if !errors.Is(err, context.Canceled) {
+					t.Errorf("run %d: expected the stopped run to end canceled, got: %v", i, err)
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatalf("run %d: waiting on the stopped run blocked on the next run", i)
+			}
+		}
+		stop()
+		plugin.Wait()
 	}
 }

@@ -1,6 +1,8 @@
 package vehicle
 
 import (
+	"io"
+
 	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
 	"github.com/rs/zerolog"
 )
@@ -26,6 +28,14 @@ func WithAuthCode(code listener.AuthCode) VehicleOption {
 func WithLogger(logger zerolog.Logger) VehicleOption {
 	return func(v *Vehicle) {
 		v.log = logger
+	}
+}
+
+// WithProcessOutputStream sets the stream the stdout and stderr of the
+// vehicle's missions are written to, such as the vehicle's log.
+func WithProcessOutputStream(out io.Writer) VehicleOption {
+	return func(v *Vehicle) {
+		v.out = out
 	}
 }
 

@@ -482,6 +482,7 @@ func (d *Daemon) startService(s *daemonService) error {
 				vehicle.WithLogger(
 					d.log.With().Str("vehicle", s.name).Logger().Output(plug.logStream),
 				),
+				vehicle.WithProcessOutputStream(plug.logStream),
 			}
 			d.orchMu.RLock()
 			orch := d.orch

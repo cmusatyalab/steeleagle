@@ -11,6 +11,13 @@ var DefaultLaw []byte // DefaultLaw is the default control law if no user-specif
 // Name of the plugin that runs the loaded mission
 const MissionPluginName = "mission"
 
+// How long the vehicle waits for a launched mission to accept StartMission.
+const MissionStartTimeout = 10 * time.Second
+
+// How long the vehicle waits for a running mission to accept StopMission
+// before it is killed. A variable so tests can shorten it.
+var MissionStopTimeout = 5 * time.Second
+
 // Default name of the local compute service, matching the daemon's default
 // hostname.
 const DefaultLcsName = "eagled"

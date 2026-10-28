@@ -60,6 +60,7 @@ func (v *Vehicle) LoadMission(
 		plugin.WithAuthCode(listener.UserCode),
 		plugin.WithParentDir(v.runDir),
 		plugin.WithLogger(v.log),
+		plugin.WithProcessOutputStream(v.out),
 	)
 	if err != nil {
 		v.log.Error().Err(err).Str("mission", name).Msg("could not create mission plugin")
