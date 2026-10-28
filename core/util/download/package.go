@@ -10,12 +10,15 @@ import (
 	"strings"
 )
 
+// literalPathspec makes git take the path after it literally, with no globbing.
+const literalPathspec = ":(literal)"
+
 // InstallPackage installs a git url into target. Like Terraform, a sub directory of the
 // repository can be selected by appending it to the url after a double slash
 // (https://host/repo.git//sub/dir). Like Go, a version (branch, tag, or commit) can be
 // selected by appending it to the end of the url after an @ (https://host/repo.git//sub/dir@v1),
-// defaulting to the default branch. It does a sparse checkout, ignoring files outside of
-// the sub directory. Only https and local (file) repositories are allowed.
+// defaulting to the default branch. Only the files of the sub directory are checked out.
+// Only https and local (file) repositories are allowed.
 func InstallPackage(url, target string) error {
 	// Check if git is installed
 	if _, err := exec.LookPath("git"); err != nil {
@@ -64,12 +67,14 @@ func InstallPackage(url, target string) error {
 		{"init", "-q"},
 		{"remote", "add", "origin", url},
 		{"fetch", "-q", "--depth", "1", "--filter=blob:none", "origin", version},
-		{"-c", "advice.detachedHead=false", "checkout", "-q", "FETCH_HEAD"},
 	}
+	checkout := []string{"-c", "advice.detachedHead=false", "checkout", "-q", "FETCH_HEAD"}
 	if subdir != "." {
-		sparse := []string{"sparse-checkout", "set", "--no-cone", "/" + subdir + "/"}
-		steps = append(steps[:3], append([][]string{sparse}, steps[3:]...)...)
+		// Only the sub directory is checked out, so only its files are
+		// fetched; the literal magic stops git reading it as a glob
+		checkout = append(checkout, "--", literalPathspec+subdir)
 	}
+	steps = append(steps, checkout)
 	for _, s := range steps {
 		if err := run(s...); err != nil {
 			return err

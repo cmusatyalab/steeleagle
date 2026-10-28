@@ -80,12 +80,26 @@ const (
 	gcsURL = "http://localhost:8002"
 	// readyTimeout is how long init waits for eagled to answer once started.
 	readyTimeout = 2 * time.Minute
+	// pixiBinDir is where Pixi puts the tools installed with pixi global,
+	// relative to the home directory, which eagled.service has on its PATH.
+	pixiBinDir = ".pixi/bin"
 	// preflightTimeout is how long init waits for eagled to print its usage.
 	preflightTimeout = 10 * time.Second
 	// journalTailLines is how many lines of eagled's log are added to the
 	// error when it fails to start.
 	journalTailLines = 20
 )
+
+// The oldest git that fetches with a filter without being set up as a
+// partial clone first.
+const (
+	minGitMajor = 2
+	minGitMinor = 27
+)
+
+// gitVersionPattern matches the output of git --version, such as
+// "git version 2.56.0" or "git version 2.39.5 (Apple Git-154)".
+var gitVersionPattern = regexp.MustCompile(`git version (\d+)\.(\d+)`)
 
 // rootRisk is what init tells a user it is running as root, before asking to
 // go on.
@@ -180,7 +194,11 @@ func initDaemon(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.Fla
 	if err != nil {
 		return err
 	}
-	// Try it too, since one that can't run only fails once started
+	// Check for git too, which installing the plugins needs
+	if _, err := findGit(); err != nil {
+		return err
+	}
+	// Try eagled too, since one that can't run only fails once started
 	if err := checkEagled(ctx, eagled); err != nil {
 		return err
 	}
@@ -299,6 +317,42 @@ func systemPath(name string) string {
 // systemPath) with args.
 func systemCommand(name string, args ...string) *exec.Cmd {
 	return exec.Command(systemPath(name), args...)
+}
+
+// findGit returns the path of a git that can fetch with a filter (see
+// minGitMajor): the one Pixi installed, if any, since eagled.service prefers
+// it, or else the one on the PATH. The error says how to install one.
+func findGit() (string, error) {
+	var candidates []string
+	if home, err := os.UserHomeDir(); err == nil {
+		candidates = append(candidates, filepath.Join(home, pixiBinDir, "git"))
+	}
+	if path, err := exec.LookPath("git"); err == nil {
+		candidates = append(candidates, path)
+	}
+	for _, path := range candidates {
+		major, minor, err := gitVersion(path)
+		if err == nil && (major > minGitMajor || major == minGitMajor && minor >= minGitMinor) {
+			return path, nil
+		}
+	}
+	return "", fmt.Errorf("could not find git %d.%d or newer; install it with: pixi global install git",
+		minGitMajor, minGitMinor)
+}
+
+// gitVersion returns the major and minor version of the git at path.
+func gitVersion(path string) (major, minor int, err error) {
+	out, err := exec.Command(path, "--version").Output()
+	if err != nil {
+		return 0, 0, err
+	}
+	match := gitVersionPattern.FindStringSubmatch(string(out))
+	if match == nil {
+		return 0, 0, fmt.Errorf("unrecognized git version %q", strings.TrimSpace(string(out)))
+	}
+	major, _ = strconv.Atoi(match[1])
+	minor, _ = strconv.Atoi(match[2])
+	return major, minor, nil
 }
 
 // findEagled returns the absolute path of eagled, which is looked for next
@@ -450,13 +504,17 @@ type pluginDirs struct {
 // directories in its defaults, drivers and engines directories. Only the
 // repository's trees are fetched, not its files.
 func listPlugins(ctx context.Context) (pluginDirs, error) {
+	gitPath, err := findGit()
+	if err != nil {
+		return pluginDirs{}, err
+	}
 	tmp, err := os.MkdirTemp("", "eagle-plugins-")
 	if err != nil {
 		return pluginDirs{}, err
 	}
 	defer os.RemoveAll(tmp)
 	git := func(args ...string) ([]byte, error) {
-		cmd := exec.CommandContext(ctx, systemPath("git"), append([]string{"-C", tmp}, args...)...)
+		cmd := exec.CommandContext(ctx, gitPath, append([]string{"-C", tmp}, args...)...)
 		cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
 		out, err := cmd.Output()
 		if err != nil {

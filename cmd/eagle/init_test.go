@@ -339,3 +339,48 @@ func TestConfirmRoot(t *testing.T) {
 		}
 	}
 }
+
+// fakeGit writes a git that reports version into dir.
+func fakeGit(t *testing.T, dir, version string) string {
+	t.Helper()
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "git")
+	if err := os.WriteFile(path, []byte("#!/bin/sh\necho 'git version "+version+"'\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+// TestFindGit checks that the git Pixi installed is preferred, that one too
+// old to fetch with a filter is skipped, and that the error says how to
+// install one.
+func TestFindGit(t *testing.T) {
+	home := t.TempDir()
+	pathDir := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("PATH", pathDir)
+
+	if _, err := findGit(); err == nil || !strings.Contains(err.Error(), "pixi global install git") {
+		t.Errorf("no git: err = %v, want it to say how to install one", err)
+	}
+
+	old := fakeGit(t, pathDir, "2.25.1")
+	if _, err := findGit(); err == nil {
+		t.Errorf("git 2.25.1 on the PATH was accepted")
+	}
+
+	pixiGit := fakeGit(t, filepath.Join(home, pixiBinDir), "2.56.0")
+	if got, err := findGit(); err != nil || got != pixiGit {
+		t.Errorf("findGit() = %q, %v, want the Pixi git %q over %q", got, err, pixiGit, old)
+	}
+
+	if err := os.Remove(pixiGit); err != nil {
+		t.Fatal(err)
+	}
+	pathGit := fakeGit(t, pathDir, "2.43.0 (Apple Git-154)")
+	if got, err := findGit(); err != nil || got != pathGit {
+		t.Errorf("findGit() = %q, %v, want the git on the PATH %q", got, err, pathGit)
+	}
+}

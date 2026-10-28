@@ -5,7 +5,9 @@
 #   curl -fsSL https://raw.githubusercontent.com/cmusatyalab/steeleagle/main/tools/install.sh | sh -s -- --sdk
 #
 # It downloads eagle and eagled for this machine's architecture into
-# ~/.local/bin and installs Pixi, which eagled starts plugins with. With
+# ~/.local/bin and installs Pixi, which eagled starts plugins with. It also
+# installs git with Pixi, unless git 2.27 or newer is installed, since plugins
+# are fetched with a filter that older git versions don't support. With
 # --sdk, it also downloads eaglec, and installs Go into ~/.local/go if there
 # is no go on the PATH. `eagle init` then installs the eagled service.
 #
@@ -16,6 +18,10 @@ set -eu
 
 REPO=cmusatyalab/steeleagle
 BIN=$HOME/.local/bin
+PIXI_BIN=$HOME/.pixi/bin
+# The oldest git that fetches with a filter without being set up as a partial clone
+MIN_GIT_MAJOR=2
+MIN_GIT_MINOR=27
 SDK=
 PRE=
 
@@ -121,12 +127,32 @@ if [ -n "$SDK" ]; then
     download "$tag" eaglec
 fi
 
+# git_ok succeeds if the git eagled finds, which is Pixi's first, is at least
+# MIN_GIT_MAJOR.MIN_GIT_MINOR.
+git_ok() {
+    version=$(PATH=$PIXI_BIN:$PATH git --version 2>/dev/null |
+        sed -n 's/^git version \([0-9]*\)\.\([0-9]*\).*/\1 \2/p')
+    [ -n "$version" ] || return 1
+    major=${version% *}
+    minor=${version#* }
+    [ "$major" -gt "$MIN_GIT_MAJOR" ] || { [ "$major" -eq "$MIN_GIT_MAJOR" ] && [ "$minor" -ge "$MIN_GIT_MINOR" ]; }
+}
+
 # eagled starts plugins with pixi, and its service looks in ~/.pixi/bin
-if command -v pixi >/dev/null || [ -x "$HOME/.pixi/bin/pixi" ]; then
+if command -v pixi >/dev/null || [ -x "$PIXI_BIN/pixi" ]; then
     say "pixi is already installed"
 else
     say "installing pixi"
     curl -fsSL https://pixi.sh/install.sh | sh || die "could not install pixi"
+fi
+
+# eagle and eagled fetch plugins with git, using a filter that old versions
+# (such as Ubuntu 20.04's 2.25) don't support, so Pixi provides a newer one
+if git_ok; then
+    say "git is already installed"
+else
+    say "installing git with pixi"
+    PATH=$PIXI_BIN:$PATH pixi global install git || die "could not install git with pixi"
 fi
 
 # eaglec builds missions with go
