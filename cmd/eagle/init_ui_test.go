@@ -230,3 +230,31 @@ func TestInitNoEnginesPicked(t *testing.T) {
 		t.Errorf("rows weren't cleared: %+v", m.rows)
 	}
 }
+
+// TestInitSimulator checks that the simulator is asked about before the
+// drivers, and installed and configured in when wanted.
+func TestInitSimulator(t *testing.T) {
+	for _, want := range []bool{true, false} {
+		m := newTestModel(t)
+		press(m, keyEnter, keyN)
+		m.Update(startedMsg{})
+		press(m, keyDown, keyEnter)
+		m.Update(pluginsMsg{dirs: pluginDirs{simulator: "simulator", drivers: []string{"drivers/anafi"}}})
+		m.Update(installedMsg{})
+		expectStage(t, m, stageSimulator)
+		if want {
+			press(m, keyY)
+			expectStage(t, m, stageInstalling)
+			if last := m.rows[len(m.rows)-1].dir; last != "simulator" {
+				t.Fatalf("installing %q, want the simulator", last)
+			}
+			m.Update(installedMsg{})
+		} else {
+			press(m, keyN)
+		}
+		expectStage(t, m, stageDrivers)
+		if m.simulator != want {
+			t.Errorf("simulator = %v, want %v", m.simulator, want)
+		}
+	}
+}

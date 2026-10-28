@@ -31,6 +31,7 @@ const (
 	stageMode                      // asks for the installation mode
 	stageFetching                  // lists the plugins in pluginsRepo
 	stageInstalling                // installs the queued plugins
+	stageSimulator                 // asks whether to install the simulator
 	stageDrivers                   // asks which drivers to install
 	stageEngines                   // asks which engines to install
 	stageOrchestrator              // asks whether to use an orchestrator
@@ -56,8 +57,8 @@ type option struct {
 
 var modeOptions = []option{
 	modeBare:    {"Bare", "only the daemon, with no plugins"},
-	modeMinimal: {"Minimal", "the H.264 video plugin, and the drivers and engines you pick"},
-	modeDefault: {"Default", "every default plugin, including the web GCS, and the drivers and engines you pick"},
+	modeMinimal: {"Minimal", "the H.264 video plugin, and the simulator, drivers and engines you pick"},
+	modeDefault: {"Default", "every default plugin, including the web GCS, and the simulator, drivers and engines you pick"},
 }
 
 // showRows is how long the finished installs stay up before they are
@@ -97,9 +98,11 @@ type (
 )
 
 // initModel is the terminal UI of eagle init. It asks for the machine's
-// name and a VPN auth key, starts eagled, installs the plugins of the chosen mode and the drivers and
-// engines picked, optionally sets an orchestrator and starts eagled on boot,
-// and finally reconfigures eagled with a service for each default plugin.
+// name and a VPN auth key, starts eagled, installs the plugins of the chosen
+// mode, the simulator if wanted, and the drivers and engines picked,
+// optionally sets an orchestrator and starts eagled on boot, and finally
+// reconfigures eagled with a service for each default plugin and the
+// simulator.
 // The drivers and engines are left out, since they may not run until their
 // vehicle or hardware is there, which would start eagled in safe mode.
 type initModel struct {
@@ -118,6 +121,7 @@ type initModel struct {
 	hostname     string
 	mode         mode
 	plugins      pluginDirs
+	simulator    bool     // whether the simulator was chosen
 	queue        []string // plugins left to install
 	rows         []row
 	afterInstall stage // stage to go on to once queue is installed
@@ -175,7 +179,7 @@ func (m *initModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.mode == modeDefault {
 			queue = m.plugins.defaults
 		}
-		return m, m.install(queue, stageDrivers)
+		return m, m.install(queue, stageSimulator)
 	case installedMsg:
 		m.rows[len(m.rows)-1].done = true
 		m.rows[len(m.rows)-1].err = msg.err
@@ -255,6 +259,15 @@ func (m *initModel) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 				dirs, err := listPlugins(m.ctx)
 				return pluginsMsg{dirs, err}
 			}
+		}
+	case stageSimulator:
+		if yes, ok := m.yesNo(key); ok {
+			var queue []string
+			if yes {
+				m.simulator = true
+				queue = []string{m.plugins.simulator}
+			}
+			return m, m.install(queue, stageDrivers)
 		}
 	case stageDrivers, stageEngines:
 		dirs, next := m.plugins.drivers, stageEngines
@@ -358,6 +371,9 @@ func (m *initModel) install(queue []string, next stage) tea.Cmd {
 func (m *initModel) installNext() tea.Cmd {
 	if len(m.queue) == 0 {
 		next := m.afterInstall
+		if next == stageSimulator && m.plugins.simulator == "" {
+			next = stageDrivers
+		}
 		if next == stageDrivers && len(m.plugins.drivers) == 0 {
 			next = stageEngines
 		}
@@ -446,7 +462,11 @@ func (m *initModel) configure() tea.Cmd {
 	for i, dir := range dirs {
 		uris[i] = pluginURI(dir)
 	}
-	return func() tea.Msg { return configuredMsg{reconfigure(m.ctx, m.conn, m.orchestrator, uris)} }
+	var simulator string
+	if m.simulator {
+		simulator = pluginURI(m.plugins.simulator)
+	}
+	return func() tea.Msg { return configuredMsg{reconfigure(m.ctx, m.conn, m.orchestrator, simulator, uris)} }
 }
 
 // finish prints how to get started, and any problems along the way, then
@@ -557,6 +577,8 @@ func (m *initModel) View() tea.View {
 		}
 	case stageFetching:
 		fmt.Fprintf(&b, "%s Fetching the plugin list\n", m.spinner.View())
+	case stageSimulator:
+		b.WriteString(m.question("Do you want to install the SteelEagle simulator?"))
 	case stageDrivers:
 		b.WriteString(m.checklist("Would you like to install any drivers?", m.plugins.drivers))
 	case stageEngines:

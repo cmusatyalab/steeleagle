@@ -495,14 +495,15 @@ func mainPID() int {
 }
 
 // pluginDirs are the plugin packages in pluginsRepo, by the directories
-// they are in.
+// they are in, and the simulator's directory, if it has one.
 type pluginDirs struct {
 	defaults, drivers, engines []string
+	simulator                  string
 }
 
 // listPlugins lists the plugin packages in pluginsRepo at pluginsRef: the
-// directories in its defaults, drivers and engines directories. Only the
-// repository's trees are fetched, not its files.
+// directories in its defaults, drivers and engines directories, and its
+// simulator directory. Only the repository's trees are fetched, not its files.
 func listPlugins(ctx context.Context) (pluginDirs, error) {
 	gitPath, err := findGit()
 	if err != nil {
@@ -528,7 +529,7 @@ func listPlugins(ctx context.Context) (pluginDirs, error) {
 	if _, err := git("fetch", "-q", "--depth", "1", "--filter=blob:none", pluginsRepo, pluginsRef); err != nil {
 		return pluginDirs{}, err
 	}
-	out, err := git("ls-tree", "-d", "--name-only", "FETCH_HEAD", "defaults/", "drivers/", "engines/")
+	out, err := git("ls-tree", "-d", "--name-only", "FETCH_HEAD", "defaults/", "drivers/", "engines/", "simulator")
 	if err != nil {
 		return pluginDirs{}, err
 	}
@@ -541,6 +542,8 @@ func listPlugins(ctx context.Context) (pluginDirs, error) {
 			dirs.drivers = append(dirs.drivers, path)
 		case "engines":
 			dirs.engines = append(dirs.engines, path)
+		case "simulator":
+			dirs.simulator = path
 		}
 	}
 	return dirs, nil
@@ -560,11 +563,13 @@ func installPlugin(ctx context.Context, conn grpc.ClientConnInterface, dir strin
 }
 
 // reconfigure replaces the daemon's services with one for each plugin of
-// the installed packages among uris, sets its orchestrator to orchestrator
-// (none if it is empty), and waits for it to restart with the new config.
+// the installed packages among uris, sets its simulator to simulator if it is
+// an installed package (none otherwise), sets its orchestrator to
+// orchestrator (none if it is empty), and waits for it to restart with the
+// new config.
 // With an orchestrator, it doesn't wait, since eagled may not be ready until
 // the orchestrator is up.
-func reconfigure(ctx context.Context, conn grpc.ClientConnInterface, orchestrator string, uris []string) error {
+func reconfigure(ctx context.Context, conn grpc.ClientConnInterface, orchestrator, simulator string, uris []string) error {
 	client := daemonpb.NewDaemonServiceClient(conn)
 	resp, err := client.GetConfiguration(ctx, &daemonpb.GetConfigurationRequest{})
 	if err != nil {
@@ -579,9 +584,14 @@ func reconfigure(ctx context.Context, conn grpc.ClientConnInterface, orchestrato
 		return err
 	}
 	var chosen []*daemonpb.Package
+	cfg.Simulator.Package = ""
 	for _, p := range packages.GetPackages() {
 		if slices.Contains(uris, p.GetUri()) {
 			chosen = append(chosen, p)
+		}
+		// A simulator that failed to install would start eagled in safe mode
+		if simulator != "" && p.GetUri() == simulator {
+			cfg.Simulator.Package = simulator
 		}
 	}
 	cfg.Services, err = pluginServices(chosen)
