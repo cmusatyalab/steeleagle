@@ -22,7 +22,7 @@ import (
 
 func run() error {
 	// The plugin waits for the listen socket before it is started
-	ln, err := net.Listen("unix", os.Getenv("LISTEN_SOCKET"))
+	ln, err := net.Listen("unix", os.Getenv("STEELEAGLE_LISTEN_SOCKET"))
 	if err != nil {
 		return err
 	}
@@ -32,7 +32,7 @@ func run() error {
 		return server.Serve(ln)
 	}
 	go server.Serve(ln)
-	conn, err := grpc.NewClient("unix://"+os.Getenv("CLIENT_SOCKET"),
+	conn, err := grpc.NewClient("unix://"+os.Getenv("STEELEAGLE_CLIENT_SOCKET"),
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return err

@@ -4,7 +4,7 @@
 //
 // The daemon passes the plugin's args as JSON in STEELEAGLE_PLUGIN_ARGS (see
 // gcs.plugin.toml), the name of its Uriel engine in ICEORYX_SERVICE, and the
-// socket the GCS calls it on, to control vehicles, in CLIENT_SOCKET.
+// socket the GCS calls it on, to control vehicles, in STEELEAGLE_CLIENT_SOCKET.
 package main
 
 import (
@@ -35,7 +35,7 @@ import (
 const (
 	argsEnv   = "STEELEAGLE_PLUGIN_ARGS"
 	engineEnv = "ICEORYX_SERVICE"
-	daemonEnv = "CLIENT_SOCKET"
+	daemonEnv = "STEELEAGLE_CLIENT_SOCKET"
 	// shutdownTimeout is how long requests may take to finish on shutdown.
 	shutdownTimeout = 5 * time.Second
 )

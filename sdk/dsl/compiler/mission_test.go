@@ -84,7 +84,7 @@ func runMission(t *testing.T, bin string, vehicle *fakeVehicle) (missionpb.Missi
 	t.Cleanup(server.Stop)
 
 	cmd := exec.Command(bin)
-	cmd.Env = append(os.Environ(), "CLIENT_SOCKET="+vehicleSock, "LISTEN_SOCKET="+missionSock)
+	cmd.Env = append(os.Environ(), "STEELEAGLE_CLIENT_SOCKET="+vehicleSock, "STEELEAGLE_LISTEN_SOCKET="+missionSock)
 	cmd.Stderr = testWriter{t}
 	if err := cmd.Start(); err != nil {
 		t.Fatal(err)
@@ -115,7 +115,7 @@ func runMission(t *testing.T, bin string, vehicle *fakeVehicle) (missionpb.Missi
 			break
 		}
 		if time.Now().After(deadline) {
-			t.Fatal("mission never listened on LISTEN_SOCKET")
+			t.Fatal("mission never listened on STEELEAGLE_LISTEN_SOCKET")
 		}
 		time.Sleep(10 * time.Millisecond)
 	}

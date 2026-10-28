@@ -18,10 +18,10 @@ import (
 // and sends an acknowledgement Check back to the test harness.
 func run() error {
 	// Know that FD3 is the server file, FD4 is the client file
-	listenSocket := os.Getenv("LISTEN_SOCKET")
-	clientSocket := os.Getenv("CLIENT_SOCKET")
+	listenSocket := os.Getenv("STEELEAGLE_LISTEN_SOCKET")
+	clientSocket := os.Getenv("STEELEAGLE_CLIENT_SOCKET")
 	if listenSocket == "" || clientSocket == "" {
-		return fmt.Errorf("LISTEN_SOCKET and CLIENT_SOCKET environment variables must be set")
+		return fmt.Errorf("STEELEAGLE_LISTEN_SOCKET and STEELEAGLE_CLIENT_SOCKET environment variables must be set")
 	}
 
 	// Create the connections

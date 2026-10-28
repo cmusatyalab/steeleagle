@@ -16,7 +16,7 @@ const clientSockName string = "out.sock"
 const listenSockName string = "in.sock"
 
 // Client socket environment variable names passed to the subprocess
-const ClientSockEnv string = "CLIENT_SOCKET"
+const ClientSockEnv string = "STEELEAGLE_CLIENT_SOCKET"
 
 // Listener socket environment variable names passed to the subprocess
-const ListenSockEnv string = "LISTEN_SOCKET"
+const ListenSockEnv string = "STEELEAGLE_LISTEN_SOCKET"

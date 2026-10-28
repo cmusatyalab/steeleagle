@@ -32,7 +32,7 @@ func run() error {
 	if a.Fail {
 		return fmt.Errorf("asked to fail")
 	}
-	ln, err := net.Listen("unix", os.Getenv("LISTEN_SOCKET"))
+	ln, err := net.Listen("unix", os.Getenv("STEELEAGLE_LISTEN_SOCKET"))
 	if err != nil {
 		return err
 	}

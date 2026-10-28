@@ -9,8 +9,8 @@ from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 # run establishes the gRPC server and client sockets, serves a health check,
 # and sends an acknowledgement Check back to the test harness.
 def run():
-    listen_addr = os.environ["LISTEN_SOCKET"]
-    client_addr = os.environ["CLIENT_SOCKET"]
+    listen_addr = os.environ["STEELEAGLE_LISTEN_SOCKET"]
+    client_addr = os.environ["STEELEAGLE_CLIENT_SOCKET"]
 
     class NotifyInterceptor(grpc.ServerInterceptor):
         def __init__(self):

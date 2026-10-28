@@ -43,13 +43,13 @@ var flowToml = []byte({{printf "%q" .FlowToml}})
 {{end}}
 func main() {
 	log := zerolog.New(os.Stderr).With().Timestamp().Logger()
-	socket := os.Getenv("CLIENT_SOCKET")
+	socket := os.Getenv("STEELEAGLE_CLIENT_SOCKET")
 	if socket == "" {
-		log.Fatal().Msg("CLIENT_SOCKET environment variable unset")
+		log.Fatal().Msg("STEELEAGLE_CLIENT_SOCKET environment variable unset")
 	}
-	listenSocket := os.Getenv("LISTEN_SOCKET")
+	listenSocket := os.Getenv("STEELEAGLE_LISTEN_SOCKET")
 	if listenSocket == "" {
-		log.Fatal().Msg("LISTEN_SOCKET environment variable unset")
+		log.Fatal().Msg("STEELEAGLE_LISTEN_SOCKET environment variable unset")
 	}
 
 	// The vehicle waits for the mission to listen, so this is done first
