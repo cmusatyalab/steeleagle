@@ -9,19 +9,31 @@ on:
     tags:
       - "v*"
 
+env:
+  # The maximum glibc version to use in release binaries for maximum
+  # compatibility.
+  MAX_GLIBC: "2.28"
+
 jobs:
   build:
     strategy:
       matrix:
         include:
           # eagled links liburiel through cgo, so each architecture is built
-          # natively. The oldest supported runners keep the glibc that the
-          # binaries need low.
+          # natively, in the manylinux image of its architecture, whose old
+          # glibc keeps what the binaries need low.
           - arch: amd64
             runner: ubuntu-22.04
+            manylinux: x86_64
           - arch: arm64
             runner: ubuntu-22.04-arm
+            manylinux: aarch64
     runs-on: ${{ matrix.runner }}
+    container: quay.io/pypa/manylinux_2_28_${{ matrix.manylinux }}
+    env:
+      # liburiel is installed to /usr/local, which pkg-config doesn't search on
+      # this image
+      PKG_CONFIG_PATH: /usr/local/lib/pkgconfig
     steps:
       - uses: actions/checkout@v4
 
@@ -29,6 +41,9 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+
+      - name: Install pkg-config
+        run: dnf install -y pkgconf-pkg-config
 
       # liburiel.a, linked statically into eagled
       - name: Install liburiel
@@ -45,6 +60,16 @@ jobs:
           ldd dist/eagled-linux-${{ matrix.arch }}
           if ldd dist/eagled-linux-${{ matrix.arch }} | grep -q uriel; then
             echo "::error::eagled links liburiel dynamically"
+            exit 1
+          fi
+
+      - name: Check the glibc eagled needs
+        run: |
+          need=$(objdump -T dist/eagled-linux-${{ matrix.arch }} | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -n 1)
+          echo "eagled needs $need"
+          newest=$(printf '%s\n' "$need" "GLIBC_$MAX_GLIBC" | sort -V | tail -n 1)
+          if [ "$newest" != "GLIBC_$MAX_GLIBC" ]; then
+            echo "::error::eagled needs $need, newer than glibc $MAX_GLIBC"
             exit 1
           fi
 

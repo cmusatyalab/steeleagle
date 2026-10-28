@@ -267,3 +267,75 @@ func TestWaitReadySafeMode(t *testing.T) {
 		t.Errorf("took %v, want it to return once eagled answers", d)
 	}
 }
+
+// writeScript writes an executable shell script with body to a new
+// directory, returning its path.
+func writeScript(t *testing.T, name, body string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), name)
+	if err := os.WriteFile(path, []byte("#!/bin/sh\n"+body+"\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+// TestCheckEagled checks that an eagled that can't run fails with what it
+// printed, as with a glibc it needs that the machine lacks.
+func TestCheckEagled(t *testing.T) {
+	ok := writeScript(t, "eagled", "exit 0")
+	if err := checkEagled(context.Background(), ok); err != nil {
+		t.Errorf("working eagled: %v", err)
+	}
+
+	const loaderError = "libc.so.6: version GLIBC_2.34 not found"
+	broken := writeScript(t, "eagled", "echo '"+loaderError+"' >&2; exit 1")
+	err := checkEagled(context.Background(), broken)
+	if err == nil || !strings.Contains(err.Error(), loaderError) {
+		t.Errorf("err = %v, want it to say %q", err, loaderError)
+	}
+}
+
+// TestWithJournal checks that the tail of the log is added to the error, and
+// that the error says how to read the log if it can't be read.
+func TestWithJournal(t *testing.T) {
+	dir := t.TempDir()
+	journalctl := filepath.Join(dir, "journalctl")
+	script := "#!/bin/sh\necho \"$@\" > " + filepath.Join(dir, "args") + "\necho boom\n"
+	if err := os.WriteFile(journalctl, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir)
+	err := withJournal("eagled failed to start")
+	if !strings.Contains(err.Error(), "eagled failed to start") || !strings.Contains(err.Error(), "boom") {
+		t.Errorf("err = %q, want the message and the log", err)
+	}
+	args, _ := os.ReadFile(filepath.Join(dir, "args"))
+	if !strings.Contains(string(args), "--user-unit eagled") {
+		t.Errorf("journalctl args = %q, want it to read the log by unit", args)
+	}
+
+	if err := os.WriteFile(journalctl, []byte("#!/bin/sh\nexit 1\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	err = withJournal("eagled failed to start")
+	if !strings.Contains(err.Error(), "journalctl --user-unit eagled") {
+		t.Errorf("err = %q, want it to say how to read the log", err)
+	}
+}
+
+// TestConfirmRoot checks that only a yes goes on, and that a closed input
+// doesn't.
+func TestConfirmRoot(t *testing.T) {
+	for input, want := range map[string]bool{
+		"y\n": true, "YES\n": true, " yes \n": true,
+		"n\n": false, "\n": false, "maybe\n": false, "": false,
+	} {
+		var out strings.Builder
+		if got := confirmRoot(strings.NewReader(input), &out); got != want {
+			t.Errorf("confirmRoot(%q) = %v, want %v", input, got, want)
+		}
+		if !strings.Contains(out.String(), "as root") {
+			t.Errorf("confirmRoot(%q) printed %q, want a warning", input, out.String())
+		}
+	}
+}

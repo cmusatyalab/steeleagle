@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"cmp"
 	"context"
@@ -79,7 +80,22 @@ const (
 	gcsURL = "http://localhost:8002"
 	// readyTimeout is how long init waits for eagled to answer once started.
 	readyTimeout = 2 * time.Minute
+	// preflightTimeout is how long init waits for eagled to print its usage.
+	preflightTimeout = 10 * time.Second
+	// journalTailLines is how many lines of eagled's log are added to the
+	// error when it fails to start.
+	journalTailLines = 20
 )
+
+// rootRisk is what init tells a user it is running as root, before asking to
+// go on.
+const rootRisk = `You are running eagle init as root.
+
+eagled runs the plugins it installs, which are cloned from git repositories.
+As root, a faulty plugin has the whole machine, and the rootless podman and
+bwrap isolation protects nothing. It is safer to run eagled as an unprivileged
+user: create one, with "sudo adduser steeleagle", and run eagle init as them.
+`
 
 // servicePaths are where installService writes the service files. They are
 // fixed relative to the home directory, since eagled.service refers to the
@@ -152,12 +168,20 @@ func writeDefaultConfig(path, hostname string) error {
 // initDaemon installs and starts eagled as a systemd user service, then
 // walks through installing plugins and configuring it (see initModel).
 func initDaemon(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.FlagSet, args []string, out io.Writer) error {
+	allowRoot := fs.Bool("allow-root", false, "don't ask before installing eagled as root")
 	if err := parseArgs(fs, args, 0); err != nil {
 		return err
+	}
+	if os.Geteuid() == 0 && !*allowRoot && !confirmRoot(os.Stdin, out) {
+		return errors.New("not installing eagled as root")
 	}
 	// Look for eagled first, so that a missing one fails before any prompt
 	eagled, err := findEagled()
 	if err != nil {
+		return err
+	}
+	// Try it too, since one that can't run only fails once started
+	if err := checkEagled(ctx, eagled); err != nil {
 		return err
 	}
 	home, err := os.UserHomeDir()
@@ -173,6 +197,54 @@ func initDaemon(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.Fla
 		return err
 	}
 	return final.(*initModel).err
+}
+
+// confirmRoot warns that eagled is about to be installed as root, and asks to
+// go on, reading the answer from in. Anything but yes, including a closed
+// input, is a no.
+func confirmRoot(in io.Reader, out io.Writer) bool {
+	fmt.Fprintf(out, "%s\nInstall eagled as root anyway? [y/N] ", rootRisk)
+	answer, _ := bufio.NewReader(in).ReadString('\n')
+	switch strings.ToLower(strings.TrimSpace(answer)) {
+	case "y", "yes":
+		return true
+	}
+	return false
+}
+
+// checkEagled runs the eagled at path eagled to print its usage, which
+// fails with why if it can't run, such as a binary for another architecture
+// or built for a newer glibc than this machine has. Those otherwise only show
+// up in the journal once the service is started.
+func checkEagled(ctx context.Context, eagled string) error {
+	ctx, cancel := context.WithTimeout(ctx, preflightTimeout)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, eagled, "-h").CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%s can't run: %w\n%s", eagled, err, strings.TrimSpace(string(out)))
+	}
+	return nil
+}
+
+// journalTail returns the last lines of the log of the eagled service, or ""
+// if it can't be read. It is read by unit, since a user journal doesn't exist
+// for root.
+func journalTail() string {
+	out, err := systemCommand("journalctl", "--user-unit", "eagled",
+		"-n", strconv.Itoa(journalTailLines), "--no-pager").Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// withJournal adds the tail of the eagled service's log to the error msg, or
+// says how to read it if it can't be.
+func withJournal(msg string) error {
+	if tail := journalTail(); tail != "" {
+		return fmt.Errorf("%s; its log ends:\n%s", msg, tail)
+	}
+	return fmt.Errorf("%s (see journalctl --user-unit eagled)", msg)
 }
 
 // installService installs the eagled at path eagled as a systemd user
@@ -328,11 +400,11 @@ func waitReady(ctx context.Context, conn grpc.ClientConnInterface) error {
 			if code == loginExitCode {
 				return errAuthKey
 			}
-			return errors.New("eagled failed to start (see journalctl --user -u eagled)")
+			return withJournal("eagled failed to start")
 		}
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("eagled didn't come up (see journalctl --user -u eagled): %w", err)
+			return fmt.Errorf("%w: %w", withJournal("eagled didn't come up"), err)
 		case <-time.After(250 * time.Millisecond):
 		}
 	}
