@@ -56,15 +56,16 @@ const (
 // run within its package (e.g. detector.plugin.toml), and its args from the
 // daemon config as a JSON object.
 const (
-	PluginNameEnv = "STEELEAGLE_PLUGIN"
-	PluginArgsEnv = "STEELEAGLE_PLUGIN_ARGS"
-	ModelNameEnv  = "STEELEAGLE_MODELS"
-	FileNameEnv   = "STEELEAGLE_FILES"
+	PluginNameEnv      = "STEELEAGLE_PLUGIN"
+	PluginArgsEnv      = "STEELEAGLE_PLUGIN_ARGS"
+	ModelNameEnv       = "STEELEAGLE_MODELS"
+	FileNameEnv        = "STEELEAGLE_FILES"
+	IceoryxServiceEnv  = "STEELEAGLE_ENGINE_ENDPOINT"
+	SimulatorDirEnv    = "STEELEAGLE_SIMULATOR_DIR"
+	SimulatorQualEnv   = "STEELEAGLE_SIMULATOR_QUALIFIER"
+	SimulatedClientEnv = "STEELEAGLE_SIMULATOR_CLIENT"
+	SimulatedListenEnv = "STEELEAGLE_SIMULATOR_LISTEN"
 )
-
-// Environment variable passed to engines, naming the iceoryx service they
-// serve on.
-const IceoryxServiceEnv = "ICEORYX_SERVICE"
 
 // Deadline is the default RPC deadline between daemons for DaemonService calls.
 const Deadline = 1 * time.Second

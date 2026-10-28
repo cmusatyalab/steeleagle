@@ -154,6 +154,17 @@ func GetPluginDirByName(name string) (string, error) {
 	return pluginPath, nil
 }
 
+// GetSimPluginDir returns the runtime directory for the simulator plugins,
+// creating it if it does not exist.
+func GetSimPluginDir() (string, error) {
+	pluginPath := filepath.Join(GetRuntimeDir(), projectDir, pluginDir, simDir)
+	err := os.MkdirAll(pluginPath, 0755)
+	if err != nil {
+		return "", err
+	}
+	return pluginPath, nil
+}
+
 // GetSimPluginDirByName returns the runtime directory for the sim plugin of
 // the service with the given name, creating it if it does not exist.
 func GetSimPluginDirByName(name string) (string, error) {

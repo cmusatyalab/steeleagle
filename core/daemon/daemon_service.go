@@ -386,9 +386,23 @@ func (d *Daemon) startService(s *daemonService) error {
 		}
 		switch s.category {
 		case daemonpb.ServiceCategory_SERVICE_CATEGORY_SIMULATOR: // sim options
+			plugins, err := util.GetSimPluginDir()
+			if err != nil {
+				d.log.Error().Err(err).Str("service", s.name).
+					Msg("couldn't open simulated plugins directory")
+			}
 			options = append(
 				options,
-				plugin.WithoutListener(), plugin.WithoutClient(),
+				plugin.WithoutListener(),
+				plugin.WithoutClient(),
+				plugin.WithEnvironment(SimulatorDirEnv, plugins),
+				// The simulator needs this so it can correctly qualify its
+				// names to match the daemon
+				plugin.WithEnvironment(SimulatorQualEnv, d.netAddr.String()),
+				// Intentionally flip these so the simulated vehicle can swap
+				// its endpoints
+				plugin.WithEnvironment(SimulatedClientEnv, ShimListenSock),
+				plugin.WithEnvironment(SimulatedListenEnv, ShimClientSock),
 			)
 		case daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE: // engine options
 			models, err := util.GetModelDir()
@@ -406,6 +420,7 @@ func (d *Daemon) startService(s *daemonService) error {
 			options = append(
 				options,
 				plugin.WithFiles([]string{models, files}),
+				plugin.WithoutClient(), // the engines don't host any services
 				plugin.WithEnvironment(ModelNameEnv, models),
 				plugin.WithEnvironment(FileNameEnv, files),
 				// The compute server serves the engine under its service name
@@ -437,6 +452,7 @@ func (d *Daemon) startService(s *daemonService) error {
 				p, err = plugin.NewShimPlugin(
 					filepath.Join(sim, ShimClientSock),
 					filepath.Join(sim, ShimListenSock),
+					options...,
 				)
 			} else {
 				p, err = plugin.NewBasePlugin(options...)
@@ -527,7 +543,9 @@ func (d *Daemon) startService(s *daemonService) error {
 		d.log.Info().Str("vehicle", s.name).Msg("started vehicle")
 	}
 	// Add routing for this service
-	d.router.AddHeaderRoute(s.name, plug.conn)
+	if plug.conn != nil {
+		d.router.AddHeaderRoute(s.name, plug.conn)
+	}
 	return nil
 }
 

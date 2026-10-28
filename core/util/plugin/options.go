@@ -12,48 +12,48 @@ type PluginOption func(*BasePlugin)
 
 // WithName assigns a user readable name to the plugin.
 func WithName(name string) PluginOption {
-	return func(k *BasePlugin) {
-		k.name = name
+	return func(p *BasePlugin) {
+		p.name = name
 	}
 }
 
 // WithoutClient makes the plugin ignore the client connection to the
 // subprocess, returning nil in its place after Start is called.
 func WithoutClient() PluginOption {
-	return func(k *BasePlugin) {
-		k.client = false
+	return func(p *BasePlugin) {
+		p.client = false
 	}
 }
 
 // WithoutListener makes the plugin ignore the listener connection to the
 // subprocess, returning nil in its place after Start is called.
 func WithoutListener() PluginOption {
-	return func(k *BasePlugin) {
-		k.listen = false
+	return func(p *BasePlugin) {
+		p.listen = false
 	}
 }
 
 // WithTimeout sets the number of seconds the plugin waits for its server
 // socket to become ready.
 func WithTimeout(timeout int) PluginOption {
-	return func(k *BasePlugin) {
-		k.timeout = timeout
+	return func(p *BasePlugin) {
+		p.timeout = timeout
 	}
 }
 
 // WithPath sets the filesystem path to the plugin package directory or script.
 func WithPath(path string) PluginOption {
-	return func(k *BasePlugin) {
-		k.path = path
+	return func(p *BasePlugin) {
+		p.path = path
 	}
 }
 
 // WithExecutableFiles registers executables that will be resolved via PATH and
 // bind-mounted into the plugin's environment.
 func WithExecutableFiles(files []string) PluginOption {
-	return func(k *BasePlugin) {
+	return func(p *BasePlugin) {
 		for _, f := range files {
-			k.files[f] = 2
+			p.files[f] = 2
 		}
 	}
 }
@@ -61,9 +61,9 @@ func WithExecutableFiles(files []string) PluginOption {
 // WithFiles registers read-write files that will be bind-mounted into the
 // plugin's environment.
 func WithFiles(files []string) PluginOption {
-	return func(k *BasePlugin) {
+	return func(p *BasePlugin) {
 		for _, f := range files {
-			k.files[f] = 1
+			p.files[f] = 1
 		}
 	}
 }
@@ -71,9 +71,9 @@ func WithFiles(files []string) PluginOption {
 // WithReadOnlyFiles registers read-only files that will be bind-mounted into
 // the plugin's environment.
 func WithReadOnlyFiles(files []string) PluginOption {
-	return func(k *BasePlugin) {
+	return func(p *BasePlugin) {
 		for _, f := range files {
-			k.files[f] = 0
+			p.files[f] = 0
 		}
 	}
 }
@@ -81,54 +81,54 @@ func WithReadOnlyFiles(files []string) PluginOption {
 // WithAuthCode sets the AuthCode that the plugin's listener will attach to
 // every accepted connection.
 func WithAuthCode(code listener.AuthCode) PluginOption {
-	return func(k *BasePlugin) {
-		k.code = code
+	return func(p *BasePlugin) {
+		p.code = code
 	}
 }
 
 // WithRunner sets the runner binary (e.g. podman, bwrap) used to launch the
 // plugin.
 func WithRunner(runner string) PluginOption {
-	return func(k *BasePlugin) {
-		k.runner = runner
+	return func(p *BasePlugin) {
+		p.runner = runner
 	}
 }
 
 // WithRunnerArgs appends arguments passed to the runner before the executable.
 func WithRunnerArgs(args []string) PluginOption {
-	return func(k *BasePlugin) {
-		k.rargs = append(k.rargs, args...)
+	return func(p *BasePlugin) {
+		p.rargs = append(p.rargs, args...)
 	}
 }
 
 // WithExecutable sets the executable (e.g. sh, python3) used to run the plugin
 // script.
 func WithExecutable(exec string) PluginOption {
-	return func(k *BasePlugin) {
-		k.exec = exec
+	return func(p *BasePlugin) {
+		p.exec = exec
 	}
 }
 
 // WithExecutableArgs appends arguments passed to the executable before the
 // script.
 func WithExecutableArgs(args []string) PluginOption {
-	return func(k *BasePlugin) {
-		k.eargs = append(k.eargs, args...)
+	return func(p *BasePlugin) {
+		p.eargs = append(p.eargs, args...)
 	}
 }
 
 // WithScript sets an explicit path to the plugin script, bypassing automatic
 // discovery.
 func WithScript(script string) PluginOption {
-	return func(k *BasePlugin) {
-		k.script = script
+	return func(p *BasePlugin) {
+		p.script = script
 	}
 }
 
 // WithScriptArgs sets the arguments passed to the plugin script.
 func WithScriptArgs(args []string) PluginOption {
-	return func(k *BasePlugin) {
-		k.sargs = args
+	return func(p *BasePlugin) {
+		p.sargs = args
 	}
 }
 
@@ -136,8 +136,8 @@ func WithScriptArgs(args []string) PluginOption {
 // dynamic binding or for containers which may have all components pre-built
 // within them.
 func WithoutScriptPathValidation() PluginOption {
-	return func(k *BasePlugin) {
-		k.check = false
+	return func(p *BasePlugin) {
+		p.check = false
 	}
 }
 
@@ -145,38 +145,38 @@ func WithoutScriptPathValidation() PluginOption {
 // listener with their own AuthCodes. The plugin's own PID is added to it with
 // the plugin's AuthCode when it starts.
 func WithAcl(acl *listener.Acl) PluginOption {
-	return func(k *BasePlugin) {
-		k.acl = acl
+	return func(p *BasePlugin) {
+		p.acl = acl
 	}
 }
 
 // WithLogger sets a custom logger object for the plugin.
 func WithLogger(logger zerolog.Logger) PluginOption {
-	return func(k *BasePlugin) {
-		k.log = logger
+	return func(p *BasePlugin) {
+		p.log = logger
 	}
 }
 
 // WithProcessOutputStream sets the output file stream for the delegate process
 // output.
 func WithProcessOutputStream(out io.Writer) PluginOption {
-	return func(k *BasePlugin) {
-		k.outStream = out
+	return func(p *BasePlugin) {
+		p.outStream = out
 	}
 }
 
 // WithEnvironment adds an environment key-value pair for the plugin.
 func WithEnvironment(key, value string) PluginOption {
-	return func(k *BasePlugin) {
-		k.environ = append(k.environ, fmt.Sprintf("%s=%s", key, value))
-		k.envVars = append(k.envVars, key)
+	return func(p *BasePlugin) {
+		p.environ = append(p.environ, fmt.Sprintf("%s=%s", key, value))
+		p.envVars = append(p.envVars, key)
 	}
 }
 
 // WithParentDir sets the directory the plugin's run directory (named after the
 // plugin) is created under. If unset, the working directory is used.
 func WithParentDir(parentDir string) PluginOption {
-	return func(k *BasePlugin) {
-		k.parentDir = parentDir
+	return func(p *BasePlugin) {
+		p.parentDir = parentDir
 	}
 }

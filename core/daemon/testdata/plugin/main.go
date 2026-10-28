@@ -24,7 +24,7 @@ type args struct {
 
 func run() error {
 	fmt.Printf("plugin=%s args=%s iceoryx=%s\n", os.Getenv("STEELEAGLE_PLUGIN"),
-		os.Getenv("STEELEAGLE_PLUGIN_ARGS"), os.Getenv("ICEORYX_SERVICE"))
+		os.Getenv("STEELEAGLE_PLUGIN_ARGS"), os.Getenv("STEELEAGLE_ENGINE_ENDPOINT"))
 	var a args
 	if err := json.Unmarshal([]byte(os.Getenv("STEELEAGLE_PLUGIN_ARGS")), &a); err != nil {
 		return fmt.Errorf("bad args: %w", err)

@@ -29,18 +29,24 @@ origin = [40.33862, -79.86521, 0.0]
 [[simulator.args.engines]]
 # Name of the service
 name = "yolo_sim"
+# Interface name to use
+interface = "detection"
 [simulator.args.engines.args] # Optional arguments
 
 [[simulator.args.actors]]
 # Tag of the actor
 tag = "person"
+# Origin point of the actor
+origin = [40.33862, -79.86521, 0.0]
 # Waypoints to travel
 waypoints = [
     [40.86543, -79.2831, 0.0],
     [40.86541, -79.2835, 0.0],
 ]
-# Speed to move at (m/s)
-speed = 3.0
+[simulator.args.actors.args] # Optional arguments
+length = 1 # Optional dimensions of actor cube
+width = 1
+height = 1
 
 [[services]] # List of daemon services (can be empty)
 # Name of the service (must be unique among services of its type)
