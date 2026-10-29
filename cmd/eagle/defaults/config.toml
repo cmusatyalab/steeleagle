@@ -1,4 +1,5 @@
 [daemon]
 port = 9000
 lcs = 9001
+logs = 9002
 hostname = "eagled"
