@@ -185,4 +185,6 @@ a pseudo-version alone.
 `git release` runs it after a successful release, so modules that weren't
 released (for example with `--only`) catch up with the new versions. Pass
 `--no-update` to skip it. It doesn't run on a dry run. Without `--push`, the
-new tags aren't published yet, so they aren't picked up.
+new tags aren't published yet, so instead of running it, `git release` lists
+`git update-deps` among the steps to run after pushing. Run on its own,
+`git update-deps` notes any local tag newer than what's been pushed.

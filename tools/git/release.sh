@@ -584,10 +584,11 @@ if ! $push; then
 	echo
 	echo "to publish:"
 	echo "  git push --atomic $remote ${branch:-HEAD} ${tags[*]}"
+	# update-deps only sees pushed tags, so it has to wait for the push.
+	$update && echo "  git update-deps"
 	echo "to undo:"
 	echo "  git tag -d ${tags[*]}"
 	((commits)) && echo "  git reset --soft HEAD~$commits"
-	update_deps
 	exit 0
 fi
 

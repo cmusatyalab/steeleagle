@@ -128,8 +128,30 @@ newest_of() {
 			fi
 		done
 		newest[$dep]=$best
+		note_unpushed "$dep" "$best_key"
 	fi
 	target=${newest[$dep]}
+}
+
+# Warns when dep has a local tag newer than anything published, since go can
+# only fetch versions that have been pushed.
+note_unpushed() {
+	local dep=$1 published_key=$2 prefix= major t v k best= best_key=
+	[[ $dep == . ]] || prefix=$dep/
+	# go only lists versions of the module path's major version.
+	[[ ${mod_path[$dep]} =~ /v([0-9]+)$ ]] && major=${BASH_REMATCH[1]} || major='[01]'
+	while IFS= read -r t; do
+		v=${t#"$prefix"}
+		[[ $v =~ ^v$major\. ]] || continue
+		k=$(version_key "$v")
+		[[ -n $k ]] || continue
+		if [[ -z $best_key || $k > $best_key ]]; then
+			best_key=$k best=$t
+		fi
+	done < <(git tag --list "${prefix}v*")
+	if [[ -n $best_key && $best_key > $published_key ]]; then
+		echo "update-deps: note: tag $best hasn't been pushed, so ${mod_path[$dep]} isn't moved onto it; push it and rerun" >&2
+	fi
 }
 
 # --- update -------------------------------------------------------------------
