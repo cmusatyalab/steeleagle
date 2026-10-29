@@ -48,6 +48,8 @@ github.com/clipperhouse/uax29/v2 v2.7.0 h1:+gs4oBZ2gPfVrKPthwbMzWZDaAFPGYK72F0NJ
 github.com/clipperhouse/uax29/v2 v2.7.0/go.mod h1:EFJ2TJMRUaplDxHKj1qAEhCtQPW2tJSwu5BF98AuoVM=
 github.com/cmusatyalab/steeleagle/api/go v0.3.4 h1:vjbZ72xeJNW4Gc7VKV8pjFND2uvi4LGxdtYPucewt3U=
 github.com/cmusatyalab/steeleagle/api/go v0.3.4/go.mod h1:Ul2ATWzzXHpxT6/rK+aeUZpkIJsk+veD8BvxYPdnpMo=
+github.com/cmusatyalab/steeleagle/api/go v0.3.5 h1:ybuCDjhPjQ93TpBY92w56H+bE2+5UWS43KpLQmW3gP4=
+github.com/cmusatyalab/steeleagle/api/go v0.3.5/go.mod h1:Ul2ATWzzXHpxT6/rK+aeUZpkIJsk+veD8BvxYPdnpMo=
 github.com/cmusatyalab/steeleagle/config v0.0.3 h1:Mh3MWxT/FLj7Pv3le+3Ow1PHBnHWzFQGtHHeaYTajHM=
 github.com/cmusatyalab/steeleagle/config v0.0.3/go.mod h1:ufbS1yFbr6eExvEp9JRqNMsXuqmh7QfR/CTqCyRwDLk=
 github.com/cmusatyalab/uriel/go v0.2.0 h1:MBTxDfvui9zQFZtN/BqXHAVzQ6eaNIxezfEtFJOuL6Q=
