@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"errors"
 	"fmt"
 
 	daemonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon"
@@ -9,7 +10,7 @@ import (
 )
 
 // serviceProtos returns the local services in protobuf form, each marked
-// running if its plugin is. The caller must hold svcMu.
+// running if its plugin is, with the error it failed to start with, if any. The caller must hold svcMu.
 func (d *Daemon) serviceProtos() ([]*daemonpb.Service, error) {
 	out := make([]*daemonpb.Service, 0, len(d.services))
 	for _, s := range d.services {
@@ -42,6 +43,7 @@ func (s *daemonService) toProto(running bool) (*daemonpb.Service, error) {
 		Isolation: s.isolation,
 		Running:   running,
 		Auth:      s.auth.String(),
+		Error:     errString(s.err),
 	}.Build(), nil
 }
 
@@ -55,6 +57,10 @@ func serviceFromProto(p *daemonpb.Service) (*daemonService, error) {
 			return nil, err
 		}
 	}
+	var err error
+	if p.GetError() != "" {
+		err = errors.New(p.GetError())
+	}
 	return &daemonService{
 		name:       p.GetName(),
 		category:   p.GetCategory(),
@@ -64,5 +70,14 @@ func serviceFromProto(p *daemonpb.Service) (*daemonService, error) {
 		auth:       listener.ToCode(p.GetAuth()),
 		isolation:  p.GetIsolation(),
 		local:      false,
+		err:        err,
 	}, nil
+}
+
+// errString returns the message of err, or an empty string if it is nil.
+func errString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
 }

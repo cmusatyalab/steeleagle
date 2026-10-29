@@ -17,7 +17,9 @@ func TestDaemonConfigParsesExample(t *testing.T) {
 	wantDaemon := DaemonRoot{
 		Port:         9000,
 		Lcs:          9001,
+		Logs:         9002,
 		Hostname:     "eagled",
+		Bind:         "100.64.0.1",
 		Orchestrator: "homebase:9000",
 	}
 	if !reflect.DeepEqual(c.Daemon, wantDaemon) {
@@ -34,16 +36,18 @@ func TestDaemonConfigParsesExample(t *testing.T) {
 				"args":      map[string]interface{}{},
 			}},
 			"engines": []map[string]interface{}{{
-				"name": "yolo_sim",
-				"args": map[string]interface{}{},
+				"name":      "yolo_sim",
+				"interface": "detection",
+				"args":      map[string]interface{}{},
 			}},
 			"actors": []map[string]interface{}{{
-				"tag": "person",
+				"tag":    "person",
+				"origin": []interface{}{40.33862, -79.86521, 0.0},
 				"waypoints": []interface{}{
 					[]interface{}{40.86543, -79.2831, 0.0},
 					[]interface{}{40.86541, -79.2835, 0.0},
 				},
-				"speed": 3.0,
+				"args": map[string]interface{}{"length": int64(1), "width": int64(1), "height": int64(1)},
 			}},
 		},
 	}

@@ -16,7 +16,11 @@ func (d *Daemon) startComputeServer() error {
 	if err != nil {
 		return err
 	}
-	addr := net.JoinHostPort(LcsBindHost, strconv.Itoa(d.Config.Daemon.Lcs))
+	host := d.network.BindHost()
+	if host == "" {
+		host = LcsBindHost
+	}
+	addr := net.JoinHostPort(host, strconv.Itoa(d.Config.Daemon.Lcs))
 	server, err := uriel.NewServer(
 		d.Hostname,
 		uriel.WithBindAddr(addr),

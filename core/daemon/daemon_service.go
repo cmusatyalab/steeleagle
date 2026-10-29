@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"net"
 	"os"
@@ -308,30 +307,34 @@ func (d *Daemon) populateServices() error {
 	return nil
 }
 
-// startServices starts all the services in the daemon's config file. Called
-// only on startup.
-func (d *Daemon) startServices() error {
+// startServices starts all the services in the daemon's config file. A
+// service that fails to start has its error set, and doesn't stop the rest
+// from starting. Called only on startup.
+func (d *Daemon) startServices() {
 	d.svcMu.Lock()
 	defer d.svcMu.Unlock()
-	// Start each individual service
 	for _, service := range d.services {
-		err := d.startService(service)
-		if err != nil {
-			return fmt.Errorf(
-				"failed to start service %s: %v",
-				service.name,
-				err,
-			)
+		if err := d.startService(service); err != nil {
+			d.log.Error().Err(err).Str("service", service.name).
+				Msg("failed to start service")
 		}
 	}
-	return nil
 }
 
-// startService starts a single daemon service. The caller must hold svcMu.
+// startService starts or restarts a single daemon service, setting its error
+// if it fails to start, or clearing it if it starts. The caller must hold
+// svcMu.
 func (d *Daemon) startService(s *daemonService) error {
 	if s == nil {
 		return fmt.Errorf("cannot start nil service")
 	}
+	s.err = d.runService(s)
+	return s.err
+}
+
+// runService runs the plugin or vehicle of a daemon service, stopping its
+// current run first, if any. The caller must hold svcMu.
+func (d *Daemon) runService(s *daemonService) error {
 	var plug *daemonPlugin
 	var ok bool
 	if plug, ok = d.plugins[s.name]; ok { // plugin already exists (restart case)
@@ -358,16 +361,16 @@ func (d *Daemon) startService(s *daemonService) error {
 			return err
 		}
 		// Construct base options
-		logStream, err := os.Create(logFile)
+		logWriter, err := os.Create(logFile)
 		if err != nil {
 			d.log.Error().Err(err).Str("service", s.name).
 				Msg("couldn't open log stream")
 			return err
 		}
-		plug.logStream = logStream
+		plug.logFile = logWriter
 		defer func() {
 			if _, ok := d.plugins[s.name]; !ok {
-				logStream.Close() // cleanup the log if the plugin failed
+				logWriter.Close() // cleanup the log if the plugin failed
 			}
 		}()
 		remoteIp := ""
@@ -383,7 +386,7 @@ func (d *Daemon) startService(s *daemonService) error {
 			// needn't be unique, and is kept short since sockets are made in it
 			plugin.WithName(PluginRunDirName),
 			plugin.WithPath(s.path),
-			plugin.WithProcessOutputStream(plug.logStream),
+			plugin.WithProcessOutputStream(plug.logFile),
 			plugin.WithAuthCode(s.auth),
 			plugin.WithEnvironment(PluginArgsEnv, s.args),
 			plugin.WithEnvironment(PluginNameEnv, s.pluginName), // this will be empty for the simulator
@@ -480,9 +483,10 @@ func (d *Daemon) startService(s *daemonService) error {
 				vehicle.WithAuthCode(s.auth),
 				vehicle.WithMissionDir(mission),
 				vehicle.WithLogger(
-					d.log.With().Str("vehicle", s.name).Logger().Output(plug.logStream),
+					d.log.With().Str("vehicle", s.name).Logger().Output(plug.logFile),
 				),
-				vehicle.WithProcessOutputStream(plug.logStream),
+				// TODO: have the vehicle save mission logs separately
+				vehicle.WithProcessOutputStream(plug.logFile),
 			}
 			d.orchMu.RLock()
 			orch := d.orch
@@ -515,6 +519,8 @@ func (d *Daemon) startService(s *daemonService) error {
 		// Add the plugin to the map
 		plug.plugin = p
 		d.plugins[s.name] = plug
+		// Add the log file to logdy
+		d.logdy.AddFile(logFile)
 	}
 	ctx, cancel := context.WithCancel(d.ctx)
 	plug.cancel = cancel
@@ -619,10 +625,8 @@ func encodeArgs(args map[string]any) (string, error) {
 // runs, like its log stream. The caller must hold svcMu.
 func closePlugin(plug *daemonPlugin) {
 	stopPluginOrVehicle(plug)
-	if closer, ok := plug.logStream.(io.Closer); ok {
-		closer.Close()
-		plug.logStream = nil
-	}
+	plug.logFile.Close()
+	plug.logFile = nil
 }
 
 // getVehicleEngineMap gets a map from all available engines to their configs.

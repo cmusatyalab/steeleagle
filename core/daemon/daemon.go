@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"net"
 	"net/netip"
@@ -18,6 +17,7 @@ import (
 	"github.com/cmusatyalab/steeleagle/config"
 	"github.com/cmusatyalab/steeleagle/v4/core/util"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
+	"github.com/cmusatyalab/steeleagle/v4/core/util/logging"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/network"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/plugin"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/policy"
@@ -43,16 +43,17 @@ type daemonService struct {
 	args       string                   // plugin args from the daemon config, as a JSON object
 	local      bool                     // whether or not the service is local
 	simulated  bool                     // whether or not the service belongs to the simulator
+	err        error                    // why the service failed to start, nil if it didn't
 }
 
 // daemonPlugin is a plugin running under a daemon service.
 type daemonPlugin struct {
-	ln        net.Listener       // listener for the plugin
-	conn      *grpc.ClientConn   // gRPC connection to the plugin
-	plugin    plugin.Plugin      // running plugin reference
-	vehicle   *vehicle.Vehicle   // vehicle for this plugin (nil if not a vehicle)
-	logStream io.Writer          // log stream
-	cancel    context.CancelFunc // cancel function to stop service
+	ln      net.Listener       // listener for the plugin
+	conn    *grpc.ClientConn   // gRPC connection to the plugin
+	plugin  plugin.Plugin      // running plugin reference
+	vehicle *vehicle.Vehicle   // vehicle for this plugin (nil if not a vehicle)
+	logFile *os.File           // log stream
+	cancel  context.CancelFunc // cancel function to stop service
 }
 
 // orchInfo gives information about this daemon's orchestrator.
@@ -81,37 +82,39 @@ type childInfo struct {
 type Daemon struct {
 	daemonpb.UnimplementedDaemonServiceServer
 	daemonpb.UnimplementedTransferServiceServer
-	Hostname   string                    // daemon hostname
-	Config     *config.DaemonConfig      // daemon config
-	configPath string                    // path to the daemon config
-	Running    atomic.Bool               // whether or not the daemon is currently running
-	orch       *orchInfo                 // information about the orchestrator, nil if none
-	orchMu     sync.RWMutex              // mutex for orch, which changes on each registration
-	regWg      sync.WaitGroup            // registration goroutines
-	regCtx     context.Context           // context of the registration, which outlives ctx until the relay stops
-	remotes    map[string]*childInfo     // child daemons connected to this daemon as an orchestrator, by IP
-	policy     *policy.Policy            // policy for command authorization
-	netAuth    string                    // network auth key for this daemon (usually for VPNs)
-	netAddr    netip.Addr                // local address of this daemon
-	network    network.Network           // network the daemon is on, joined in Run unless given
-	socketPath string                    // path of the control socket
-	connected  atomic.Bool               // whether or not the daemon is connected to its orchestrator
-	router     *router.Router            // network router
-	relay      *grpc.Server              // relay gRPC server reference
-	server     *grpc.Server              // main gRPC server reference
-	lookup     map[string]*daemonService // service lookup table (maps name -> service info)
-	services   []*daemonService          // local service list
-	plugins    map[string]*daemonPlugin  // plugin info map (maps service name -> plugin info)
-	lcs        *uriel.Server             // local compute server reference
-	cert       []byte                    // DER cert of the local compute service
-	restarting atomic.Bool               // whether or not the daemon is currently restarting
-	svcMu      sync.RWMutex              // mutex for lookup, services, plugins, and the plugins themselves
-	pkgMu      sync.RWMutex              // mutex for reading or writing packages to .pending
-	remMu      sync.RWMutex              // mutex for adding new child daemons
-	err        error                     // startup error, if any
-	ctx        context.Context           // context for the daemon
-	cancel     context.CancelFunc        // cancel function for active contexts
-	log        zerolog.Logger            // logger object
+	Hostname    string                    // daemon hostname
+	Config      *config.DaemonConfig      // daemon config
+	configPath  string                    // path to the daemon config
+	Running     atomic.Bool               // whether or not the daemon is currently running
+	orch        *orchInfo                 // information about the orchestrator, nil if none
+	orchMu      sync.RWMutex              // mutex for orch, which changes on each registration
+	regWg       sync.WaitGroup            // registration goroutines
+	regCtx      context.Context           // context of the registration, which outlives ctx until the relay stops
+	remotes     map[string]*childInfo     // child daemons connected to this daemon as an orchestrator, by IP
+	policy      *policy.Policy            // policy for command authorization
+	netAddr     netip.Addr                // local address of this daemon
+	network     network.Network           // network the daemon is on, joined in Run unless given
+	socketPath  string                    // path of the control socket
+	connected   atomic.Bool               // whether or not the daemon is connected to its orchestrator
+	router      *router.Router            // network router
+	relay       *grpc.Server              // relay gRPC server reference
+	server      *grpc.Server              // main gRPC server reference
+	lookup      map[string]*daemonService // service lookup table (maps name -> service info)
+	services    []*daemonService          // local service list
+	plugins     map[string]*daemonPlugin  // plugin info map (maps service name -> plugin info)
+	lcs         *uriel.Server             // local compute server reference
+	cert        []byte                    // DER cert of the local compute service
+	restarting  atomic.Bool               // whether or not the daemon is currently restarting
+	svcMu       sync.RWMutex              // mutex for lookup, services, plugins, and the plugins themselves
+	pkgMu       sync.RWMutex              // mutex for reading or writing packages to .pending
+	remMu       sync.RWMutex              // mutex for adding new child daemons
+	err         error                     // startup error, if any
+	ctx         context.Context           // context for the daemon
+	cancel      context.CancelFunc        // cancel function for active contexts
+	logStream   *os.File                  // log stream
+	logdy       *logging.Logger           // logdy logger object (nil if disabled)
+	noLogServer bool                      // whether to skip starting logdy
+	log         zerolog.Logger            // logger object
 }
 
 // NewDaemon creates a new daemon from the config in the config directory.
@@ -127,8 +130,8 @@ func NewDaemon(options ...DaemonOption) (*Daemon, error) {
 		option(daemon)
 	}
 
-	// Parse the config or write a new one if it doesn't exist
 	var err error
+	// Parse the config or write a new one if it doesn't exist
 	if daemon.configPath == "" {
 		configDir, err := util.GetConfigDir()
 		if err != nil {
@@ -159,6 +162,37 @@ func NewDaemon(options ...DaemonOption) (*Daemon, error) {
 	// Set hostname from config
 	if daemon.Config.Daemon.Hostname != "" {
 		daemon.Hostname = daemon.Config.Daemon.Hostname
+	}
+
+	// Set up the daemon file logger
+	logFile, err := util.GetLogByName(daemon.Hostname)
+	if err != nil {
+		daemon.log.Error().Err(err).Msg("couldn't get log directory")
+		return nil, err
+	}
+	daemon.logStream, err = os.Create(logFile)
+	if err != nil {
+		daemon.log.Error().Err(err).Msg("couldn't create log stream")
+		return nil, err
+	}
+	defer func() { // cleanup the log stream and server on error
+		if err != nil {
+			daemon.logStream.Close()
+			daemon.logdy.Close()
+		}
+	}()
+	daemon.log = daemon.log.Output(daemon.logStream)
+	// Serve the daemon log, and later the service logs, through logdy
+	if !daemon.noLogServer {
+		daemon.logdy, err = logging.NewLogServer(
+			daemon.Config.Daemon.Bind,
+			daemon.Config.Daemon.Logs,
+		)
+		if err != nil {
+			daemon.log.Error().Err(err).Msg("couldn't start log server")
+			return nil, err
+		}
+		daemon.logdy.AddFile(logFile)
 	}
 
 	// Commit pending installs and removals, which copies packages in the
@@ -229,11 +263,11 @@ func (d *Daemon) Run(ctx context.Context) error {
 	d.regCtx = regCtx
 	defer regCancel()
 
-	// Join the network (without a VPN, this is the host network), unless one
-	// was given
+	// Join the host network, bound to the configured address (as a VPN's),
+	// unless a network was given
 	var err error
 	if d.network == nil {
-		d.network, err = network.NewServer(ctx, d.Hostname, d.netAuth)
+		d.network, err = network.NewServer(ctx, d.Config.Daemon.Bind)
 		if err != nil {
 			d.log.Error().Err(err).Msg("couldn't join network")
 			return err
@@ -334,14 +368,13 @@ func (d *Daemon) Run(ctx context.Context) error {
 		return err
 	}
 
-	// Start services, unless they couldn't be set up. Startup errors are kept
-	// in d.err, and not returned from Run, since the daemon keeps running.
+	// Start services, unless they couldn't be set up. A service that fails to
+	// start keeps its error and isn't running, while the rest run. The daemon
+	// only starts in safe mode (no services) if the compute server fails, and
+	// its error is kept in d.err, not returned from Run, since it keeps running.
 	if d.err == nil {
-		if err := d.startServices(); err != nil { // there was an error, start in safe mode (no services)
-			d.shutdownAll()
-			d.err = err
-			d.log.Error().Err(err).Msg("failed to start services")
-		} else if err := d.startComputeServer(); err != nil { // no error, proceed to start compute server
+		d.startServices()
+		if err := d.startComputeServer(); err != nil {
 			d.shutdownAll()
 			d.err = fmt.Errorf("failed to start compute server: %v", err)
 			d.log.Error().Err(err).Msg("failed to start compute server")
@@ -383,6 +416,8 @@ func (d *Daemon) Run(ctx context.Context) error {
 	conn.Close()
 	d.server.GracefulStop()
 	sLn.Close()
+	d.logdy.Close()
+	d.logStream.Close()
 	if err == nil && d.restarting.Load() {
 		return ErrRestart
 	}

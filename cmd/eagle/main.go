@@ -159,7 +159,11 @@ func run(args []string, stdout, stderr io.Writer) int {
 		cmdFs.Usage()
 		return 2
 	case err != nil:
-		fmt.Fprintf(stderr, "eagle %s: %s\n", name, describe(err, *socket))
+		msg := fmt.Sprintf("eagle %s: %s", name, describe(err, *socket))
+		if isTerminal(stderr) {
+			msg = errorStyle.Render(msg)
+		}
+		fmt.Fprintln(stderr, msg)
 		return 1
 	}
 	return 0

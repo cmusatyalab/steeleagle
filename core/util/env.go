@@ -55,17 +55,6 @@ func GetCredsDir() (string, error) {
 	return credsPath, nil
 }
 
-// GetVpnDir returns the persistent vpn data directory, creating it if it does
-// not exist.
-func GetVpnDir() (string, error) {
-	vpnPath := filepath.Join(GetDataHome(), projectDir, vpnDir)
-	err := os.MkdirAll(vpnPath, 0755)
-	if err != nil {
-		return "", err
-	}
-	return vpnPath, nil
-}
-
 // GetPackageDir returns the persistent directory for installed packages, creating
 // it if it does not exist.
 func GetPackageDir() (string, error) {

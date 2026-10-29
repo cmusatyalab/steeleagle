@@ -312,6 +312,8 @@ func (n *testNet) Dial(ctx context.Context, protocol, addr string) (net.Conn, er
 	return n.fabric.track(c), nil
 }
 
+func (n *testNet) BindHost() string { return "" }
+
 func (n *testNet) Resolve(ctx context.Context, host string) ([]netip.Addr, error) {
 	addr, err := netip.ParseAddr(host)
 	if err != nil {
@@ -388,9 +390,17 @@ type testDaemon struct {
 	exited bool
 }
 
-// newTestDaemon creates a daemon from config on n. It is stopped when the
-// test ends, if it is running.
+// newTestDaemon creates a daemon from config on n, without a log server,
+// since only one can run per process. It is stopped when the test ends, if it
+// is running.
 func newTestDaemon(t *testing.T, n *testNet, config string) *testDaemon {
+	t.Helper()
+	return newTestDaemonWith(t, n, config, WithoutLogServer())
+}
+
+// newTestDaemonWith is newTestDaemon with the given extra options, and a log
+// server unless they disable it.
+func newTestDaemonWith(t *testing.T, n *testNet, config string, options ...DaemonOption) *testDaemon {
 	t.Helper()
 	// The control socket is kept out of t.TempDir, whose long paths can
 	// exceed the limit for socket paths
@@ -403,12 +413,12 @@ func newTestDaemon(t *testing.T, n *testNet, config string) *testDaemon {
 	if err := os.WriteFile(path, []byte(config), 0644); err != nil {
 		t.Fatal(err)
 	}
-	d, err := NewDaemon(
+	d, err := NewDaemon(append([]DaemonOption{
 		WithConfigPath(path),
 		WithNetwork(n),
 		WithSocketPath(filepath.Join(dir, "ctl.sock")),
 		WithLogger(testLogger()),
-	)
+	}, options...)...)
 	if err != nil {
 		t.Fatal(err)
 	}

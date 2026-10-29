@@ -2,19 +2,21 @@ package network
 
 import (
 	"context"
-	"errors"
 	"net"
 	"net/netip"
 )
 
-// Network is a network a daemon can join, which is a tailnet in builds with
-// tailscale, and the host network otherwise. Server implements it in either
-// build; tests can stand in their own.
+// Network is a network a daemon can join, which is the host network, or a
+// VPN on the host when bound to its address. Server implements it; tests
+// can stand in their own.
 type Network interface {
 	// Listen listens on port on this node.
 	Listen(protocol string, port int) (net.Listener, error)
 	// Dial opens an outbound connection from this node.
 	Dial(ctx context.Context, network, addr string) (net.Conn, error)
+	// BindHost returns the address listeners bind to, or "" for every
+	// interface.
+	BindHost() string
 	// Resolve returns the IP addresses of host.
 	Resolve(ctx context.Context, host string) ([]netip.Addr, error)
 	// LocalAddr returns this node's address, as seen by remote.
@@ -24,7 +26,3 @@ type Network interface {
 }
 
 var _ Network = (*Server)(nil)
-
-// ErrLogin is returned by NewServer when the network rejects the login, as
-// with an invalid or expired auth key. Retrying with the same key won't help.
-var ErrLogin = errors.New("network rejected the login")

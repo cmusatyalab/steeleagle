@@ -1,6 +1,7 @@
 package main
 
 import (
+	tea "charm.land/bubbletea/v2"
 	"context"
 	"errors"
 	"os"
@@ -35,7 +36,7 @@ func TestWriteServiceFiles(t *testing.T) {
 	}
 
 	// A reinstall rewrites the unit, but keeps the user's env
-	if err := os.WriteFile(paths.env, []byte("STEELEAGLE_AUTH_KEY=secret\n"), 0o600); err != nil {
+	if err := os.WriteFile(paths.env, []byte("EAGLED_ARGS=-console\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	if err := writeServiceFiles(paths, "/usr/bin/eagled"); err != nil {
@@ -44,7 +45,7 @@ func TestWriteServiceFiles(t *testing.T) {
 	if unit := readFile(t, paths.unit, 0o644); !strings.Contains(unit, "\nExecStart=\"/usr/bin/eagled\" $EAGLED_ARGS\n") {
 		t.Errorf("reinstalled unit doesn't start the new eagled:\n%s", unit)
 	}
-	if env := readFile(t, paths.env, 0o600); env != "STEELEAGLE_AUTH_KEY=secret\n" {
+	if env := readFile(t, paths.env, 0o600); env != "EAGLED_ARGS=-console\n" {
 		t.Errorf("env = %q, want the user's", env)
 	}
 }
@@ -73,44 +74,6 @@ func readFile(t *testing.T, path string, perm os.FileMode) string {
 		t.Errorf("%s has mode %v, want %v", path, info.Mode().Perm(), perm)
 	}
 	return string(data)
-}
-
-func TestSetAuthKey(t *testing.T) {
-	paths := newServicePaths(t.TempDir())
-	if err := writeServiceFiles(paths, "/usr/bin/eagled"); err != nil {
-		t.Fatal(err)
-	}
-	path := paths.env
-	for _, key := range []string{"tskey-auth-first", "tskey-auth-second"} {
-		if err := setAuthKey(path, key); err != nil {
-			t.Fatalf("setAuthKey(%q): %v", key, err)
-		}
-		env := readFile(t, path, 0o600)
-		if n := strings.Count(env, authKeyVar+"="); n != 1 {
-			t.Errorf("env has %d %s lines, want 1:\n%s", n, authKeyVar, env)
-		}
-		if !strings.Contains(env, "\n"+authKeyVar+"="+key+"\n") {
-			t.Errorf("env doesn't set the key %q:\n%s", key, env)
-		}
-		// The rest of the file is kept
-		if !strings.Contains(env, "EAGLED_ARGS=") {
-			t.Errorf("env lost EAGLED_ARGS:\n%s", env)
-		}
-	}
-
-	// A key without a line of its own yet is appended
-	if err := os.WriteFile(path, []byte("EAGLED_ARGS=-console"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if err := setAuthKey(path, "key"); err != nil {
-		t.Fatal(err)
-	}
-	if env := readFile(t, path, 0o600); env != "EAGLED_ARGS=-console\n"+authKeyVar+"=key\n" {
-		t.Errorf("env = %q", env)
-	}
-	if err := setAuthKey(path, "two\nlines"); err == nil {
-		t.Error("setAuthKey accepted a key with a newline")
-	}
 }
 
 func TestPluginServices(t *testing.T) {
@@ -208,7 +171,7 @@ func TestWriteDefaultConfig(t *testing.T) {
 	if got := defaultHostname(path); got != "old" {
 		t.Errorf("defaultHostname = %q, want the configured old", got)
 	}
-	if err := writeDefaultConfig(path, "drone-1"); err != nil {
+	if err := writeDefaultConfig(path, "drone-1", "127.0.0.1"); err != nil {
 		t.Fatalf("writeDefaultConfig: %v", err)
 	}
 	cfg, err := config.ParseDaemonConfigFromFilepath(path)
@@ -220,8 +183,29 @@ func TestWriteDefaultConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 	def.Daemon.Hostname = "drone-1"
+	def.Daemon.Bind = "127.0.0.1"
 	if !reflect.DeepEqual(cfg, def) {
-		t.Errorf("config = %+v, want the default named drone-1 %+v", cfg, def)
+		t.Errorf("config = %+v, want the default named drone-1, bound to 127.0.0.1 %+v", cfg, def)
+	}
+}
+
+// TestValidBind checks that only IP addresses of this machine are accepted,
+// and that an unspecified address means every interface.
+func TestValidBind(t *testing.T) {
+	for addr, want := range map[string]string{
+		"0.0.0.0":          "",
+		"::":               "",
+		"127.0.0.1":        "127.0.0.1",
+		"::ffff:127.0.0.1": "127.0.0.1",
+	} {
+		if got, err := validBind(addr); err != nil || got != want {
+			t.Errorf("validBind(%q) = %q, %v, want %q", addr, got, err, want)
+		}
+	}
+	for _, addr := range []string{"", "localhost", "127.0.0.1:9000", "999.1.1.1", "192.0.2.123", "fe80::1%lo"} {
+		if got, err := validBind(addr); err == nil {
+			t.Errorf("validBind(%q) = %q, want an error", addr, got)
+		}
 	}
 }
 
@@ -331,11 +315,36 @@ func TestConfirmRoot(t *testing.T) {
 		"n\n": false, "\n": false, "maybe\n": false, "": false,
 	} {
 		var out strings.Builder
-		if got := confirmRoot(strings.NewReader(input), &out); got != want {
+		if got := confirmRoot(context.Background(), strings.NewReader(input), &out); got != want {
 			t.Errorf("confirmRoot(%q) = %v, want %v", input, got, want)
 		}
 		if !strings.Contains(out.String(), "as root") {
 			t.Errorf("confirmRoot(%q) printed %q, want a warning", input, out.String())
+		}
+	}
+}
+
+// TestConfirmModel checks that the terminal question defaults to no, and
+// takes y, n and the selected answer.
+func TestConfirmModel(t *testing.T) {
+	for _, tc := range []struct {
+		keys []tea.KeyPressMsg
+		want bool
+	}{
+		{[]tea.KeyPressMsg{keyEnter}, false},
+		{[]tea.KeyPressMsg{keyY}, true},
+		{[]tea.KeyPressMsg{keyN}, false},
+		{[]tea.KeyPressMsg{{Code: tea.KeyTab}, keyEnter}, true},
+		{[]tea.KeyPressMsg{keyCtrlC}, false},
+	} {
+		m := &confirmModel{question: "Go on?", cursor: 1}
+		var cmd tea.Cmd
+		for _, k := range tc.keys {
+			m.View()
+			_, cmd = m.Update(k)
+		}
+		if !m.answered || m.yes != tc.want || cmd == nil {
+			t.Errorf("keys %v: answered = %v, yes = %v, want %v and a command to quit", tc.keys, m.answered, m.yes, tc.want)
 		}
 	}
 }

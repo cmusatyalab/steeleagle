@@ -6,15 +6,12 @@
 // The daemon reads its config from the config directory
 // ($XDG_CONFIG_HOME/steeleagle/config.toml, ~/.config/steeleagle by default)
 // unless -config is given, writing the default config there if there is
-// none. The VPN auth key, if any, is read from the STEELEAGLE_AUTH_KEY
-// environment variable, so that it isn't visible in the process list.
+// none.
 //
 // eagled stops gracefully on SIGINT or SIGTERM, exiting 0. When the daemon
 // stops for a restart (after a Restart or Configure call), eagled exits with
 // RestartExitCode, which its supervisor (see cmd/eagle/eagled.service) restarts it on.
-// When the VPN rejects its login, as with an invalid auth key, it exits with
-// LoginExitCode, which its supervisor doesn't restart it on. Any other
-// failure exits 1.
+// Any other failure exits 1.
 package main
 
 import (
@@ -27,21 +24,12 @@ import (
 	"syscall"
 
 	"github.com/cmusatyalab/steeleagle/v4/core/daemon"
-	"github.com/cmusatyalab/steeleagle/v4/core/util/network"
 	"github.com/rs/zerolog"
 )
-
-// AuthKeyEnv is the environment variable the VPN auth key is read from.
-const AuthKeyEnv = "STEELEAGLE_AUTH_KEY"
 
 // RestartExitCode is the exit code when the daemon stops for a restart
 // (EX_TEMPFAIL), which eagled.service restarts on.
 const RestartExitCode = 75
-
-// LoginExitCode is the exit code when the VPN rejects the login, as with an
-// invalid auth key (EX_CONFIG), which eagled.service doesn't restart on,
-// since the same key would be rejected again.
-const LoginExitCode = 78
 
 func main() {
 	os.Exit(run())
@@ -74,11 +62,6 @@ func run() int {
 	if *configPath != "" {
 		options = append(options, daemon.WithConfigPath(*configPath))
 	}
-	if key := os.Getenv(AuthKeyEnv); key != "" {
-		options = append(options, daemon.WithAuthKey(key))
-		// Plugins inherit the environment, and have no use for the key
-		os.Unsetenv(AuthKeyEnv)
-	}
 	d, err := daemon.NewDaemon(options...)
 	if err != nil {
 		log.Error().Err(err).Msg("could not create daemon")
@@ -92,9 +75,6 @@ func run() int {
 	case errors.Is(err, daemon.ErrRestart):
 		log.Info().Int("code", RestartExitCode).Msg("exiting for restart")
 		return RestartExitCode
-	case errors.Is(err, network.ErrLogin):
-		log.Error().Err(err).Int("code", LoginExitCode).Msg("VPN login rejected; check the auth key")
-		return LoginExitCode
 	case err != nil:
 		log.Error().Err(err).Msg("daemon exited with error")
 		return 1

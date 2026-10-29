@@ -46,12 +46,15 @@ func TestInitMinimal(t *testing.T) {
 	m := newTestModel(t)
 	press(m, keyEnter) // the suggested name
 	press(m, keyY)
-	expectStage(t, m, stageAuthKey)
-	m.inputs[0].SetValue(" tskey-auth-x ")
+	expectStage(t, m, stageBindAddr)
+	m.inputs[0].SetValue(" 127.0.0.1 ")
 	if press(m, keyEnter) == nil {
 		t.Fatal("no command to start eagled")
 	}
 	expectStage(t, m, stageStarting)
+	if m.bind != "127.0.0.1" {
+		t.Errorf("bind = %q, want 127.0.0.1", m.bind)
+	}
 
 	m.Update(startedMsg{})
 	expectStage(t, m, stageMode)
@@ -152,24 +155,35 @@ func TestInitFailures(t *testing.T) {
 	}
 }
 
-// TestInitRejectedAuthKey checks that a rejected auth key asks for another,
-// rather than failing.
-func TestInitRejectedAuthKey(t *testing.T) {
+// TestInitBind checks that the bind question defaults to every interface,
+// that the address defaults to 0.0.0.0, and that an invalid address is
+// refused until a valid one is given.
+func TestInitBind(t *testing.T) {
 	m := newTestModel(t)
 	press(m, keyEnter) // the suggested name
-	press(m, keyY)
-	expectStage(t, m, stageAuthKey)
+	expectStage(t, m, stageBind)
 	press(m, keyEnter)
 	expectStage(t, m, stageStarting)
-	m.Update(startedMsg{errAuthKey})
-	expectStage(t, m, stageAuthKey)
-	if m.err != nil || m.invalid == "" || len(m.inputs) != 1 {
-		t.Errorf("err = %v, invalid = %q, %d inputs, want a fresh prompt saying why", m.err, m.invalid, len(m.inputs))
+	if m.bind != "" {
+		t.Errorf("bind = %q, want every interface", m.bind)
 	}
+
+	m = newTestModel(t)
+	press(m, keyEnter, keyY)
+	expectStage(t, m, stageBindAddr)
+	for _, addr := range []string{"not-an-ip", "999.1.1.1", "192.0.2.123"} {
+		m.inputs[0].SetValue(addr)
+		press(m, keyEnter)
+		expectStage(t, m, stageBindAddr)
+		if m.invalid == "" {
+			t.Errorf("%q was accepted", addr)
+		}
+	}
+	m.inputs[0].SetValue("")
 	press(m, keyEnter)
 	expectStage(t, m, stageStarting)
-	if m.invalid != "" {
-		t.Errorf("invalid = %q after answering, want it cleared", m.invalid)
+	if m.bind != "" || m.invalid != "" {
+		t.Errorf("bind = %q, invalid = %q, want the default and no error", m.bind, m.invalid)
 	}
 }
 
@@ -186,14 +200,14 @@ func TestInitName(t *testing.T) {
 	}
 	m.inputs[0].SetValue(" drone-1 ")
 	press(m, keyEnter)
-	expectStage(t, m, stageVPN)
+	expectStage(t, m, stageBind)
 	if m.hostname != "drone-1" || m.invalid != "" {
 		t.Errorf("hostname = %q, invalid = %q, want drone-1 and no error", m.hostname, m.invalid)
 	}
 
 	m = newTestModel(t)
 	press(m, keyEnter)
-	expectStage(t, m, stageVPN)
+	expectStage(t, m, stageBind)
 	if m.hostname == "" || !validHostname(m.hostname) {
 		t.Errorf("hostname = %q, want the valid suggested name", m.hostname)
 	}

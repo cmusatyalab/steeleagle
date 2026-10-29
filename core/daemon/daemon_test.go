@@ -1,16 +1,73 @@
 package daemon
 
 import (
-	"errors"
+	"encoding/json"
+	"fmt"
+	"net"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	daemonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon"
+	"github.com/gorilla/websocket"
 	"google.golang.org/grpc/codes"
 )
+
+// logdyMessage is the part of a logdy websocket message the tests read.
+type logdyMessage struct {
+	MessageType string `json:"message_type"`
+	Messages    []struct {
+		Content string `json:"content"`
+	} `json:"messages"`
+}
+
+// TestLogServer checks that a daemon serves the logdy websocket, and that a
+// service's log lines are streamed on it. It is the only test that runs a log
+// server, since only one can run per process.
+func TestLogServer(t *testing.T) {
+	requirePixi(t)
+	const marker = "logdy test line"
+	logPort := freePort(t)
+	config := testConfig(t, "solo", "", echo("talker", fmt.Sprintf("{ log = %q }", marker)))
+	config = strings.Replace(config, "[daemon]\n",
+		fmt.Sprintf("[daemon]\nlogs = %d\nbind = %q\n", logPort, orchAddr), 1)
+	d := newTestDaemonWith(t, &testNet{addr: orchAddr, fabric: newFabric()}, config)
+	d.run()
+
+	addr := net.JoinHostPort(orchAddr.String(), strconv.Itoa(logPort))
+	conn, _, err := websocket.DefaultDialer.Dial("ws://"+addr+"/ws?should_follow=true", nil)
+	if err != nil {
+		t.Fatalf("couldn't connect to logdy websocket: %v", err)
+	}
+	defer conn.Close()
+
+	// logdy greets each client, then sends log lines in bulk
+	conn.SetReadDeadline(time.Now().Add(15 * time.Second))
+	var msg logdyMessage
+	if err := conn.ReadJSON(&msg); err != nil {
+		t.Fatalf("couldn't read from logdy websocket: %v", err)
+	}
+	if msg.MessageType != "client_joined" {
+		t.Fatalf("got first message %q, want client_joined", msg.MessageType)
+	}
+	for {
+		_, b, err := conn.ReadMessage()
+		if err != nil {
+			t.Fatalf("service log line never arrived on logdy websocket: %v", err)
+		}
+		if err := json.Unmarshal(b, &msg); err != nil {
+			t.Fatalf("bad logdy message %s: %v", b, err)
+		}
+		for _, m := range msg.Messages {
+			if strings.Contains(m.Content, marker) {
+				return
+			}
+		}
+	}
+}
 
 // TestRunServices checks that a daemon starts its services in the order of
 // engines, vehicles and extras, each with its default or configured auth, and
@@ -76,49 +133,49 @@ func TestRunServices(t *testing.T) {
 	}
 }
 
-// TestFailFast checks that a daemon whose service fails to start stops the
-// services it started, and keeps running without them, reporting the failure
-// from the service RPCs, while it can still be inspected and reconfigured.
-func TestFailFast(t *testing.T) {
+// TestServiceFailure checks that a daemon whose service fails to start still
+// starts its other services, and lists the failed one as not running, with
+// the error it failed with, which a failed restart keeps.
+func TestServiceFailure(t *testing.T) {
 	requirePixi(t)
 	d := standalone(t, echo("a", "{}"), echo("b", `{ fail = true }`), echo("c", "{}"))
 	d.run()
 
-	_, err := d.listServices()
-	expectCode(t, err, codes.FailedPrecondition, "127.0.0.1.b")
+	resp, err := d.listServices()
+	if err != nil {
+		t.Fatalf("ListServices() = %v, want nil", err)
+	}
+	errs := map[string]string{}
+	for _, s := range resp.GetServices() {
+		errs[s.GetName()] = s.GetError()
+	}
+	if got := running(resp); !got["127.0.0.1.a"] || got["127.0.0.1.b"] || !got["127.0.0.1.c"] {
+		t.Errorf("running = %v, want a and c, but not b", got)
+	}
+	if errs["127.0.0.1.a"] != "" || errs["127.0.0.1.b"] == "" || errs["127.0.0.1.c"] != "" {
+		t.Errorf("errors = %v, want only b's", errs)
+	}
+
+	// A failed restart keeps the service's error
 	_, err = d.client.RestartService(callCtx(t, 5*time.Second),
-		daemonpb.RestartServiceRequest_builder{ServiceNames: "127.0.0.1.a"}.Build())
-	expectCode(t, err, codes.FailedPrecondition, "127.0.0.1.b")
-
-	// The service started before the failure was stopped, and the one after
-	// it was never started
-	if running, ok := d.pluginRunning("127.0.0.1.a"); !ok || running {
-		t.Errorf("service a: running = %v, started = %v, want stopped", running, ok)
+		daemonpb.RestartServiceRequest_builder{ServiceNames: "127.0.0.1.b"}.Build())
+	expectCode(t, err, codes.Internal, "127.0.0.1.b")
+	if resp, err = d.listServices(); err != nil {
+		t.Fatal(err)
 	}
-	if _, ok := d.pluginRunning("127.0.0.1.c"); ok {
-		t.Error("service c was started after b failed")
-	}
-
-	if _, err := d.client.GetConfiguration(callCtx(t, 5*time.Second), &daemonpb.GetConfigurationRequest{}); err != nil {
-		t.Errorf("GetConfiguration() = %v, want nil", err)
+	for _, s := range resp.GetServices() {
+		if s.GetName() == "127.0.0.1.b" && (s.GetRunning() || s.GetError() == "") {
+			t.Errorf("service b after a failed restart = %v, want stopped with an error", s)
+		}
 	}
 	if !d.connected() {
 		t.Error("standalone daemon isn't connected")
 	}
-	// The daemon can be fixed by reconfiguring it
-	config := testConfig(t, "solo", "", echo("a", "{}"))
-	_, err = d.client.Configure(callCtx(t, 5*time.Second), daemonpb.ConfigureRequest_builder{ConfigToml: config}.Build())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := d.wait(); !errors.Is(err, ErrRestart) {
-		t.Errorf("Run() = %v, want ErrRestart", err)
-	}
 }
 
-// TestFailFastStop checks that a daemon running without its services stops
-// cleanly.
-func TestFailFastStop(t *testing.T) {
+// TestServiceFailureStop checks that a daemon with a service that failed to
+// start stops cleanly.
+func TestServiceFailureStop(t *testing.T) {
 	requirePixi(t)
 	d := standalone(t, echo("b", `{ fail = true }`))
 	d.run()

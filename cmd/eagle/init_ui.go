@@ -25,8 +25,8 @@ type stage int
 
 const (
 	stageName         stage = iota // asks for the machine's name
-	stageVPN                       // asks whether a VPN is used
-	stageAuthKey                   // asks for the VPN auth key
+	stageBind                      // asks whether to bind to a custom address
+	stageBindAddr                  // asks for the address to bind to
 	stageStarting                  // installs and starts eagled
 	stageMode                      // asks for the installation mode
 	stageFetching                  // lists the plugins in pluginsRepo
@@ -68,14 +68,9 @@ const showRows = time.Second / 4
 // minimalPlugins are the plugins of a minimal installation.
 var minimalPlugins = []string{"defaults/h264"}
 
-var (
-	boldStyle    = lipgloss.NewStyle().Bold(true)
-	welcomeStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("214"))
-	dimStyle     = lipgloss.NewStyle().Faint(true)
-	cursorStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("214"))
-	checkStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
-	errorStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
-)
+// defaultBind is the address eagled binds to unless another is chosen,
+// which is every interface.
+const defaultBind = "0.0.0.0"
 
 // row is a plugin install, shown with a spinner until it is done.
 type row struct {
@@ -98,7 +93,7 @@ type (
 )
 
 // initModel is the terminal UI of eagle init. It asks for the machine's
-// name and a VPN auth key, starts eagled, installs the plugins of the chosen
+// name and the address to bind to, starts eagled, installs the plugins of the chosen
 // mode, the simulator if wanted, and the drivers and engines picked,
 // optionally sets an orchestrator and starts eagled on boot, and finally
 // reconfigures eagled with a service for each default plugin and the
@@ -119,6 +114,7 @@ type initModel struct {
 	invalid string // why the inputs can't be accepted
 
 	hostname     string
+	bind         string // address eagled binds to, "" for every interface
 	mode         mode
 	plugins      pluginDirs
 	simulator    bool     // whether the simulator was chosen
@@ -140,7 +136,7 @@ func newInitModel(ctx context.Context, conn grpc.ClientConnInterface, eagled str
 		paths:   paths,
 		stage:   stageName,
 		spinner: spinner.New(spinner.WithSpinner(spinner.Dot), spinner.WithStyle(cursorStyle)),
-		inputs:  []textinput.Model{newInput("Name: ", defaultHostname(paths.config), false)},
+		inputs:  []textinput.Model{newInput("Name: ", defaultHostname(paths.config))},
 	}
 }
 
@@ -152,7 +148,7 @@ func (m *initModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		if msg.Keystroke() == "ctrl+c" {
-			return m, m.fail(errors.New("cancelled"))
+			return m, m.fail(errCancelled)
 		}
 		return m.key(msg)
 	case spinner.TickMsg:
@@ -160,12 +156,6 @@ func (m *initModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 	case startedMsg:
-		if errors.Is(msg.err, errAuthKey) {
-			// Ask again, rather than leaving eagled with a key that won't work
-			m.stage = stageAuthKey
-			m.invalid = "The VPN rejected that auth key; try another, or leave it blank to log in with a URL"
-			return m, m.setInputs(newInput("Auth key: ", "leave blank if not applicable", true))
-		}
 		if msg.err != nil {
 			return m, m.fail(msg.err)
 		}
@@ -226,23 +216,33 @@ func (m *initModel) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			}
 			m.hostname = name
 			m.inputs, m.invalid = nil, ""
-			m.stage, m.cursor = stageVPN, 0
+			// Default to no, binding to every interface
+			m.stage, m.cursor = stageBind, 1
 			return m, nil
 		}
 		return m, m.updateInputs(msg)
-	case stageVPN:
+	case stageBind:
 		if yes, ok := m.yesNo(key); ok {
 			if yes {
-				m.stage = stageAuthKey
-				return m, m.setInputs(newInput("Auth key: ", "leave blank if not applicable", true))
+				m.stage = stageBindAddr
+				return m, m.setInputs(newInput("Address: ", defaultBind))
 			}
-			return m, m.start("")
+			return m, m.start()
 		}
-	case stageAuthKey:
+	case stageBindAddr:
 		if key == "enter" {
-			key := strings.TrimSpace(m.inputs[0].Value())
+			addr := strings.TrimSpace(m.inputs[0].Value())
+			if addr == "" {
+				addr = m.inputs[0].Placeholder
+			}
+			bind, err := validBind(addr)
+			if err != nil {
+				m.invalid = err.Error()
+				return m, nil
+			}
+			m.bind = bind
 			m.inputs, m.invalid = nil, ""
-			return m, m.start(key)
+			return m, m.start()
 		}
 		return m, m.updateInputs(msg)
 	case stageMode:
@@ -294,8 +294,8 @@ func (m *initModel) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			if yes {
 				m.stage = stageOrchForm
 				return m, m.setInputs(
-					newInput("IP/Hostname: ", "homebase", false),
-					newInput("Port: ", "9000", false),
+					newInput("IP/Hostname: ", "homebase"),
+					newInput("Port: ", "9000"),
 				)
 			}
 			return m, m.askLinger()
@@ -344,12 +344,12 @@ func (m *initModel) yesNo(key string) (yes, ok bool) {
 	return false, false
 }
 
-// start installs and starts eagled with the VPN auth key authKey, if it
-// isn't empty, and waits for it to answer.
-func (m *initModel) start(authKey string) tea.Cmd {
+// start installs and starts eagled, bound to the chosen address, and waits
+// for it to answer.
+func (m *initModel) start() tea.Cmd {
 	m.stage = stageStarting
 	return func() tea.Msg {
-		if err := installService(m.eagled, m.hostname, authKey, m.paths); err != nil {
+		if err := installService(m.eagled, m.hostname, m.bind, m.paths); err != nil {
 			return startedMsg{err}
 		}
 		return startedMsg{waitReady(m.ctx, m.conn)}
@@ -500,17 +500,13 @@ func (m *initModel) fail(err error) tea.Cmd {
 	return tea.Quit
 }
 
-// newInput returns a text input with prompt and placeholder, which hides
-// what is typed if secret.
-func newInput(prompt, placeholder string, secret bool) textinput.Model {
+// newInput returns a text input with prompt and placeholder.
+func newInput(prompt, placeholder string) textinput.Model {
 	input := textinput.New()
 	input.Prompt = prompt
 	input.Placeholder = placeholder
 	// Without a width, the input only shows the placeholder's first letter
 	input.SetWidth(max(64, lipgloss.Width(placeholder)))
-	if secret {
-		input.EchoMode = textinput.EchoPassword
-	}
 	return input
 }
 
@@ -554,22 +550,22 @@ func (m *initModel) View() tea.View {
 	switch m.stage {
 	case stageName:
 		b.WriteString(boldStyle.Render("What would you like to name this machine?") + "\n")
-		b.WriteString(dimStyle.Render("This will be used as the hostname for the VPN") + "\n")
+		b.WriteString(dimStyle.Render("This will be used as the daemon's hostname") + "\n")
 		b.WriteString(m.inputs[0].View() + "\n")
 		if m.invalid != "" {
 			b.WriteString(errorStyle.Render(m.invalid) + "\n")
 		}
-	case stageVPN:
-		b.WriteString(m.question("Are you using a VPN?"))
-	case stageAuthKey:
-		b.WriteString(boldStyle.Render("Please provide a VPN auth key") + "\n")
+	case stageBind:
+		b.WriteString(m.question("Would you like to bind to a custom address? (default " + defaultBind + ")"))
+	case stageBindAddr:
+		b.WriteString(boldStyle.Render("Which address would you like to bind to?") + "\n")
+		b.WriteString(dimStyle.Render("An IP address of one of this machine's interfaces") + "\n")
 		b.WriteString(m.inputs[0].View() + "\n")
 		if m.invalid != "" {
 			b.WriteString(errorStyle.Render(m.invalid) + "\n")
 		}
 	case stageStarting:
 		fmt.Fprintf(&b, "%s Starting eagled\n", m.spinner.View())
-		b.WriteString(dimStyle.Render("  without an auth key, log in to the VPN with the URL in: journalctl --user -u eagled") + "\n")
 	case stageMode:
 		b.WriteString(boldStyle.Render("Which installation would you like?") + "\n")
 		for i, o := range modeOptions {
@@ -604,15 +600,7 @@ func (m *initModel) View() tea.View {
 
 // question renders a yes/no question.
 func (m *initModel) question(q string) string {
-	answers := []string{"Yes", "No"}
-	for i, a := range answers {
-		if i == m.cursor {
-			answers[i] = cursorStyle.Render("› " + a)
-		} else {
-			answers[i] = "  " + a
-		}
-	}
-	return boldStyle.Render(q) + "\n" + strings.Join(answers, "  ") + "\n"
+	return question(q, m.cursor)
 }
 
 // checklist renders a checklist of the plugins in dirs.

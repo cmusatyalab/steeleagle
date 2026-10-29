@@ -39,8 +39,12 @@ type DaemonRoot struct {
 	Port int `toml:"port"`
 	// LCS (local compute service) port
 	Lcs int `toml:"lcs"`
+	// Log port
+	Logs int `toml:"logs"`
 	// Hostname for this daemon (defaults to "eagled")
 	Hostname string `toml:"hostname"`
+	// IP address to bind on, as a VPN's (defaults to all interfaces)
+	Bind string `toml:"bind,omitempty"`
 	// Certificate string for the LCS
 	Cert string `toml:"cert"`
 	// Orchestrator daemon hostname or IP, accepts DNS entries if applicable

@@ -91,7 +91,8 @@ var DefaultRouteProbe = netip.MustParseAddr("8.8.8.8")
 
 // Names of the local compute service cert and key files within its identity
 // directory, as Uriel expects them, the name Uriel clients connect with,
-// and how long a generated cert is valid.
+// how long a generated cert is valid, and the host it binds to when the
+// network has no bind address.
 const (
 	LcsCertFileName = "certificate.der"
 	LcsKeyFileName  = "key.der"

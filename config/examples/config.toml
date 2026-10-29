@@ -3,9 +3,14 @@
 port = 9000
 # LCS (local compute server) default port
 lcs = 9001
-# Hostname is optional, but determines how the daemon presents itself if using a
-# DNS-enabled VPN like Tailscale
+# Log default port
+logs = 9002
+# Hostname is optional, but determines how the daemon presents itself to the
+# orchestrator (defaults to "eagled")
 hostname = "eagled"
+# IP address to bind on, as a VPN's, so that the daemon is only reachable
+# there (optional, defaults to all interfaces)
+bind = "100.64.0.1"
 # Orchestrator is the DNS name or IP address of another daemon in the network
 # which is the orchestrator daemon: orchestrator daemons aggregate data and
 # vehicles from other daemons to create a centralized control hub (optional)

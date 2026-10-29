@@ -388,8 +388,9 @@ func TestChildStops(t *testing.T) {
 	expectListing(t, p.orch, 2*time.Second, orchOnly, nil)
 }
 
-// TestDegradedChild checks that a child whose services failed still
-// registers, so that the orchestrator can see why.
+// TestDegradedChild checks that a child whose service failed to start
+// registers with it, so that the orchestrator lists the service as not
+// running, with why, and can fix it.
 func TestDegradedChild(t *testing.T) {
 	requirePixi(t)
 	p := newPair(t, []testService{echo("o", "{}")}, []testService{echo("c", `{ fail = true }`)})
@@ -399,16 +400,20 @@ func TestDegradedChild(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := running(resp); len(got) != 1 || !got["127.0.0.1.o"] {
-		t.Errorf("services = %v, want only the orchestrator's", got)
+	if got := running(resp); len(got) != 2 || !got["127.0.0.1.o"] || got["127.0.0.2.c"] {
+		t.Errorf("services = %v, want the orchestrator's running, and the child's stopped", got)
 	}
-	if u := resp.GetRemotes(); len(u) != 1 || u[0].GetIp() != "127.0.0.2" ||
-		!strings.Contains(u[0].GetError(), "127.0.0.2.c") {
-		t.Errorf("unavailable = %v, want the child, with the service that failed", u)
+	for _, s := range resp.GetServices() {
+		if s.GetName() == "127.0.0.2.c" && s.GetError() == "" {
+			t.Error("child's failed service has no error")
+		}
+	}
+	if u := unavailable(resp); len(u) != 0 {
+		t.Errorf("unavailable = %v, want none", u)
 	}
 	_, err = p.orch.client.RestartService(callCtx(t, 5*time.Second),
 		daemonpb.RestartServiceRequest_builder{ServiceNames: "127.0.0.2.c"}.Build())
-	expectCode(t, err, codes.FailedPrecondition, "127.0.0.2.c")
+	expectCode(t, err, codes.Internal, "127.0.0.2.c")
 
 	// The orchestrator can fix the child
 	config := testConfig(t, "child", p.orchAddr(), echo("c", "{}"))

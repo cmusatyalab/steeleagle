@@ -2,7 +2,8 @@
 // name, args, and iceoryx service it was started with, then serves the gRPC health service on
 // its listen socket until it is killed. Its args can make it fail before it
 // serves ({"fail": true}), or exit some time after it does
-// ({"exit_after_ms": 100}).
+// ({"exit_after_ms": 100}), or print a line every 100ms once it does
+// ({"log": "hello"}).
 package main
 
 import (
@@ -18,8 +19,9 @@ import (
 )
 
 type args struct {
-	Fail        bool `json:"fail"`
-	ExitAfterMs int  `json:"exit_after_ms"`
+	Fail        bool   `json:"fail"`
+	ExitAfterMs int    `json:"exit_after_ms"`
+	Log         string `json:"log"`
 }
 
 func run() error {
@@ -43,6 +45,13 @@ func run() error {
 			fmt.Println("exiting as asked")
 			os.Exit(1)
 		})
+	}
+	if a.Log != "" {
+		go func() {
+			for range time.Tick(100 * time.Millisecond) {
+				fmt.Println(a.Log)
+			}
+		}()
 	}
 	return server.Serve(ln)
 }

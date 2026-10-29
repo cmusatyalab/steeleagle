@@ -136,6 +136,7 @@ type Service struct {
 	xxx_hidden_Isolation Isolation              `protobuf:"varint,6,opt,name=isolation,proto3,enum=steeleagle_protocol.v1.services.daemon.Isolation"`
 	xxx_hidden_Running   bool                   `protobuf:"varint,7,opt,name=running,proto3"`
 	xxx_hidden_Auth      string                 `protobuf:"bytes,8,opt,name=auth,proto3"`
+	xxx_hidden_Error     string                 `protobuf:"bytes,9,opt,name=error,proto3"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -221,6 +222,13 @@ func (x *Service) GetAuth() string {
 	return ""
 }
 
+func (x *Service) GetError() string {
+	if x != nil {
+		return x.xxx_hidden_Error
+	}
+	return ""
+}
+
 func (x *Service) SetName(v string) {
 	x.xxx_hidden_Name = v
 }
@@ -256,6 +264,10 @@ func (x *Service) SetAuth(v string) {
 	x.xxx_hidden_Auth = v
 }
 
+func (x *Service) SetError(v string) {
+	x.xxx_hidden_Error = v
+}
+
 type Service_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -267,6 +279,7 @@ type Service_builder struct {
 	Isolation Isolation
 	Running   bool
 	Auth      string
+	Error     string
 }
 
 func (b0 Service_builder) Build() *Service {
@@ -281,6 +294,7 @@ func (b0 Service_builder) Build() *Service {
 	x.xxx_hidden_Isolation = b.Isolation
 	x.xxx_hidden_Running = b.Running
 	x.xxx_hidden_Auth = b.Auth
+	x.xxx_hidden_Error = b.Error
 	return m0
 }
 
@@ -1629,7 +1643,7 @@ var File_steeleagle_protocol_v1_services_daemon_daemon_proto protoreflect.FileDe
 
 const file_steeleagle_protocol_v1_services_daemon_daemon_proto_rawDesc = "" +
 	"\n" +
-	"3steeleagle_protocol/v1/services/daemon/daemon.proto\x12&steeleagle_protocol.v1.services.daemon\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/duration.proto\"\xb3\x02\n" +
+	"3steeleagle_protocol/v1/services/daemon/daemon.proto\x12&steeleagle_protocol.v1.services.daemon\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/duration.proto\"\xc9\x02\n" +
 	"\aService\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12S\n" +
 	"\bcategory\x18\x02 \x01(\x0e27.steeleagle_protocol.v1.services.daemon.ServiceCategoryR\bcategory\x12\x16\n" +
@@ -1638,7 +1652,8 @@ const file_steeleagle_protocol_v1_services_daemon_daemon_proto_rawDesc = "" +
 	"\x06config\x18\x05 \x01(\fR\x06config\x12O\n" +
 	"\tisolation\x18\x06 \x01(\x0e21.steeleagle_protocol.v1.services.daemon.IsolationR\tisolation\x12\x18\n" +
 	"\arunning\x18\a \x01(\bR\arunning\x12\x12\n" +
-	"\x04auth\x18\b \x01(\tR\x04auth\"n\n" +
+	"\x04auth\x18\b \x01(\tR\x04auth\x12\x14\n" +
+	"\x05error\x18\t \x01(\tR\x05error\"n\n" +
 	"\x06Daemon\x12\x0e\n" +
 	"\x02ip\x18\x01 \x01(\tR\x02ip\x12\x1a\n" +
 	"\bhostname\x18\x02 \x01(\tR\bhostname\x12\x12\n" +

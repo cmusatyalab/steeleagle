@@ -145,6 +145,7 @@ message Service {
   Isolation isolation = 6;             // isolation of the plugin 
   bool running = 7;                    // whether or not the service is running
   string auth = 8;                     // auth level of this service
+  string error = 9;                    // reason the service stopped
 }
 
 // A daemon in the system.

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"cmp"
 	"context"
@@ -11,6 +10,8 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net"
+	"net/netip"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -53,18 +54,6 @@ var logo string
 // installService points at the eagled it finds.
 const unitExecStart = "ExecStart=%h/.local/bin/eagled $EAGLED_ARGS"
 
-// authKeyVar is the variable of the environment file that holds the VPN auth
-// key.
-const authKeyVar = "STEELEAGLE_AUTH_KEY"
-
-// loginExitCode is the code eagled exits with when the VPN rejects its auth
-// key (eagled's LoginExitCode), which eagled.service doesn't restart on.
-const loginExitCode = 78
-
-// errAuthKey is returned by waitReady when the VPN rejected eagled's auth
-// key.
-var errAuthKey = errors.New("the VPN rejected the auth key")
-
 // safeModeError is returned by waitReady when eagled is up, but its services
 // failed to start, so it is running without them (in safe mode).
 type safeModeError struct{ msg string }
@@ -103,13 +92,10 @@ var gitVersionPattern = regexp.MustCompile(`git version (\d+)\.(\d+)`)
 
 // rootRisk is what init tells a user it is running as root, before asking to
 // go on.
-const rootRisk = `You are running eagle init as root.
-
-eagled runs the plugins it installs, which are cloned from git repositories.
+const rootRisk = `eagled runs the plugins it installs, which are cloned from git repositories.
 As root, a faulty plugin has the whole machine, and the rootless podman and
 bwrap isolation protects nothing. It is safer to run eagled as an unprivileged
-user: create one, with "sudo adduser steeleagle", and run eagle init as them.
-`
+user: create one, with "sudo adduser steeleagle", and run eagle init as them.`
 
 // servicePaths are where installService writes the service files. They are
 // fixed relative to the home directory, since eagled.service refers to the
@@ -160,15 +146,41 @@ func defaultHostname(path string) string {
 	return cfg.Daemon.Hostname
 }
 
+// validBind checks that addr can be the address eagled binds to: an IP
+// address of one of this machine's interfaces, or 0.0.0.0 for all of them. It
+// returns the address as the config has it, which is "" for all interfaces.
+func validBind(addr string) (string, error) {
+	ip, err := netip.ParseAddr(addr)
+	if err != nil || ip.Zone() != "" {
+		return "", fmt.Errorf("%q is not an IP address", addr)
+	}
+	ip = ip.Unmap()
+	if ip.IsUnspecified() {
+		return "", nil
+	}
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return "", err
+	}
+	for _, a := range addrs {
+		if prefix, err := netip.ParsePrefix(a.String()); err == nil && prefix.Addr().Unmap() == ip {
+			return ip.String(), nil
+		}
+	}
+	return "", fmt.Errorf("no interface of this machine has the address %s", ip)
+}
+
 // writeDefaultConfig replaces the daemon config at path with the default
-// config, named hostname. Starting over means a config with services that
-// can't run yet, which would start eagled in safe mode, can't get init stuck.
-func writeDefaultConfig(path, hostname string) error {
+// config, named hostname and bound to bind (every interface if it is empty).
+// Starting over means a config with services that can't run yet, which would
+// start eagled in safe mode, can't get init stuck.
+func writeDefaultConfig(path, hostname, bind string) error {
 	cfg, err := config.ParseDaemonConfigFromBytes(defaultConfig)
 	if err != nil {
 		return fmt.Errorf("default config is invalid: %w", err)
 	}
 	cfg.Daemon.Hostname = hostname
+	cfg.Daemon.Bind = bind
 	content, err := cfg.ToBytes()
 	if err != nil {
 		return err
@@ -186,7 +198,7 @@ func initDaemon(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.Fla
 	if err := parseArgs(fs, args, 0); err != nil {
 		return err
 	}
-	if os.Geteuid() == 0 && !*allowRoot && !confirmRoot(os.Stdin, out) {
+	if os.Geteuid() == 0 && !*allowRoot && !confirmRoot(ctx, os.Stdin, out) {
 		return errors.New("not installing eagled as root")
 	}
 	// Look for eagled first, so that a missing one fails before any prompt
@@ -220,14 +232,9 @@ func initDaemon(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.Fla
 // confirmRoot warns that eagled is about to be installed as root, and asks to
 // go on, reading the answer from in. Anything but yes, including a closed
 // input, is a no.
-func confirmRoot(in io.Reader, out io.Writer) bool {
-	fmt.Fprintf(out, "%s\nInstall eagled as root anyway? [y/N] ", rootRisk)
-	answer, _ := bufio.NewReader(in).ReadString('\n')
-	switch strings.ToLower(strings.TrimSpace(answer)) {
-	case "y", "yes":
-		return true
-	}
-	return false
+func confirmRoot(ctx context.Context, in io.Reader, out io.Writer) bool {
+	fmt.Fprintf(out, "%s\n%s\n\n", errorStyle.Render("! You are running eagle init as root"), dimStyle.Render(rootRisk))
+	return confirm(ctx, in, out, "Install eagled as root anyway?")
 }
 
 // checkEagled runs the eagled at path eagled to print its usage, which
@@ -266,19 +273,13 @@ func withJournal(msg string) error {
 }
 
 // installService installs the eagled at path eagled as a systemd user
-// service, with the default config named hostname, with the VPN auth key authKey (none, logging in
-// interactively, if it is empty), then enables and (re)starts it. The key
-// replaces any the service had, so that a rejected one doesn't linger.
-func installService(eagled, hostname, authKey string, paths servicePaths) error {
+// service, with the default config named hostname and bound to bind (every
+// interface if it is empty), then enables and (re)starts it.
+func installService(eagled, hostname, bind string, paths servicePaths) error {
 	if err := writeServiceFiles(paths, eagled); err != nil {
 		return err
 	}
-	// The hostname must be set before eagled first joins the VPN, which
-	// registers it under that name
-	if err := writeDefaultConfig(paths.config, hostname); err != nil {
-		return err
-	}
-	if err := setAuthKey(paths.env, authKey); err != nil {
+	if err := writeDefaultConfig(paths.config, hostname, bind); err != nil {
 		return err
 	}
 	for _, args := range [][]string{
@@ -393,7 +394,7 @@ func writeServiceFiles(paths servicePaths, eagled string) error {
 	if err := os.MkdirAll(filepath.Dir(paths.env), 0o700); err != nil {
 		return err
 	}
-	// The env file holds the VPN auth key, so only the user may read it
+	// The env file holds the user's settings, so only they may read it
 	f, err := os.OpenFile(paths.env, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
 	if errors.Is(err, fs.ErrExist) {
 		return nil
@@ -407,31 +408,9 @@ func writeServiceFiles(paths servicePaths, eagled string) error {
 	return f.Close()
 }
 
-// setAuthKey sets the VPN auth key in the environment file at path,
-// replacing the key it has, if any.
-func setAuthKey(path, key string) error {
-	if strings.ContainsAny(key, "\r\n") {
-		return errors.New("auth key must be one line")
-	}
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	line := authKeyVar + "=" + key
-	lines := strings.Split(strings.TrimSuffix(string(content), "\n"), "\n")
-	i := slices.IndexFunc(lines, func(l string) bool { return strings.HasPrefix(l, authKeyVar+"=") })
-	if i >= 0 {
-		lines[i] = line
-	} else {
-		lines = append(lines, line)
-	}
-	return os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o600)
-}
-
 // waitReady waits for eagled to answer on conn, which it does once it has
 // joined its network and started its services. It returns a safeModeError if
-// the services failed to start, and gives up early if the service fails,
-// returning errAuthKey if the VPN rejected its auth key.
+// the services failed to start, and gives up early if the service fails.
 func waitReady(ctx context.Context, conn grpc.ClientConnInterface) error {
 	ctx, cancel := context.WithTimeout(ctx, readyTimeout)
 	defer cancel()
@@ -450,10 +429,7 @@ func waitReady(ctx context.Context, conn grpc.ClientConnInterface) error {
 		default:
 			return err
 		}
-		if state, code := serviceState(); state == "failed" {
-			if code == loginExitCode {
-				return errAuthKey
-			}
+		if serviceState() == "failed" {
 			return withJournal("eagled failed to start")
 		}
 		select {
@@ -465,22 +441,13 @@ func waitReady(ctx context.Context, conn grpc.ClientConnInterface) error {
 }
 
 // serviceState returns the state of the eagled service (such as "active" or
-// "failed") and the exit code of its last run, or "" if it can't be found.
-func serviceState() (state string, code int) {
-	out, err := systemCommand("systemctl", "--user", "show", "eagled", "--property=ActiveState,ExecMainStatus").Output()
+// "failed"), or "" if it can't be found.
+func serviceState() string {
+	out, err := systemCommand("systemctl", "--user", "show", "eagled", "--property=ActiveState", "--value").Output()
 	if err != nil {
-		return "", 0
+		return ""
 	}
-	for line := range strings.Lines(string(out)) {
-		key, value, _ := strings.Cut(strings.TrimSpace(line), "=")
-		switch key {
-		case "ActiveState":
-			state = value
-		case "ExecMainStatus":
-			code, _ = strconv.Atoi(value)
-		}
-	}
-	return state, code
+	return strings.TrimSpace(string(out))
 }
 
 // mainPID returns the PID of the running eagled service, or 0 if it isn't

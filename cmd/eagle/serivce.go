@@ -65,15 +65,17 @@ func configure(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.Flag
 	if err != nil {
 		return err
 	}
-	req := daemonpb.ConfigureRequest_builder{ConfigToml: string(content)}.Build()
-	if _, err := daemonpb.NewDaemonServiceClient(conn).Configure(ctx, req); err != nil {
-		return err
-	}
-	fmt.Fprintln(out, "config replaced; eagled is restarting")
-	return nil
+	return runTask(ctx, out, "Replacing the config", func(ctx context.Context, _ reportFunc) (result, error) {
+		req := daemonpb.ConfigureRequest_builder{ConfigToml: string(content)}.Build()
+		if _, err := daemonpb.NewDaemonServiceClient(conn).Configure(ctx, req); err != nil {
+			return result{}, err
+		}
+		return done("config replaced; eagled is restarting"), nil
+	})
 }
 
-// getConfig prints the daemon's config.toml.
+// getConfig prints the daemon's config.toml as is, so that it can be
+// redirected to a file.
 func getConfig(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.FlagSet, args []string, out io.Writer) error {
 	if err := parseArgs(fs, args, 0); err != nil {
 		return err
@@ -100,26 +102,28 @@ func setOrchestrator(ctx context.Context, conn grpc.ClientConnInterface, fs *fla
 	if err != nil || port < 1 || port > 65535 {
 		return usageError{fmt.Sprintf("invalid port %q", fs.Arg(1))}
 	}
-	client := daemonpb.NewDaemonServiceClient(conn)
-	resp, err := client.GetConfiguration(ctx, &daemonpb.GetConfigurationRequest{})
-	if err != nil {
-		return err
-	}
-	cfg, err := config.ParseDaemonConfigFromBytes(resp.GetConfigToml())
-	if err != nil {
-		return fmt.Errorf("daemon's config is invalid: %w", err)
-	}
-	cfg.Daemon.Orchestrator = net.JoinHostPort(host, strconv.Itoa(port))
-	content, err := cfg.ToBytes()
-	if err != nil {
-		return err
-	}
-	req := daemonpb.ConfigureRequest_builder{ConfigToml: string(content)}.Build()
-	if _, err := client.Configure(ctx, req); err != nil {
-		return err
-	}
-	fmt.Fprintf(out, "orchestrator set to %s; eagled is restarting\n", cfg.Daemon.Orchestrator)
-	return nil
+	orchestrator := net.JoinHostPort(host, strconv.Itoa(port))
+	return runTask(ctx, out, "Setting the orchestrator", func(ctx context.Context, _ reportFunc) (result, error) {
+		client := daemonpb.NewDaemonServiceClient(conn)
+		resp, err := client.GetConfiguration(ctx, &daemonpb.GetConfigurationRequest{})
+		if err != nil {
+			return result{}, err
+		}
+		cfg, err := config.ParseDaemonConfigFromBytes(resp.GetConfigToml())
+		if err != nil {
+			return result{}, fmt.Errorf("daemon's config is invalid: %w", err)
+		}
+		cfg.Daemon.Orchestrator = orchestrator
+		content, err := cfg.ToBytes()
+		if err != nil {
+			return result{}, err
+		}
+		req := daemonpb.ConfigureRequest_builder{ConfigToml: string(content)}.Build()
+		if _, err := client.Configure(ctx, req); err != nil {
+			return result{}, err
+		}
+		return done(fmt.Sprintf("orchestrator set to %s; eagled is restarting", orchestrator)), nil
+	})
 }
 
 // connectionStatus prints whether the daemon is connected to its
@@ -128,16 +132,16 @@ func connectionStatus(ctx context.Context, conn grpc.ClientConnInterface, fs *fl
 	if err := parseArgs(fs, args, 0); err != nil {
 		return err
 	}
-	resp, err := daemonpb.NewDaemonServiceClient(conn).GetConnectionStatus(ctx, &daemonpb.GetConnectionStatusRequest{})
-	if err != nil {
-		return err
-	}
-	if resp.GetConnected() {
-		fmt.Fprintln(out, "connected")
-	} else {
-		fmt.Fprintln(out, "not connected to orchestrator")
-	}
-	return nil
+	return runTask(ctx, out, "Checking the connection", func(ctx context.Context, _ reportFunc) (result, error) {
+		resp, err := daemonpb.NewDaemonServiceClient(conn).GetConnectionStatus(ctx, &daemonpb.GetConnectionStatusRequest{})
+		if err != nil {
+			return result{}, err
+		}
+		if resp.GetConnected() {
+			return done("connected"), nil
+		}
+		return warn("not connected to orchestrator"), nil
+	})
 }
 
 // restart restarts the daemon.
@@ -145,11 +149,12 @@ func restart(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.FlagSe
 	if err := parseArgs(fs, args, 0); err != nil {
 		return err
 	}
-	if _, err := daemonpb.NewDaemonServiceClient(conn).Restart(ctx, &daemonpb.RestartRequest{}); err != nil {
-		return err
-	}
-	fmt.Fprintln(out, "eagled is restarting")
-	return nil
+	return runTask(ctx, out, "Restarting eagled", func(ctx context.Context, _ reportFunc) (result, error) {
+		if _, err := daemonpb.NewDaemonServiceClient(conn).Restart(ctx, &daemonpb.RestartRequest{}); err != nil {
+			return result{}, err
+		}
+		return done("restart requested; eagled is restarting"), nil
+	})
 }
 
 // restartService restarts one of the daemon's services, by its name as
@@ -158,12 +163,14 @@ func restartService(ctx context.Context, conn grpc.ClientConnInterface, fs *flag
 	if err := parseArgs(fs, args, 1); err != nil {
 		return err
 	}
-	req := daemonpb.RestartServiceRequest_builder{ServiceNames: fs.Arg(0)}.Build()
-	if _, err := daemonpb.NewDaemonServiceClient(conn).RestartService(ctx, req); err != nil {
-		return err
-	}
-	fmt.Fprintf(out, "restarted %s\n", fs.Arg(0))
-	return nil
+	name := fs.Arg(0)
+	return runTask(ctx, out, "Restarting "+name, func(ctx context.Context, _ reportFunc) (result, error) {
+		req := daemonpb.RestartServiceRequest_builder{ServiceNames: name}.Build()
+		if _, err := daemonpb.NewDaemonServiceClient(conn).RestartService(ctx, req); err != nil {
+			return result{}, err
+		}
+		return done("restarted " + name), nil
+	})
 }
 
 // categoryNames are the names services are printed with, by category.
@@ -191,49 +198,74 @@ func listServices(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.F
 	if err != nil {
 		return err
 	}
+	res, err := servicesResult(resp, out)
+	if err != nil {
+		return err
+	}
+	return printResult(out, res)
+}
+
+// servicesResult renders the services and remote daemons of resp as tables,
+// fit to out.
+func servicesResult(resp *daemonpb.ListServicesResponse, out io.Writer) (result, error) {
+	var plain, styled strings.Builder
 	if len(resp.GetServices()) == 0 {
-		fmt.Fprintln(out, "no services")
+		plain.WriteString("no services\n")
+		styled.WriteString(dimStyle.Render("No services") + "\n")
 	} else {
-		w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
+		w := tabwriter.NewWriter(&plain, 0, 0, 2, ' ', 0)
+		t := newTable("CATEGORY", "NAME", "PLUGIN", "STATUS", "ISOLATION", "AUTH", "PACKAGE")
 		fmt.Fprintln(w, "CATEGORY\tNAME\tPLUGIN\tSTATUS\tISOLATION\tAUTH\tPACKAGE")
 		for _, s := range resp.GetServices() {
 			category, ok := categoryNames[s.GetCategory()]
 			if !ok {
 				category = s.GetCategory().String()
 			}
-			isolation, ok := isolationNames[s.GetIsolation()]
-			if !ok {
-				isolation = "-"
-			}
-			state := "stopped"
-			if s.GetRunning() {
-				state = "running"
+			isolation := isolationNames[s.GetIsolation()]
+			state, styledState := "stopped", errorStyle.Render("stopped")
+			switch {
+			case s.GetRunning():
+				state, styledState = "running", checkStyle.Render("running")
+			case s.GetError() != "":
+				// Why the service stopped
+				state = "stopped: " + s.GetError()
+				styledState += " " + dimStyle.Render(s.GetError())
 			}
 			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", category, s.GetName(), orDash(s.GetPlugin()),
-				state, isolation, orDash(s.GetAuth()), orDash(s.GetUri()))
+				state, orDash(isolation), orDash(s.GetAuth()), orDash(s.GetUri()))
+			t.Row(category, s.GetName(), orDim(s.GetPlugin()), styledState, orDim(isolation),
+				orDim(s.GetAuth()), orDim(s.GetUri()))
 		}
 		if err := w.Flush(); err != nil {
-			return err
+			return result{}, err
 		}
+		styled.WriteString(renderTable(t, out) + "\n")
 	}
 	if len(resp.GetRemotes()) == 0 {
-		return nil
+		return result{plain.String(), styled.String()}, nil
 	}
-	fmt.Fprintln(out)
-	w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
+	plain.WriteString("\n")
+	w := tabwriter.NewWriter(&plain, 0, 0, 2, ' ', 0)
+	t := newTable("REMOTE", "HOSTNAME", "PLATFORM", "STATUS")
 	fmt.Fprintln(w, "REMOTE\tHOSTNAME\tPLATFORM\tSTATUS")
 	for _, d := range resp.GetRemotes() {
-		platform := "-"
+		var platform string
 		if d.GetOs() != "" || d.GetArch() != "" {
 			platform = d.GetOs() + "/" + d.GetArch()
 		}
-		state := "available"
+		state, styledState := "available", checkStyle.Render("available")
 		if d.GetError() != "" {
 			state = "unavailable: " + d.GetError()
+			styledState = errorStyle.Render("unavailable") + " " + dimStyle.Render(d.GetError())
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", d.GetIp(), orDash(d.GetHostname()), platform, state)
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", d.GetIp(), orDash(d.GetHostname()), orDash(platform), state)
+		t.Row(d.GetIp(), orDim(d.GetHostname()), orDim(platform), styledState)
 	}
-	return w.Flush()
+	if err := w.Flush(); err != nil {
+		return result{}, err
+	}
+	styled.WriteString(renderTable(t, out) + "\n")
+	return result{plain.String(), styled.String()}, nil
 }
 
 // installPackage installs a package of plugins.
@@ -241,12 +273,14 @@ func installPackage(ctx context.Context, conn grpc.ClientConnInterface, fs *flag
 	if err := parseArgs(fs, args, 1); err != nil {
 		return err
 	}
-	req := daemonpb.InstallPackageRequest_builder{Uri: fs.Arg(0)}.Build()
-	if _, err := daemonpb.NewDaemonServiceClient(conn).InstallPackage(ctx, req); err != nil {
-		return err
-	}
-	fmt.Fprintf(out, "installed %s; run `eagle restart` to use it\n", fs.Arg(0))
-	return nil
+	uri := fs.Arg(0)
+	return runTask(ctx, out, "Installing "+uri, func(ctx context.Context, _ reportFunc) (result, error) {
+		req := daemonpb.InstallPackageRequest_builder{Uri: uri}.Build()
+		if _, err := daemonpb.NewDaemonServiceClient(conn).InstallPackage(ctx, req); err != nil {
+			return result{}, err
+		}
+		return done(fmt.Sprintf("installed %s; run `eagle restart` to use it", uri)), nil
+	})
 }
 
 // removePackage removes an installed package.
@@ -254,12 +288,14 @@ func removePackage(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.
 	if err := parseArgs(fs, args, 1); err != nil {
 		return err
 	}
-	req := daemonpb.RemovePackageRequest_builder{Uri: fs.Arg(0)}.Build()
-	if _, err := daemonpb.NewDaemonServiceClient(conn).RemovePackage(ctx, req); err != nil {
-		return err
-	}
-	fmt.Fprintf(out, "removed %s; run `eagle restart` to stop using it\n", fs.Arg(0))
-	return nil
+	uri := fs.Arg(0)
+	return runTask(ctx, out, "Removing "+uri, func(ctx context.Context, _ reportFunc) (result, error) {
+		req := daemonpb.RemovePackageRequest_builder{Uri: uri}.Build()
+		if _, err := daemonpb.NewDaemonServiceClient(conn).RemovePackage(ctx, req); err != nil {
+			return result{}, err
+		}
+		return done(fmt.Sprintf("removed %s; run `eagle restart` to stop using it", uri)), nil
+	})
 }
 
 // listPackages prints the installed packages as a table.
@@ -272,20 +308,25 @@ func listPackages(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.F
 		return err
 	}
 	if len(resp.GetPackages()) == 0 {
-		fmt.Fprintln(out, "no packages")
-		return nil
+		return printResult(out, result{"no packages\n", dimStyle.Render("No packages") + "\n"})
 	}
-	w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
+	var plain strings.Builder
+	w := tabwriter.NewWriter(&plain, 0, 0, 2, ' ', 0)
+	t := newTable("URI", "MODIFIED", "PLUGINS")
 	fmt.Fprintln(w, "URI\tMODIFIED\tPLUGINS")
 	for _, p := range resp.GetPackages() {
-		modified := "-"
+		var modified string
 		if p.HasModified() {
 			modified = p.GetModified().AsTime().Local().Format(time.DateTime)
 		}
 		plugins := strings.Join(slices.Sorted(maps.Keys(p.GetPlugins())), ", ")
-		fmt.Fprintf(w, "%s\t%s\t%s\n", p.GetUri(), modified, orDash(plugins))
+		fmt.Fprintf(w, "%s\t%s\t%s\n", p.GetUri(), orDash(modified), orDash(plugins))
+		t.Row(p.GetUri(), orDim(modified), orDim(plugins))
 	}
-	return w.Flush()
+	if err := w.Flush(); err != nil {
+		return err
+	}
+	return printResult(out, result{plain.String(), renderTable(t, out) + "\n"})
 }
 
 // transferFile copies a file to the daemon's files directory.
@@ -294,25 +335,30 @@ func transferFile(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.F
 	if err := parseArgs(fs, args, 1); err != nil {
 		return err
 	}
-	stream, err := daemonpb.NewTransferServiceClient(conn).TransferFile(ctx)
-	if err != nil {
-		return err
-	}
-	saved, err := sendChunks(fs.Arg(0), *name,
-		func(chunk []byte, number, total int32, filename string) error {
-			return stream.Send(daemonpb.TransferFileRequest_builder{
-				Chunk: chunk, Number: number, Total: total, Filename: filename,
-			}.Build())
-		},
-		func() (int32, error) {
-			resp, err := stream.Recv()
-			return resp.GetReceived(), err
-		})
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(out, "transferred %s to the daemon's files\n", saved)
-	return stream.CloseSend()
+	return runTask(ctx, out, "Transferring "+savedName(fs.Arg(0), *name), func(ctx context.Context, report reportFunc) (result, error) {
+		stream, err := daemonpb.NewTransferServiceClient(conn).TransferFile(ctx)
+		if err != nil {
+			return result{}, err
+		}
+		saved, err := sendChunks(fs.Arg(0), *name,
+			func(chunk []byte, number, total int32, filename string) error {
+				return stream.Send(daemonpb.TransferFileRequest_builder{
+					Chunk: chunk, Number: number, Total: total, Filename: filename,
+				}.Build())
+			},
+			func() (int32, error) {
+				resp, err := stream.Recv()
+				return resp.GetReceived(), err
+			},
+			report)
+		if err != nil {
+			return result{}, err
+		}
+		if err := stream.CloseSend(); err != nil {
+			return result{}, err
+		}
+		return done(fmt.Sprintf("transferred %s to the daemon's files", saved)), nil
+	})
 }
 
 // transferModel copies a model to the daemon's models directory, which
@@ -322,36 +368,51 @@ func transferModel(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.
 	if err := parseArgs(fs, args, 1); err != nil {
 		return err
 	}
-	stream, err := daemonpb.NewTransferServiceClient(conn).TransferModel(ctx)
-	if err != nil {
-		return err
+	return runTask(ctx, out, "Transferring "+savedName(fs.Arg(0), *name), func(ctx context.Context, report reportFunc) (result, error) {
+		stream, err := daemonpb.NewTransferServiceClient(conn).TransferModel(ctx)
+		if err != nil {
+			return result{}, err
+		}
+		saved, err := sendChunks(fs.Arg(0), *name,
+			func(chunk []byte, number, total int32, filename string) error {
+				return stream.Send(daemonpb.TransferModelRequest_builder{
+					Chunk: chunk, Number: number, Total: total, Filename: filename,
+				}.Build())
+			},
+			func() (int32, error) {
+				resp, err := stream.Recv()
+				return resp.GetReceived(), err
+			},
+			report)
+		if err != nil {
+			return result{}, err
+		}
+		if err := stream.CloseSend(); err != nil {
+			return result{}, err
+		}
+		return done(fmt.Sprintf("transferred %s to the daemon's models", saved)), nil
+	})
+}
+
+// savedName is the name the file at path is saved as: name, or its base
+// name if name is empty.
+func savedName(path, name string) string {
+	if name == "" {
+		return filepath.Base(path)
 	}
-	saved, err := sendChunks(fs.Arg(0), *name,
-		func(chunk []byte, number, total int32, filename string) error {
-			return stream.Send(daemonpb.TransferModelRequest_builder{
-				Chunk: chunk, Number: number, Total: total, Filename: filename,
-			}.Build())
-		},
-		func() (int32, error) {
-			resp, err := stream.Recv()
-			return resp.GetReceived(), err
-		})
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(out, "transferred %s to the daemon's models\n", saved)
-	return stream.CloseSend()
+	return name
 }
 
 // sendChunks sends the file at path in chunks numbered from 1, naming it name
 // in the first chunk, or its base name if name is empty. Each chunk is sent
 // once the one before it is acknowledged by recv, and the last is acknowledged
-// once the daemon has saved the file. It returns the name the file was saved
-// as.
+// once the daemon has saved the file. The bytes acknowledged so far are
+// reported to report. It returns the name the file was saved as.
 func sendChunks(
 	path, name string,
 	send func(chunk []byte, number, total int32, filename string) error,
 	recv func() (int32, error),
+	report reportFunc,
 ) (string, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -365,15 +426,14 @@ func sendChunks(
 	if !info.Mode().IsRegular() {
 		return "", fmt.Errorf("%s is not a regular file", path)
 	}
-	if name == "" {
-		name = filepath.Base(path)
-	}
+	name = savedName(path, name)
 	// An empty file is still sent as one empty chunk
 	total := max(1, (info.Size()+chunkSize-1)/chunkSize)
 	if total > 1<<31-1 {
 		return "", fmt.Errorf("%s is too large to transfer", path)
 	}
 	buf := make([]byte, chunkSize)
+	var sent int64
 	for number := int32(1); number <= int32(total); number++ {
 		n, err := io.ReadFull(f, buf)
 		// The last chunk may be short, or empty for an empty file
@@ -394,6 +454,8 @@ func sendChunks(
 		if received != number {
 			return "", fmt.Errorf("daemon acknowledged chunk %d, want %d", received, number)
 		}
+		sent += int64(n)
+		report(sent, info.Size())
 	}
 	return name, nil
 }

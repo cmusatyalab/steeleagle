@@ -314,7 +314,7 @@ func TestTransferRejected(t *testing.T) {
 }
 
 // TestListServicesTable checks that services are printed as a table, with
-// their category, status and isolation, followed by the remote daemons, with
+// their category, status (with why a stopped one stopped) and isolation, followed by the remote daemons, with
 // why any can't be reached.
 func TestListServicesTable(t *testing.T) {
 	daemon := &fakeDaemon{services: daemonpb.ListServicesResponse_builder{
@@ -332,6 +332,11 @@ func TestListServicesTable(t *testing.T) {
 				Name:     "100.64.0.2.yolo",
 				Category: daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE,
 			}.Build(),
+			daemonpb.Service_builder{
+				Name:     "px4",
+				Category: daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE,
+				Error:    "exited with status 1",
+			}.Build(),
 		},
 		Remotes: []*daemonpb.Daemon{
 			daemonpb.Daemon_builder{Ip: "100.64.0.2", Hostname: "jetson", Os: "linux", Arch: "arm64"}.Build(),
@@ -348,6 +353,7 @@ func TestListServicesTable(t *testing.T) {
 		{"CATEGORY", "NAME", "PLUGIN", "STATUS", "ISOLATION", "AUTH", "PACKAGE"},
 		{"vehicle", "drone", "anafi.toml", "running", "process", "admin", "github.com/example/drivers"},
 		{"engine", "100.64.0.2.yolo", "-", "stopped", "-", "-", "-"},
+		{"vehicle", "px4", "-", "stopped:", "exited", "with", "status", "1", "-", "-", "-"},
 		{},
 		{"REMOTE", "HOSTNAME", "PLATFORM", "STATUS"},
 		{"100.64.0.2", "jetson", "linux/arm64", "available"},

@@ -14,13 +14,6 @@ func WithLogger(logger zerolog.Logger) DaemonOption {
 	}
 }
 
-// WithAuthKey sets the VPN auth key used to join the network non-interactively.
-func WithAuthKey(authKey string) DaemonOption {
-	return func(d *Daemon) {
-		d.netAuth = authKey
-	}
-}
-
 // WithConfigPath sets the path of the daemon config, instead of config.toml in
 // the config directory.
 func WithConfigPath(path string) DaemonOption {
@@ -42,5 +35,13 @@ func WithNetwork(n network.Network) DaemonOption {
 func WithSocketPath(path string) DaemonOption {
 	return func(d *Daemon) {
 		d.socketPath = path
+	}
+}
+
+// WithoutLogServer stops the daemon from serving its logs through logdy,
+// which can only run once per process.
+func WithoutLogServer() DaemonOption {
+	return func(d *Daemon) {
+		d.noLogServer = true
 	}
 }

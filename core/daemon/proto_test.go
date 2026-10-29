@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"errors"
 	"net"
 	"slices"
 	"testing"
@@ -9,6 +10,7 @@ import (
 	daemonpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/daemon"
 	"github.com/cmusatyalab/steeleagle/config"
 	"github.com/cmusatyalab/steeleagle/v4/core/util/listener"
+	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 )
 
@@ -35,8 +37,8 @@ func TestServiceProto(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !p.GetRunning() || p.GetAuth() != "user" {
-		t.Errorf("proto = %v, want running with user auth", p)
+	if !p.GetRunning() || p.GetAuth() != "user" || p.GetError() != "" {
+		t.Errorf("proto = %v, want running with user auth, and no error", p)
 	}
 	got, err := serviceFromProto(p)
 	if err != nil {
@@ -51,6 +53,18 @@ func TestServiceProto(t *testing.T) {
 	}
 	if got.config == nil || got.config.Engine == nil || got.config.Engine.Type != "detection" {
 		t.Errorf("config = %+v, want the engine config", got.config)
+	}
+
+	// A service's error survives conversion
+	p, err = (&daemonService{name: "bad", err: errors.New("asked to fail")}).toProto(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.GetError() != "asked to fail" {
+		t.Errorf("proto error = %q, want %q", p.GetError(), "asked to fail")
+	}
+	if got, err := serviceFromProto(p); err != nil || got.err == nil || got.err.Error() != "asked to fail" {
+		t.Errorf("serviceFromProto() error = %v, %v, want the service's error", got.err, err)
 	}
 
 	// A service without a config, like the simulator, has none on the other side
@@ -68,13 +82,15 @@ func TestServiceProto(t *testing.T) {
 	}
 }
 
-// stubPlugin is a plugin that is only ever running or not.
+// stubPlugin is a plugin that is only ever running or not, and fails to
+// start with startErr, if set.
 type stubPlugin struct {
-	running bool
+	running  bool
+	startErr error
 }
 
 func (p *stubPlugin) Start(context.Context) (net.Listener, *grpc.ClientConn, error) {
-	return nil, nil, nil
+	return nil, nil, p.startErr
 }
 
 func (p *stubPlugin) Watch() <-chan error { return nil }
@@ -109,5 +125,39 @@ func TestServiceProtos(t *testing.T) {
 	}
 	if !slices.Equal(names, []string{"a", "b", "c"}) || !slices.Equal(states, []bool{true, false, false}) {
 		t.Errorf("services = %v, running = %v, want a, b, c with only a running", names, states)
+	}
+}
+
+// TestServiceProtosError checks that a service is listed with the error it
+// failed to start with, and that the error is cleared when it restarts.
+func TestServiceProtosError(t *testing.T) {
+	stub := &stubPlugin{startErr: errors.New("asked to fail")}
+	s := &daemonService{name: "a"}
+	d := &Daemon{
+		ctx:      context.Background(),
+		log:      zerolog.Nop(),
+		services: []*daemonService{s},
+		plugins:  map[string]*daemonPlugin{"a": {plugin: stub}},
+	}
+	errOf := func() string {
+		t.Helper()
+		got, err := d.serviceProtos()
+		if err != nil {
+			t.Fatal(err)
+		}
+		return got[0].GetError()
+	}
+	if err := d.startService(s); err == nil {
+		t.Fatal("startService() = nil, want error")
+	}
+	if got := errOf(); got != "asked to fail" {
+		t.Errorf("error after a failed start = %q, want %q", got, "asked to fail")
+	}
+	stub.startErr = nil
+	if err := d.startService(s); err != nil {
+		t.Fatal(err)
+	}
+	if got := errOf(); got != "" {
+		t.Errorf("error after a restart = %q, want none", got)
 	}
 }
