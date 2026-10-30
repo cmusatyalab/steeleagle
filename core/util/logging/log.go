@@ -11,6 +11,7 @@ import (
 
 	logdyhttp "github.com/logdyhq/logdy-core/http"
 	"github.com/logdyhq/logdy-core/logdy"
+	"github.com/logdyhq/logdy-core/models"
 	"github.com/logdyhq/logdy-core/modes"
 	"github.com/nxadm/tail"
 )
@@ -70,7 +71,7 @@ func NewLogServer(addr string, port int) (*Logger, error) {
 }
 
 // AddFile starts a goroutine that makes logdy tail the file at path, starting
-// from its end. If the file does not appear within 30 seconds, the goroutine
+// from its beginning. If the file does not appear within 30 seconds, the goroutine
 // exits without tailing it. It does nothing on a nil Logger.
 func (l *Logger) AddFile(path string) {
 	if l == nil {
@@ -88,7 +89,16 @@ func (l *Logger) AddFile(path string) {
 			}
 			time.Sleep(fileWaitInterval)
 		}
-		modes.FollowFiles(logdyhttp.Ch, []string{path})
+		// Tail the file ourselves, since logdy's FollowFiles starts from the
+		// end and drops anything written before the tail opened
+		t, err := tail.TailFile(path, tail.Config{Follow: true, ReOpen: true})
+		if err != nil {
+			return
+		}
+		origin := &models.MessageOrigin{File: path}
+		for line := range t.Lines {
+			modes.ProduceMessageString(logdyhttp.Ch, line.Text, models.MessageTypeStdout, origin)
+		}
 	}()
 }
 

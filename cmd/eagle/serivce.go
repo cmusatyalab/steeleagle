@@ -149,12 +149,14 @@ func restart(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.FlagSe
 	if err := parseArgs(fs, args, 0); err != nil {
 		return err
 	}
-	return runTask(ctx, out, "Restarting eagled", func(ctx context.Context, _ reportFunc) (result, error) {
-		if _, err := daemonpb.NewDaemonServiceClient(conn).Restart(ctx, &daemonpb.RestartRequest{}); err != nil {
-			return result{}, err
+	// The request returns at once, so it isn't worth a spinner
+	if _, err := daemonpb.NewDaemonServiceClient(conn).Restart(ctx, &daemonpb.RestartRequest{}); err != nil {
+		if isTerminal(out) {
+			fmt.Fprintln(out, errorStyle.Render("✗ ")+"Restarting eagled")
 		}
-		return done("restart requested; eagled is restarting"), nil
-	})
+		return err
+	}
+	return printResult(out, done("restart requested; eagled is restarting"))
 }
 
 // restartService restarts one of the daemon's services, by its name as
@@ -164,13 +166,15 @@ func restartService(ctx context.Context, conn grpc.ClientConnInterface, fs *flag
 		return err
 	}
 	name := fs.Arg(0)
-	return runTask(ctx, out, "Restarting "+name, func(ctx context.Context, _ reportFunc) (result, error) {
-		req := daemonpb.RestartServiceRequest_builder{ServiceNames: name}.Build()
-		if _, err := daemonpb.NewDaemonServiceClient(conn).RestartService(ctx, req); err != nil {
-			return result{}, err
+	// The request returns at once, so it isn't worth a spinner
+	req := daemonpb.RestartServiceRequest_builder{ServiceNames: name}.Build()
+	if _, err := daemonpb.NewDaemonServiceClient(conn).RestartService(ctx, req); err != nil {
+		if isTerminal(out) {
+			fmt.Fprintln(out, errorStyle.Render("✗ ")+"Restarting "+name)
 		}
-		return done("restarted " + name), nil
-	})
+		return err
+	}
+	return printResult(out, done("restarted "+name))
 }
 
 // categoryNames are the names services are printed with, by category.
