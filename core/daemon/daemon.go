@@ -29,18 +29,20 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// daemonService is a vehicle, engine, or generic service running on the daemon.
+// daemonService is a service of the daemon (vehicle, engine, simulator, or
+// extra) that runs a plugin from a package.
 type daemonService struct {
 	name       string                   // name of the service
 	category   daemonpb.ServiceCategory // service category (simulator, vehicle, engine, extra)
-	uri        string                   // package uri for this service
-	pluginName string                   // plugin file name
-	config     *config.PluginConfig     // service plugin config
+	uri        string                   // package uri for the plugin
+	pluginName string                   // plugin file name inside package
+	config     *config.PluginConfig     // plugin config
 	auth       listener.AuthCode        // authentication code
 	isolation  daemonpb.Isolation       // isolation type
 	container  string                   // container url with tag, if isolated in a container
-	path       string                   // package directory of the plugin
+	path       string                   // installed package directory
 	args       string                   // plugin args from the daemon config, as a JSON object
+	pixiEnv    string                   // pixi environment to run the plugin in, empty for the default
 	local      bool                     // whether or not the service is local
 	simulated  bool                     // whether or not the service belongs to the simulator
 	err        error                    // why the service failed to start, nil if it didn't

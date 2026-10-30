@@ -88,6 +88,9 @@ plugin = "yolo_qnn"
 package = "github.com/cmusatyalab/steeleagle_plugins//engines/yolo"
 # Isolation type (optional, sandbox or container url with tag)
 isolation = "sandbox"
+# Pixi environment of the package to run the plugin in (optional, defaults to
+# the package's default environment)
+environment = "cuda126"
 [services.plugin.args] # Args for this plugin (can be empty)
 confidence = 0.7
 

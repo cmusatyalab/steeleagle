@@ -298,6 +298,7 @@ func (d *Daemon) populateServices() error {
 			// config through its args, so their plugin's args and isolation
 			// are ignored
 			s.args = "{}"
+			s.pixiEnv = ""
 			s.isolation = daemonpb.Isolation_ISOLATION_PROCESS
 			s.container = ""
 		}
@@ -393,6 +394,9 @@ func (d *Daemon) runService(s *daemonService) error {
 			// Qualifiers for local and remote daemons
 			plugin.WithEnvironment(LocalQualEnv, d.netAddr.String()),
 			plugin.WithEnvironment(RemoteQualEnv, remoteIp),
+		}
+		if s.pixiEnv != "" {
+			options = append(options, plugin.WithExecutableArgs([]string{pixiEnvFlag, s.pixiEnv}))
 		}
 		switch s.category {
 		case daemonpb.ServiceCategory_SERVICE_CATEGORY_SIMULATOR: // sim options
@@ -608,6 +612,7 @@ func (d *Daemon) setPlugin(s *daemonService, p config.PluginField) error {
 		s.container = p.Isolation
 	}
 	s.uri, s.pluginName, s.path, s.args, s.config = p.Package, name, path, args, conf
+	s.pixiEnv = p.Environment
 	return nil
 }
 

@@ -61,10 +61,11 @@ func TestDaemonConfigParsesExample(t *testing.T) {
 		Type: ServiceEngine,
 		Auth: AuthExternal,
 		Plugin: PluginField{
-			Plugin:    "yolo_qnn",
-			Package:   "github.com/cmusatyalab/steeleagle_plugins//engines/yolo",
-			Isolation: IsolationSandbox,
-			Args:      map[string]interface{}{"confidence": 0.7},
+			Plugin:      "yolo_qnn",
+			Package:     "github.com/cmusatyalab/steeleagle_plugins//engines/yolo",
+			Isolation:   IsolationSandbox,
+			Environment: "cuda126",
+			Args:        map[string]interface{}{"confidence": 0.7},
 		},
 	}, {
 		Name: "yolo_nq",

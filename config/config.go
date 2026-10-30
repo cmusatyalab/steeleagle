@@ -63,6 +63,10 @@ type PluginField struct {
 	// Isolation type, either "sandbox" or a container url with tag (optional,
 	// ignored if the service is simulated)
 	Isolation string `toml:"isolation,omitempty"`
+	// Pixi environment of the plugin's package to run it in, as in
+	// `pixi run -e <environment>` (optional, defaults to the package's default
+	// environment, and ignored if the service is simulated)
+	Environment string `toml:"environment,omitempty"`
 	// Arguments for the plugin (ignored if the service is simulated)
 	Args map[string]interface{} `toml:"args"`
 }

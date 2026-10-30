@@ -52,6 +52,9 @@ const (
 	ShimListenSock = "out.sock"
 )
 
+// The pixi flag that selects the environment a plugin package is run in
+const pixiEnvFlag = "--environment"
+
 // Environment variables passed to every plugin: the file name of the plugin to
 // run within its package (e.g. detector.plugin.toml), and its args from the
 // daemon config as a JSON object.

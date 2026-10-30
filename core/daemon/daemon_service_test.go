@@ -187,7 +187,7 @@ func TestPopulateServices(t *testing.T) {
 		Simulator: config.SimulatorField{Package: sim, Args: map[string]any{"vehicles": []any{"v"}}},
 		Services: []config.ServiceField{
 			{Name: "e", Type: config.ServiceEngine, Plugin: config.PluginField{
-				Plugin: "detector", Package: testPkg, Isolation: config.IsolationSandbox}},
+				Plugin: "detector", Package: testPkg, Isolation: config.IsolationSandbox, Environment: "cuda126"}},
 			{Name: "v", Type: config.ServiceVehicle, Simulate: true, Plugin: config.PluginField{
 				Plugin: "sim_vehicle", Package: sim, Isolation: "docker.io/x:1", Args: map[string]any{"ignored": true}}},
 			{Name: "x", Type: config.ServiceExtra, Auth: config.AuthAdmin, Plugin: config.PluginField{
@@ -216,7 +216,7 @@ func TestPopulateServices(t *testing.T) {
 		t.Errorf("simulator = %+v, want the simulator package, with its args and no plugin", simulator)
 	}
 	if e.auth != listener.ExternalCode || e.isolation != daemonpb.Isolation_ISOLATION_SANDBOX ||
-		e.pluginName != "detector.plugin.toml" || e.config == nil || e.config.Engine == nil || e.args != "{}" {
+		e.pixiEnv != "cuda126" || e.pluginName != "detector.plugin.toml" || e.config == nil || e.config.Engine == nil || e.args != "{}" {
 		t.Errorf("engine = %+v, want an external, sandboxed detector with its config", e)
 	}
 	if v.auth != listener.PrivilegedCode || !v.simulated || v.uri != sim || v.pluginName != "sim_vehicle.plugin.toml" ||
