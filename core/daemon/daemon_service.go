@@ -376,7 +376,7 @@ func (d *Daemon) runService(s *daemonService) error {
 		}()
 		remoteIp := ""
 		if d.orch != nil {
-			remoteIp = d.orch.ip
+			remoteIp = d.orch.qualIp
 		}
 		options := []plugin.PluginOption{
 			plugin.WithLogger(

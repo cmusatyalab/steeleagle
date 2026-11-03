@@ -156,6 +156,7 @@ func (d *Daemon) connect(ctx context.Context) (orchStream, func(), error) {
 		lcsPort:  int(resp.GetLcsPort()),
 		cert:     resp.GetCert(),
 		services: remotes,
+		qualIp:   resp.GetQualifier(),
 	}
 	d.orchMu.Unlock()
 	d.connected.Store(true)
@@ -250,10 +251,11 @@ func (d *Daemon) serveRegistration(
 	// Vehicles on the child reach this daemon's engines through its compute
 	// service, trusting its cert
 	resp := daemonpb.RegisterOrchestratorResponse_builder{
-		Services: own,
-		Hostname: d.Hostname,
-		Cert:     d.cert,
-		LcsPort:  int32(d.Config.Daemon.Lcs),
+		Services:  own,
+		Hostname:  d.Hostname,
+		Cert:      d.cert,
+		LcsPort:   int32(d.Config.Daemon.Lcs),
+		Qualifier: d.netAddr.String(),
 	}.Build()
 	if err := stream.Send(resp); err != nil {
 		return err

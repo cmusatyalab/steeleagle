@@ -170,6 +170,7 @@ message RegisterOrchestratorResponse {
   string hostname = 2;           // hostname of the orchestrator
   bytes cert = 3;                // DER cert of the orchestrator's local compute service
   int32 lcs_port = 4;            // port of the orchestrator's local compute service
+  string qualifier = 5;          // qualifier used by daemon's services
 }
 
 message GetConnectionStatusRequest {}

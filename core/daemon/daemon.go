@@ -65,6 +65,7 @@ type orchInfo struct {
 	lcsPort  int              // port of the orchestrator's compute service
 	cert     []byte           // DER cert of the orchestrator's compute service
 	services []*daemonService // services on the orchestrator
+	qualIp   string           // qualifier for orchestrator services (may be different than ip)
 }
 
 // childInfo gives information about a child daemon.

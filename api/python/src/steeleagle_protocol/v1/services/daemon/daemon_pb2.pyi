@@ -86,16 +86,18 @@ class RegisterOrchestratorRequest(_message.Message):
     def __init__(self, services: _Optional[_Iterable[_Union[Service, _Mapping]]] = ..., hostname: _Optional[str] = ..., port: _Optional[int] = ..., arch: _Optional[str] = ..., os: _Optional[str] = ...) -> None: ...
 
 class RegisterOrchestratorResponse(_message.Message):
-    __slots__ = ("services", "hostname", "cert", "lcs_port")
+    __slots__ = ("services", "hostname", "cert", "lcs_port", "qualifier")
     SERVICES_FIELD_NUMBER: _ClassVar[int]
     HOSTNAME_FIELD_NUMBER: _ClassVar[int]
     CERT_FIELD_NUMBER: _ClassVar[int]
     LCS_PORT_FIELD_NUMBER: _ClassVar[int]
+    QUALIFIER_FIELD_NUMBER: _ClassVar[int]
     services: _containers.RepeatedCompositeFieldContainer[Service]
     hostname: str
     cert: bytes
     lcs_port: int
-    def __init__(self, services: _Optional[_Iterable[_Union[Service, _Mapping]]] = ..., hostname: _Optional[str] = ..., cert: _Optional[bytes] = ..., lcs_port: _Optional[int] = ...) -> None: ...
+    qualifier: str
+    def __init__(self, services: _Optional[_Iterable[_Union[Service, _Mapping]]] = ..., hostname: _Optional[str] = ..., cert: _Optional[bytes] = ..., lcs_port: _Optional[int] = ..., qualifier: _Optional[str] = ...) -> None: ...
 
 class GetConnectionStatusRequest(_message.Message):
     __slots__ = ()

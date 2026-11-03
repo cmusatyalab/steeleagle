@@ -528,13 +528,14 @@ func (b0 RegisterOrchestratorRequest_builder) Build() *RegisterOrchestratorReque
 }
 
 type RegisterOrchestratorResponse struct {
-	state               protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Services *[]*Service            `protobuf:"bytes,1,rep,name=services,proto3"`
-	xxx_hidden_Hostname string                 `protobuf:"bytes,2,opt,name=hostname,proto3"`
-	xxx_hidden_Cert     []byte                 `protobuf:"bytes,3,opt,name=cert,proto3"`
-	xxx_hidden_LcsPort  int32                  `protobuf:"varint,4,opt,name=lcs_port,json=lcsPort,proto3"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Services  *[]*Service            `protobuf:"bytes,1,rep,name=services,proto3"`
+	xxx_hidden_Hostname  string                 `protobuf:"bytes,2,opt,name=hostname,proto3"`
+	xxx_hidden_Cert      []byte                 `protobuf:"bytes,3,opt,name=cert,proto3"`
+	xxx_hidden_LcsPort   int32                  `protobuf:"varint,4,opt,name=lcs_port,json=lcsPort,proto3"`
+	xxx_hidden_Qualifier string                 `protobuf:"bytes,5,opt,name=qualifier,proto3"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *RegisterOrchestratorResponse) Reset() {
@@ -592,6 +593,13 @@ func (x *RegisterOrchestratorResponse) GetLcsPort() int32 {
 	return 0
 }
 
+func (x *RegisterOrchestratorResponse) GetQualifier() string {
+	if x != nil {
+		return x.xxx_hidden_Qualifier
+	}
+	return ""
+}
+
 func (x *RegisterOrchestratorResponse) SetServices(v []*Service) {
 	x.xxx_hidden_Services = &v
 }
@@ -611,13 +619,18 @@ func (x *RegisterOrchestratorResponse) SetLcsPort(v int32) {
 	x.xxx_hidden_LcsPort = v
 }
 
+func (x *RegisterOrchestratorResponse) SetQualifier(v string) {
+	x.xxx_hidden_Qualifier = v
+}
+
 type RegisterOrchestratorResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Services []*Service
-	Hostname string
-	Cert     []byte
-	LcsPort  int32
+	Services  []*Service
+	Hostname  string
+	Cert      []byte
+	LcsPort   int32
+	Qualifier string
 }
 
 func (b0 RegisterOrchestratorResponse_builder) Build() *RegisterOrchestratorResponse {
@@ -628,6 +641,7 @@ func (b0 RegisterOrchestratorResponse_builder) Build() *RegisterOrchestratorResp
 	x.xxx_hidden_Hostname = b.Hostname
 	x.xxx_hidden_Cert = b.Cert
 	x.xxx_hidden_LcsPort = b.LcsPort
+	x.xxx_hidden_Qualifier = b.Qualifier
 	return m0
 }
 
@@ -1665,12 +1679,13 @@ const file_steeleagle_protocol_v1_services_daemon_daemon_proto_rawDesc = "" +
 	"\bhostname\x18\x02 \x01(\tR\bhostname\x12\x12\n" +
 	"\x04port\x18\x03 \x01(\x05R\x04port\x12\x12\n" +
 	"\x04arch\x18\x04 \x01(\tR\x04arch\x12\x0e\n" +
-	"\x02os\x18\x05 \x01(\tR\x02os\"\xb6\x01\n" +
+	"\x02os\x18\x05 \x01(\tR\x02os\"\xd4\x01\n" +
 	"\x1cRegisterOrchestratorResponse\x12K\n" +
 	"\bservices\x18\x01 \x03(\v2/.steeleagle_protocol.v1.services.daemon.ServiceR\bservices\x12\x1a\n" +
 	"\bhostname\x18\x02 \x01(\tR\bhostname\x12\x12\n" +
 	"\x04cert\x18\x03 \x01(\fR\x04cert\x12\x19\n" +
-	"\blcs_port\x18\x04 \x01(\x05R\alcsPort\"\x1c\n" +
+	"\blcs_port\x18\x04 \x01(\x05R\alcsPort\x12\x1c\n" +
+	"\tqualifier\x18\x05 \x01(\tR\tqualifier\"\x1c\n" +
 	"\x1aGetConnectionStatusRequest\";\n" +
 	"\x1bGetConnectionStatusResponse\x12\x1c\n" +
 	"\tconnected\x18\x01 \x01(\bR\tconnected\"3\n" +
