@@ -1,6 +1,7 @@
 version: v2
 modules:
   - path: api
+    name: buf.build/cmusatyalab/steeleagle-protocol
 lint:
   use:
     - STANDARD
