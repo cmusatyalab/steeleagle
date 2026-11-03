@@ -23,11 +23,11 @@ type Track struct {
 	Class  string                 // class to look for
 	// #optional[3.0]
 	LostDuration float32 // time in seconds before declaring target lost and exiting
-	// #optional[0.2]
+	// #optional[0.1]
 	TargetAreaRatio float32 // target bounding box ratio of the camera frame size
-	// #optional[120.0]
+	// #optional[180.0]
 	YawSpeed float32 // yaw speed in degrees per second
-	// #optional[90.0]
+	// #optional[20.0]
 	PitchSpeed float32 // pitch speed in degrees per second
 	// #optional[3.0]
 	MoveSpeed float32 // move speed in meters per second
