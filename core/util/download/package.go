@@ -13,6 +13,9 @@ import (
 // literalPathspec makes git take the path after it literally, with no globbing.
 const literalPathspec = ":(literal)"
 
+// lsTreeFields is the number of fields in the metadata of a git ls-tree entry: mode, type and object id.
+const lsTreeFields = 3
+
 // InstallPackage installs a git url into target. Like Terraform, a sub directory of the
 // repository can be selected by appending it to the url after a double slash
 // (https://host/repo.git//sub/dir). Like Go, a version (branch, tag, or commit) can be
@@ -51,34 +54,52 @@ func InstallPackage(url, target string) error {
 		return err
 	}
 
-	run := func(args ...string) error {
+	// git runs git in the repository, feeding it stdin, and returns its stdout
+	git := func(stdin string, args ...string) (string, error) {
 		cmd := exec.Command("git", append([]string{"-C", repo}, args...)...)
 		cmd.Env = append(os.Environ(),
 			"GIT_TERMINAL_PROMPT=0",         // fail instead of prompting for creds
 			"GIT_ALLOW_PROTOCOL=https:file", // no ssh, git or ext transports
 		)
-		if out, err := cmd.CombinedOutput(); err != nil {
-			return fmt.Errorf("git %v: %w\n%s", args, err, out)
+		cmd.Stdin = strings.NewReader(stdin)
+		var stdout, stderr strings.Builder
+		cmd.Stdout, cmd.Stderr = &stdout, &stderr
+		if err := cmd.Run(); err != nil {
+			return "", fmt.Errorf("git %v: %w\n%s", args, err, stderr.String())
 		}
-		return nil
+		return stdout.String(), nil
 	}
 
-	steps := [][]string{
+	for _, args := range [][]string{
 		{"init", "-q"},
 		{"remote", "add", "origin", url},
 		{"fetch", "-q", "--depth", "1", "--filter=blob:none", "origin", version},
-	}
-	checkout := []string{"-c", "advice.detachedHead=false", "checkout", "-q", "FETCH_HEAD"}
-	if subdir != "." {
-		// Only the sub directory is checked out, so only its files are
-		// fetched; the literal magic stops git reading it as a glob
-		checkout = append(checkout, "--", literalPathspec+subdir)
-	}
-	steps = append(steps, checkout)
-	for _, s := range steps {
-		if err := run(s...); err != nil {
+	} {
+		if _, err := git("", args...); err != nil {
 			return err
 		}
+	}
+	// Pin the commit, since FETCH_HEAD is for the fetch, and later ones may replace it
+	commit, err := git("", "rev-parse", "FETCH_HEAD")
+	if err != nil {
+		return err
+	}
+	commit = strings.TrimSpace(commit)
+
+	// Only the sub directory is checked out, so only its files are
+	// fetched; the literal magic stops git reading it as a glob
+	var pathspec []string
+	if subdir != "." {
+		pathspec = []string{"--", literalPathspec + subdir}
+	}
+	// The blobless fetch got no file contents, and a checkout would fetch the
+	// missing ones one at a time, a round trip each. Fetch them all at once.
+	if err := prefetchBlobs(git, commit, pathspec); err != nil {
+		return err
+	}
+	checkout := append([]string{"-c", "advice.detachedHead=false", "checkout", "-q", commit}, pathspec...)
+	if _, err := git("", checkout...); err != nil {
+		return err
 	}
 	if err := os.RemoveAll(filepath.Join(repo, ".git")); err != nil {
 		return err
@@ -101,6 +122,35 @@ func InstallPackage(url, target string) error {
 		return err
 	}
 	return os.Rename(staged, target)
+}
+
+// prefetchBlobs fetches, in one request, the file contents under pathspec at
+// commit that the repository is missing. git is a function that runs git in
+// the repository with the given stdin and returns its stdout.
+func prefetchBlobs(git func(stdin string, args ...string) (string, error), commit string, pathspec []string) error {
+	out, err := git("", append([]string{"ls-tree", "-r", "-z", commit}, pathspec...)...)
+	if err != nil {
+		return err
+	}
+	// Entries are "<mode> <type> <oid>\t<path>", separated by NULs
+	var oids strings.Builder
+	for _, entry := range strings.Split(out, "\x00") {
+		meta, _, _ := strings.Cut(entry, "\t")
+		fields := strings.Fields(meta)
+		// Submodules (type commit) aren't in this repository
+		if len(fields) == lsTreeFields && fields[1] == "blob" {
+			oids.WriteString(fields[lsTreeFields-1] + "\n")
+		}
+	}
+	if oids.Len() == 0 {
+		return nil
+	}
+	// These are the options git itself fetches missing objects with
+	_, err = git(oids.String(),
+		"-c", "fetch.negotiationAlgorithm=noop",
+		"fetch", "--no-tags", "--no-write-fetch-head", "--recurse-submodules=no",
+		"--filter=blob:none", "origin", "--stdin")
+	return err
 }
 
 // splitVersion splits a url of the form repo@version into the repository and
