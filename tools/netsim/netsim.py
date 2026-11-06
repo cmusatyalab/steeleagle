@@ -30,6 +30,7 @@ import math
 import os
 import random
 import re
+import shutil
 import signal
 import subprocess
 import sys
@@ -60,6 +61,24 @@ DROP_PREF = 1
 L2_HEADER_BYTES = {"ether": 14, "loopback": 14}
 
 L4_PROTO_NUMBERS = {"tcp": 6, "udp": 17}
+
+
+def _resolve_cmd(name: str) -> str:
+    path = shutil.which(name)
+    if path:
+        return path
+    for candidate_dir in ("/usr/sbin", "/sbin", "/usr/bin", "/bin"):
+        candidate = os.path.join(candidate_dir, name)
+        if os.path.isfile(candidate):
+            return candidate
+    raise RuntimeError(
+        f"could not locate {name!r} on PATH or in standard sbin/bin dirs"
+    )
+
+
+TC = _resolve_cmd("tc")
+IP = _resolve_cmd("ip")
+IPTABLES = _resolve_cmd("iptables")
 
 
 def die(msg: str) -> None:
@@ -106,7 +125,7 @@ class Tc:
             for l4, l4num in L4_PROTO_NUMBERS.items():
                 for side in ("sport", "dport"):
                     self.run(
-                        "tc",
+                        TC,
                         "filter",
                         "add",
                         "dev",
@@ -138,7 +157,7 @@ class Tc:
             for l4, l4num in L4_PROTO_NUMBERS.items():
                 for side in ("sport", "dport"):
                     self.run(
-                        "tc",
+                        TC,
                         "filter",
                         "add",
                         "dev",
@@ -168,18 +187,18 @@ class Tc:
         if self.dry_run:
             return
         if self.direction == "ingress":
-            out = self.run("tc", "qdisc", "show", "dev", self.iface).stdout
+            out = self.run(TC, "qdisc", "show", "dev", self.iface).stdout
             if " clsact " in out or " ingress " in out:
                 die(
                     f"{self.iface} already has an ingress/clsact qdisc. Refusing to replace it. "
                     f"If it is left over from this script, run with --cleanup."
                 )
-            if self.run("ip", "link", "show", self.ifb, check=False).returncode == 0:
+            if self.run(IP, "link", "show", self.ifb, check=False).returncode == 0:
                 die(
                     f"interface {self.ifb} already exists. Run with --cleanup, or pick another --ifb."
                 )
         else:
-            out = self.run("tc", "qdisc", "show", "dev", self.iface).stdout
+            out = self.run(TC, "qdisc", "show", "dev", self.iface).stdout
             if "htb 1:" in out:
                 die(
                     f"{self.iface} already has this script's egress htb root qdisc. "
@@ -189,10 +208,10 @@ class Tc:
     def setup(self, initial_kbps: int) -> None:
         self.installed = True
         if self.direction == "ingress":
-            self.run("ip", "link", "add", self.ifb, "type", "ifb")
-            self.run("ip", "link", "set", self.ifb, "up")
+            self.run(IP, "link", "add", self.ifb, "type", "ifb")
+            self.run(IP, "link", "set", self.ifb, "up")
             self.run(
-                "tc",
+                TC,
                 "qdisc",
                 "add",
                 "dev",
@@ -205,7 +224,7 @@ class Tc:
                 "1",
             )
             self.run(
-                "tc",
+                TC,
                 "class",
                 "add",
                 "dev",
@@ -217,13 +236,13 @@ class Tc:
                 "htb",
                 *self._rate_args(initial_kbps),
             )
-            self.run("tc", "qdisc", "add", "dev", self.iface, "clsact")
+            self.run(TC, "qdisc", "add", "dev", self.iface, "clsact")
             self._port_filters(
                 REDIRECT_PREFS, ["mirred", "egress", "redirect", "dev", self.ifb]
             )
         else:
             self.run(
-                "tc",
+                TC,
                 "qdisc",
                 "add",
                 "dev",
@@ -236,7 +255,7 @@ class Tc:
                 "2",
             )
             self.run(
-                "tc",
+                TC,
                 "class",
                 "add",
                 "dev",
@@ -249,7 +268,7 @@ class Tc:
                 *self._rate_args(initial_kbps),
             )
             self.run(
-                "tc",
+                TC,
                 "class",
                 "add",
                 "dev",
@@ -274,7 +293,7 @@ class Tc:
     def set_rate(self, kbps: int) -> None:
         target = self.ifb if self.direction == "ingress" else self.iface
         self.run(
-            "tc",
+            TC,
             "class",
             "change",
             "dev",
@@ -292,13 +311,9 @@ class Tc:
         return ["-p", l4, port_flag, str(self.port), "-j", "DROP"]
 
     def _iptables_drop_sent(self) -> tuple[int, int]:
-        # tc has no loadable drop action on this kernel (act_gact is missing,
-        # same as cls_flower), so the egress "off" state is a real netfilter
-        # DROP rule instead of a tc filter+action. Byte/packet accounting for
-        # it comes from `iptables -v` counters, not tc's filter stats.
         if self.dry_run:
             return 0, 0
-        res = self.run("iptables", "-L", "OUTPUT", "-v", "-n", "-x", check=False)
+        res = self.run(IPTABLES, "-L", "OUTPUT", "-v", "-n", "-x", check=False)
         b = p = 0
         for line in res.stdout.splitlines():
             if "DROP" not in line:
@@ -317,7 +332,7 @@ class Tc:
         if not self.port_off:
             if self.direction == "ingress":
                 self.run(
-                    "tc",
+                    TC,
                     "filter",
                     "add",
                     "dev",
@@ -336,7 +351,7 @@ class Tc:
                 for l4 in ("tcp", "udp"):
                     for side in ("sport", "dport"):
                         self.run(
-                            "iptables",
+                            IPTABLES,
                             "-A",
                             "OUTPUT",
                             *self._iptables_rule_args(l4, side),
@@ -353,7 +368,7 @@ class Tc:
             self.dropped_off_pkts += p
             if self.direction == "ingress":
                 self.run(
-                    "tc",
+                    TC,
                     "filter",
                     "del",
                     "dev",
@@ -367,7 +382,7 @@ class Tc:
                 for l4 in ("tcp", "udp"):
                     for side in ("sport", "dport"):
                         self.run(
-                            "iptables",
+                            IPTABLES,
                             "-D",
                             "OUTPUT",
                             *self._iptables_rule_args(l4, side),
@@ -376,7 +391,7 @@ class Tc:
 
     def l2_header_bytes(self) -> int:
         res = (
-            self.run("ip", "-j", "link", "show", "dev", self.iface, check=False)
+            self.run(IP, "-j", "link", "show", "dev", self.iface, check=False)
             if not self.dry_run
             else None
         )
@@ -399,7 +414,7 @@ class Tc:
             return 0, 0
         target = self.ifb if self.direction == "ingress" else self.iface
         res = self.run(
-            "tc",
+            TC,
             "-s",
             "filter",
             "show",
@@ -418,11 +433,11 @@ class Tc:
             return {}
         if self.direction == "ingress":
             out = self.run(
-                "tc", "-s", "qdisc", "show", "dev", self.ifb, "root", check=False
+                TC, "-s", "qdisc", "show", "dev", self.ifb, "root", check=False
             ).stdout
         else:
             out = self.run(
-                "tc", "-s", "class", "show", "dev", self.iface, check=False
+                TC, "-s", "class", "show", "dev", self.iface, check=False
             ).stdout
         m = re.search(r"Sent (\d+) bytes (\d+) pkt \(dropped (\d+)", out)
         delivered_b, delivered_p, qdisc_drop_p = (
@@ -443,17 +458,14 @@ class Tc:
 
     def teardown(self) -> None:
         if self.direction == "ingress":
-            self.run("tc", "qdisc", "del", "dev", self.iface, "clsact", check=False)
-            self.run("ip", "link", "del", self.ifb, check=False)
+            self.run(TC, "qdisc", "del", "dev", self.iface, "clsact", check=False)
+            self.run(IP, "link", "del", self.ifb, check=False)
         else:
-            self.run("tc", "qdisc", "del", "dev", self.iface, "root", check=False)
-            # In case a crashed run left a DROP rule installed (port_down()
-            # without a matching port_up()), clear it so the port isn't left
-            # silently blocked after this process exits.
+            self.run(TC, "qdisc", "del", "dev", self.iface, "root", check=False)
             for l4 in ("tcp", "udp"):
                 for side in ("sport", "dport"):
                     self.run(
-                        "iptables",
+                        IPTABLES,
                         "-D",
                         "OUTPUT",
                         *self._iptables_rule_args(l4, side),
@@ -716,7 +728,7 @@ def main() -> None:
         if os.geteuid() != 0:
             die("must be run as root (try sudo)")
         if subprocess.run(
-            ["ip", "link", "show", args.interface], capture_output=True
+            [IP, "link", "show", args.interface], capture_output=True
         ).returncode:
             die(f"interface {args.interface!r} does not exist")
 
