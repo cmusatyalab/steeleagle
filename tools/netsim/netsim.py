@@ -189,21 +189,28 @@ class Tc:
         if self.direction == "ingress":
             out = self.run(TC, "qdisc", "show", "dev", self.iface).stdout
             if " clsact " in out or " ingress " in out:
-                die(
-                    f"{self.iface} already has an ingress/clsact qdisc. Refusing to replace it. "
-                    f"If it is left over from this script, run with --cleanup."
+                print(
+                    f"{self.iface} has a leftover ingress/clsact qdisc from a previous run; removing it",
+                    file=sys.stderr,
                 )
+                self.run(TC, "qdisc", "del", "dev", self.iface, "clsact", check=False)
             if self.run(IP, "link", "show", self.ifb, check=False).returncode == 0:
-                die(
-                    f"interface {self.ifb} already exists. Run with --cleanup, or pick another --ifb."
+                print(
+                    f"interface {self.ifb} already exists from a previous run; removing it",
+                    file=sys.stderr,
                 )
+                self.run(IP, "link", "del", self.ifb, check=False)
         else:
             out = self.run(TC, "qdisc", "show", "dev", self.iface).stdout
             if "htb 1:" in out:
-                die(
-                    f"{self.iface} already has this script's egress htb root qdisc. "
-                    f"If it is left over from a crashed run, use --cleanup."
+                print(
+                    f"{self.iface} has a leftover egress htb root qdisc from a previous run; removing it",
+                    file=sys.stderr,
                 )
+                self.run(TC, "qdisc", "del", "dev", self.iface, "root", check=False)
+            for l4 in ("tcp", "udp"):
+                for side in ("sport", "dport"):
+                    self._iptables_purge(l4, side)
 
     def setup(self, initial_kbps: int) -> None:
         self.installed = True
@@ -310,6 +317,18 @@ class Tc:
         port_flag = "--sport" if side == "sport" else "--dport"
         return ["-p", l4, port_flag, str(self.port), "-j", "DROP"]
 
+    def _iptables_purge(self, l4: str, side: str) -> None:
+        while True:
+            res = self.run(
+                IPTABLES,
+                "-D",
+                "OUTPUT",
+                *self._iptables_rule_args(l4, side),
+                check=False,
+            )
+            if res is None or res.returncode != 0:
+                break
+
     def _iptables_drop_sent(self) -> tuple[int, int]:
         if self.dry_run:
             return 0, 0
@@ -381,12 +400,7 @@ class Tc:
             else:
                 for l4 in ("tcp", "udp"):
                     for side in ("sport", "dport"):
-                        self.run(
-                            IPTABLES,
-                            "-D",
-                            "OUTPUT",
-                            *self._iptables_rule_args(l4, side),
-                        )
+                        self._iptables_purge(l4, side)
             self.port_off = False
 
     def l2_header_bytes(self) -> int:
@@ -464,13 +478,7 @@ class Tc:
             self.run(TC, "qdisc", "del", "dev", self.iface, "root", check=False)
             for l4 in ("tcp", "udp"):
                 for side in ("sport", "dport"):
-                    self.run(
-                        IPTABLES,
-                        "-D",
-                        "OUTPUT",
-                        *self._iptables_rule_args(l4, side),
-                        check=False,
-                    )
+                    self._iptables_purge(l4, side)
         self.port_off = False
 
 
