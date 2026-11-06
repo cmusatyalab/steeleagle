@@ -1,50 +1,24 @@
 #!/usr/bin/env python3
 """
-netsim.py - simulate a fluctuating ingress link on one port of one interface.
+netsim.py - simulate a fluctuating link on one port of one interface.
 
 Every --interval seconds a bandwidth is drawn from a Weibull distribution and
 mapped into the profile's [min, max] Kbps range. The rate is applied with tc.
-When the drawn rate is 0 Kbps, the port is shut off completely: its packets are
-dropped until a later draw gives a non-zero rate.
+When the drawn rate is 0 Kbps, the port is shut off completely.
 
-Profiles (Kbps, i.e. kilobits/s):
+Profiles (Kbps):
     normal        2000 - 3000
     limited        500 - 1000
     degraded        50 -  100
     intermittent     0 -  100
-    denied           0 -    0   (port is always off)
+    denied           0 -    0
     malicious        intermittent, plus --failpoints
 
-All rates are given and reported in Kbps (kilobits/s); the script converts
-them to bits/s itself before handing them to tc.
+--direction ingress (default) shapes incoming traffic via an IFB redirect.
+--direction egress shapes outgoing traffic directly on the interface, using
+a second unthrottled class (ceiling --link-rate) for everything else on it.
 
-Failpoints (malicious only) are (event_time, dead_time) pairs in seconds from
-the start of the simulation. When the clock reaches event_time the port is shut
-off for dead_time seconds no matter what the distribution says; after that the
-intermittent simulation is followed again. The Weibull draws keep going while a
-failpoint is active, so with the same --seed the underlying trace is identical
-to a plain intermittent run.
-
-How it works with tc:
-    <iface> clsact ingress
-        pref 10/11 flower port match -> redirect to IFB
-    <ifb> root htb 1:, class 1:1 rate=ceil=<current Kbps>
-        pref 1 matchall -> drop                      (only while the port is off)
-
-The drop lives on the IFB, not on <iface>, so every byte counter the summary
-uses is read at the same point and counts packets the same way.
-
-"Traffic on the port" means TCP or UDP, IPv4 or IPv6, arriving with the port as
-either the destination port (we are the server) or the source port (we are a
-client talking to a remote service on that port).
-
-Usage:
-    sudo ./netsim.py -i eth0 -p 5201 --profile limited
-    sudo ./netsim.py -i eth0 -p 5201 --profile malicious --failpoints 30:10,90:5
-    sudo ./netsim.py -i eth0 -p 5201 --profile malicious --failpoints '[[30,10],[90,5]]'
-    sudo ./netsim.py -i eth0 -p 5201 --profile malicious --failpoints 30:10 --failpoints 90:5
-    sudo ./netsim.py -i eth0 -p 5201 --profile limited --min-kbps 200 --max-kbps 800
-    sudo ./netsim.py -i eth0 -p 5201 --cleanup     # remove leftovers from a crashed run
+Failpoints (malicious only) are (event_time, dead_time) pairs in seconds.
 """
 
 from __future__ import annotations
@@ -67,9 +41,6 @@ from dataclasses import dataclass
 class Profile:
     min_kbps: int
     max_kbps: int
-    # Weibull parameters for the *fraction* of the [min, max] span. Draws are
-    # clipped to [0, 1]. A shape < 1 piles mass near 0, which is what makes the
-    # intermittent profile actually drop to 0 Kbps now and then.
     shape: float
     scale: float
 
@@ -84,12 +55,8 @@ PROFILES: dict[str, Profile] = {
 PROFILES["malicious"] = PROFILES["intermittent"]
 
 REDIRECT_PREFS = {"ip": 10, "ipv6": 11}
-DROP_PREF = 1  # matchall drop filter on the IFB root qdisc
+DROP_PREF = 1
 
-# Link-layer header length the IFB counters include, by `ip link` link_type.
-# mirred re-attaches the original device's link header before handing a packet
-# to the IFB, so Ethernet and loopback carry 14 bytes; L3 devices (WireGuard,
-# tun, GRE, ...) carry none.
 L2_HEADER_BYTES = {"ether": 14, "loopback": 14}
 
 
@@ -98,19 +65,17 @@ def die(msg: str) -> None:
     sys.exit(1)
 
 
-# --------------------------------------------------------------------------- tc
-
-
 class Tc:
-    def __init__(self, iface: str, ifb: str, port: int, dry_run: bool) -> None:
+    def __init__(self, iface: str, ifb: str, port: int, dry_run: bool,
+                 direction: str = "ingress", link_rate: str = "10Gbit") -> None:
         self.iface = iface
         self.ifb = ifb
         self.port = port
         self.dry_run = dry_run
+        self.direction = direction
+        self.link_rate = link_rate
         self.port_off = False
-        self.installed = False  # True once we have touched the system
-        # The drop filter is deleted every time the port reopens, which resets
-        # its counters, so its totals are banked here before each delete.
+        self.installed = False
         self.dropped_off_bytes = 0
         self.dropped_off_pkts = 0
 
@@ -133,42 +98,72 @@ class Tc:
                         "ip_proto", l4, side, str(self.port), "action", *action,
                     )
 
+    def _port_filters_direct(self, pref_map: dict[str, int], classid: str) -> None:
+        for proto, pref in pref_map.items():
+            for l4 in ("tcp", "udp"):
+                for side in ("dst_port", "src_port"):
+                    self.run(
+                        "tc", "filter", "add", "dev", self.iface, "parent", "1:",
+                        "protocol", proto, "pref", str(pref), "flower",
+                        "ip_proto", l4, side, str(self.port), "classid", classid,
+                    )
+
     def check_clean(self) -> None:
         if self.dry_run:
             return
-        out = self.run("tc", "qdisc", "show", "dev", self.iface).stdout
-        if " clsact " in out or " ingress " in out:
-            die(f"{self.iface} already has an ingress/clsact qdisc. Refusing to replace it. "
-                f"If it is left over from this script, run with --cleanup.")
-        if self.run("ip", "link", "show", self.ifb, check=False).returncode == 0:
-            die(f"interface {self.ifb} already exists. Run with --cleanup, or pick another --ifb.")
+        if self.direction == "ingress":
+            out = self.run("tc", "qdisc", "show", "dev", self.iface).stdout
+            if " clsact " in out or " ingress " in out:
+                die(f"{self.iface} already has an ingress/clsact qdisc. Refusing to replace it. "
+                    f"If it is left over from this script, run with --cleanup.")
+            if self.run("ip", "link", "show", self.ifb, check=False).returncode == 0:
+                die(f"interface {self.ifb} already exists. Run with --cleanup, or pick another --ifb.")
+        else:
+            out = self.run("tc", "qdisc", "show", "dev", self.iface, "root").stdout
+            if "htb 1:" in out:
+                die(f"{self.iface} already has this script's egress htb root qdisc. "
+                    f"If it is left over from a crashed run, use --cleanup.")
 
     def setup(self, initial_kbps: int) -> None:
         self.installed = True
-        self.run("ip", "link", "add", self.ifb, "type", "ifb")
-        self.run("ip", "link", "set", self.ifb, "up")
-        self.run("tc", "qdisc", "add", "dev", self.ifb, "root", "handle", "1:", "htb", "default", "1")
-        self.run("tc", "class", "add", "dev", self.ifb, "parent", "1:", "classid", "1:1",
-                 "htb", *self._rate_args(initial_kbps))
-        self.run("tc", "qdisc", "add", "dev", self.iface, "clsact")
-        self._port_filters(REDIRECT_PREFS, ["mirred", "egress", "redirect", "dev", self.ifb])
+        if self.direction == "ingress":
+            self.run("ip", "link", "add", self.ifb, "type", "ifb")
+            self.run("ip", "link", "set", self.ifb, "up")
+            self.run("tc", "qdisc", "add", "dev", self.ifb, "root", "handle", "1:", "htb", "default", "1")
+            self.run("tc", "class", "add", "dev", self.ifb, "parent", "1:", "classid", "1:1",
+                     "htb", *self._rate_args(initial_kbps))
+            self.run("tc", "qdisc", "add", "dev", self.iface, "clsact")
+            self._port_filters(REDIRECT_PREFS, ["mirred", "egress", "redirect", "dev", self.ifb])
+        else:
+            self.run("tc", "qdisc", "add", "dev", self.iface, "root", "handle", "1:", "htb", "default", "2")
+            self.run("tc", "class", "add", "dev", self.iface, "parent", "1:", "classid", "1:1",
+                     "htb", *self._rate_args(initial_kbps))
+            self.run("tc", "class", "add", "dev", self.iface, "parent", "1:", "classid", "1:2",
+                     "htb", "rate", self.link_rate, "ceil", self.link_rate)
+            self._port_filters_direct(REDIRECT_PREFS, "1:1")
 
     @staticmethod
     def _rate_args(kbps: int) -> list[str]:
-        # All rates in this script are Kbps = kilobits/s. Convert to plain bits/s
-        # for tc so there is no unit ambiguity (tc's own "kbps" means kiloBYTES/s).
         bps = kbps_to_bps(kbps)
         return ["rate", f"{bps}bit", "ceil", f"{bps}bit", "quantum", "1514"]
 
     def set_rate(self, kbps: int) -> None:
-        self.run("tc", "class", "change", "dev", self.ifb, "parent", "1:", "classid", "1:1",
+        target = self.ifb if self.direction == "ingress" else self.iface
+        self.run("tc", "class", "change", "dev", target, "parent", "1:", "classid", "1:1",
                  "htb", *self._rate_args(kbps))
 
     def port_down(self) -> None:
-        # Only port traffic reaches the IFB, so a matchall drop there shuts the port.
         if not self.port_off:
-            self.run("tc", "filter", "add", "dev", self.ifb, "parent", "1:", "protocol", "all",
-                     "pref", str(DROP_PREF), "matchall", "action", "drop")
+            if self.direction == "ingress":
+                self.run("tc", "filter", "add", "dev", self.ifb, "parent", "1:", "protocol", "all",
+                         "pref", str(DROP_PREF), "matchall", "action", "drop")
+            else:
+                for proto in ("ip", "ipv6"):
+                    for l4 in ("tcp", "udp"):
+                        for side in ("dst_port", "src_port"):
+                            self.run("tc", "filter", "add", "dev", self.iface, "parent", "1:",
+                                     "protocol", proto, "pref", str(DROP_PREF), "flower",
+                                     "ip_proto", l4, side, str(self.port), "action", "drop")
             self.port_off = True
 
     def port_up(self) -> None:
@@ -176,12 +171,12 @@ class Tc:
             b, p = self._drop_filter_sent()
             self.dropped_off_bytes += b
             self.dropped_off_pkts += p
-            self.run("tc", "filter", "del", "dev", self.ifb, "parent", "1:",
+            target = self.ifb if self.direction == "ingress" else self.iface
+            self.run("tc", "filter", "del", "dev", target, "parent", "1:",
                      "pref", str(DROP_PREF))
             self.port_off = False
 
     def l2_header_bytes(self) -> int:
-        """Link-layer header bytes per packet included in the IFB counters."""
         res = self.run("ip", "-j", "link", "show", "dev", self.iface, check=False) \
             if not self.dry_run else None
         try:
@@ -190,11 +185,8 @@ class Tc:
             return 14
         return L2_HEADER_BYTES.get(link_type, 0)
 
-    # ---- byte counters -------------------------------------------------------
-
     @staticmethod
     def _sum_sent(text: str) -> tuple[int, int]:
-        """Sum every 'Sent <bytes> bytes <pkts> pkt' line in tc -s output."""
         b = p = 0
         for m in re.finditer(r"Sent (\d+) bytes (\d+) pkt", text):
             b += int(m.group(1))
@@ -204,20 +196,18 @@ class Tc:
     def _drop_filter_sent(self) -> tuple[int, int]:
         if self.dry_run:
             return 0, 0
-        res = self.run("tc", "-s", "filter", "show", "dev", self.ifb, "parent", "1:",
+        target = self.ifb if self.direction == "ingress" else self.iface
+        res = self.run("tc", "-s", "filter", "show", "dev", target, "parent", "1:",
                        "pref", str(DROP_PREF), check=False)
         return self._sum_sent(res.stdout)
 
     def stats(self) -> dict[str, int]:
-        """Byte/packet totals for the port since setup. Must run before teardown.
-
-        All counts come from the IFB, where the kernel counts each packet as it
-        would appear on the wire: link header included, and a GRO-merged packet
-        counted as its original segments, each with its own headers.
-        """
         if self.dry_run:
             return {}
-        out = self.run("tc", "-s", "qdisc", "show", "dev", self.ifb, "root", check=False).stdout
+        if self.direction == "ingress":
+            out = self.run("tc", "-s", "qdisc", "show", "dev", self.ifb, "root", check=False).stdout
+        else:
+            out = self.run("tc", "-s", "class", "show", "dev", self.iface, check=False).stdout
         m = re.search(r"Sent (\d+) bytes (\d+) pkt \(dropped (\d+)", out)
         delivered_b, delivered_p, qdisc_drop_p = (int(x) for x in m.groups()) if m else (0, 0, 0)
         off_b, off_p = self.dropped_off_bytes, self.dropped_off_pkts
@@ -228,22 +218,19 @@ class Tc:
         return {
             "delivered_bytes": delivered_b, "delivered_pkts": delivered_p,
             "off_dropped_bytes": off_b, "off_dropped_pkts": off_p,
-            # The qdisc's drop count includes the drop filter's drops; split them out.
             "queue_dropped_pkts": max(0, qdisc_drop_p - off_p),
         }
 
     def teardown(self) -> None:
-        # Idempotent; ignores errors so it also cleans up partial setups.
-        self.run("tc", "qdisc", "del", "dev", self.iface, "clsact", check=False)
-        self.run("ip", "link", "del", self.ifb, check=False)
+        if self.direction == "ingress":
+            self.run("tc", "qdisc", "del", "dev", self.iface, "clsact", check=False)
+            self.run("ip", "link", "del", self.ifb, check=False)
+        else:
+            self.run("tc", "qdisc", "del", "dev", self.iface, "root", check=False)
         self.port_off = False
 
 
-# ------------------------------------------------------------------ simulation
-
-
 def parse_failpoints(text: str) -> list[tuple[float, float]]:
-    """Accept '30:10,90:5' or JSON '[[30,10],[90,5]]'."""
     text = text.strip()
     if not text:
         return []
@@ -266,7 +253,6 @@ def parse_failpoints(text: str) -> list[tuple[float, float]]:
 
 
 def merge_windows(failpoints: list[tuple[float, float]]) -> list[tuple[float, float]]:
-    """Turn (event, dead) pairs into sorted, non-overlapping [start, end) windows."""
     windows: list[list[float]] = []
     for start, end in sorted((e, e + d) for e, d in failpoints):
         if windows and start <= windows[-1][1]:
@@ -277,7 +263,6 @@ def merge_windows(failpoints: list[tuple[float, float]]) -> list[tuple[float, fl
 
 
 def kbps_to_bps(kbps: float) -> int:
-    """Kbps (kilobits/s) -> bits/s."""
     return round(kbps * 1000)
 
 
@@ -294,7 +279,7 @@ def print_summary(tc: Tc, port: int, elapsed: float, l2_header: int | None = Non
         return
     try:
         st = tc.stats()
-    except Exception as e:  # never let stats reading block cleanup
+    except Exception as e:
         print(f"could not read byte counters: {e}", file=sys.stderr)
         return
     if not st:
@@ -307,7 +292,7 @@ def print_summary(tc: Tc, port: int, elapsed: float, l2_header: int | None = Non
     deliv = ip_bytes(st["delivered_bytes"], st["delivered_pkts"])
     off = ip_bytes(st["off_dropped_bytes"], st["off_dropped_pkts"])
     avg_kbps = deliv * 8 / 1000 / elapsed if elapsed > 0 else 0.0
-    print(f"\n=== port {port} ingress totals over {elapsed:.1f} s "
+    print(f"\n=== port {port} {tc.direction} totals over {elapsed:.1f} s "
           f"(IP-layer bytes: {hdr}-byte link header per packet removed) ===")
     print(f"  delivered through shaper : {human_bytes(deliv):>11} ({deliv} bytes, "
           f"{st['delivered_pkts']} pkts), avg {avg_kbps:.1f} Kbps")
@@ -344,7 +329,7 @@ def simulate(args: argparse.Namespace, tc: Tc) -> None:
     if log:
         log.writerow(["t_sec", "drawn_kbps", "applied_kbps", "state"])
 
-    print(f"profile={args.profile} bounds=[{profile.min_kbps:g}, {profile.max_kbps:g}] Kbps "
+    print(f"profile={args.profile} direction={args.direction} bounds=[{profile.min_kbps:g}, {profile.max_kbps:g}] Kbps "
           f"weibull(shape={profile.shape}, scale={profile.scale}) interval={args.interval}s "
           f"seed={args.seed}")
     if windows:
@@ -352,7 +337,8 @@ def simulate(args: argparse.Namespace, tc: Tc) -> None:
 
     tc.check_clean()
     tc.setup(max(profile.max_kbps, 1))
-    print(f"shaping ingress on {args.interface} port {args.port} via {tc.ifb}. Ctrl-C to stop.")
+    print(f"shaping {args.direction} on {args.interface} port {args.port}"
+          + (f" via {tc.ifb}" if args.direction == "ingress" else "") + ". Ctrl-C to stop.")
 
     t0 = time.monotonic()
     next_draw = 0.0
@@ -366,7 +352,6 @@ def simulate(args: argparse.Namespace, tc: Tc) -> None:
             if t >= duration:
                 break
 
-            # Keep drawing on schedule, even inside a failpoint window.
             while next_draw <= t:
                 drawn = draw_kbps(rng, profile)
                 next_draw += args.interval
@@ -383,7 +368,7 @@ def simulate(args: argparse.Namespace, tc: Tc) -> None:
                 if target == 0:
                     tc.port_down()
                 else:
-                    tc.set_rate(target)   # set the rate before reopening the port
+                    tc.set_rate(target)
                     tc.port_up()
                 applied, applied_state = target, state
                 print(f"[{t:8.2f}s] {state:9s} {target:5d} Kbps (drawn {drawn})", flush=True)
@@ -391,7 +376,6 @@ def simulate(args: argparse.Namespace, tc: Tc) -> None:
                 log.writerow([f"{t:.3f}", drawn, target, state])
                 log_file.flush()
 
-            # Wake at the next draw or the next failpoint boundary, whichever is first.
             wake = min(next_draw, duration)
             for s, e in windows:
                 if s > t:
@@ -408,37 +392,29 @@ def simulate(args: argparse.Namespace, tc: Tc) -> None:
         print_summary(tc, args.port, min(t_end, duration), args.l2_header_bytes)
 
 
-# ------------------------------------------------------------------------ main
-
-
 def main() -> None:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("-i", "--interface", required=True)
     ap.add_argument("-p", "--port", required=True, type=int)
     ap.add_argument("--profile", choices=sorted(PROFILES), default="normal")
+    ap.add_argument("--direction", choices=["ingress", "egress"], default="ingress")
+    ap.add_argument("--link-rate", default="10Gbit",
+                    help="egress only: ceiling for all other traffic on the interface")
     ap.add_argument("--failpoints", type=parse_failpoints, action="extend", default=None,
-                    help="malicious only: (event_time, dead_time) pairs in seconds, "
-                         "as '30:10,90:5' or '[[30,10],[90,5]]'. May be repeated: "
-                         "--failpoints 30:10 --failpoints 90:5")
-    ap.add_argument("--min-kbps", type=float, default=None,
-                    help="override the profile's lower bound, in Kbps (kilobits/s)")
-    ap.add_argument("--max-kbps", type=float, default=None,
-                    help="override the profile's upper bound, in Kbps (kilobits/s)")
-    ap.add_argument("--interval", type=float, default=1.0,
-                    help="seconds between Weibull draws (default 1.0)")
-    ap.add_argument("--duration", type=float, default=None,
-                    help="stop after this many seconds (default: run until Ctrl-C)")
-    ap.add_argument("--seed", type=int, default=None, help="RNG seed for a reproducible trace")
-    ap.add_argument("--shape", type=float, default=None, help="override Weibull shape (k)")
-    ap.add_argument("--scale", type=float, default=None, help="override Weibull scale (lambda)")
-    ap.add_argument("--l2-header-bytes", type=int, default=None,
-                    help="link-layer header bytes to subtract per packet in the totals "
-                         "(default: 14 for Ethernet/loopback, 0 for L3 devices like WireGuard)")
-    ap.add_argument("--log", default=None, help="write a CSV trace to this path")
-    ap.add_argument("--ifb", default=None, help="IFB device name (default ifbsim<port>)")
-    ap.add_argument("--dry-run", action="store_true", help="print tc commands instead of running them")
-    ap.add_argument("--cleanup", action="store_true", help="remove this script's tc state and exit")
+                    help="malicious only: '30:10,90:5' or '[[30,10],[90,5]]'")
+    ap.add_argument("--min-kbps", type=float, default=None)
+    ap.add_argument("--max-kbps", type=float, default=None)
+    ap.add_argument("--interval", type=float, default=1.0)
+    ap.add_argument("--duration", type=float, default=None)
+    ap.add_argument("--seed", type=int, default=None)
+    ap.add_argument("--shape", type=float, default=None)
+    ap.add_argument("--scale", type=float, default=None)
+    ap.add_argument("--l2-header-bytes", type=int, default=None)
+    ap.add_argument("--log", default=None)
+    ap.add_argument("--ifb", default=None)
+    ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--cleanup", action="store_true")
     args = ap.parse_args()
 
     if not 1 <= args.port <= 65535:
@@ -456,7 +432,8 @@ def main() -> None:
     ifb = args.ifb or f"ifbsim{args.port}"
     if len(ifb) > 15:
         die(f"IFB name {ifb!r} is longer than 15 characters")
-    tc = Tc(args.interface, ifb, args.port, args.dry_run)
+    tc = Tc(args.interface, ifb, args.port, args.dry_run,
+            direction=args.direction, link_rate=args.link_rate)
 
     if not args.dry_run:
         if os.geteuid() != 0:
@@ -466,10 +443,9 @@ def main() -> None:
 
     if args.cleanup:
         tc.teardown()
-        print(f"removed clsact on {args.interface} and {ifb}")
+        print(f"removed tc state on {args.interface}" + (f" and {ifb}" if args.direction == "ingress" else ""))
         return
 
-    # Turn SIGTERM/SIGHUP into a normal exit so the finally-block cleans up.
     for sig in (signal.SIGTERM, signal.SIGHUP):
         signal.signal(sig, lambda s, _f: sys.exit(128 + s))
 
@@ -483,7 +459,8 @@ def main() -> None:
     finally:
         if tc.installed:
             tc.teardown()
-            print(f"cleaned up: removed clsact on {args.interface} and {ifb}")
+            print(f"cleaned up: removed tc state on {args.interface}"
+                  + (f" and {ifb}" if args.direction == "ingress" else ""))
 
 
 if __name__ == "__main__":
