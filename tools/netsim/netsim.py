@@ -46,11 +46,11 @@ class Profile:
 
 
 PROFILES: dict[str, Profile] = {
-    "normal":       Profile(2000, 3000, shape=2.0, scale=0.5),
-    "limited":      Profile(500, 1000, shape=2.0, scale=0.5),
-    "degraded":     Profile(50, 100, shape=2.0, scale=0.5),
+    "normal": Profile(2000, 3000, shape=2.0, scale=0.5),
+    "limited": Profile(500, 1000, shape=2.0, scale=0.5),
+    "degraded": Profile(50, 100, shape=2.0, scale=0.5),
     "intermittent": Profile(0, 100, shape=0.6, scale=0.25),
-    "denied":       Profile(0, 0, shape=1.0, scale=1.0),
+    "denied": Profile(0, 0, shape=1.0, scale=1.0),
 }
 PROFILES["malicious"] = PROFILES["intermittent"]
 
@@ -59,6 +59,8 @@ DROP_PREF = 1
 
 L2_HEADER_BYTES = {"ether": 14, "loopback": 14}
 
+L4_PROTO_NUMBERS = {"tcp": 6, "udp": 17}
+
 
 def die(msg: str) -> None:
     print(f"error: {msg}", file=sys.stderr)
@@ -66,8 +68,15 @@ def die(msg: str) -> None:
 
 
 class Tc:
-    def __init__(self, iface: str, ifb: str, port: int, dry_run: bool,
-                 direction: str = "ingress", link_rate: str = "10Gbit") -> None:
+    def __init__(
+        self,
+        iface: str,
+        ifb: str,
+        port: int,
+        dry_run: bool,
+        direction: str = "ingress",
+        link_rate: str = "10Gbit",
+    ) -> None:
         self.iface = iface
         self.ifb = ifb
         self.port = port
@@ -85,27 +94,74 @@ class Tc:
             return None
         res = subprocess.run(args, capture_output=True, text=True)
         if check and res.returncode != 0:
-            raise RuntimeError(f"command failed: {' '.join(args)}\n{res.stderr.strip()}")
+            raise RuntimeError(
+                f"command failed: {' '.join(args)}\n{res.stderr.strip()}"
+            )
         return res
 
     def _port_filters(self, pref_map: dict[str, int], action: list[str]) -> None:
         for proto, pref in pref_map.items():
-            for l4 in ("tcp", "udp"):
-                for side in ("dst_port", "src_port"):
+            if proto != "ip":
+                continue
+            for l4, l4num in L4_PROTO_NUMBERS.items():
+                for side in ("sport", "dport"):
                     self.run(
-                        "tc", "filter", "add", "dev", self.iface, "ingress",
-                        "protocol", proto, "pref", str(pref), "flower",
-                        "ip_proto", l4, side, str(self.port), "action", *action,
+                        "tc",
+                        "filter",
+                        "add",
+                        "dev",
+                        self.iface,
+                        "ingress",
+                        "protocol",
+                        proto,
+                        "pref",
+                        str(pref),
+                        "u32",
+                        "match",
+                        "ip",
+                        "protocol",
+                        str(l4num),
+                        "0xff",
+                        "match",
+                        "ip",
+                        side,
+                        str(self.port),
+                        "0xffff",
+                        "action",
+                        *action,
                     )
 
     def _port_filters_direct(self, pref_map: dict[str, int], classid: str) -> None:
         for proto, pref in pref_map.items():
-            for l4 in ("tcp", "udp"):
-                for side in ("dst_port", "src_port"):
+            if proto != "ip":
+                continue
+            for l4, l4num in L4_PROTO_NUMBERS.items():
+                for side in ("sport", "dport"):
                     self.run(
-                        "tc", "filter", "add", "dev", self.iface, "parent", "1:",
-                        "protocol", proto, "pref", str(pref), "flower",
-                        "ip_proto", l4, side, str(self.port), "classid", classid,
+                        "tc",
+                        "filter",
+                        "add",
+                        "dev",
+                        self.iface,
+                        "parent",
+                        "1:",
+                        "protocol",
+                        proto,
+                        "pref",
+                        str(pref),
+                        "u32",
+                        "match",
+                        "ip",
+                        "protocol",
+                        str(l4num),
+                        "0xff",
+                        "match",
+                        "ip",
+                        side,
+                        str(self.port),
+                        "0xffff",
+                        "classid",
+                        classid,
                     )
 
     def check_clean(self) -> None:
@@ -114,32 +170,100 @@ class Tc:
         if self.direction == "ingress":
             out = self.run("tc", "qdisc", "show", "dev", self.iface).stdout
             if " clsact " in out or " ingress " in out:
-                die(f"{self.iface} already has an ingress/clsact qdisc. Refusing to replace it. "
-                    f"If it is left over from this script, run with --cleanup.")
+                die(
+                    f"{self.iface} already has an ingress/clsact qdisc. Refusing to replace it. "
+                    f"If it is left over from this script, run with --cleanup."
+                )
             if self.run("ip", "link", "show", self.ifb, check=False).returncode == 0:
-                die(f"interface {self.ifb} already exists. Run with --cleanup, or pick another --ifb.")
+                die(
+                    f"interface {self.ifb} already exists. Run with --cleanup, or pick another --ifb."
+                )
         else:
-            out = self.run("tc", "qdisc", "show", "dev", self.iface, "root").stdout
+            out = self.run("tc", "qdisc", "show", "dev", self.iface).stdout
             if "htb 1:" in out:
-                die(f"{self.iface} already has this script's egress htb root qdisc. "
-                    f"If it is left over from a crashed run, use --cleanup.")
+                die(
+                    f"{self.iface} already has this script's egress htb root qdisc. "
+                    f"If it is left over from a crashed run, use --cleanup."
+                )
 
     def setup(self, initial_kbps: int) -> None:
         self.installed = True
         if self.direction == "ingress":
             self.run("ip", "link", "add", self.ifb, "type", "ifb")
             self.run("ip", "link", "set", self.ifb, "up")
-            self.run("tc", "qdisc", "add", "dev", self.ifb, "root", "handle", "1:", "htb", "default", "1")
-            self.run("tc", "class", "add", "dev", self.ifb, "parent", "1:", "classid", "1:1",
-                     "htb", *self._rate_args(initial_kbps))
+            self.run(
+                "tc",
+                "qdisc",
+                "add",
+                "dev",
+                self.ifb,
+                "root",
+                "handle",
+                "1:",
+                "htb",
+                "default",
+                "1",
+            )
+            self.run(
+                "tc",
+                "class",
+                "add",
+                "dev",
+                self.ifb,
+                "parent",
+                "1:",
+                "classid",
+                "1:1",
+                "htb",
+                *self._rate_args(initial_kbps),
+            )
             self.run("tc", "qdisc", "add", "dev", self.iface, "clsact")
-            self._port_filters(REDIRECT_PREFS, ["mirred", "egress", "redirect", "dev", self.ifb])
+            self._port_filters(
+                REDIRECT_PREFS, ["mirred", "egress", "redirect", "dev", self.ifb]
+            )
         else:
-            self.run("tc", "qdisc", "add", "dev", self.iface, "root", "handle", "1:", "htb", "default", "2")
-            self.run("tc", "class", "add", "dev", self.iface, "parent", "1:", "classid", "1:1",
-                     "htb", *self._rate_args(initial_kbps))
-            self.run("tc", "class", "add", "dev", self.iface, "parent", "1:", "classid", "1:2",
-                     "htb", "rate", self.link_rate, "ceil", self.link_rate)
+            self.run(
+                "tc",
+                "qdisc",
+                "add",
+                "dev",
+                self.iface,
+                "root",
+                "handle",
+                "1:",
+                "htb",
+                "default",
+                "2",
+            )
+            self.run(
+                "tc",
+                "class",
+                "add",
+                "dev",
+                self.iface,
+                "parent",
+                "1:",
+                "classid",
+                "1:1",
+                "htb",
+                *self._rate_args(initial_kbps),
+            )
+            self.run(
+                "tc",
+                "class",
+                "add",
+                "dev",
+                self.iface,
+                "parent",
+                "1:",
+                "classid",
+                "1:2",
+                "htb",
+                "rate",
+                self.link_rate,
+                "ceil",
+                self.link_rate,
+            )
             self._port_filters_direct(REDIRECT_PREFS, "1:1")
 
     @staticmethod
@@ -149,36 +273,113 @@ class Tc:
 
     def set_rate(self, kbps: int) -> None:
         target = self.ifb if self.direction == "ingress" else self.iface
-        self.run("tc", "class", "change", "dev", target, "parent", "1:", "classid", "1:1",
-                 "htb", *self._rate_args(kbps))
+        self.run(
+            "tc",
+            "class",
+            "change",
+            "dev",
+            target,
+            "parent",
+            "1:",
+            "classid",
+            "1:1",
+            "htb",
+            *self._rate_args(kbps),
+        )
+
+    def _iptables_rule_args(self, l4: str, side: str) -> list[str]:
+        port_flag = "--sport" if side == "sport" else "--dport"
+        return ["-p", l4, port_flag, str(self.port), "-j", "DROP"]
+
+    def _iptables_drop_sent(self) -> tuple[int, int]:
+        # tc has no loadable drop action on this kernel (act_gact is missing,
+        # same as cls_flower), so the egress "off" state is a real netfilter
+        # DROP rule instead of a tc filter+action. Byte/packet accounting for
+        # it comes from `iptables -v` counters, not tc's filter stats.
+        if self.dry_run:
+            return 0, 0
+        res = self.run("iptables", "-L", "OUTPUT", "-v", "-n", "-x", check=False)
+        b = p = 0
+        for line in res.stdout.splitlines():
+            if "DROP" not in line:
+                continue
+            if f"dpt:{self.port}" not in line and f"spt:{self.port}" not in line:
+                continue
+            parts = line.split()
+            try:
+                p += int(parts[0])
+                b += int(parts[1])
+            except (IndexError, ValueError):
+                continue
+        return b, p
 
     def port_down(self) -> None:
         if not self.port_off:
             if self.direction == "ingress":
-                self.run("tc", "filter", "add", "dev", self.ifb, "parent", "1:", "protocol", "all",
-                         "pref", str(DROP_PREF), "matchall", "action", "drop")
+                self.run(
+                    "tc",
+                    "filter",
+                    "add",
+                    "dev",
+                    self.ifb,
+                    "parent",
+                    "1:",
+                    "protocol",
+                    "all",
+                    "pref",
+                    str(DROP_PREF),
+                    "matchall",
+                    "action",
+                    "drop",
+                )
             else:
-                for proto in ("ip", "ipv6"):
-                    for l4 in ("tcp", "udp"):
-                        for side in ("dst_port", "src_port"):
-                            self.run("tc", "filter", "add", "dev", self.iface, "parent", "1:",
-                                     "protocol", proto, "pref", str(DROP_PREF), "flower",
-                                     "ip_proto", l4, side, str(self.port), "action", "drop")
+                for l4 in ("tcp", "udp"):
+                    for side in ("sport", "dport"):
+                        self.run(
+                            "iptables",
+                            "-A",
+                            "OUTPUT",
+                            *self._iptables_rule_args(l4, side),
+                        )
             self.port_off = True
 
     def port_up(self) -> None:
         if self.port_off:
-            b, p = self._drop_filter_sent()
+            if self.direction == "ingress":
+                b, p = self._drop_filter_sent()
+            else:
+                b, p = self._iptables_drop_sent()
             self.dropped_off_bytes += b
             self.dropped_off_pkts += p
-            target = self.ifb if self.direction == "ingress" else self.iface
-            self.run("tc", "filter", "del", "dev", target, "parent", "1:",
-                     "pref", str(DROP_PREF))
+            if self.direction == "ingress":
+                self.run(
+                    "tc",
+                    "filter",
+                    "del",
+                    "dev",
+                    self.ifb,
+                    "parent",
+                    "1:",
+                    "pref",
+                    str(DROP_PREF),
+                )
+            else:
+                for l4 in ("tcp", "udp"):
+                    for side in ("sport", "dport"):
+                        self.run(
+                            "iptables",
+                            "-D",
+                            "OUTPUT",
+                            *self._iptables_rule_args(l4, side),
+                        )
             self.port_off = False
 
     def l2_header_bytes(self) -> int:
-        res = self.run("ip", "-j", "link", "show", "dev", self.iface, check=False) \
-            if not self.dry_run else None
+        res = (
+            self.run("ip", "-j", "link", "show", "dev", self.iface, check=False)
+            if not self.dry_run
+            else None
+        )
         try:
             link_type = json.loads(res.stdout)[0]["link_type"]
         except (AttributeError, ValueError, LookupError, TypeError):
@@ -197,27 +398,46 @@ class Tc:
         if self.dry_run:
             return 0, 0
         target = self.ifb if self.direction == "ingress" else self.iface
-        res = self.run("tc", "-s", "filter", "show", "dev", target, "parent", "1:",
-                       "pref", str(DROP_PREF), check=False)
+        res = self.run(
+            "tc",
+            "-s",
+            "filter",
+            "show",
+            "dev",
+            target,
+            "parent",
+            "1:",
+            "pref",
+            str(DROP_PREF),
+            check=False,
+        )
         return self._sum_sent(res.stdout)
 
     def stats(self) -> dict[str, int]:
         if self.dry_run:
             return {}
         if self.direction == "ingress":
-            out = self.run("tc", "-s", "qdisc", "show", "dev", self.ifb, "root", check=False).stdout
+            out = self.run(
+                "tc", "-s", "qdisc", "show", "dev", self.ifb, "root", check=False
+            ).stdout
         else:
-            out = self.run("tc", "-s", "class", "show", "dev", self.iface, check=False).stdout
+            out = self.run(
+                "tc", "-s", "class", "show", "dev", self.iface, check=False
+            ).stdout
         m = re.search(r"Sent (\d+) bytes (\d+) pkt \(dropped (\d+)", out)
-        delivered_b, delivered_p, qdisc_drop_p = (int(x) for x in m.groups()) if m else (0, 0, 0)
+        delivered_b, delivered_p, qdisc_drop_p = (
+            (int(x) for x in m.groups()) if m else (0, 0, 0)
+        )
         off_b, off_p = self.dropped_off_bytes, self.dropped_off_pkts
         if self.port_off:
             b, p = self._drop_filter_sent()
             off_b += b
             off_p += p
         return {
-            "delivered_bytes": delivered_b, "delivered_pkts": delivered_p,
-            "off_dropped_bytes": off_b, "off_dropped_pkts": off_p,
+            "delivered_bytes": delivered_b,
+            "delivered_pkts": delivered_p,
+            "off_dropped_bytes": off_b,
+            "off_dropped_pkts": off_p,
             "queue_dropped_pkts": max(0, qdisc_drop_p - off_p),
         }
 
@@ -227,6 +447,18 @@ class Tc:
             self.run("ip", "link", "del", self.ifb, check=False)
         else:
             self.run("tc", "qdisc", "del", "dev", self.iface, "root", check=False)
+            # In case a crashed run left a DROP rule installed (port_down()
+            # without a matching port_up()), clear it so the port isn't left
+            # silently blocked after this process exits.
+            for l4 in ("tcp", "udp"):
+                for side in ("sport", "dport"):
+                    self.run(
+                        "iptables",
+                        "-D",
+                        "OUTPUT",
+                        *self._iptables_rule_args(l4, side),
+                        check=False,
+                    )
         self.port_off = False
 
 
@@ -244,11 +476,13 @@ def parse_failpoints(text: str) -> list[tuple[float, float]]:
                 pairs.append((float(a), float(b)))
     except (ValueError, TypeError, json.JSONDecodeError) as e:
         raise argparse.ArgumentTypeError(
-            f"bad failpoints {text!r} ({e}); use '30:10,90:5' or '[[30,10],[90,5]]'")
+            f"bad failpoints {text!r} ({e}); use '30:10,90:5' or '[[30,10],[90,5]]'"
+        )
     for event, dead in pairs:
         if event < 0 or dead <= 0:
             raise argparse.ArgumentTypeError(
-                f"failpoint ({event}, {dead}): event time must be >= 0 and dead time > 0")
+                f"failpoint ({event}, {dead}): event time must be >= 0 and dead time > 0"
+            )
     return pairs
 
 
@@ -274,7 +508,9 @@ def human_bytes(n: float) -> str:
     return ""
 
 
-def print_summary(tc: Tc, port: int, elapsed: float, l2_header: int | None = None) -> None:
+def print_summary(
+    tc: Tc, port: int, elapsed: float, l2_header: int | None = None
+) -> None:
     if not tc.installed:
         return
     try:
@@ -292,17 +528,29 @@ def print_summary(tc: Tc, port: int, elapsed: float, l2_header: int | None = Non
     deliv = ip_bytes(st["delivered_bytes"], st["delivered_pkts"])
     off = ip_bytes(st["off_dropped_bytes"], st["off_dropped_pkts"])
     avg_kbps = deliv * 8 / 1000 / elapsed if elapsed > 0 else 0.0
-    print(f"\n=== port {port} {tc.direction} totals over {elapsed:.1f} s "
-          f"(IP-layer bytes: {hdr}-byte link header per packet removed) ===")
-    print(f"  delivered through shaper : {human_bytes(deliv):>11} ({deliv} bytes, "
-          f"{st['delivered_pkts']} pkts), avg {avg_kbps:.1f} Kbps")
-    print(f"  dropped while port off   : {human_bytes(off):>11} ({off} bytes, "
-          f"{st['off_dropped_pkts']} pkts)")
-    print(f"  dropped by shaper queue  : {st['queue_dropped_pkts']} pkts (size not recorded by tc)")
-    print(f"  total arrived on port    : {human_bytes(deliv + off):>11} ({deliv + off} bytes, "
-          f"{st['delivered_pkts'] + st['off_dropped_pkts']} pkts) + the queue drops")
-    print(f"  with link headers (wire) : delivered {st['delivered_bytes']} bytes, "
-          f"dropped while off {st['off_dropped_bytes']} bytes")
+    print(
+        f"\n=== port {port} {tc.direction} totals over {elapsed:.1f} s "
+        f"(IP-layer bytes: {hdr}-byte link header per packet removed) ==="
+    )
+    print(
+        f"  delivered through shaper : {human_bytes(deliv):>11} ({deliv} bytes, "
+        f"{st['delivered_pkts']} pkts), avg {avg_kbps:.1f} Kbps"
+    )
+    print(
+        f"  dropped while port off   : {human_bytes(off):>11} ({off} bytes, "
+        f"{st['off_dropped_pkts']} pkts)"
+    )
+    print(
+        f"  dropped by shaper queue  : {st['queue_dropped_pkts']} pkts (size not recorded by tc)"
+    )
+    print(
+        f"  total arrived on port    : {human_bytes(deliv + off):>11} ({deliv + off} bytes, "
+        f"{st['delivered_pkts'] + st['off_dropped_pkts']} pkts) + the queue drops"
+    )
+    print(
+        f"  with link headers (wire) : delivered {st['delivered_bytes']} bytes, "
+        f"dropped while off {st['off_dropped_bytes']} bytes"
+    )
 
 
 def draw_kbps(rng: random.Random, p: Profile) -> int:
@@ -329,16 +577,23 @@ def simulate(args: argparse.Namespace, tc: Tc) -> None:
     if log:
         log.writerow(["t_sec", "drawn_kbps", "applied_kbps", "state"])
 
-    print(f"profile={args.profile} direction={args.direction} bounds=[{profile.min_kbps:g}, {profile.max_kbps:g}] Kbps "
-          f"weibull(shape={profile.shape}, scale={profile.scale}) interval={args.interval}s "
-          f"seed={args.seed}")
+    print(
+        f"profile={args.profile} direction={args.direction} bounds=[{profile.min_kbps:g}, {profile.max_kbps:g}] Kbps "
+        f"weibull(shape={profile.shape}, scale={profile.scale}) interval={args.interval}s "
+        f"seed={args.seed}"
+    )
     if windows:
-        print("failpoint windows (s): " + ", ".join(f"[{s:g}, {e:g})" for s, e in windows))
+        print(
+            "failpoint windows (s): " + ", ".join(f"[{s:g}, {e:g})" for s, e in windows)
+        )
 
     tc.check_clean()
     tc.setup(max(profile.max_kbps, 1))
-    print(f"shaping {args.direction} on {args.interface} port {args.port}"
-          + (f" via {tc.ifb}" if args.direction == "ingress" else "") + ". Ctrl-C to stop.")
+    print(
+        f"shaping {args.direction} on {args.interface} port {args.port}"
+        + (f" via {tc.ifb}" if args.direction == "ingress" else "")
+        + ". Ctrl-C to stop."
+    )
 
     t0 = time.monotonic()
     next_draw = 0.0
@@ -371,7 +626,10 @@ def simulate(args: argparse.Namespace, tc: Tc) -> None:
                     tc.set_rate(target)
                     tc.port_up()
                 applied, applied_state = target, state
-                print(f"[{t:8.2f}s] {state:9s} {target:5d} Kbps (drawn {drawn})", flush=True)
+                print(
+                    f"[{t:8.2f}s] {state:9s} {target:5d} Kbps (drawn {drawn})",
+                    flush=True,
+                )
             if log:
                 log.writerow([f"{t:.3f}", drawn, target, state])
                 log_file.flush()
@@ -394,15 +652,24 @@ def simulate(args: argparse.Namespace, tc: Tc) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     ap.add_argument("-i", "--interface", required=True)
     ap.add_argument("-p", "--port", required=True, type=int)
     ap.add_argument("--profile", choices=sorted(PROFILES), default="normal")
     ap.add_argument("--direction", choices=["ingress", "egress"], default="ingress")
-    ap.add_argument("--link-rate", default="10Gbit",
-                    help="egress only: ceiling for all other traffic on the interface")
-    ap.add_argument("--failpoints", type=parse_failpoints, action="extend", default=None,
-                    help="malicious only: '30:10,90:5' or '[[30,10],[90,5]]'")
+    ap.add_argument(
+        "--link-rate",
+        default="10Gbit",
+        help="egress only: ceiling for all other traffic on the interface",
+    )
+    ap.add_argument(
+        "--failpoints",
+        type=parse_failpoints,
+        action="extend",
+        default=None,
+        help="malicious only: '30:10,90:5' or '[[30,10],[90,5]]'",
+    )
     ap.add_argument("--min-kbps", type=float, default=None)
     ap.add_argument("--max-kbps", type=float, default=None)
     ap.add_argument("--interval", type=float, default=1.0)
@@ -421,29 +688,44 @@ def main() -> None:
         die("port must be in 1-65535")
     if args.interval <= 0:
         die("--interval must be > 0")
-    if (args.shape is not None and args.shape <= 0) or (args.scale is not None and args.scale <= 0):
+    if (args.shape is not None and args.shape <= 0) or (
+        args.scale is not None and args.scale <= 0
+    ):
         die("--shape and --scale must be > 0")
     if args.failpoints and args.profile != "malicious":
         die("--failpoints only applies to --profile malicious")
     if args.profile == "malicious" and not args.failpoints:
-        print("warning: malicious profile with no --failpoints behaves like intermittent",
-              file=sys.stderr)
+        print(
+            "warning: malicious profile with no --failpoints behaves like intermittent",
+            file=sys.stderr,
+        )
 
     ifb = args.ifb or f"ifbsim{args.port}"
     if len(ifb) > 15:
         die(f"IFB name {ifb!r} is longer than 15 characters")
-    tc = Tc(args.interface, ifb, args.port, args.dry_run,
-            direction=args.direction, link_rate=args.link_rate)
+    tc = Tc(
+        args.interface,
+        ifb,
+        args.port,
+        args.dry_run,
+        direction=args.direction,
+        link_rate=args.link_rate,
+    )
 
     if not args.dry_run:
         if os.geteuid() != 0:
             die("must be run as root (try sudo)")
-        if subprocess.run(["ip", "link", "show", args.interface], capture_output=True).returncode:
+        if subprocess.run(
+            ["ip", "link", "show", args.interface], capture_output=True
+        ).returncode:
             die(f"interface {args.interface!r} does not exist")
 
     if args.cleanup:
         tc.teardown()
-        print(f"removed tc state on {args.interface}" + (f" and {ifb}" if args.direction == "ingress" else ""))
+        print(
+            f"removed tc state on {args.interface}"
+            + (f" and {ifb}" if args.direction == "ingress" else "")
+        )
         return
 
     for sig in (signal.SIGTERM, signal.SIGHUP):
@@ -459,8 +741,10 @@ def main() -> None:
     finally:
         if tc.installed:
             tc.teardown()
-            print(f"cleaned up: removed tc state on {args.interface}"
-                  + (f" and {ifb}" if args.direction == "ingress" else ""))
+            print(
+                f"cleaned up: removed tc state on {args.interface}"
+                + (f" and {ifb}" if args.direction == "ingress" else "")
+            )
 
 
 if __name__ == "__main__":
