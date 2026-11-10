@@ -69,16 +69,7 @@ wheels = [
 ]
 
 [[package]]
-name = "steeleagle-protocol"
-version = "0.3.6"
-source = { git = "https://github.com/cmusatyalab/steeleagle?subdirectory=api%2Fpython&tag=api%2Fpython%2Fv0.3.6#a94a0f4f09145b5ee359ccd1a771e73826799a69" }
-dependencies = [
-    { name = "grpcio" },
-    { name = "protobuf" },
-]
-
-[[package]]
-name = "steeleagle-scripts"
+name = "steeleagle-experiment"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
@@ -87,6 +78,15 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [{ name = "steeleagle-protocol", git = "https://github.com/cmusatyalab/steeleagle?subdirectory=api%2Fpython&tag=api%2Fpython%2Fv0.3.6" }]
+
+[[package]]
+name = "steeleagle-protocol"
+version = "0.3.6"
+source = { git = "https://github.com/cmusatyalab/steeleagle?subdirectory=api%2Fpython&tag=api%2Fpython%2Fv0.3.6#a94a0f4f09145b5ee359ccd1a771e73826799a69" }
+dependencies = [
+    { name = "grpcio" },
+    { name = "protobuf" },
+]
 
 [[package]]
 name = "typing-extensions"

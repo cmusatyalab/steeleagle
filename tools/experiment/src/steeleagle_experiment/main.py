@@ -1,7 +1,7 @@
 """Auto-experiment runner for SteelEagle.
 
-    python -m steeleagle_scripts.main <experiment_dir>
-    python -m steeleagle_scripts.main -r <dir_of_experiment_dirs>
+    python -m steeleagle_experiment.main <experiment_dir>
+    python -m steeleagle_experiment.main -r <dir_of_experiment_dirs>
 
 An experiment directory holds an experiment.toml (see example/) and every file
 it names: the mission or flow, and each daemon's config. For each netsim

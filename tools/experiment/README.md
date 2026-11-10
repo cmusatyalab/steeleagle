@@ -1,11 +1,11 @@
-# steeleagle-scripts
+# steeleagle-experiment
 
 An automatic experiment runner for SteelEagle. You give it an experiment
 directory, and for each network profile it:
 
 - restarts the daemons with that profile's configs,
 - starts a mission or a dataflow on a vehicle,
-- limits the network with [netsim](src/steeleagle_scripts/netsim/README.md),
+- limits the network with [netsim](src/steeleagle_experiment/netsim/README.md),
 - stops everything when the run ends,
 - collects the result files, catalog files and bandwidth statistics into the
   experiment directory.
@@ -18,8 +18,8 @@ directory, and for each network profile it:
 repository, in a temporary environment:
 
 ```bash
-uvx --from "git+https://github.com/cmusatyalab/steeleagle@v4_backend_rework#subdirectory=tools/scripts" \
-    scripts path/to/my_experiment
+uvx --from "git+https://github.com/cmusatyalab/steeleagle@v4_backend_rework#subdirectory=tools/experiment" \
+    experiment path/to/my_experiment
 ```
 
 Change `@v4_backend_rework` to another branch, tag or commit as needed. The
@@ -29,14 +29,14 @@ changes before running it this way.
 From a local checkout (to try out uncommitted changes):
 
 ```bash
-uvx --from ./tools/scripts scripts path/to/my_experiment
+uvx --from ./tools/experiment experiment path/to/my_experiment
 ```
 
 ### From the project environment
 
 ```bash
-cd tools/scripts
-uv run scripts path/to/my_experiment
+cd tools/experiment
+uv run experiment path/to/my_experiment
 ```
 
 ### Running a batch of experiments
@@ -45,8 +45,8 @@ uv run scripts path/to/my_experiment
 alphabetical order:
 
 ```bash
-uvx --from "git+https://github.com/cmusatyalab/steeleagle@v4_backend_rework#subdirectory=tools/scripts" \
-    scripts -r path/to/experiments/
+uvx --from "git+https://github.com/cmusatyalab/steeleagle@v4_backend_rework#subdirectory=tools/experiment" \
+    experiment -r path/to/experiments/
 ```
 
 Every experiment in the batch is checked before the first one starts. A typo
@@ -102,7 +102,7 @@ my_experiment/
 └── runs/                    # written by the runner
 ```
 
-See [`src/steeleagle_scripts/example/experiment.toml`](src/steeleagle_scripts/example/experiment.toml)
+See [`src/steeleagle_experiment/example/experiment.toml`](src/steeleagle_experiment/example/experiment.toml)
 for a commented template.
 
 ## experiment.toml
@@ -154,7 +154,7 @@ prints a warning).
 failpoints = [[30, 10], [90, 5], [150, 20]]
 ```
 
-See the [netsim README](src/steeleagle_scripts/netsim/README.md) for how
+See the [netsim README](src/steeleagle_experiment/netsim/README.md) for how
 bandwidth is drawn and what the other flags do.
 
 ### `[daemons]`
@@ -317,7 +317,7 @@ and bandwidth statistics are filled in.
   removes them by itself before it starts. To remove them right away:
 
   ```bash
-  sudo python3 src/steeleagle_scripts/netsim/netsim.py -i tailscale0 -p 9001 --cleanup
+  sudo python3 src/steeleagle_experiment/netsim/netsim.py -i tailscale0 -p 9001 --cleanup
   ```
 
   Don't run this if something else on the machine uses a clsact qdisc on that

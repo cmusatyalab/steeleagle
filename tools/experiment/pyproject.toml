@@ -1,7 +1,7 @@
 [project]
-name = "steeleagle-scripts"
+name = "steeleagle-experiment"
 version = "0.1.0"
-description = "Scripts for running experiments on SteelEagle"
+description = "Automatic experiment runner for SteelEagle"
 readme = "README.md"
 authors = [
     { name = "Mihir Bala", email = "mkbala42@gmail.com" }
@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [project.scripts]
-scripts = "steeleagle_scripts.main:main"
+experiment = "steeleagle_experiment.main:main"
 
 [build-system]
 requires = ["uv_build>=0.12.18,<0.13.0"]
