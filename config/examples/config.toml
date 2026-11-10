@@ -5,6 +5,9 @@ port = 9000
 lcs = 9001
 # Log default port
 logs = 9002
+# Port to serve Uriel's Prometheus metrics on, at /metrics (optional, defaults
+# to none)
+metrics_port = 9464
 # Hostname is optional, but determines how the daemon presents itself to the
 # orchestrator (defaults to "eagled")
 hostname = "eagled"

@@ -5,6 +5,7 @@ on:
     branches: [ "v4_backend_rework" ]
     paths:
       - '.github/workflows/go-ci.yml'
+      - 'tools/uriel/install.sh'
       - '**/*.go'
       - 'go.mod'
       - 'go.sum'
@@ -13,6 +14,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/go-ci.yml'
+      - 'tools/uriel/install.sh'
       - '**/*.go'
       - 'go.mod'
       - 'go.sum'
@@ -36,6 +38,11 @@ jobs:
 
       - name: Install ffmpeg and bubblewrap
         run: sudo apt-get update && sudo apt-get install -y ffmpeg bubblewrap
+
+      # eagled links liburiel through cgo. This installs the release that go.mod's Uriel version
+      # names, to /usr/local, which pkg-config searches on Ubuntu.
+      - name: Install liburiel
+        run: tools/uriel/install.sh
 
       - name: Allow unprivileged user namespaces (required by bubblewrap)
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0

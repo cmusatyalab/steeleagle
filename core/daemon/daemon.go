@@ -279,6 +279,11 @@ func (d *Daemon) Run(ctx context.Context) error {
 	defer d.network.Close()
 	// Get the local address of this daemon on the network
 	d.setLocalAddr()
+	// Serve Uriel's metrics, before any Uriel client or server is created
+	if err = d.startMetricsServer(); err != nil {
+		d.log.Error().Err(err).Msg("couldn't serve metrics")
+		return err
+	}
 	// Create the main network listener that the relay will be served on; it
 	// has an open ACL so remote entities are provided AuthCode ExternalCode
 	// when in UNLOCKED state

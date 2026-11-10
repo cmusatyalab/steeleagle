@@ -139,3 +139,7 @@ sdk/cmd/eaglec/eaglec
 # Go workspace (local cross-module development; see tools/scripts/release.sh)
 go.work
 go.work.sum
+
+/dist/
+go.work
+go.work.sum

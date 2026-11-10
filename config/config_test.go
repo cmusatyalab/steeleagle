@@ -18,6 +18,7 @@ func TestDaemonConfigParsesExample(t *testing.T) {
 		Port:         9000,
 		Lcs:          9001,
 		Logs:         9002,
+		MetricsPort:  9464,
 		Hostname:     "eagled",
 		Bind:         "100.64.0.1",
 		Orchestrator: "homebase:9000",

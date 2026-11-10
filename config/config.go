@@ -41,6 +41,9 @@ type DaemonRoot struct {
 	Lcs int `toml:"lcs"`
 	// Log port
 	Logs int `toml:"logs"`
+	// Port to serve Uriel's Prometheus metrics on, at /metrics (defaults to
+	// none)
+	MetricsPort int `toml:"metrics_port,omitempty"`
 	// Hostname for this daemon (defaults to "eagled")
 	Hostname string `toml:"hostname"`
 	// IP address to bind on, as a VPN's (defaults to all interfaces)

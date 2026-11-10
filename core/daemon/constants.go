@@ -104,6 +104,10 @@ const (
 	LcsBindHost     = "0.0.0.0"
 )
 
+// MetricsBindHost is the host the metrics server binds to when the network has
+// no bind address.
+const MetricsBindHost = "0.0.0.0"
+
 // Metadata key that the relay records the caller address in, for the daemon's
 // own services.
 const callerHeader = "x-caller-addr"
