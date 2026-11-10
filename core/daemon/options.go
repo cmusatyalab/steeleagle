@@ -30,6 +30,14 @@ func WithNetwork(n network.Network) DaemonOption {
 	}
 }
 
+// WithStoppedPath sets the path of the file listing the services stopped by
+// request, instead of stopped.json in the data directory.
+func WithStoppedPath(path string) DaemonOption {
+	return func(d *Daemon) {
+		d.stoppedPath = path
+	}
+}
+
 // WithSocketPath sets the path of the daemon's control socket, instead of the
 // one in the runtime directory.
 func WithSocketPath(path string) DaemonOption {

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"net"
 	"os"
 	"path/filepath"
@@ -58,19 +59,7 @@ func (d *Daemon) Configure(
 	if _, err := config.ParseDaemonConfigFromBytes(content); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid config: %v", err)
 	}
-	tmp, err := os.CreateTemp(filepath.Dir(d.configPath), ".config-*.toml")
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "couldn't write config: %v", err)
-	}
-	defer os.Remove(tmp.Name())
-	_, err = tmp.Write(content)
-	if closeErr := tmp.Close(); err == nil {
-		err = closeErr
-	}
-	if err == nil {
-		err = os.Rename(tmp.Name(), d.configPath)
-	}
-	if err != nil {
+	if err := writeFileAtomic(d.configPath, content); err != nil {
 		return nil, status.Errorf(codes.Internal, "couldn't write config: %v", err)
 	}
 	d.log.Info().Str("path", d.configPath).Msg("config replaced, restarting")
@@ -138,9 +127,10 @@ func (d *Daemon) ListServices(
 	}.Build(), nil
 }
 
-// RestartService restarts a target daemon service. A service on a registered
-// remote daemon is restarted by that daemon. If the daemon failed to start
-// its services, it returns that error instead.
+// RestartService restarts a target daemon service, or starts it if it was
+// stopped by request, so that it starts with the daemon again. A service on a
+// registered remote daemon is restarted by that daemon. If the daemon failed
+// to start its services, it returns that error instead.
 func (d *Daemon) RestartService(
 	ctx context.Context,
 	req *daemonpb.RestartServiceRequest,
@@ -160,10 +150,71 @@ func (d *Daemon) RestartService(
 	if !ok {
 		return nil, status.Errorf(codes.NotFound, "no service %q", name)
 	}
+	if err := d.setStopped(s, false); err != nil {
+		return nil, status.Errorf(codes.Internal, "couldn't restart service %q: %v", name, err)
+	}
 	if err := d.startService(s); err != nil {
 		return nil, status.Errorf(codes.Internal, "couldn't restart service %q: %v", name, err)
 	}
 	return &daemonpb.RestartServiceResponse{}, nil
+}
+
+// StopService stops a target daemon service, which stays stopped across
+// daemon restarts until RestartService starts it again. Stopping a stopped
+// service does nothing. A service on a registered remote daemon is stopped by
+// that daemon. If the daemon failed to start its services, it returns that
+// error instead.
+func (d *Daemon) StopService(
+	ctx context.Context,
+	req *daemonpb.StopServiceRequest,
+) (*daemonpb.StopServiceResponse, error) {
+	if d.err != nil {
+		return nil, status.Errorf(codes.FailedPrecondition, "daemon failed to start services: %v", d.err)
+	}
+	name := req.GetServiceName()
+	if child := d.remoteFor(name); child != nil {
+		ctx, cancel := context.WithTimeout(router.Embed(ctx, child.ip), RestartDeadline)
+		defer cancel()
+		return daemonpb.NewDaemonServiceClient(child.conn).StopService(ctx, req)
+	}
+	d.svcMu.Lock()
+	defer d.svcMu.Unlock()
+	s, ok := d.lookup[name]
+	if !ok {
+		return nil, status.Errorf(codes.NotFound, "no service %q", name)
+	}
+	// The service is marked stopped first, so that it is never left stopped
+	// now but started again by the next restart
+	if err := d.setStopped(s, true); err != nil {
+		return nil, status.Errorf(codes.Internal, "couldn't stop service %q: %v", name, err)
+	}
+	// Its plugin is kept, as when it exits, so that a restart reuses its log
+	if plug, ok := d.plugins[name]; ok {
+		d.router.RemoveHeaderRoute(name)
+		stopPluginOrVehicle(plug)
+	}
+	s.err = nil
+	d.log.Info().Str("service", name).Msg("stopped service by request")
+	return &daemonpb.StopServiceResponse{}, nil
+}
+
+// setStopped marks a service stopped by request, or not, saving the mark so
+// that it lasts across restarts. The caller must hold svcMu.
+func (d *Daemon) setStopped(s *daemonService, stopped bool) error {
+	if d.stopped[s.configName] == stopped {
+		return nil
+	}
+	next := maps.Clone(d.stopped)
+	if stopped {
+		next[s.configName] = true
+	} else {
+		delete(next, s.configName)
+	}
+	if err := saveStopped(d.stoppedPath, next); err != nil {
+		return fmt.Errorf("couldn't save the stopped services: %w", err)
+	}
+	d.stopped = next
+	return nil
 }
 
 // Restart restarts the whole daemon and all of its services, including core
@@ -253,13 +304,14 @@ func (d *Daemon) populateServices() error {
 		}
 		// The simulator is run with its args, but no plugin name
 		simulator := &daemonService{
-			name:      d.qualify(SimulatorName),
-			category:  daemonpb.ServiceCategory_SERVICE_CATEGORY_SIMULATOR,
-			uri:       d.Config.Simulator.Package,
-			path:      simPath,
-			args:      args,
-			isolation: daemonpb.Isolation_ISOLATION_PROCESS,
-			local:     true,
+			name:       d.qualify(SimulatorName),
+			configName: SimulatorName,
+			category:   daemonpb.ServiceCategory_SERVICE_CATEGORY_SIMULATOR,
+			uri:        d.Config.Simulator.Package,
+			path:       simPath,
+			args:       args,
+			isolation:  daemonpb.Isolation_ISOLATION_PROCESS,
+			local:      true,
 		}
 		d.lookup[simulator.name] = simulator
 		d.services = append(d.services, simulator)
@@ -276,12 +328,13 @@ func (d *Daemon) populateServices() error {
 			serviceType = daemonpb.ServiceCategory_SERVICE_CATEGORY_EXTRA
 		}
 		s := &daemonService{
-			name:      d.qualify(svc.Name),
-			category:  serviceType,
-			isolation: daemonpb.Isolation_ISOLATION_PROCESS,
-			auth:      listener.ToCode(string(svc.AuthLevel())),
-			local:     true,
-			simulated: svc.Simulate,
+			name:       d.qualify(svc.Name),
+			configName: svc.Name,
+			category:   serviceType,
+			isolation:  daemonpb.Isolation_ISOLATION_PROCESS,
+			auth:       listener.ToCode(string(svc.AuthLevel())),
+			local:      true,
+			simulated:  svc.Simulate,
 		}
 		if svc.Simulate && simPath == "" {
 			err := fmt.Errorf("service %q is simulated, but no simulator is configured", svc.Name)
@@ -308,13 +361,17 @@ func (d *Daemon) populateServices() error {
 	return nil
 }
 
-// startServices starts all the services in the daemon's config file. A
-// service that fails to start has its error set, and doesn't stop the rest
-// from starting. Called only on startup.
+// startServices starts all the services in the daemon's config file, except
+// those stopped by request. A service that fails to start has its error set,
+// and doesn't stop the rest from starting. Called only on startup.
 func (d *Daemon) startServices() {
 	d.svcMu.Lock()
 	defer d.svcMu.Unlock()
 	for _, service := range d.services {
+		if d.stopped[service.configName] {
+			d.log.Info().Str("service", service.name).Msg("not starting service stopped by request")
+			continue
+		}
 		if err := d.startService(service); err != nil {
 			d.log.Error().Err(err).Str("service", service.name).
 				Msg("failed to start service")

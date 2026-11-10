@@ -11,7 +11,8 @@
 //	set-orchestrator <host> <port>  point the daemon at an orchestrator, restarting it
 //	status                          print whether the daemon reaches its orchestrator
 //	restart                         restart the daemon and all of its services
-//	restart-service <name>          restart one service
+//	restart-service <name>          restart one service, or start a stopped one
+//	stop-service <name>             stop one service, until restart-service starts it
 //	list-services                   print the daemon's services and remote daemons
 //	install-package <uri>           install a package of plugins
 //	remove-package <uri>            remove an installed package
@@ -49,7 +50,8 @@ Commands:
   set-orchestrator <host> <port>     point the daemon at an orchestrator, restarting it
   status                             print whether the daemon reaches its orchestrator
   restart                            restart the daemon and all of its services
-  restart-service <name>             restart one service
+  restart-service <name>             restart one service, or start a stopped one
+  stop-service <name>                stop one service, until restart-service starts it
   list-services                      print the daemon's services and remote daemons
   install-package <uri>              install a package of plugins
   remove-package <uri>               remove an installed package
@@ -83,6 +85,7 @@ var commands = map[string]command{
 	"status":           {"", connectionStatus},
 	"restart":          {"", restart},
 	"restart-service":  {"<name>", restartService},
+	"stop-service":     {"<name>", stopService},
 	"list-services":    {"", listServices},
 	"install-package":  {"<uri>", installPackage},
 	"remove-package":   {"<uri>", removePackage},

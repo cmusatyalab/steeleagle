@@ -33,12 +33,16 @@ func TestServiceProto(t *testing.T) {
 		args:       `{"local":"only"}`,
 		local:      true,
 	}
-	p, err := s.toProto(true)
+	p, err := s.toProto(true, false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !p.GetRunning() || p.GetAuth() != "user" || p.GetError() != "" {
-		t.Errorf("proto = %v, want running with user auth, and no error", p)
+	if !p.GetRunning() || p.GetStopped() || p.GetAuth() != "user" || p.GetError() != "" {
+		t.Errorf("proto = %v, want running, not stopped, with user auth, and no error", p)
+	}
+	// A service stopped by request is marked so
+	if p, err := s.toProto(false, true); err != nil || p.GetRunning() || !p.GetStopped() {
+		t.Errorf("toProto(stopped) = %v, %v, want stopped and not running", p, err)
 	}
 	got, err := serviceFromProto(p)
 	if err != nil {
@@ -56,7 +60,7 @@ func TestServiceProto(t *testing.T) {
 	}
 
 	// A service's error survives conversion
-	p, err = (&daemonService{name: "bad", err: errors.New("asked to fail")}).toProto(false)
+	p, err = (&daemonService{name: "bad", err: errors.New("asked to fail")}).toProto(false, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +72,7 @@ func TestServiceProto(t *testing.T) {
 	}
 
 	// A service without a config, like the simulator, has none on the other side
-	p, err = (&daemonService{name: "sim"}).toProto(false)
+	p, err = (&daemonService{name: "sim"}).toProto(false, false)
 	if err != nil {
 		t.Fatal(err)
 	}

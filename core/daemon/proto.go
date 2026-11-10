@@ -10,13 +10,14 @@ import (
 )
 
 // serviceProtos returns the local services in protobuf form, each marked
-// running if its plugin is, with the error it failed to start with, if any. The caller must hold svcMu.
+// running if its plugin is, and stopped if it was stopped by request, with
+// the error it failed to start with, if any. The caller must hold svcMu.
 func (d *Daemon) serviceProtos() ([]*daemonpb.Service, error) {
 	out := make([]*daemonpb.Service, 0, len(d.services))
 	for _, s := range d.services {
 		p, ok := d.plugins[s.name]
 		running := ok && p.plugin.Running()
-		svc, err := s.toProto(running)
+		svc, err := s.toProto(running, d.stopped[s.configName])
 		if err != nil {
 			return nil, fmt.Errorf("service %q: %w", s.name, err)
 		}
@@ -26,7 +27,7 @@ func (d *Daemon) serviceProtos() ([]*daemonpb.Service, error) {
 }
 
 // toProto converts a daemon service to its protobuf form.
-func (s *daemonService) toProto(running bool) (*daemonpb.Service, error) {
+func (s *daemonService) toProto(running, stopped bool) (*daemonpb.Service, error) {
 	var conf []byte
 	if s.config != nil {
 		var err error
@@ -42,6 +43,7 @@ func (s *daemonService) toProto(running bool) (*daemonpb.Service, error) {
 		Config:    conf,
 		Isolation: s.isolation,
 		Running:   running,
+		Stopped:   stopped,
 		Auth:      s.auth.String(),
 		Error:     errString(s.err),
 	}.Build(), nil

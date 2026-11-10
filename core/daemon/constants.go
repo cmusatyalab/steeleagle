@@ -20,6 +20,10 @@ var ErrRestart = errors.New("daemon restart requested")
 // ConfigFileName is the ame of the daemon config file within the config directory.
 const ConfigFileName = "config.toml"
 
+// StoppedFileName is the name of the file within the data directory that
+// lists the services stopped by request, which stay stopped across restarts.
+const StoppedFileName = "stopped.json"
+
 // DefaultHostname is used if none is provided in the daemon config.
 const DefaultHostname = "eagled"
 

@@ -177,6 +177,26 @@ func restartService(ctx context.Context, conn grpc.ClientConnInterface, fs *flag
 	return printResult(out, done("restarted "+name))
 }
 
+// stopService stops one of the daemon's services, by its name as
+// list-services prints it. It stays stopped across daemon restarts until
+// restart-service starts it again.
+func stopService(ctx context.Context, conn grpc.ClientConnInterface, fs *flag.FlagSet, args []string, out io.Writer) error {
+	if err := parseArgs(fs, args, 1); err != nil {
+		return err
+	}
+	name := fs.Arg(0)
+	// The request returns once the service has stopped, which is quick, so it
+	// isn't worth a spinner
+	req := daemonpb.StopServiceRequest_builder{ServiceName: name}.Build()
+	if _, err := daemonpb.NewDaemonServiceClient(conn).StopService(ctx, req); err != nil {
+		if isTerminal(out) {
+			fmt.Fprintln(out, errorStyle.Render("✗ ")+"Stopping "+name)
+		}
+		return err
+	}
+	return printResult(out, done("stopped "+name+"; restart-service starts it again"))
+}
+
 // categoryNames are the names services are printed with, by category.
 var categoryNames = map[daemonpb.ServiceCategory]string{
 	daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE:   "vehicle",
@@ -230,6 +250,9 @@ func servicesResult(resp *daemonpb.ListServicesResponse, out io.Writer) (result,
 			switch {
 			case s.GetRunning():
 				state, styledState = "running", checkStyle.Render("running")
+			case s.GetStopped():
+				state = "stopped by request"
+				styledState = dimStyle.Render(state)
 			case s.GetError() != "":
 				// Why the service stopped
 				state = "stopped: " + s.GetError()

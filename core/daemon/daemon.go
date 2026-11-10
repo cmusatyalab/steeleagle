@@ -33,6 +33,7 @@ import (
 // extra) that runs a plugin from a package.
 type daemonService struct {
 	name       string                   // name of the service
+	configName string                   // name of the service in the daemon config, unqualified
 	category   daemonpb.ServiceCategory // service category (simulator, vehicle, engine, extra)
 	uri        string                   // package uri for the plugin
 	pluginName string                   // plugin file name inside package
@@ -88,6 +89,8 @@ type Daemon struct {
 	Hostname    string                    // daemon hostname
 	Config      *config.DaemonConfig      // daemon config
 	configPath  string                    // path to the daemon config
+	stoppedPath string                    // path to the list of services stopped by request
+	stopped     map[string]bool           // services stopped by request, by their names in the config
 	Running     atomic.Bool               // whether or not the daemon is currently running
 	orch        *orchInfo                 // information about the orchestrator, nil if none
 	orchMu      sync.RWMutex              // mutex for orch, which changes on each registration
@@ -108,7 +111,7 @@ type Daemon struct {
 	lcs         *uriel.Server             // local compute server reference
 	cert        []byte                    // DER cert of the local compute service
 	restarting  atomic.Bool               // whether or not the daemon is currently restarting
-	svcMu       sync.RWMutex              // mutex for lookup, services, plugins, and the plugins themselves
+	svcMu       sync.RWMutex              // mutex for lookup, services, plugins, the plugins themselves, and stopped
 	pkgMu       sync.RWMutex              // mutex for reading or writing packages to .pending
 	remMu       sync.RWMutex              // mutex for adding new child daemons
 	err         error                     // startup error, if any
@@ -161,6 +164,22 @@ func NewDaemon(options ...DaemonOption) (*Daemon, error) {
 		return nil, err
 	}
 	daemon.log.Debug().Msg("daemon config loaded")
+
+	// Load the services stopped by request, which aren't started
+	if daemon.stoppedPath == "" {
+		dataDir, err := util.GetDataDir()
+		if err != nil {
+			daemon.log.Error().Err(err).Msg("failed to get data directory")
+			return nil, err
+		}
+		daemon.stoppedPath = filepath.Join(dataDir, StoppedFileName)
+	}
+	daemon.stopped, err = loadStopped(daemon.stoppedPath)
+	if err != nil {
+		daemon.log.Error().Err(err).Str("path", daemon.stoppedPath).
+			Msg("failed to read the stopped services")
+		return nil, err
+	}
 
 	// Set hostname from config
 	if daemon.Config.Daemon.Hostname != "" {

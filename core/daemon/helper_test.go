@@ -417,6 +417,9 @@ func newTestDaemonWith(t *testing.T, n *testNet, config string, options ...Daemo
 		WithConfigPath(path),
 		WithNetwork(n),
 		WithSocketPath(filepath.Join(dir, "ctl.sock")),
+		// Each daemon has its own stopped services, since the data directory
+		// is shared by the tests
+		WithStoppedPath(filepath.Join(dir, StoppedFileName)),
 		WithLogger(testLogger()),
 	}, options...)...)
 	if err != nil {
@@ -542,6 +545,16 @@ func running(resp *daemonpb.ListServicesResponse) map[string]bool {
 	out := map[string]bool{}
 	for _, s := range resp.GetServices() {
 		out[s.GetName()] = s.GetRunning()
+	}
+	return out
+}
+
+// stopped returns the names of the services in a listing, each with whether
+// it was stopped by request.
+func stopped(resp *daemonpb.ListServicesResponse) map[string]bool {
+	out := map[string]bool{}
+	for _, s := range resp.GetServices() {
+		out[s.GetName()] = s.GetStopped()
 	}
 	return out
 }

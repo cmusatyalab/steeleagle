@@ -105,6 +105,136 @@ func TestRestartServiceConcurrent(t *testing.T) {
 	}
 }
 
+// stopService stops a service of a daemon.
+func (td *testDaemon) stopService(name string) error {
+	_, err := td.client.StopService(callCtx(td.t, 30*time.Second),
+		daemonpb.StopServiceRequest_builder{ServiceName: name}.Build())
+	return err
+}
+
+// restartService restarts a service of a daemon.
+func (td *testDaemon) restartService(name string) error {
+	_, err := td.client.RestartService(callCtx(td.t, 30*time.Second),
+		daemonpb.RestartServiceRequest_builder{ServiceNames: name}.Build())
+	return err
+}
+
+// expectStopped fails the test unless the daemon lists service as stopped by
+// request and not running.
+func expectStopped(t *testing.T, d *testDaemon, service string) {
+	t.Helper()
+	resp, err := d.listServices()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if running(resp)[service] || !stopped(resp)[service] {
+		t.Errorf("%s: running = %v, stopped = %v; want stopped, not running",
+			service, running(resp)[service], stopped(resp)[service])
+	}
+}
+
+// expectRunning fails the test unless the daemon lists service as running and
+// not stopped by request.
+func expectRunning(t *testing.T, d *testDaemon, service string) {
+	t.Helper()
+	resp, err := d.listServices()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !running(resp)[service] || stopped(resp)[service] {
+		t.Errorf("%s: running = %v, stopped = %v; want running, not stopped",
+			service, running(resp)[service], stopped(resp)[service])
+	}
+}
+
+// TestStopService checks that a stopped service's plugin stops while the rest
+// keep running, that stopping it again is harmless, that an unknown one can't
+// be stopped, and that a restart starts it again, logging to the same log.
+func TestStopService(t *testing.T) {
+	requirePixi(t)
+	d := standalone(t, echo("a", "{}"), echo("b", "{}"))
+	d.run()
+	const a, b = "127.0.0.1.a", "127.0.0.1.b"
+
+	if err := d.stopService(a); err != nil {
+		t.Fatal(err)
+	}
+	expectStopped(t, d, a)
+	if running, _ := d.pluginRunning(a); running {
+		t.Errorf("%s's plugin is still running", a)
+	}
+	expectRunning(t, d, b)
+	if err := d.stopService(a); err != nil {
+		t.Errorf("stopping a stopped service = %v, want nil", err)
+	}
+
+	expectCode(t, d.stopService("127.0.0.1.nope"), codes.NotFound, "127.0.0.1.nope")
+	// Services are only known by their qualified names
+	expectCode(t, d.stopService("b"), codes.NotFound)
+
+	if err := d.restartService(a); err != nil {
+		t.Fatal(err)
+	}
+	expectRunning(t, d, a)
+	if log := readLog(t, a); strings.Count(log, "plugin=echo.plugin.toml") != 2 {
+		t.Errorf("log = %q, want a line from each run", log)
+	}
+}
+
+// TestStopServicePersists checks that a stopped service stays stopped when
+// the daemon restarts, until it is restarted, and then starts with the
+// daemon again.
+func TestStopServicePersists(t *testing.T) {
+	requirePixi(t)
+	d := standalone(t, echo("a", "{}"), echo("b", "{}"))
+	d.run()
+	const a, b = "127.0.0.1.a", "127.0.0.1.b"
+	if err := d.stopService(a); err != nil {
+		t.Fatal(err)
+	}
+
+	// restarted stops old and runs a new daemon in its place, as eagled is
+	// run again after a restart, with its config and stopped services
+	restarted := func(old *testDaemon) *testDaemon {
+		t.Helper()
+		if err := old.stop(); err != nil {
+			t.Fatalf("Run() = %v, want nil", err)
+		}
+		cfg, err := os.ReadFile(old.configPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		next := newTestDaemonWith(t, &testNet{addr: orchAddr, fabric: newFabric()}, string(cfg),
+			WithoutLogServer(), WithStoppedPath(old.stoppedPath))
+		next.run()
+		return next
+	}
+	d = restarted(d)
+	expectStopped(t, d, a)
+	expectRunning(t, d, b)
+
+	if err := d.restartService(a); err != nil {
+		t.Fatal(err)
+	}
+	d = restarted(d)
+	expectRunning(t, d, a)
+	expectRunning(t, d, b)
+}
+
+// TestStopServiceOnChild checks that the orchestrator has a child stop its
+// own service, which the orchestrator then lists as stopped.
+func TestStopServiceOnChild(t *testing.T) {
+	p := runPair(t)
+	const c = "127.0.0.2.c"
+	if err := p.orch.stopService(c); err != nil {
+		t.Fatal(err)
+	}
+	expectStopped(t, p.child, c)
+	expectStopped(t, p.orch, c)
+	expectRunning(t, p.orch, "127.0.0.1.o")
+	expectCode(t, p.orch.stopService("127.0.0.2.nope"), codes.NotFound)
+}
+
 // TestRestart checks that Restart answers, then stops the daemon for a
 // restart.
 func TestRestart(t *testing.T) {

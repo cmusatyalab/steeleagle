@@ -35,6 +35,7 @@ type fakeDaemon struct {
 	install   string
 	remove    string
 	restarted string
+	stopped   string
 }
 
 func (f *fakeDaemon) GetConfiguration(context.Context, *daemonpb.GetConfigurationRequest) (*daemonpb.GetConfigurationResponse, error) {
@@ -51,6 +52,12 @@ func (f *fakeDaemon) RestartService(_ context.Context, req *daemonpb.RestartServ
 	f.calls = append(f.calls, "RestartService")
 	f.restarted = req.GetServiceNames()
 	return &daemonpb.RestartServiceResponse{}, f.err
+}
+
+func (f *fakeDaemon) StopService(_ context.Context, req *daemonpb.StopServiceRequest) (*daemonpb.StopServiceResponse, error) {
+	f.calls = append(f.calls, "StopService")
+	f.stopped = req.GetServiceName()
+	return &daemonpb.StopServiceResponse{}, f.err
 }
 
 func (f *fakeDaemon) TransferFile(stream grpc.BidiStreamingServer[daemonpb.TransferFileRequest, daemonpb.TransferFileResponse]) error {
@@ -261,6 +268,18 @@ func TestRestartService(t *testing.T) {
 	}
 }
 
+// TestStopService checks that stop-service sends the service's name.
+func TestStopService(t *testing.T) {
+	daemon := &fakeDaemon{}
+	socket := serveFake(t, daemon)
+	if code, _, errOut := runEagle(t, socket, "stop-service", "100.64.0.2.drone"); code != 0 {
+		t.Fatalf("exit = %d, stderr = %s", code, errOut)
+	}
+	if daemon.stopped != "100.64.0.2.drone" {
+		t.Errorf("stopped = %q, want 100.64.0.2.drone", daemon.stopped)
+	}
+}
+
 // TestTransfer checks that files and models of several chunks, one chunk and
 // none are saved whole by the daemon, under their base name or -name.
 func TestTransfer(t *testing.T) {
@@ -314,8 +333,9 @@ func TestTransferRejected(t *testing.T) {
 }
 
 // TestListServicesTable checks that services are printed as a table, with
-// their category, status (with why a stopped one stopped) and isolation, followed by the remote daemons, with
-// why any can't be reached.
+// their category, status (with why a stopped one stopped, or that it was
+// stopped by request) and isolation, followed by the remote daemons, with why
+// any can't be reached.
 func TestListServicesTable(t *testing.T) {
 	daemon := &fakeDaemon{services: daemonpb.ListServicesResponse_builder{
 		Services: []*daemonpb.Service{
@@ -337,6 +357,11 @@ func TestListServicesTable(t *testing.T) {
 				Category: daemonpb.ServiceCategory_SERVICE_CATEGORY_VEHICLE,
 				Error:    "exited with status 1",
 			}.Build(),
+			daemonpb.Service_builder{
+				Name:     "detector",
+				Category: daemonpb.ServiceCategory_SERVICE_CATEGORY_ENGINE,
+				Stopped:  true,
+			}.Build(),
 		},
 		Remotes: []*daemonpb.Daemon{
 			daemonpb.Daemon_builder{Ip: "100.64.0.2", Hostname: "jetson", Os: "linux", Arch: "arm64"}.Build(),
@@ -354,6 +379,7 @@ func TestListServicesTable(t *testing.T) {
 		{"vehicle", "drone", "anafi.toml", "running", "process", "admin", "github.com/example/drivers"},
 		{"engine", "100.64.0.2.yolo", "-", "stopped", "-", "-", "-"},
 		{"vehicle", "px4", "-", "stopped:", "exited", "with", "status", "1", "-", "-", "-"},
+		{"engine", "detector", "-", "stopped", "by", "request", "-", "-", "-"},
 		{},
 		{"REMOTE", "HOSTNAME", "PLATFORM", "STATUS"},
 		{"100.64.0.2", "jetson", "linux/arm64", "available"},
@@ -448,6 +474,8 @@ func TestUsageErrors(t *testing.T) {
 		{"install-package", "-bogus", "uri"},
 		{"remove-package", "a", "b"},
 		{"restart-service"},
+		{"stop-service"},
+		{"stop-service", "a", "b"},
 		{"get-config", "extra"},
 		{"transfer-file"},
 		{"transfer-model", "-bogus", "path"},
