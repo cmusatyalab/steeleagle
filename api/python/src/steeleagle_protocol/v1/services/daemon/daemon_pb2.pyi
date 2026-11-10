@@ -36,7 +36,7 @@ ISOLATION_SANDBOX: Isolation
 ISOLATION_CONTAINER: Isolation
 
 class Service(_message.Message):
-    __slots__ = ("name", "category", "plugin", "uri", "config", "isolation", "running", "auth", "error")
+    __slots__ = ("name", "category", "plugin", "uri", "config", "isolation", "running", "auth", "error", "stopped")
     NAME_FIELD_NUMBER: _ClassVar[int]
     CATEGORY_FIELD_NUMBER: _ClassVar[int]
     PLUGIN_FIELD_NUMBER: _ClassVar[int]
@@ -46,6 +46,7 @@ class Service(_message.Message):
     RUNNING_FIELD_NUMBER: _ClassVar[int]
     AUTH_FIELD_NUMBER: _ClassVar[int]
     ERROR_FIELD_NUMBER: _ClassVar[int]
+    STOPPED_FIELD_NUMBER: _ClassVar[int]
     name: str
     category: ServiceCategory
     plugin: str
@@ -55,7 +56,8 @@ class Service(_message.Message):
     running: bool
     auth: str
     error: str
-    def __init__(self, name: _Optional[str] = ..., category: _Optional[_Union[ServiceCategory, str]] = ..., plugin: _Optional[str] = ..., uri: _Optional[str] = ..., config: _Optional[bytes] = ..., isolation: _Optional[_Union[Isolation, str]] = ..., running: _Optional[bool] = ..., auth: _Optional[str] = ..., error: _Optional[str] = ...) -> None: ...
+    stopped: bool
+    def __init__(self, name: _Optional[str] = ..., category: _Optional[_Union[ServiceCategory, str]] = ..., plugin: _Optional[str] = ..., uri: _Optional[str] = ..., config: _Optional[bytes] = ..., isolation: _Optional[_Union[Isolation, str]] = ..., running: _Optional[bool] = ..., auth: _Optional[str] = ..., error: _Optional[str] = ..., stopped: _Optional[bool] = ...) -> None: ...
 
 class Daemon(_message.Message):
     __slots__ = ("ip", "hostname", "arch", "os", "error")
@@ -148,6 +150,16 @@ class RestartServiceRequest(_message.Message):
     def __init__(self, service_names: _Optional[str] = ...) -> None: ...
 
 class RestartServiceResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class StopServiceRequest(_message.Message):
+    __slots__ = ("service_name",)
+    SERVICE_NAME_FIELD_NUMBER: _ClassVar[int]
+    service_name: str
+    def __init__(self, service_name: _Optional[str] = ...) -> None: ...
+
+class StopServiceResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 

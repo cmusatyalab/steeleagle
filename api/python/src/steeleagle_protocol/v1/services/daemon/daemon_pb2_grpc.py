@@ -50,6 +50,11 @@ class DaemonServiceStub:
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServiceRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServiceResponse.FromString,
                 _registered_method=True)
+        self.StopService = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.daemon.DaemonService/StopService',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.StopServiceRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.StopServiceResponse.FromString,
+                _registered_method=True)
         self.Restart = channel.unary_unary(
                 '/steeleagle_protocol.v1.services.daemon.DaemonService/Restart',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartRequest.SerializeToString,
@@ -157,6 +162,17 @@ class DaemonServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def StopService(self, request, context):
+        """
+        Stop a daemon service.
+
+        Stops a target daemon service, which stays stopped across daemon restarts
+        until it is started again with `RestartService`.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def Restart(self, request, context):
         """
         Restart the daemon.
@@ -232,6 +248,11 @@ def add_DaemonServiceServicer_to_server(servicer, server):
                     servicer.RestartService,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServiceRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServiceResponse.SerializeToString,
+            ),
+            'StopService': grpc.unary_unary_rpc_method_handler(
+                    servicer.StopService,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.StopServiceRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.StopServiceResponse.SerializeToString,
             ),
             'Restart': grpc.unary_unary_rpc_method_handler(
                     servicer.Restart,
@@ -422,6 +443,33 @@ class DaemonService:
             '/steeleagle_protocol.v1.services.daemon.DaemonService/RestartService',
             steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServiceRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.RestartServiceResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def StopService(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/steeleagle_protocol.v1.services.daemon.DaemonService/StopService',
+            steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.StopServiceRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_daemon_dot_daemon__pb2.StopServiceResponse.FromString,
             options,
             channel_credentials,
             insecure,

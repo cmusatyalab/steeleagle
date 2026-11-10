@@ -29,6 +29,7 @@ const (
 	DaemonService_GetConfiguration_FullMethodName     = "/steeleagle_protocol.v1.services.daemon.DaemonService/GetConfiguration"
 	DaemonService_ListServices_FullMethodName         = "/steeleagle_protocol.v1.services.daemon.DaemonService/ListServices"
 	DaemonService_RestartService_FullMethodName       = "/steeleagle_protocol.v1.services.daemon.DaemonService/RestartService"
+	DaemonService_StopService_FullMethodName          = "/steeleagle_protocol.v1.services.daemon.DaemonService/StopService"
 	DaemonService_Restart_FullMethodName              = "/steeleagle_protocol.v1.services.daemon.DaemonService/Restart"
 	DaemonService_InstallPackage_FullMethodName       = "/steeleagle_protocol.v1.services.daemon.DaemonService/InstallPackage"
 	DaemonService_ListPackages_FullMethodName         = "/steeleagle_protocol.v1.services.daemon.DaemonService/ListPackages"
@@ -85,6 +86,11 @@ type DaemonServiceClient interface {
 	//
 	// Restarts a target daemon service.
 	RestartService(ctx context.Context, in *RestartServiceRequest, opts ...grpc.CallOption) (*RestartServiceResponse, error)
+	// Stop a daemon service.
+	//
+	// Stops a target daemon service, which stays stopped across daemon restarts
+	// until it is started again with `RestartService`.
+	StopService(ctx context.Context, in *StopServiceRequest, opts ...grpc.CallOption) (*StopServiceResponse, error)
 	// Restart the daemon.
 	//
 	// Restarts the whole daemon and all of its services, including core services
@@ -171,6 +177,16 @@ func (c *daemonServiceClient) RestartService(ctx context.Context, in *RestartSer
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RestartServiceResponse)
 	err := c.cc.Invoke(ctx, DaemonService_RestartService_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *daemonServiceClient) StopService(ctx context.Context, in *StopServiceRequest, opts ...grpc.CallOption) (*StopServiceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StopServiceResponse)
+	err := c.cc.Invoke(ctx, DaemonService_StopService_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -267,6 +283,11 @@ type DaemonServiceServer interface {
 	//
 	// Restarts a target daemon service.
 	RestartService(context.Context, *RestartServiceRequest) (*RestartServiceResponse, error)
+	// Stop a daemon service.
+	//
+	// Stops a target daemon service, which stays stopped across daemon restarts
+	// until it is started again with `RestartService`.
+	StopService(context.Context, *StopServiceRequest) (*StopServiceResponse, error)
 	// Restart the daemon.
 	//
 	// Restarts the whole daemon and all of its services, including core services
@@ -313,6 +334,9 @@ func (UnimplementedDaemonServiceServer) ListServices(context.Context, *ListServi
 }
 func (UnimplementedDaemonServiceServer) RestartService(context.Context, *RestartServiceRequest) (*RestartServiceResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RestartService not implemented")
+}
+func (UnimplementedDaemonServiceServer) StopService(context.Context, *StopServiceRequest) (*StopServiceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method StopService not implemented")
 }
 func (UnimplementedDaemonServiceServer) Restart(context.Context, *RestartRequest) (*RestartResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Restart not implemented")
@@ -444,6 +468,24 @@ func _DaemonService_RestartService_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DaemonService_StopService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StopServiceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DaemonServiceServer).StopService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DaemonService_StopService_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DaemonServiceServer).StopService(ctx, req.(*StopServiceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _DaemonService_Restart_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RestartRequest)
 	if err := dec(in); err != nil {
@@ -542,6 +584,10 @@ var DaemonService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RestartService",
 			Handler:    _DaemonService_RestartService_Handler,
+		},
+		{
+			MethodName: "StopService",
+			Handler:    _DaemonService_StopService_Handler,
 		},
 		{
 			MethodName: "Restart",
