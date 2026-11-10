@@ -77,17 +77,27 @@ esac
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 
-# The tags of the repo's releases, newest first
+# The tags of the repo's releases. GitHub doesn't list them by date or by
+# version (v4.0.0-alpha.9 comes before v4.0.0-alpha.10), so latest_tag sorts
+# them itself.
 curl -fsSL "https://api.github.com/repos/$REPO/releases?per_page=100" -o "$work/releases.json" ||
     die "could not list the releases of $REPO"
 sed -n 's/^ *"tag_name": *"\([^"]*\)".*/\1/p' "$work/releases.json" >"$work/tags"
+
+# newest prints the highest version among the tags on stdin. Version sort
+# places "~" before anything, even the end of a tag, so writing a
+# prerelease's "-" as "~" sorts it before its release:
+# v4.0.0-alpha.9 < v4.0.0-alpha.10 < v4.0.0-beta.1 < v4.0.0.
+newest() {
+    sed 's/-/~/' | sort -V | sed 's/~/-/' | tail -n 1
+}
 
 # latest_tag prints the newest release tag matching the extended regex $1,
 # which is stable unless there is no stable release or --pre was given.
 latest_tag() {
     tag=
-    [ -z "$PRE" ] && tag=$(grep -E "$1" "$work/tags" | grep -v -e - | head -n 1)
-    [ -z "$tag" ] && tag=$(grep -E "$1" "$work/tags" | head -n 1)
+    [ -z "$PRE" ] && tag=$(grep -E "$1" "$work/tags" | grep -v -e - | newest)
+    [ -z "$tag" ] && tag=$(grep -E "$1" "$work/tags" | newest)
     echo "$tag"
 }
 
