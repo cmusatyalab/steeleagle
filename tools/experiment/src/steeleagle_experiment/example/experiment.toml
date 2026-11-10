@@ -6,7 +6,7 @@ vehicle = "" # Vehicle name to target
 [experiment.mission]
 # If set, will upload and send this mission to start experiment
 file = ""
-# Whether or not to prompt ENTER to start
+# Whether or not to prompt ENTER to start (defaults to true)
 auto = false
 # If duration > 0, will run the mission for the given duration (in seconds)
 # before stopping; otherwise, will prompt the user to press ENTER once done
@@ -28,6 +28,7 @@ port = 9001
 # seconds from the start of the run: the port is killed from event_time for
 # dead_time seconds. Ignored by every other profile.
 failpoints = [] # e.g. [[30, 10], [90, 5]]
+trials = 3 # Number of times to run each profile
 # Extra netsim flags, passed through as is (optional)
 # args = ["--direction", "egress", "--seed", "1"]
 

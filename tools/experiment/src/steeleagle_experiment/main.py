@@ -5,22 +5,24 @@
 
 An experiment directory holds an experiment.toml (see example/) and every file
 it names: the mission or flow, and each daemon's config. For each netsim
-profile the runner:
+profile, and for each of its trials, the runner:
 
-  1. starts the mission (upload, load, start) or sets the flow on the target
+  1. restarts the daemons with the profile's configs,
+  2. starts the mission (upload, load, start) or sets the flow on the target
      vehicle, and starts netsim as soon as the vehicle acknowledges it,
-  2. waits for the duration, or for ENTER when the duration is 0,
-  3. stops the mission (Hold, then StopMission) and netsim, and
-  4. collects the run into <experiment_dir>/runs/<profile>/:
-        result/<key>/   result files, moved off their hosts
-        catalog/<key>/  catalog files, copied
-        stats.csv       totals and bandwidth statistics
-        timeline.csv    bandwidth netsim allowed over time
-        netsim.log      netsim's output
+  3. waits for the duration, or for ENTER when the duration is 0,
+  4. stops the mission (Hold, then StopMission) and netsim, and
+  5. collects the trial into <experiment_dir>/runs/<profile>/:
+        trial_<n>/result/<key>/   result files, moved off their hosts
+        trial_<n>/catalog/<key>/  catalog files, copied
+        trial_<n>/timeline.csv    bandwidth netsim allowed over time
+        trial_<n>/netsim.log      netsim's output
+        stats_<profile>.csv       totals and bandwidth statistics, a row per trial
+        timeline_<profile>.csv    every trial's timeline, with a trial column
 
-Before each profile runs, every remote daemon and then the local orchestrator
-is reconfigured, which restarts it, and the runner waits for the vehicle to be
-listed and running. A daemon's config is found by its name in [daemons]: for
+Restarting the daemons means every remote daemon and then the local
+orchestrator is reconfigured, which restarts it, and the runner waits for the
+vehicle to be listed and running. A daemon's config is found by its name in [daemons]: for
 daemon "fermi" and profile "normal", fermi_normal.toml is used if it exists;
 otherwise the config of the previous profile carries over, or, for the first
 profiles, fermi.toml.
@@ -120,6 +122,7 @@ class Experiment:
     port: int
     netsim_args: list[str]
     failpoints: str  # netsim --failpoints value, used only by the malicious profile
+    trials: int  # runs of each profile
     daemons: dict[str, DaemonCfg]
     configs: dict[str, dict[str, Path]]  # profile -> daemon key -> config file
     results: dict[str, str] = field(default_factory=dict)
@@ -168,6 +171,9 @@ def load_experiment(exp_dir: Path) -> Experiment:
     # Optional extra netsim flags, e.g. args = ["--direction", "egress", "--seed", "1"]
     netsim_args = [str(a) for a in ns.get("args", [])]
     failpoints = parse_failpoints(ns.get("failpoints", []), exp_dir)
+    trials = ns.get("trials", 1)
+    if not isinstance(trials, int) or isinstance(trials, bool) or trials < 1:
+        raise ValueError(f"{exp_dir}: netsim.trials must be an integer >= 1, not {trials!r}")
 
     daemons = {}
     for key, d in raw.get("daemons", {}).items():
@@ -185,7 +191,7 @@ def load_experiment(exp_dir: Path) -> Experiment:
 
     e = Experiment(
         exp_dir, name, vehicle, phases[0], list(profiles), ns["interface"], int(ns["port"]),
-        netsim_args, failpoints, daemons, configs,
+        netsim_args, failpoints, trials, daemons, configs,
         dict(raw.get("results", {})), dict(raw.get("catalogs", {})),
     )
     for table in (e.results, e.catalogs):
@@ -432,9 +438,9 @@ def sudo_validate() -> None:
 
 
 class Netsim:
-    def __init__(self, exp: Experiment, profile: str, run_dir: Path):
-        self.timeline = run_dir / "timeline.csv"
-        self.output = run_dir / "netsim.log"
+    def __init__(self, exp: Experiment, profile: str, trial_dir: Path):
+        self.timeline = trial_dir / "timeline.csv"
+        self.output = trial_dir / "netsim.log"
         cmd = [
             sys.executable, "-u", str(NETSIM),
             "-i", exp.interface, "-p", str(exp.port),
@@ -491,11 +497,11 @@ def parse_netsim_summary(text: str) -> dict[str, float]:
     return out
 
 
-def read_timeline(path: Path) -> list[tuple[float, float, str]]:
+def read_timeline(path: Path) -> list[dict[str, str]]:
     if not path.is_file():
         return []
     with open(path, newline="") as f:
-        return [(float(r["t_sec"]), float(r["applied_kbps"]), r["state"]) for r in csv.DictReader(f)]
+        return list(csv.DictReader(f))
 
 
 def weighted_percentile(samples: list[tuple[float, float]], q: float) -> float:
@@ -510,18 +516,19 @@ def weighted_percentile(samples: list[tuple[float, float]], q: float) -> float:
     return samples[-1][0]
 
 
-def bandwidth_stats(timeline: list[tuple[float, float, str]], end: float) -> dict[str, float]:
+def bandwidth_stats(rows: list[dict[str, str]], end: float) -> dict[str, float]:
     """Time-weighted statistics of the bandwidth netsim allowed: each row's
     rate holds until the next row (or the end of the run)."""
-    if not timeline:
+    if not rows:
         return {}
+    timeline = [(float(r["t_sec"]), float(r["applied_kbps"])) for r in rows]
     samples = []
-    for i, (t, kbps, _) in enumerate(timeline):
+    for i, (t, kbps) in enumerate(timeline):
         t_next = timeline[i + 1][0] if i + 1 < len(timeline) else max(end, t)
         if t_next > t:
             samples.append((kbps, t_next - t))
     if not samples:
-        samples = [(kbps, 1.0) for _, kbps, _ in timeline]
+        samples = [(kbps, 1.0) for _, kbps in timeline]
     total = sum(w for _, w in samples)
     return {
         "bandwidth_mean_kbps": sum(v * w for v, w in samples) / total,
@@ -533,26 +540,50 @@ def bandwidth_stats(timeline: list[tuple[float, float, str]], end: float) -> dic
     }
 
 
-def write_stats(run_dir: Path, netsim: Netsim, profile: str, wall_sec: float) -> None:
+STATS_COLUMNS = [
+    "trial", "duration_sec",
+    "total_bytes_delivered", "total_bytes_dropped_while_off", "total_bytes_arrived",
+    "pkts_dropped_by_queue",
+    "bandwidth_mean_kbps", "bandwidth_median_kbps", "bandwidth_p95_kbps",
+    "bandwidth_min_kbps", "bandwidth_max_kbps", "time_off_sec",
+]
+TIMELINE_COLUMNS = ["trial", "t_sec", "drawn_kbps", "applied_kbps", "state"]
+
+
+def append_csv(path: Path, columns: list[str], rows: list[dict]) -> None:
+    """Appends rows to a CSV, writing the header first if the file is new, so
+    the trials finished so far are saved even if a later one fails."""
+    new = not path.exists()
+    with open(path, "a", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=columns, extrasaction="ignore")
+        if new:
+            w.writeheader()
+        w.writerows(rows)
+
+
+def fmt(v):
+    return int(v) if isinstance(v, float) and v.is_integer() else v
+
+
+def write_stats(run_dir: Path, netsim: Netsim, profile: str, trial: int, wall_sec: float) -> None:
+    """Adds the trial's row to stats_<profile>.csv and its timeline to
+    timeline_<profile>.csv."""
     summary = parse_netsim_summary(netsim.output.read_text() if netsim.output.is_file() else "")
     end = summary.get("elapsed_sec", wall_sec)
+    timeline = read_timeline(netsim.timeline)
     stats = {
-        "profile": profile,
+        "trial": trial,
         "duration_sec": round(end, 3),
         "total_bytes_delivered": summary.get("delivered_bytes", ""),
         "total_bytes_dropped_while_off": summary.get("dropped_off_bytes", ""),
         "total_bytes_arrived": summary.get("total_arrived_bytes", ""),
         "pkts_dropped_by_queue": summary.get("dropped_queue_pkts", ""),
-        **{k: round(v, 3) for k, v in bandwidth_stats(read_timeline(netsim.timeline), end).items()},
-        "timeline_file": netsim.timeline.name,
+        **{k: round(v, 3) for k, v in bandwidth_stats(timeline, end).items()},
     }
-    with open(run_dir / "stats.csv", "w", newline="") as f:
-        w = csv.writer(f)
-        w.writerow(["statistic", "value"])
-        for k, v in stats.items():
-            w.writerow([k, int(v) if isinstance(v, float) and v.is_integer() else v])
+    append_csv(run_dir / f"stats_{profile}.csv", STATS_COLUMNS, [{k: fmt(v) for k, v in stats.items()}])
+    append_csv(run_dir / f"timeline_{profile}.csv", TIMELINE_COLUMNS, [{"trial": trial, **r} for r in timeline])
     log(
-        f"stats: {stats['total_bytes_delivered']} bytes delivered, "
+        f"stats (trial {trial}): {stats['total_bytes_delivered']} bytes delivered, "
         f"mean {stats.get('bandwidth_mean_kbps', '?')} / median {stats.get('bandwidth_median_kbps', '?')} / "
         f"p95 {stats.get('bandwidth_p95_kbps', '?')} Kbps"
     )
@@ -582,23 +613,25 @@ def new_run_dir(exp: Experiment, profile: str) -> Path:
     return run_dir
 
 
-def cleanup(exp: Experiment, run_dir: Path, netsim: Netsim, profile: str, wall_sec: float) -> None:
+def cleanup(exp: Experiment, run_dir: Path, trial_dir: Path, netsim: Netsim, profile: str, trial: int, wall_sec: float) -> None:
     netsim.stop()
     for key, src in exp.results.items():
         log(f"moving {key} from {src}")
-        rsync(exp, src, run_dir / "result" / key, move=True)
+        rsync(exp, src, trial_dir / "result" / key, move=True)
     for key, src in exp.catalogs.items():
         log(f"copying {key} from {src}")
-        rsync(exp, src, run_dir / "catalog" / key, move=False)
-    write_stats(run_dir, netsim, profile, wall_sec)
-    log(f"run saved to {run_dir}")
+        rsync(exp, src, trial_dir / "catalog" / key, move=False)
+    write_stats(run_dir, netsim, profile, trial, wall_sec)
+    log(f"trial saved to {trial_dir}")
 
 
-def run_profile(client: Daemon, exp: Experiment, vehicle: str, profile: str) -> None:
+def run_trial(client: Daemon, exp: Experiment, vehicle: str, profile: str, run_dir: Path, trial: int) -> None:
     phase = exp.phase
-    run_dir = new_run_dir(exp, profile)
-    netsim = Netsim(exp, profile, run_dir)
-    log(f"=== {exp.name}: profile {profile} ({phase.kind} {phase.file.name}) ===")
+    trial_dir = run_dir / f"trial_{trial}"
+    trial_dir.mkdir()
+    netsim = Netsim(exp, profile, trial_dir)
+    what = f"profile {profile}, trial {trial}/{exp.trials}"
+    log(f"=== {exp.name}: {what} ({phase.kind} {phase.file.name}) ===")
 
     if phase.kind == "mission":
         log(f"uploading and loading {phase.file.name} on {vehicle}")
@@ -606,7 +639,7 @@ def run_profile(client: Daemon, exp: Experiment, vehicle: str, profile: str) -> 
         client.load_mission(phase.file.name, vehicle)
     flow = phase.file.read_bytes() if phase.kind == "flow" else b""
     if not phase.auto:
-        input(f"[{profile}] Press ENTER to start the {phase.kind}... ")
+        input(f"[{profile} {trial}/{exp.trials}] Press ENTER to start the {phase.kind}... ")
 
     wall = 0.0
     try:
@@ -616,7 +649,7 @@ def run_profile(client: Daemon, exp: Experiment, vehicle: str, profile: str) -> 
             client.set_dataflow(flow, vehicle)
         netsim.start()
         log(f"{phase.kind} started")
-        wall = wait_for(phase, f"{phase.kind} under {profile}")
+        wall = wait_for(phase, f"{phase.kind} under {what}")
     finally:
         if phase.kind == "mission":
             for name, call in (("Hold", client.hold), ("StopMission", client.stop_mission)):
@@ -625,20 +658,26 @@ def run_profile(client: Daemon, exp: Experiment, vehicle: str, profile: str) -> 
                     log(f"{name} sent")
                 except grpc.RpcError as e:
                     log(f"warning: {name} failed: {e.code().name} {e.details()}")
-        cleanup(exp, run_dir, netsim, profile, wall)
+        cleanup(exp, run_dir, trial_dir, netsim, profile, trial, wall)
 
 
 def run_experiment(client: Daemon, exp_dir: Path) -> None:
     exp = load_experiment(exp_dir)
-    log(f"### experiment {exp.name} ({exp_dir}): profiles {', '.join(exp.profiles)}")
+    log(
+        f"### experiment {exp.name} ({exp_dir}): profiles {', '.join(exp.profiles)}, "
+        f"{exp.trials} trial(s) each"
+    )
     for profile in exp.profiles:
-        # Each profile starts from freshly restarted daemons, so no state
-        # (like a running flow) carries over from the previous one
-        configure_daemons(client, exp, profile)
-        time.sleep(2)  # let the orchestrator go down before polling it
-        vehicle = client.wait_ready(exp.vehicle, exp.remotes)
-        log(f"daemons ready; targeting {vehicle}")
-        run_profile(client, exp, vehicle, profile)
+        run_dir = new_run_dir(exp, profile)
+        for trial in range(1, exp.trials + 1):
+            # Each trial starts from freshly restarted daemons, so no state
+            # (like a running flow) carries over from the previous one
+            configure_daemons(client, exp, profile)
+            time.sleep(2)  # let the orchestrator go down before polling it
+            vehicle = client.wait_ready(exp.vehicle, exp.remotes)
+            log(f"daemons ready; targeting {vehicle}")
+            run_trial(client, exp, vehicle, profile, run_dir, trial)
+        log(f"profile {profile} saved to {run_dir}")
 
 
 def find_experiments(root: Path) -> list[Path]:

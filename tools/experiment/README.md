@@ -69,7 +69,7 @@ your own user anyway:
 - eagled is a systemd **user** service. Its control socket is
   `/run/user/<your uid>/steeleagle/eagled.sock`.
 - The runner runs only netsim through `sudo`. It asks for your sudo password
-  once at startup, and checks again before each profile, so an expired sudo
+  once at startup, and checks again before each trial, so an expired sudo
   timestamp asks again rather than failing.
 - rsync and ssh to the remote daemons use **your** ssh keys and `known_hosts`.
 
@@ -120,8 +120,8 @@ other may be left out, or kept with `file = ""`.
 | Key        | Meaning                                                                                  |
 |------------|------------------------------------------------------------------------------------------|
 | `file`     | Mission or flow file in the experiment directory                                         |
-| `auto`     | `false`: press ENTER to start each profile. `true`: start right away                     |
-| `duration` | Seconds to run each profile. `0`: run until you press ENTER                              |
+| `auto`     | `false`: press ENTER to start each trial. `true`: start right away                       |
+| `duration` | Seconds to run each trial. `0`: run until you press ENTER                                |
 
 ### `[netsim]`
 
@@ -131,6 +131,7 @@ other may be left out, or kept with `file = ""`.
 | `interface`  | Interface netsim shapes, e.g. `tailscale0`                                                    |
 | `port`       | Port netsim shapes                                                                            |
 | `failpoints` | Outages for the `malicious` profile, as `[event_time, dead_time]` pairs in seconds            |
+| `trials`     | (optional) Times to run each profile, default `1`. Every trial runs before the next profile   |
 | `args`       | (optional) Extra netsim flags, passed through as is, e.g. `["--direction", "egress", "--seed", "1"]` |
 
 The profiles, in the order `["*"]` runs them:
@@ -201,7 +202,7 @@ If a profile has no config to use (no specific file, no earlier one and no
 
 ### `[results]` and `[catalogs]`
 
-Files to collect after each profile, as `name = "<daemon>/<absolute path>"`.
+Files to collect after each trial, as `name = "<daemon>/<absolute path>"`.
 The first part of the path names the daemon whose host holds the files. The
 rest is an absolute path on that host, without its leading `/`:
 
@@ -220,7 +221,8 @@ gives a warning, not an error.
 
 ## What a run does
 
-For each experiment, and for each profile in `profiles`:
+For each experiment, for each profile in `profiles`, and for each of the
+profile's `trials`:
 
 1. **Restart the daemons.** Each remote daemon gets its config for the profile,
    sent through the orchestrator (or over ssh if it isn't registered). Then
@@ -228,7 +230,7 @@ For each experiment, and for each profile in `profiles`:
 2. **Wait until ready.** The runner polls `ListServices` until every remote has
    re-registered and the vehicle is listed and running (5-minute timeout).
 3. **Prepare.** For a mission: upload and load it on the vehicle.
-4. **Wait for you.** If `auto = false`: press ENTER to start the profile.
+4. **Wait for you.** If `auto = false`: press ENTER to start the trial.
 5. **Start.** `StartMission`, or `SetDataflow` with the flow, then start netsim
    as soon as the vehicle answers.
 6. **Run** for `duration` seconds, or until you press ENTER if it is `0`.
@@ -237,31 +239,37 @@ For each experiment, and for each profile in `profiles`:
    totals and removes its `tc` rules.
 8. **Collect** results and catalogs, and write the statistics.
 
-Because the daemons restart for every profile, nothing (a running flow, a
-loaded mission) carries over from one profile to the next.
+Because the daemons restart for every trial, nothing (a running flow, a
+loaded mission) carries over from one trial or profile to the next.
 
 ## Output
 
-Each profile's run goes to `runs/<profile>/` in the experiment directory. If
+Each profile's trials go to `runs/<profile>/` in the experiment directory. If
 that folder already exists (from an earlier run), a timestamp is added
 (`runs/normal-20261110-031500/`), so nothing is overwritten.
 
 ```
 runs/normal/
-├── result/<name>/    files from [results], moved off their hosts
-├── catalog/<name>/   files from [catalogs], copied
-├── stats.csv         summary statistics
-├── timeline.csv      the bandwidth netsim allowed over time
-└── netsim.log        netsim's full output
+├── trial_1/
+│   ├── result/<name>/    files from [results], moved off their hosts
+│   ├── catalog/<name>/   files from [catalogs], copied
+│   ├── timeline.csv      the bandwidth netsim allowed over time in this trial
+│   └── netsim.log        netsim's full output
+├── trial_2/ ...
+├── stats_normal.csv      summary statistics, one row per trial
+└── timeline_normal.csv   every trial's timeline, with a trial column
 ```
 
-### stats.csv
+The two profile CSVs are appended to as each trial finishes, so the trials
+done so far are kept if a later one fails.
 
-A two-column `statistic,value` table:
+### stats_\<profile\>.csv
 
-| Statistic                       | Meaning                                                                                 |
+One row per trial, with these columns:
+
+| Column                          | Meaning                                                                                 |
 |---------------------------------|-----------------------------------------------------------------------------------------|
-| `profile`                       | The netsim profile                                                                      |
+| `trial`                         | The trial number, from 1                                                                |
 | `duration_sec`                  | How long netsim ran                                                                     |
 | `total_bytes_delivered`         | Bytes that got through netsim on the shaped port (IP layer, link headers removed)       |
 | `total_bytes_dropped_while_off` | Bytes discarded while the port was off (rate 0 or a failpoint)                          |
@@ -272,7 +280,6 @@ A two-column `statistic,value` table:
 | `bandwidth_p95_kbps`            | 95th percentile of bandwidth allowed                                                    |
 | `bandwidth_min_kbps`, `bandwidth_max_kbps` | Range of bandwidth allowed                                                   |
 | `time_off_sec`                  | Time the port was fully off                                                             |
-| `timeline_file`                 | The timeline file                                                                       |
 
 The byte totals come from netsim's own counters. See the netsim README for
 exactly what they include.
@@ -281,17 +288,21 @@ The bandwidth statistics describe the **allowed** rate, not the measured
 throughput. They are weighted by time: each rate counts for as long as it was
 in effect, and periods with the port off count as 0.
 
-### timeline.csv
+### timeline_\<profile\>.csv
 
-netsim's trace, with one row each time it drew a new rate or crossed a
-failpoint boundary:
+netsim's trace for each trial, with one row each time it drew a new rate or
+crossed a failpoint boundary. `t_sec` restarts at 0 for each trial:
 
 ```
-t_sec,drawn_kbps,applied_kbps,state
-0.000,2389,2389,on
-1.000,0,0,off
-2.000,48,0,failpoint
+trial,t_sec,drawn_kbps,applied_kbps,state
+1,0.000,2389,2389,on
+1,1.000,0,0,off
+1,2.000,48,0,failpoint
+2,0.000,2710,2710,on
 ```
+
+Each `trial_<n>/timeline.csv` holds the same rows for one trial, without the
+`trial` column.
 
 - `drawn_kbps` is what the distribution gave.
 - `applied_kbps` is what was in effect.
@@ -301,7 +312,7 @@ t_sec,drawn_kbps,applied_kbps,state
 
 Add `"--dry-run"` to `netsim.args` to have netsim print its `tc` commands
 instead of running them. It then needs no root, and the runner won't ask for
-sudo. The byte totals in `stats.csv` are empty in this mode, but the timeline
+sudo. The byte totals in `stats_<profile>.csv` are empty in this mode, but the timeline
 and bandwidth statistics are filled in.
 
 ## Troubleshooting
