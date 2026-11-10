@@ -1,0 +1,50 @@
+[experiment]
+name = "case_study_3"
+vehicle = "" # Vehicle name to target
+
+# Can set one of mission or flow
+[experiment.mission]
+# If set, will upload and send this mission to start experiment
+file = ""
+# Whether or not to prompt ENTER to start
+auto = false
+# If duration > 0, will run the mission for the given duration (in seconds)
+# before stopping; otherwise, will prompt the user to press ENTER once done
+duration = 0
+[experiment.flow]
+# If set, will upload and send this flow to start the experiment
+file = ""
+# Whether or not to prompt ENTER to start
+auto = false
+# If duration > 0, will run the flow for the given duration (in seconds)
+# before stopping; otherwise, will prompt the user to press ENTER once done
+duration = 0
+
+[netsim]
+profiles = ["*"] # A list of network profiles supported by netsim
+interface = "tailscale0"
+port = 9001
+# Failpoints for the malicious profile, as [event_time, dead_time] pairs in
+# seconds from the start of the run: the port is killed from event_time for
+# dead_time seconds. Ignored by every other profile.
+failpoints = [] # e.g. [[30, 10], [90, 5]]
+# Extra netsim flags, passed through as is (optional)
+# args = ["--direction", "egress", "--seed", "1"]
+
+# Each daemon's config is found by its name. For each profile, <name>_<profile>.toml
+# (e.g. fermi_normal.toml) is used if it exists; otherwise the config used for the
+# previous profile carries over, or, if there is none yet, <name>.toml.
+[daemons]
+[daemons.lambda2]
+orchestrator = true
+prefix = "" # Defaults to empty string for orchestrator (assumed to be local)
+[daemons.fermi]
+prefix = "root@fermi:" # SCP/RSYNC prefix
+pass = "" # Password for the SCP/RSYNC
+
+[results] # The sources will be destroyed (uses rsync --remove-source-files)
+frames_seen = "fermi/root/.local/share/steeleagle/files/seen"
+frames_sent = "lambda2/root/.local/share/steeleagle/files/sent"
+frames_verified = "lambda2/root/.local/share/steeleagle/files/verified"
+[catalogs] # The sources will be copied
+mcap = "lambda2/root/.local/share/steeleagle/files/mcap*" # glob matching is supported
