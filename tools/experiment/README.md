@@ -72,6 +72,8 @@ your own user anyway:
   once at startup, and checks again before each trial, so an expired sudo
   timestamp asks again rather than failing.
 - rsync and ssh to the remote daemons use **your** ssh keys and `known_hosts`.
+  They run attached to your terminal, so if a host asks for a password or to
+  confirm its host key, answer the prompt there.
 
 If you do run it as root (for example `sudo "$(which uvx)" ...`), the default
 socket is that of the user who ran `sudo` (`SUDO_UID`). In that case rsync and
@@ -84,7 +86,6 @@ ssh use root's ssh setup.
   - A running eagled, which acts as the orchestrator.
   - `rsync` and `ssh`.
   - `tc` and `ip` (iproute2) and the `ifb` kernel module, for netsim.
-- `sshpass`, only if a daemon in `[daemons]` has a `pass` set.
 - Remote daemons registered with the orchestrator. If one isn't, the runner
   configures it over ssh instead, which needs `eagle` on that host's `PATH`.
 
@@ -167,14 +168,12 @@ One table per daemon, named after the daemon:
 orchestrator = true      # exactly one daemon is the orchestrator: the one this runs on
 [daemons.fermi]
 prefix = "root@fermi:"   # rsync/ssh prefix for this host
-pass = ""                # (optional) ssh password; needs sshpass
 ```
 
 | Key            | Meaning                                                                              |
 |----------------|--------------------------------------------------------------------------------------|
 | `orchestrator` | `true` for the local daemon the runner talks to. Exactly one must be set            |
 | `prefix`       | `user@host:` prefix for rsync and ssh. Empty for the orchestrator (local files)     |
-| `pass`         | ssh password, if the host doesn't take your key (needs `sshpass`)                   |
 
 Remote daemons are matched to the orchestrator's registered remotes by
 hostname: either the table name (`fermi`) or the host in `prefix`.

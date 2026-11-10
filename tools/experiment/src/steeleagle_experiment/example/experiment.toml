@@ -40,8 +40,7 @@ trials = 3 # Number of times to run each profile
 orchestrator = true
 prefix = "" # Defaults to empty string for orchestrator (assumed to be local)
 [daemons.fermi]
-prefix = "root@fermi:" # SCP/RSYNC prefix
-pass = "" # Password for the SCP/RSYNC
+prefix = "root@fermi:" # SSH/RSYNC prefix; ssh prompts on the terminal if needed
 
 [results] # The sources will be destroyed (uses rsync --remove-source-files)
 frames_seen = "fermi/root/.local/share/steeleagle/files/seen"

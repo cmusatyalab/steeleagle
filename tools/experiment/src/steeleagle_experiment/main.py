@@ -37,7 +37,6 @@ import os
 import queue
 import re
 import shlex
-import shutil
 import signal
 import subprocess
 import sys
@@ -100,7 +99,6 @@ class DaemonCfg:
     key: str
     orchestrator: bool
     prefix: str
-    password: str
 
     @property
     def ssh_host(self) -> str:
@@ -183,7 +181,12 @@ def load_experiment(exp_dir: Path) -> Experiment:
                 f"{exp_dir}: daemons.{key}.config is no longer supported; name the file "
                 f"{key}.toml or {key}_<profile>.toml instead"
             )
-        daemons[key] = DaemonCfg(key, orch, d.get("prefix", ""), d.get("pass", ""))
+        if "pass" in d:
+            raise ValueError(
+                f"{exp_dir}: daemons.{key}.pass is no longer supported; ssh and rsync now "
+                f"prompt for the password (and host key checks) on the terminal"
+            )
+        daemons[key] = DaemonCfg(key, orch, d.get("prefix", ""))
     if sum(d.orchestrator for d in daemons.values()) != 1:
         raise ValueError(f"{exp_dir}: exactly one daemon must have orchestrator = true")
 
@@ -375,7 +378,8 @@ def configure_daemons(client: Daemon, exp: Experiment, profile: str) -> None:
             client.configure(text, route=remote.ip)
         elif d.ssh_host:
             log(f"remote {d.key} not registered; configuring it over ssh with {config.name}")
-            cmd = ssh_cmd(d) + [d.ssh_host, "eagle configure /dev/stdin"]
+            # ssh prompts (host key, password) on the terminal, not stdin
+            cmd = ["ssh", d.ssh_host, "eagle configure /dev/stdin"]
             subprocess.run(cmd, input=text, text=True, check=True)
         else:
             raise RuntimeError(f"remote {d.key} is not registered with the orchestrator and has no prefix to ssh to")
@@ -389,14 +393,6 @@ def configure_daemons(client: Daemon, exp: Experiment, profile: str) -> None:
 # --------------------------------------------------------------------------
 
 
-def ssh_cmd(d: DaemonCfg) -> list[str]:
-    if not d.password:
-        return ["ssh"]
-    if not shutil.which("sshpass"):
-        raise RuntimeError(f"daemon {d.key} has a password set, which needs sshpass installed")
-    return ["sshpass", "-p", d.password, "ssh"]
-
-
 def rsync(exp: Experiment, src: str, dest: Path, move: bool) -> None:
     host, _, rest = src.partition("/")
     d = exp.daemons[host]
@@ -405,13 +401,13 @@ def rsync(exp: Experiment, src: str, dest: Path, move: bool) -> None:
     cmd = ["rsync", "-a"]
     if move:
         cmd.append("--remove-source-files")
-    # A directory's contents are collected, not the directory itself
+    # A directory's contents are collected, not the directory itself.
+    # ssh and rsync are not captured, so their prompts (host key, password)
+    # and errors reach the user's terminal.
     if d.prefix:
-        if d.password:
-            cmd = ssh_cmd(d)[:-1] + cmd  # sshpass -p <pass> rsync ...
         if not glob.has_magic(path):
-            test = ssh_cmd(d) + [d.ssh_host, f"test -d {shlex.quote(path)}"]
-            if subprocess.run(test, capture_output=True).returncode == 0:
+            test = ["ssh", d.ssh_host, f"test -d {shlex.quote(path)}"]
+            if subprocess.run(test).returncode == 0:
                 path = path.rstrip("/") + "/"
         sources = [d.prefix + path]  # the remote shell expands globs
     else:
@@ -421,9 +417,9 @@ def rsync(exp: Experiment, src: str, dest: Path, move: bool) -> None:
             return
         if len(sources) == 1 and not glob.has_magic(path) and os.path.isdir(sources[0]):
             sources = [sources[0].rstrip("/") + "/"]
-    r = subprocess.run(cmd + sources + [str(dest) + "/"], capture_output=True, text=True)
+    r = subprocess.run(cmd + sources + [str(dest) + "/"])
     if r.returncode:
-        log(f"warning: rsync of {src} exited {r.returncode}: {r.stderr.strip()}")
+        log(f"warning: rsync of {src} exited {r.returncode}")
 
 
 # --------------------------------------------------------------------------
