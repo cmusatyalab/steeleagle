@@ -418,6 +418,12 @@ func (d *Daemon) runService(s *daemonService) error {
 				Msg("couldn't open log directory")
 			return err
 		}
+		files, err := util.GetFileDir()
+		if err != nil {
+			d.log.Error().Err(err).Str("service", s.name).
+				Msg("couldn't open file directory")
+			return err
+		}
 		// Construct base options
 		logWriter, err := os.Create(logFile)
 		if err != nil {
@@ -446,6 +452,8 @@ func (d *Daemon) runService(s *daemonService) error {
 			plugin.WithPath(s.path),
 			plugin.WithProcessOutputStream(plug.logFile),
 			plugin.WithAuthCode(s.auth),
+			plugin.WithFiles([]string{files}),
+			plugin.WithEnvironment(FileNameEnv, files),
 			plugin.WithEnvironment(PluginArgsEnv, s.args),
 			plugin.WithEnvironment(PluginNameEnv, s.pluginName), // this will be empty for the simulator
 			// Qualifiers for local and remote daemons
@@ -479,18 +487,11 @@ func (d *Daemon) runService(s *daemonService) error {
 					Msg("couldn't open model directory")
 				return err
 			}
-			files, err := util.GetFileDir()
-			if err != nil {
-				d.log.Error().Err(err).Str("service", s.name).
-					Msg("couldn't open file directory")
-				return err
-			}
 			options = append(
 				options,
-				plugin.WithFiles([]string{models, files}),
+				plugin.WithFiles([]string{models}),
 				plugin.WithoutClient(), // the engines don't host any services
 				plugin.WithEnvironment(ModelNameEnv, models),
-				plugin.WithEnvironment(FileNameEnv, files),
 				// The compute server serves the engine under its service name
 				plugin.WithEnvironment(IceoryxServiceEnv, s.name),
 			)

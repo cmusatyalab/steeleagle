@@ -4,12 +4,13 @@
     python -m steeleagle_experiment.main -r <dir_of_experiment_dirs>
 
 An experiment directory holds an experiment.toml (see example/) and every file
-it names: the mission or flow, and each daemon's config. For each netsim
-profile, and for each of its trials, the runner:
+it names: the mission, or the videos and their flow, and each daemon's config.
+For each netsim profile, for each video (if any), and for each trial, the runner:
 
-  1. restarts the daemons with the profile's configs,
-  2. starts the mission (upload, load, start) or sets the flow on the target
-     vehicle, and starts netsim as soon as the vehicle acknowledges it,
+  1. pushes the video, if any, to every daemon's files directory
+     (STEELEAGLE_FILES), and restarts the daemons with the profile's configs,
+  2. starts the mission (upload, load, start) or sets the video's flow on the
+     target vehicle, and starts netsim as soon as the vehicle acknowledges it,
   3. waits for the duration, or for ENTER when the duration is 0,
   4. stops the mission (Hold, then StopMission) and netsim, and
   5. collects the trial into <experiment_dir>/runs/<profile>/:
@@ -19,6 +20,9 @@ profile, and for each of its trials, the runner:
         trial_<n>/netsim.log      netsim's output
         stats_<profile>.csv       totals and bandwidth statistics, a row per trial
         timeline_<profile>.csv    every trial's timeline, with a trial column
+     For videos, each video's trials go to <video>/trial_<n>/ instead, and its
+     CSVs are stats_<profile>_<video>.csv and timeline_<profile>_<video>.csv,
+     where <video> is the video's file name without its extension.
 
 Restarting the daemons means every remote daemon and then the local
 orchestrator is reconfigured, which restarts it, and the runner waits for the
@@ -47,7 +51,12 @@ from datetime import datetime
 from pathlib import Path
 
 import grpc
-from steeleagle_protocol.v1.services.daemon import daemon_pb2, daemon_pb2_grpc
+from steeleagle_protocol.v1.services.daemon import (
+    daemon_pb2,
+    daemon_pb2_grpc,
+    transfer_pb2,
+    transfer_pb2_grpc,
+)
 from steeleagle_protocol.v1.services.driver import control_pb2, control_pb2_grpc
 from steeleagle_protocol.v1.services.mission import mission_pb2, mission_pb2_grpc
 from steeleagle_protocol.v1.services.vehicle import (
@@ -64,6 +73,9 @@ ROUTE_HEADER = "x-route-key"
 CHUNK_SIZE = 1 << 20  # same chunk size as `eagle transfer-file`
 RPC_TIMEOUT = 60.0
 READY_TIMEOUT = 300.0
+# Daemon files directory (STEELEAGLE_FILES) relative to the home directory,
+# for rsyncing a video to a remote that isn't registered
+REMOTE_FILES_DIR = ".local/share/steeleagle/files/"
 
 
 def log(msg: str) -> None:
@@ -88,10 +100,14 @@ def default_socket() -> str:
 
 @dataclass
 class Phase:
-    kind: str  # "mission" or "flow"
-    file: Path
+    kind: str  # "mission" or "video"
+    file: Path  # the mission, or the video's flow
     auto: bool
     duration: float
+    # the videos, for "video": each runs every trial in turn, and is pushed to
+    # every daemon under push_as, if set, or its own name
+    videos: list[Path] = field(default_factory=list)
+    push_as: str = ""
 
 
 @dataclass
@@ -144,18 +160,55 @@ def load_experiment(exp_dir: Path) -> Experiment:
     if not vehicle:
         raise ValueError(f"{exp_dir}: experiment.vehicle is not set")
 
+    if exp.get("flow", {}).get("file"):
+        raise ValueError(
+            f"{exp_dir}: experiment.flow is now experiment.video; set its video "
+            f"(the video file) and flow (the flow file) instead of file"
+        )
+
+    def exp_file(kind: str, key: str, value: str) -> Path:
+        path = exp_dir / value
+        if not path.is_file():
+            raise ValueError(f"{exp_dir}: experiment.{kind}.{key} file {path} does not exist")
+        return path
+
     phases = []
-    for kind in ("mission", "flow"):
-        sect = exp.get(kind, {})
-        if sect.get("file"):
-            path = exp_dir / sect["file"]
-            if not path.is_file():
-                raise ValueError(f"{exp_dir}: {kind} file {path} does not exist")
-            phases.append(
-                Phase(kind, path, bool(sect.get("auto", False)), float(sect.get("duration", 0)))
+    sect = exp.get("mission", {})
+    if sect.get("file"):
+        phases.append(Phase(
+            "mission", exp_file("mission", "file", sect["file"]),
+            bool(sect.get("auto", False)), float(sect.get("duration", 0)),
+        ))
+    sect = exp.get("video", {})
+    if sect.get("video") or sect.get("flow"):
+        if not (sect.get("video") and sect.get("flow")):
+            raise ValueError(f"{exp_dir}: experiment.video needs both video and flow set")
+        names = sect["video"]
+        if isinstance(names, str):
+            names = [names]
+        if not isinstance(names, list) or not all(isinstance(n, str) and n for n in names):
+            raise ValueError(f"{exp_dir}: experiment.video.video must be a file name or a list of them")
+        videos = [exp_file("video", "video", n) for n in names]
+        stems = [v.stem for v in videos]
+        dups = sorted({x for x in stems if stems.count(x) > 1})
+        if dups:
+            raise ValueError(
+                f"{exp_dir}: experiment.video.video names more than one video called "
+                f"{', '.join(dups)} (without the extension); their runs would collide"
             )
+        push_as = sect.get("push_as", "")
+        if not isinstance(push_as, str) or "/" in push_as:
+            raise ValueError(f"{exp_dir}: experiment.video.push_as must be a file name, not {push_as!r}")
+        phases.append(Phase(
+            "video", exp_file("video", "flow", sect["flow"]),
+            bool(sect.get("auto", False)), float(sect.get("duration", 0)),
+            videos=videos, push_as=push_as,
+        ))
     if len(phases) != 1:
-        raise ValueError(f"{exp_dir}: set exactly one of experiment.mission.file or experiment.flow.file")
+        raise ValueError(
+            f"{exp_dir}: set exactly one of experiment.mission (file) or "
+            f"experiment.video (video and flow)"
+        )
 
     ns = raw.get("netsim", {})
     profiles = ns.get("profiles", ["*"])
@@ -260,6 +313,7 @@ class Daemon:
         self.socket = socket
         self.channel = grpc.insecure_channel("unix://" + socket)
         self.daemon = daemon_pb2_grpc.DaemonServiceStub(self.channel)
+        self.transfer = transfer_pb2_grpc.TransferServiceStub(self.channel)
         self.loader = upload_pb2_grpc.LoaderServiceStub(self.channel)
         self.mission = mission_pb2_grpc.MissionServiceStub(self.channel)
         self.data = data_pb2_grpc.DataServiceStub(self.channel)
@@ -303,28 +357,45 @@ class Daemon:
             time.sleep(1)
         raise TimeoutError(f"daemon not ready after {timeout:.0f}s: {last}")
 
-    def upload_mission(self, path: Path, route: str) -> None:
+    def _send_chunks(
+        self, call, request_type, path: Path, route: str | None, what: str, timeout: float,
+        filename: str = "",
+    ) -> None:
+        """Streams a file in chunks to an upload-style RPC, which acks each
+        chunk before the next is sent. The file is sent as filename, if
+        given, or its own name."""
         data = path.read_bytes()
         chunks = [data[i : i + CHUNK_SIZE] for i in range(0, len(data), CHUNK_SIZE)] or [b""]
         total = len(chunks)
-
-        # The vehicle acks each chunk before the next is sent
         acks: queue.Queue[int] = queue.Queue()
 
         def requests():
             for n, chunk in enumerate(chunks, start=1):
-                yield upload_pb2.UploadMissionRequest(
-                    filename=path.name, chunk=chunk, number=n, total=total
-                )
+                yield request_type(filename=filename or path.name, chunk=chunk, number=n, total=total)
                 if acks.get(timeout=RPC_TIMEOUT) != n:
                     return
 
         received = 0
-        for resp in self.loader.UploadMission(requests(), metadata=self.route(route), timeout=RPC_TIMEOUT):
+        for resp in call(requests(), metadata=self.route(route), timeout=timeout):
             received = resp.received
             acks.put(received)
         if received != total:
-            raise RuntimeError(f"mission upload ended after {received} of {total} chunks were acknowledged")
+            raise RuntimeError(f"{what} ended after {received} of {total} chunks were acknowledged")
+
+    def upload_mission(self, path: Path, route: str) -> None:
+        self._send_chunks(
+            self.loader.UploadMission, upload_pb2.UploadMissionRequest,
+            path, route, "mission upload", RPC_TIMEOUT,
+        )
+
+    def transfer_file(self, path: Path, route: str | None = None, name: str = "") -> None:
+        """Saves a file to the daemon's files directory, or, with a route,
+        to that remote daemon's, as name if given. A video can be large, so
+        the deadline is for the whole transfer, not a chunk."""
+        self._send_chunks(
+            self.transfer.TransferFile, transfer_pb2.TransferFileRequest,
+            path, route, "file transfer", None, filename=name,
+        )
 
     def load_mission(self, name: str, route: str) -> None:
         self.loader.LoadMission(upload_pb2.LoadMissionRequest(name=name), metadata=self.route(route), timeout=RPC_TIMEOUT)
@@ -386,6 +457,33 @@ def configure_daemons(client: Daemon, exp: Experiment, profile: str) -> None:
     o = exp.orchestrator
     log(f"configuring orchestrator {o.key} with {configs[o.key].name}")
     client.configure(configs[o.key].read_text())
+
+
+def push_video(client: Daemon, exp: Experiment, video: Path) -> None:
+    """Pushes a video to every daemon's files directory (STEELEAGLE_FILES):
+    the orchestrator's and each remote's, through the orchestrator, or with
+    rsync if the remote isn't registered. It is saved as the phase's push_as,
+    if set, so the driver's config can name one file for every video."""
+    name = exp.phase.push_as or video.name
+    as_name = f" as {name}" if name != video.name else ""
+    try:
+        listing = client.list_services()
+    except grpc.RpcError:
+        listing = None
+    for d in exp.remotes:
+        remote = find_remote(listing, d) if listing else None
+        if remote is not None:
+            log(f"pushing {video.name}{as_name} to remote {d.key} ({remote.ip}) through the orchestrator")
+            client.transfer_file(video, route=remote.ip, name=name)
+        elif d.ssh_host:
+            log(f"remote {d.key} not registered; pushing {video.name}{as_name} to it with rsync")
+            dest = REMOTE_FILES_DIR.rstrip("/") + "/" + name
+            cmd = ["rsync", "-a", "--mkpath", str(video), f"{d.ssh_host}:{dest}"]
+            subprocess.run(cmd, check=True)
+        else:
+            raise RuntimeError(f"remote {d.key} is not registered with the orchestrator and has no prefix to rsync to")
+    log(f"pushing {video.name}{as_name} to orchestrator {exp.orchestrator.key}")
+    client.transfer_file(video, name=name)
 
 
 # --------------------------------------------------------------------------
@@ -561,9 +659,10 @@ def fmt(v):
     return int(v) if isinstance(v, float) and v.is_integer() else v
 
 
-def write_stats(run_dir: Path, netsim: Netsim, profile: str, trial: int, wall_sec: float) -> None:
-    """Adds the trial's row to stats_<profile>.csv and its timeline to
-    timeline_<profile>.csv."""
+def write_stats(run_dir: Path, netsim: Netsim, label: str, trial: int, wall_sec: float) -> None:
+    """Adds the trial's row to stats_<label>.csv and its timeline to
+    timeline_<label>.csv. The label is the profile, followed by the video's
+    name for a video run, so each video gets its own CSVs."""
     summary = parse_netsim_summary(netsim.output.read_text() if netsim.output.is_file() else "")
     end = summary.get("elapsed_sec", wall_sec)
     timeline = read_timeline(netsim.timeline)
@@ -576,10 +675,10 @@ def write_stats(run_dir: Path, netsim: Netsim, profile: str, trial: int, wall_se
         "pkts_dropped_by_queue": summary.get("dropped_queue_pkts", ""),
         **{k: round(v, 3) for k, v in bandwidth_stats(timeline, end).items()},
     }
-    append_csv(run_dir / f"stats_{profile}.csv", STATS_COLUMNS, [{k: fmt(v) for k, v in stats.items()}])
-    append_csv(run_dir / f"timeline_{profile}.csv", TIMELINE_COLUMNS, [{"trial": trial, **r} for r in timeline])
+    append_csv(run_dir / f"stats_{label}.csv", STATS_COLUMNS, [{k: fmt(v) for k, v in stats.items()}])
+    append_csv(run_dir / f"timeline_{label}.csv", TIMELINE_COLUMNS, [{"trial": trial, **r} for r in timeline])
     log(
-        f"stats (trial {trial}): {stats['total_bytes_delivered']} bytes delivered, "
+        f"stats ({label}, trial {trial}): {stats['total_bytes_delivered']} bytes delivered, "
         f"mean {stats.get('bandwidth_mean_kbps', '?')} / median {stats.get('bandwidth_median_kbps', '?')} / "
         f"p95 {stats.get('bandwidth_p95_kbps', '?')} Kbps"
     )
@@ -609,7 +708,7 @@ def new_run_dir(exp: Experiment, profile: str) -> Path:
     return run_dir
 
 
-def cleanup(exp: Experiment, run_dir: Path, trial_dir: Path, netsim: Netsim, profile: str, trial: int, wall_sec: float) -> None:
+def cleanup(exp: Experiment, run_dir: Path, trial_dir: Path, netsim: Netsim, label: str, trial: int, wall_sec: float) -> None:
     netsim.stop()
     for key, src in exp.results.items():
         log(f"moving {key} from {src}")
@@ -617,25 +716,33 @@ def cleanup(exp: Experiment, run_dir: Path, trial_dir: Path, netsim: Netsim, pro
     for key, src in exp.catalogs.items():
         log(f"copying {key} from {src}")
         rsync(exp, src, trial_dir / "catalog" / key, move=False)
-    write_stats(run_dir, netsim, profile, trial, wall_sec)
+    write_stats(run_dir, netsim, label, trial, wall_sec)
     log(f"trial saved to {trial_dir}")
 
 
-def run_trial(client: Daemon, exp: Experiment, vehicle: str, profile: str, run_dir: Path, trial: int) -> None:
+def run_trial(
+    client: Daemon, exp: Experiment, vehicle: str, profile: str, run_dir: Path, trial: int,
+    video: Path | None = None,
+) -> None:
+    """Runs one trial. A video's trials go to run_dir/<video>/trial_<n>, and
+    its stats to run_dir/stats_<profile>_<video>.csv; a mission's to
+    run_dir/trial_<n> and run_dir/stats_<profile>.csv."""
     phase = exp.phase
-    trial_dir = run_dir / f"trial_{trial}"
-    trial_dir.mkdir()
+    label = f"{profile}_{video.stem}" if video else profile
+    trial_dir = (run_dir / video.stem if video else run_dir) / f"trial_{trial}"
+    trial_dir.mkdir(parents=True)
     netsim = Netsim(exp, profile, trial_dir)
-    what = f"profile {profile}, trial {trial}/{exp.trials}"
-    log(f"=== {exp.name}: {what} ({phase.kind} {phase.file.name}) ===")
+    what = f"profile {profile}, " + (f"video {video.name}, " if video else "") + f"trial {trial}/{exp.trials}"
+    desc = f"video {video.name}, flow {phase.file.name}" if video else f"mission {phase.file.name}"
+    log(f"=== {exp.name}: {what} ({desc}) ===")
 
     if phase.kind == "mission":
         log(f"uploading and loading {phase.file.name} on {vehicle}")
         client.upload_mission(phase.file, vehicle)
         client.load_mission(phase.file.name, vehicle)
-    flow = phase.file.read_bytes() if phase.kind == "flow" else b""
+    flow = phase.file.read_bytes() if phase.kind == "video" else b""
     if not phase.auto:
-        input(f"[{profile} {trial}/{exp.trials}] Press ENTER to start the {phase.kind}... ")
+        input(f"[{label} {trial}/{exp.trials}] Press ENTER to start the {phase.kind}... ")
 
     wall = 0.0
     try:
@@ -654,25 +761,37 @@ def run_trial(client: Daemon, exp: Experiment, vehicle: str, profile: str, run_d
                     log(f"{name} sent")
                 except grpc.RpcError as e:
                     log(f"warning: {name} failed: {e.code().name} {e.details()}")
-        cleanup(exp, run_dir, trial_dir, netsim, profile, trial, wall)
+        cleanup(exp, run_dir, trial_dir, netsim, label, trial, wall)
 
 
 def run_experiment(client: Daemon, exp_dir: Path) -> None:
     exp = load_experiment(exp_dir)
+    # A mission runs once per trial; a video run goes through each video in
+    # turn, running every trial on it
+    videos: list[Path | None] = list(exp.phase.videos) if exp.phase.kind == "video" else [None]
     log(
         f"### experiment {exp.name} ({exp_dir}): profiles {', '.join(exp.profiles)}, "
-        f"{exp.trials} trial(s) each"
+        + (f"videos {', '.join(v.name for v in exp.phase.videos)}, " if exp.phase.kind == "video" else "")
+        + f"{exp.trials} trial(s) each"
     )
     for profile in exp.profiles:
         run_dir = new_run_dir(exp, profile)
-        for trial in range(1, exp.trials + 1):
-            # Each trial starts from freshly restarted daemons, so no state
-            # (like a running flow) carries over from the previous one
-            configure_daemons(client, exp, profile)
-            time.sleep(2)  # let the orchestrator go down before polling it
-            vehicle = client.wait_ready(exp.vehicle, exp.remotes)
-            log(f"daemons ready; targeting {vehicle}")
-            run_trial(client, exp, vehicle, profile, run_dir, trial)
+        for video in videos:
+            for trial in range(1, exp.trials + 1):
+                # Each trial starts from freshly restarted daemons, so no state
+                # (like a running flow) carries over from the previous one
+                if video:
+                    # Pushed before the daemons restart, so the vehicle's driver
+                    # finds the video when it starts, even if the previous
+                    # trial's result collection moved it away
+                    push_video(client, exp, video)
+                configure_daemons(client, exp, profile)
+                time.sleep(2)  # let the orchestrator go down before polling it
+                vehicle = client.wait_ready(exp.vehicle, exp.remotes)
+                log(f"daemons ready; targeting {vehicle}")
+                run_trial(client, exp, vehicle, profile, run_dir, trial, video)
+            if video:
+                log(f"video {video.name} under profile {profile} saved to {run_dir / video.stem}")
         log(f"profile {profile} saved to {run_dir}")
 
 

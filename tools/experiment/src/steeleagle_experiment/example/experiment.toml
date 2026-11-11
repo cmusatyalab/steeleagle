@@ -2,7 +2,7 @@
 name = "case_study_3"
 vehicle = "" # Vehicle name to target
 
-# Can set one of mission or flow
+# Can set one of mission or video
 [experiment.mission]
 # If set, will upload and send this mission to start experiment
 file = ""
@@ -11,12 +11,21 @@ auto = false
 # If duration > 0, will run the mission for the given duration (in seconds)
 # before stopping; otherwise, will prompt the user to press ENTER once done
 duration = 0
-[experiment.flow]
-# If set, will upload and send this flow to start the experiment
-file = ""
+[experiment.video]
+# A video, or a list of videos, run one after the other: each runs every trial
+# of a profile and gets its own stats and timeline CSVs. The current video is
+# pushed to every daemon's files directory (STEELEAGLE_FILES,
+# ~/.local/share/steeleagle/files) at the start of each trial, so a driver like
+# fake_drone can replay it
+video = "" # or e.g. ["traintrack.mp4", "parking.mp4"]
+# Name every video is pushed as, so the driver's video arg can stay fixed
+# (set it to this name). If empty, each video keeps its own name.
+push_as = "" # e.g. "video.mp4"
+# The flow to send to start the experiment; required with video
+flow = ""
 # Whether or not to prompt ENTER to start
 auto = false
-# If duration > 0, will run the flow for the given duration (in seconds)
+# If duration > 0, will run the video's flow for the given duration (in seconds)
 # before stopping; otherwise, will prompt the user to press ENTER once done
 duration = 0
 
