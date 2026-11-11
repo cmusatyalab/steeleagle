@@ -960,7 +960,10 @@ def wait_registered(client: Daemon, d: DaemonCfg, timeout: float = READY_TIMEOUT
                 f"({last}); it can only be configured through the orchestrator it is locked to"
             )
         if not logged:
-            log(f"waiting for remote {d.key} to register with the orchestrator")
+            if last.startswith("ListServices"):
+                log(f"waiting for remote {d.key}: can't reach the orchestrator's daemon at {client.socket} ({last})")
+            else:
+                log(f"waiting for remote {d.key} to register with the orchestrator")
             logged = True
         time.sleep(1)
 
@@ -1896,6 +1899,14 @@ def main():
     # netsim is stopped and the daemons get their own configs back
     for sig in (signal.SIGTERM, signal.SIGHUP):
         signal.signal(sig, lambda signum, _: sys.exit(128 + signum))
+    if not Path(args.socket).exists():
+        found = sorted(glob.glob("/run/user/*/steeleagle/eagled.sock"))
+        raise SystemExit(
+            f"no daemon control socket at {args.socket}: the runner talks to the orchestrator's "
+            f"eagled through the socket of the user it runs as (the invoking user's, under sudo). "
+            + (f"Daemon sockets on this host: {', '.join(found)}; run as that user, or pass --socket."
+               if found else "No eagled socket was found on this host; is eagled running here?")
+        )
     client = Daemon(args.socket)
     for e in exps:
         run_experiment(client, e)
