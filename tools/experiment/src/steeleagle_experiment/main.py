@@ -42,6 +42,7 @@ fermi_track.toml, or else fermi.toml.
 from __future__ import annotations
 
 import argparse
+import atexit
 import csv
 import glob
 import json
@@ -49,10 +50,12 @@ import os
 import queue
 import re
 import shlex
+import shutil
 import signal
 import struct
 import subprocess
 import sys
+import tempfile
 import time
 import tomllib
 from dataclasses import dataclass, field
@@ -94,6 +97,9 @@ READY_TIMEOUT = 300.0
 # Daemon files directory (STEELEAGLE_FILES) relative to the home directory,
 # for rsyncing a video to a remote that isn't registered
 REMOTE_FILES_DIR = ".local/share/steeleagle/files/"
+# Where install.sh puts eagle, which isn't on the PATH of the non-interactive
+# shell ssh runs a command in
+REMOTE_PATH = 'PATH="$HOME/.local/bin:$PATH"'
 
 
 def log(msg: str) -> None:
@@ -109,6 +115,68 @@ def default_socket() -> str:
     else:
         runtime = os.environ.get("XDG_RUNTIME_DIR") or f"/run/user/{os.getuid()}"
     return os.path.join(runtime, "steeleagle", "eagled.sock")
+
+
+# --------------------------------------------------------------------------
+# ssh
+# --------------------------------------------------------------------------
+
+# Every ssh the runner starts, directly or through rsync, shares one master
+# connection per host (OpenSSH connection multiplexing), so a host's password
+# is asked for once, when open_ssh connects to it, rather than on every call.
+_ssh_dir: str | None = None
+_ssh_hosts: set[str] = set()
+
+
+def ssh_opts() -> list[str]:
+    global _ssh_dir
+    if _ssh_dir is None:
+        # Short, as the sockets' paths must fit in about 100 characters
+        _ssh_dir = tempfile.mkdtemp(prefix="se-ssh-", dir="/tmp")
+        atexit.register(close_ssh)
+    return [
+        "-o", "ControlMaster=auto",
+        "-o", f"ControlPath={_ssh_dir}/%C",
+        "-o", "ControlPersist=yes",
+    ]
+
+
+def ssh(host: str, command: str) -> list[str]:
+    """An ssh command line that runs command on host."""
+    _ssh_hosts.add(host)
+    return ["ssh", *ssh_opts(), host, command]
+
+
+def rsync_cmd(host: str) -> list[str]:
+    """An rsync command line whose ssh to host shares its master connection."""
+    _ssh_hosts.add(host)
+    return ["rsync", "-e", shlex.join(["ssh", *ssh_opts()])]
+
+
+def open_ssh(hosts: list[str]) -> None:
+    """Connects to each host up front, asking for its password (or host key
+    check) on the terminal now, rather than in the middle of a run. The
+    connection stays open in the background for later calls to share."""
+    for host in hosts:
+        _ssh_hosts.add(host)
+        log(f"connecting to {host} over ssh")
+        # -f: go to the background once logged in; -N: run no command
+        # ControlMaster=auto makes this the master, as none is open yet
+        r = subprocess.run(["ssh", *ssh_opts(), "-f", "-N", host])
+        if r.returncode:
+            log(f"warning: couldn't connect to {host} over ssh (exit {r.returncode}); later calls will retry")
+
+
+def close_ssh() -> None:
+    """Closes the master connections, and removes their sockets."""
+    if _ssh_dir is None:
+        return
+    for host in sorted(_ssh_hosts):
+        subprocess.run(
+            ["ssh", *ssh_opts(), "-O", "exit", host],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+    shutil.rmtree(_ssh_dir, ignore_errors=True)
 
 
 # --------------------------------------------------------------------------
@@ -696,7 +764,7 @@ def configure_daemons(client: Daemon, exp: Experiment, profile: str) -> None:
         elif d.ssh_host:
             log(f"remote {d.key} not registered; configuring it over ssh with {config.name}")
             # ssh prompts (host key, password) on the terminal, not stdin
-            cmd = ["ssh", d.ssh_host, "eagle configure /dev/stdin"]
+            cmd = ssh(d.ssh_host, f"{REMOTE_PATH} eagle configure /dev/stdin")
             subprocess.run(cmd, input=text, text=True, check=True)
         else:
             raise RuntimeError(f"remote {d.key} is not registered with the orchestrator and has no prefix to ssh to")
@@ -736,7 +804,8 @@ def push_files(client: Daemon, exp: Experiment) -> None:
                 # The remote makes the files directory before its rsync starts
                 # (rsync's --mkpath needs 3.2.3+ on both ends)
                 cmd = [
-                    "rsync", "-a", f"--rsync-path=mkdir -p {shlex.quote(files_dir)} && rsync",
+                    *rsync_cmd(d.ssh_host), "-a",
+                    f"--rsync-path=mkdir -p {shlex.quote(files_dir)} && rsync",
                     str(f.path), f"{d.ssh_host}:{dest}",
                 ]
                 subprocess.run(cmd, check=True)
@@ -756,7 +825,7 @@ def rsync(exp: Experiment, src: str, dest: Path, move: bool) -> None:
     d = exp.daemons[host]
     path = "/" + rest
     dest.mkdir(parents=True, exist_ok=True)
-    cmd = ["rsync", "-a"]
+    cmd = [*rsync_cmd(d.ssh_host), "-a"] if d.prefix else ["rsync", "-a"]
     if move:
         cmd.append("--remove-source-files")
     # A directory's contents are collected, not the directory itself.
@@ -764,7 +833,7 @@ def rsync(exp: Experiment, src: str, dest: Path, move: bool) -> None:
     # and errors reach the user's terminal.
     if d.prefix:
         if not glob.has_magic(path):
-            test = ["ssh", d.ssh_host, f"test -d {shlex.quote(path)}"]
+            test = ssh(d.ssh_host, f"test -d {shlex.quote(path)}")
             if subprocess.run(test).returncode == 0:
                 path = path.rstrip("/") + "/"
         sources = [d.prefix + path]  # the remote shell expands globs
@@ -1108,7 +1177,7 @@ def run_iperf(exp: Experiment, host: DaemonCfg, ip: str, trial_dir: Path) -> dic
     with open(trial_dir / "iperf3_server.log", "w") as server_log:
         # -1: the server exits after one test
         server = subprocess.Popen(
-            ["ssh", host.ssh_host, f"iperf3 -s -1 -p {port}"],
+            ssh(host.ssh_host, f"{REMOTE_PATH} iperf3 -s -1 -p {port}"),
             stdout=server_log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
         )
         try:
@@ -1295,6 +1364,9 @@ def main():
     ):
         log("netsim needs root; checking sudo")
         sudo_validate()
+
+    # Ask for each remote's ssh password now too, once
+    open_ssh(sorted({d.ssh_host for e in exps for d in e.remotes if d.ssh_host}))
 
     client = Daemon(args.socket)
     for e in exps:
