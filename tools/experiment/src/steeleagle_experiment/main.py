@@ -97,8 +97,8 @@ READY_TIMEOUT = 300.0
 # Daemon files directory (STEELEAGLE_FILES) relative to the home directory,
 # for rsyncing a video to a remote that isn't registered
 REMOTE_FILES_DIR = ".local/share/steeleagle/files/"
-# Where install.sh puts eagle, which isn't on the PATH of the non-interactive
-# shell ssh runs a command in
+# Where install.sh puts eagle and its tools, which isn't on the PATH of the
+# non-interactive shell ssh runs a command in
 REMOTE_PATH = 'PATH="$HOME/.local/bin:$PATH"'
 
 
@@ -746,28 +746,40 @@ def find_remote(resp: daemon_pb2.ListServicesResponse, d: DaemonCfg):
     return None
 
 
+def wait_registered(client: Daemon, d: DaemonCfg, timeout: float = READY_TIMEOUT):
+    """Waits for remote d to be registered with the orchestrator, and returns
+    its listing."""
+    deadline = time.monotonic() + timeout
+    logged = False
+    last = "not listed"
+    while True:
+        try:
+            remote, last = find_remote(client.list_services(), d), "not listed"
+        except grpc.RpcError as e:
+            remote, last = None, f"ListServices: {e.code().name} {e.details()}"
+        if remote is not None:
+            return remote
+        if time.monotonic() > deadline:
+            raise TimeoutError(
+                f"remote {d.key} didn't register with the orchestrator within {timeout:.0f}s "
+                f"({last}); it can only be configured through the orchestrator it is locked to"
+            )
+        if not logged:
+            log(f"waiting for remote {d.key} to register with the orchestrator")
+            logged = True
+        time.sleep(1)
+
+
 def configure_daemons(client: Daemon, exp: Experiment, profile: str) -> None:
     """Restarts each remote, then the orchestrator, with its config for the
-    profile."""
+    profile. A remote is locked to the orchestrator, so it is configured
+    through it, once it has registered."""
     configs = exp.configs[profile]
-    try:
-        listing = client.list_services()
-    except grpc.RpcError:
-        listing = None
     for d in exp.remotes:
         config = configs[d.key]
-        text = config.read_text()
-        remote = find_remote(listing, d) if listing else None
-        if remote is not None:
-            log(f"configuring remote {d.key} ({remote.ip}) through the orchestrator with {config.name}")
-            client.configure(text, route=remote.ip)
-        elif d.ssh_host:
-            log(f"remote {d.key} not registered; configuring it over ssh with {config.name}")
-            # ssh prompts (host key, password) on the terminal, not stdin
-            cmd = ssh(d.ssh_host, f"{REMOTE_PATH} eagle configure /dev/stdin")
-            subprocess.run(cmd, input=text, text=True, check=True)
-        else:
-            raise RuntimeError(f"remote {d.key} is not registered with the orchestrator and has no prefix to ssh to")
+        remote = wait_registered(client, d)
+        log(f"configuring remote {d.key} ({remote.ip}) through the orchestrator with {config.name}")
+        client.configure(config.read_text(), route=remote.ip)
     o = exp.orchestrator
     log(f"configuring orchestrator {o.key} with {configs[o.key].name}")
     client.configure(configs[o.key].read_text())

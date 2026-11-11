@@ -112,8 +112,9 @@ ssh use root's ssh setup.
   - A running eagled, which acts as the orchestrator.
   - `rsync` and `ssh`.
   - `tc` and `ip` (iproute2) and the `ifb` kernel module, for netsim.
-- Remote daemons registered with the orchestrator. If one isn't, the runner
-  configures it over ssh instead, which needs `eagle` on that host's `PATH`.
+- Remote daemons locked to the orchestrator. They are configured through it,
+  so the runner waits (up to 5 minutes) for each one to register before
+  configuring it.
 
 ## The experiment directory
 
@@ -387,9 +388,9 @@ each of its `trials`:
 1. **Restart the daemons.** The experiment's `files`, and its video if it has
    one (unless `no_upload` is set), are first pushed to every daemon's files
    directory. Then each remote daemon gets its config for the experiment and
-   profile, sent through the orchestrator (or over ssh if it isn't
-   registered), and then the orchestrator gets its own config. Applying a
-   config restarts the daemon.
+   profile, sent through the orchestrator once the remote has registered, and
+   then the orchestrator gets its own config. Applying a config restarts the
+   daemon.
 2. **Wait until ready.** The runner polls `ListServices` until every remote has
    re-registered and the vehicle is listed and running (5-minute timeout).
 3. **Measure** (`ambient` only). Stop the vehicle, measure the link with
