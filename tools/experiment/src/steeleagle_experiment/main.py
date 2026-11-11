@@ -99,6 +99,11 @@ READY_TIMEOUT = 300.0
 # leaves it here, and the next run restores that config rather than saving the
 # experiment config it finds on the daemon.
 ORIGINALS_DIR = Path.home() / ".local" / "state" / "steeleagle-experiment" / "original-configs"
+# The services the runner stopped at the end of a trial, which stay stopped
+# across the restore (StopService lasts across reconfigures), so it restarts
+# them after it. Kept until then, so a run that dies in between leaves them
+# for the next run's restore.
+STOPPED_FILE = ORIGINALS_DIR / "stopped-services.json"
 # A package install downloads the package, which can be slow
 INSTALL_TIMEOUT = 600.0
 # How long a daemon may report that it failed to start its services before
@@ -255,8 +260,8 @@ class Experiment:
     files: list[PushFile] = field(default_factory=list)
     results: dict[str, str] = field(default_factory=dict)
     catalogs: dict[str, str] = field(default_factory=dict)
-    # catalogs renamed in place after each trial, to be transferred later,
-    # rather than copied
+    # catalogs moved aside on their host after each trial, into a directory of
+    # their own in its files directory, to be transferred later, rather than copied
     defer_pull: set[str] = field(default_factory=set)
 
     @property
@@ -1005,10 +1010,19 @@ def restore_configs(client: Daemon, exp: Experiment) -> None:
     remotes first, through the orchestrator, then the orchestrator, and waits
     for them to come back. That also ends the trial's flow or mission, so no
     engine keeps working (or logging) for it. A config that can't be restored
-    stays saved, for the next run to restore."""
+    stays saved, for the next run to restore.
+
+    The services stop_services stopped are restarted first, while the
+    experiment configs (which have them all) still run: being stopped by
+    request lasts across reconfigures, so one the restored config doesn't
+    have would stay marked stopped on the daemon, and start stopped under a
+    later config that has it. They have no flow, so they don't do anything
+    before the restore restarts them again."""
+    restart_stopped_by_runner(client)
     remotes = [d for d in exp.remotes if original_path(d.key).exists()]
     o = exp.orchestrator
     if not remotes and not original_path(o.key).exists():
+        restart_stopped_by_runner(client)
         return
     restored: list[DaemonCfg] = []
     for d in remotes:
@@ -1032,15 +1046,71 @@ def restore_configs(client: Daemon, exp: Experiment) -> None:
         except (grpc.RpcError, OSError) as e:
             details = f"{e.code().name} {e.details()}" if isinstance(e, grpc.RpcError) else str(e)
             log(f"warning: couldn't restore {o.key}'s own config ({details}); it is still saved in {path}")
-    if not restored:
+    if restored:
+        time.sleep(2)  # let a restarting daemon go down before polling it
+        try:
+            for d in exp.remotes:
+                wait_registered(client, d)
+            log("daemons are back on their own configs")
+        except TimeoutError as e:
+            log(f"warning: {e}")
+    restart_stopped_by_runner(client)
+
+
+def experiment_services(resp: daemon_pb2.ListServicesResponse, exp: Experiment) -> list:
+    """The services of the experiment's daemons (the orchestrator and its
+    remotes) in a ListServices response; other remotes' are left out."""
+    remote_ips = {r.ip for r in resp.remotes if r.ip}
+    ours = {listed.ip for d in exp.remotes if (listed := find_remote(resp, d, include_failed=True)) is not None}
+    services = []
+    for svc in resp.services:
+        ip = next((i for i in remote_ips if svc.name.startswith(i + ".")), None)
+        if ip is None or ip in ours:
+            services.append(svc)
+    return services
+
+
+def stop_services(client: Daemon, exp: Experiment) -> None:
+    """Stops every running service of the experiment's daemons, the vehicles
+    first, so that nothing writes to the files that are collected next. They
+    are recorded in STOPPED_FILE first, for restart_stopped_by_runner."""
+    services = [s for s in experiment_services(client.list_services(), exp) if not s.stopped]
+    order = {daemon_pb2.SERVICE_CATEGORY_VEHICLE: 0, daemon_pb2.SERVICE_CATEGORY_ENGINE: 1}
+    services.sort(key=lambda s: order.get(s.category, 2))
+    if not services:
         return
-    time.sleep(2)  # let a restarting daemon go down before polling it
+    names = [s.name for s in services]
+    recorded = json.loads(STOPPED_FILE.read_text()) if STOPPED_FILE.exists() else []
+    STOPPED_FILE.parent.mkdir(parents=True, exist_ok=True)
+    STOPPED_FILE.write_text(json.dumps(sorted(set(recorded) | set(names))))
+    log(f"stopping {len(names)} service(s) before collecting: {', '.join(names)}")
+    for name in names:
+        try:
+            client.stop_service(name)
+        except grpc.RpcError as e:
+            log(f"warning: couldn't stop {name}: {e.code().name} {e.details()}")
+
+
+def restart_stopped_by_runner(client: Daemon) -> None:
+    """Restarts the services stop_services stopped that are still stopped,
+    which clears their stopped by request mark. A service that isn't listed
+    (its daemon's config doesn't have it) is skipped."""
+    if not STOPPED_FILE.exists():
+        return
     try:
-        for d in exp.remotes:
-            wait_registered(client, d)
-        log("daemons are back on their own configs")
-    except TimeoutError as e:
-        log(f"warning: {e}")
+        names = json.loads(STOPPED_FILE.read_text())
+        listed = {s.name: s for s in client.list_services().services}
+        todo = [n for n in names if n in listed and listed[n].stopped]
+        for name in todo:
+            client.restart_service(name)
+        if todo:
+            log(f"restarted {len(todo)} service(s) the runner had stopped, so none stays marked stopped: {', '.join(todo)}")
+        STOPPED_FILE.unlink()
+    except grpc.RpcError as e:
+        log(
+            f"warning: couldn't restart the services the runner stopped ({e.code().name} {e.details()}); "
+            f"they are listed in {STOPPED_FILE}, for the next run to restart"
+        )
 
 
 def push_files(client: Daemon, exp: Experiment) -> None:
@@ -1120,39 +1190,54 @@ def deferred_files(exp: Experiment) -> dict[str, set[str]]:
 
 
 def defer_pull(exp: Experiment, key: str, before: set[str], profile: str, trial: int) -> None:
-    """Renames the files catalog key gained during the trial, where they are,
-    to <experiment>_<profile>_<trial>_<name>, to be transferred later. A file
-    whose new name is taken is left as it is, with a warning."""
+    """Moves the files catalog key gained during the trial into
+    <experiment>_<profile>_<trial>_<key>/ in the files directory
+    (STEELEAGLE_FILES) of the host that holds them, to be transferred later.
+    They are moved out of the engine's own directory, since an engine may
+    empty that when it starts (detection_log does, with refresh), which it
+    does on every daemon restart. If the directory exists already (from an
+    earlier run), a new one with the time added is used. A file whose name is
+    taken in it is left where it is, with a warning."""
     d, paths = source_files(exp, exp.catalogs[key])
-    prefix = f"{exp.name}_{profile}_{trial}_"
-    renames = [(p, os.path.join(os.path.dirname(p), prefix + os.path.basename(p))) for p in paths if p not in before]
-    if not renames:
-        log(f"warning: {key} has no new files on {d.key} to rename")
+    moves = [p for p in paths if p not in before]
+    if not moves:
+        log(f"warning: {key} has no new files on {d.key} to move")
         return
+    name = f"{exp.name}_{profile}_{trial}_{key}"
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     if d.prefix:
-        script = "".join(
-            f"if [ -e {shlex.quote(new)} ]; then echo {shlex.quote(new)}; else mv -- {shlex.quote(old)} {shlex.quote(new)}; fi\n"
-            for old, new in renames
+        files_dir = '"$HOME"/' + shlex.quote(REMOTE_FILES_DIR.rstrip("/"))
+        script = (
+            f"set -e\nd={files_dir}/{shlex.quote(name)}\n"
+            f'if [ -e "$d" ]; then d="$d-{stamp}"; fi\n'
+            'mkdir -p "$d"\necho "$d"\nset +e\n'
+        ) + "".join(
+            f'b=$(basename -- {shlex.quote(p)}); '
+            f'if [ -e "$d/$b" ]; then echo "taken $d/$b"; else mv -- {shlex.quote(p)} "$d/$b"; fi\n'
+            for p in moves
         )
         # Sent on stdin, since a long list of files can be over the command
         # line's limit
         r = subprocess.run(ssh(d.ssh_host, "sh -s"), input=script.encode(), capture_output=True)
-        if r.returncode != 0:
-            raise RuntimeError(f"renaming {key} on {d.key} failed: {r.stderr.decode().strip()}")
-        taken = [line for line in r.stdout.decode().splitlines() if line]
+        out = r.stdout.decode().splitlines()
+        if r.returncode != 0 or not out:
+            raise RuntimeError(f"moving {key} on {d.key} failed: {r.stderr.decode().strip()}")
+        dest, taken = out[0], [line[len("taken "):] for line in out[1:] if line.startswith("taken ")]
     else:
-        taken = []
-        for old, new in renames:
-            if os.path.exists(new):
-                taken.append(new)
+        target = Path.home() / REMOTE_FILES_DIR / name
+        if target.exists():
+            target = target.with_name(f"{name}-{stamp}")
+        target.mkdir(parents=True)
+        dest, taken = str(target), []
+        for p in moves:
+            new = target / os.path.basename(p)
+            if new.exists():
+                taken.append(str(new))
             else:
-                os.rename(old, new)
-    log(
-        f"deferred {key}: renamed {len(renames) - len(taken)} file(s) on {d.key} "
-        f"to {os.path.dirname(renames[0][1])}/{prefix}*, to be transferred later"
-    )
+                shutil.move(p, new)
+    log(f"deferred {key}: moved {len(moves) - len(taken)} file(s) on {d.key} to {dest}, to be transferred later")
     if taken:
-        log(f"warning: {len(taken)} file(s) of {key} weren't renamed, since their new name is taken (e.g. {taken[0]})")
+        log(f"warning: {len(taken)} file(s) of {key} weren't moved, since their name is taken in {dest} (e.g. {taken[0]})")
 
 
 def rsync(exp: Experiment, src: str, dest: Path, move: bool) -> None:
@@ -1678,6 +1763,11 @@ def run_trial(
                     log(f"{name} sent")
                 except grpc.RpcError as e:
                     log(f"warning: {name} failed: {e.code().name} {e.details()}")
+        # Nothing may write to the files while they are collected
+        try:
+            stop_services(client, exp)
+        except grpc.RpcError as e:
+            log(f"warning: couldn't stop the services: {e.code().name} {e.details()}")
         cleanup(exp, run_dir, trial_dir, netsim, label, profile, trial, wall, deferred_before, started)
 
 

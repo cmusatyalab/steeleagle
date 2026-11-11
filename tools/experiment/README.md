@@ -410,13 +410,18 @@ A catalog can instead be left on its host, to be transferred later, with
 dets_onboard = { path = "heisenberg/root/.local/share/steeleagle/files/detection_log/*", defer_pull = true }
 ```
 
-It isn't copied; each of its files the trial added is renamed where it is to
-`<experiment>_<profile>_<trial>_<filename>`, e.g.
-`case_study_2_cop_delay_2_10002.jpg`, rather than pulled. Before each trial
-(before the daemons restart) the runner lists what the path holds, so only
-files written during the trial are renamed, and files from other trials or
-experiments are left as they are. A file whose new name is already taken is
-left unrenamed, with a warning. `defer_pull` is only for catalogs: a result is
+It isn't copied; the files the trial added are moved, on their host, into
+`<experiment>_<profile>_<trial>_<catalog>/` in the files directory
+(`~/.local/share/steeleagle/files`), keeping their names, e.g.
+`case_study_2_cop_delay_2_dets_onboard/10002.jpg`. They are moved out of the
+engine's own directory because an engine may empty that whenever it starts
+(detection_log does with `refresh`), and the daemons restart twice in every
+trial. Before each trial (before the daemons restart) the runner lists what
+the path holds, so only files written during the trial are moved. If the
+trial's directory already exists, e.g. from an earlier run, a new one with
+the time added (`...-20261111-134131`) is used. A file whose name is taken in
+the directory is left where it is, with a warning. `defer_pull` is only for
+catalogs: a result is
 removed from its host once it is pulled, so it can't be left there.
 
 ## What a run does
@@ -444,12 +449,18 @@ each of its `trials`:
 7. **Run** for `duration` seconds (for a video with no `duration`, the video's
    length), or until you press ENTER if it is `0`.
 8. **Stop.** For a mission: `Hold`, then `StopMission`. These are sent even if
-   the run is interrupted. netsim is stopped with SIGINT, so it prints its byte
-   totals and removes its `tc` rules.
+   the run is interrupted. Then every service of the experiment's daemons is
+   stopped (`StopService`, the vehicles first), so nothing is still writing to
+   the files collected next, and netsim is stopped with SIGINT, so it prints
+   its byte totals and removes its `tc` rules.
 9. **Collect** results and catalogs, and write the statistics. A
-   `defer_pull` catalog is renamed in place instead (see
+   `defer_pull` catalog is moved aside on its host instead (see
    [`[results]` and `[catalogs]`](#results-and-catalogs)).
-10. **Restore the daemons.** Each daemon is configured with its own config
+10. **Restore the daemons.** The services stopped in step 8 are restarted
+    first: a service stopped with `StopService` stays marked stopped across
+    reconfigures, so one the daemon's own config doesn't have would otherwise
+    start stopped under a later config that has it. With no flow set, they
+    don't do anything. Then each daemon is configured with its own config
     again: the remotes through the orchestrator, then the orchestrator. That
     restarts them, which also ends the trial's flow, so no engine (e.g. a
     detection log) keeps working for it afterwards. This happens however the
