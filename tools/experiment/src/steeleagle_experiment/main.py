@@ -731,8 +731,14 @@ def push_files(client: Daemon, exp: Experiment) -> None:
                 client.transfer_file(f.path, route=remote.ip, name=f.name)
             elif d.ssh_host:
                 log(f"remote {d.key} not registered; pushing {what} to it with rsync")
-                dest = REMOTE_FILES_DIR.rstrip("/") + "/" + f.name
-                cmd = ["rsync", "-a", "--mkpath", str(f.path), f"{d.ssh_host}:{dest}"]
+                files_dir = REMOTE_FILES_DIR.rstrip("/")
+                dest = files_dir + "/" + f.name
+                # The remote makes the files directory before its rsync starts
+                # (rsync's --mkpath needs 3.2.3+ on both ends)
+                cmd = [
+                    "rsync", "-a", f"--rsync-path=mkdir -p {shlex.quote(files_dir)} && rsync",
+                    str(f.path), f"{d.ssh_host}:{dest}",
+                ]
                 subprocess.run(cmd, check=True)
             else:
                 raise RuntimeError(f"remote {d.key} is not registered with the orchestrator and has no prefix to rsync to")
