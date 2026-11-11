@@ -255,8 +255,8 @@ class Experiment:
     files: list[PushFile] = field(default_factory=list)
     results: dict[str, str] = field(default_factory=dict)
     catalogs: dict[str, str] = field(default_factory=dict)
-    # results renamed in place after each trial, to be transferred later,
-    # rather than pulled
+    # catalogs renamed in place after each trial, to be transferred later,
+    # rather than copied
     defer_pull: set[str] = field(default_factory=set)
 
     @property
@@ -338,26 +338,35 @@ def load_experiments(exp_dir: Path, names: list[str] | None = None) -> list[Expe
         raise ValueError(f"{exp_dir}: exactly one daemon must have orchestrator = true")
 
     results: dict[str, str] = {}
-    defer_pull: set[str] = set()
     for key, value in raw.get("results", {}).items():
+        if isinstance(value, dict) and "defer_pull" in value:
+            raise ValueError(
+                f"{exp_dir}: results.{key}: defer_pull goes under [catalogs], not [results], "
+                f"since results are removed from their host once they are pulled"
+            )
+        if not isinstance(value, str):
+            raise ValueError(f"{exp_dir}: results.{key} must be a path")
+        results[key] = value
+    catalogs: dict[str, str] = {}
+    defer_pull: set[str] = set()
+    for key, value in raw.get("catalogs", {}).items():
         if isinstance(value, dict):
             unknown = set(value) - {"path", "defer_pull"}
             if unknown or not isinstance(value.get("path"), str):
                 raise ValueError(
-                    f"{exp_dir}: results.{key} must be a path, or a table "
+                    f"{exp_dir}: catalogs.{key} must be a path, or a table "
                     f"{{ path = \"<daemon>/<path>\", defer_pull = true }}"
                     + (f" (unknown keys {', '.join(sorted(unknown))})" if unknown else "")
                 )
             if not isinstance(value.get("defer_pull", False), bool):
-                raise ValueError(f"{exp_dir}: results.{key}.defer_pull must be true or false")
-            results[key] = value["path"]
+                raise ValueError(f"{exp_dir}: catalogs.{key}.defer_pull must be true or false")
+            catalogs[key] = value["path"]
             if value.get("defer_pull", False):
                 defer_pull.add(key)
         elif isinstance(value, str):
-            results[key] = value
+            catalogs[key] = value
         else:
-            raise ValueError(f"{exp_dir}: results.{key} must be a path or a table")
-    catalogs = dict(raw.get("catalogs", {}))
+            raise ValueError(f"{exp_dir}: catalogs.{key} must be a path or a table")
     for table in (results, catalogs):
         for key, src in table.items():
             host = src.split("/", 1)[0]
@@ -1081,8 +1090,8 @@ def push_files(client: Daemon, exp: Experiment) -> None:
 # --------------------------------------------------------------------------
 
 
-def result_files(exp: Experiment, src: str) -> tuple[DaemonCfg, list[str]]:
-    """The daemon whose host holds result src, and the paths of the files
+def source_files(exp: Experiment, src: str) -> tuple[DaemonCfg, list[str]]:
+    """The daemon whose host holds result or catalog src, and the paths of the files
     (or directories) it names there: those its glob matches, or a
     directory's entries, as they are collected."""
     host, _, rest = src.partition("/")
@@ -1105,16 +1114,16 @@ def result_files(exp: Experiment, src: str) -> tuple[DaemonCfg, list[str]]:
 
 
 def deferred_files(exp: Experiment) -> dict[str, set[str]]:
-    """The files each defer_pull result names now, before a trial, so that only
+    """The files each defer_pull catalog names now, before a trial, so that only
     the ones the trial adds are renamed after it."""
-    return {key: set(result_files(exp, exp.results[key])[1]) for key in sorted(exp.defer_pull)}
+    return {key: set(source_files(exp, exp.catalogs[key])[1]) for key in sorted(exp.defer_pull)}
 
 
 def defer_pull(exp: Experiment, key: str, before: set[str], profile: str, trial: int) -> None:
-    """Renames the files result key gained during the trial, where they are,
+    """Renames the files catalog key gained during the trial, where they are,
     to <experiment>_<profile>_<trial>_<name>, to be transferred later. A file
     whose new name is taken is left as it is, with a warning."""
-    d, paths = result_files(exp, exp.results[key])
+    d, paths = source_files(exp, exp.catalogs[key])
     prefix = f"{exp.name}_{profile}_{trial}_"
     renames = [(p, os.path.join(os.path.dirname(p), prefix + os.path.basename(p))) for p in paths if p not in before]
     if not renames:
@@ -1475,12 +1484,12 @@ def cleanup(
 ) -> None:
     netsim.stop()
     for key, src in exp.results.items():
-        if key in exp.defer_pull:
-            defer_pull(exp, key, deferred_before.get(key, set()), profile, trial)
-            continue
         log(f"moving {key} from {src}")
         rsync(exp, src, trial_dir / "result" / key, move=True)
     for key, src in exp.catalogs.items():
+        if key in exp.defer_pull:
+            defer_pull(exp, key, deferred_before.get(key, set()), profile, trial)
+            continue
         log(f"copying {key} from {src}")
         rsync(exp, src, trial_dir / "catalog" / key, move=False)
     if started:

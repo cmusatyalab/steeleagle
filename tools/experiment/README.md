@@ -402,21 +402,22 @@ A directory's contents are collected into `result/<name>/` (or
 leaves the emptied source directories in place. A source that matches nothing
 gives a warning, not an error.
 
-A result can instead be left on its host, to be transferred later, with
+A catalog can instead be left on its host, to be transferred later, with
 `defer_pull`:
 
 ```toml
-[results]
+[catalogs]
 dets_onboard = { path = "heisenberg/root/.local/share/steeleagle/files/detection_log/*", defer_pull = true }
 ```
 
-Each of its files the trial added is renamed where it is to
+It isn't copied; each of its files the trial added is renamed where it is to
 `<experiment>_<profile>_<trial>_<filename>`, e.g.
 `case_study_2_cop_delay_2_10002.jpg`, rather than pulled. Before each trial
 (before the daemons restart) the runner lists what the path holds, so only
 files written during the trial are renamed, and files from other trials or
 experiments are left as they are. A file whose new name is already taken is
-left unrenamed, with a warning.
+left unrenamed, with a warning. `defer_pull` is only for catalogs: a result is
+removed from its host once it is pulled, so it can't be left there.
 
 ## What a run does
 
@@ -446,7 +447,7 @@ each of its `trials`:
    the run is interrupted. netsim is stopped with SIGINT, so it prints its byte
    totals and removes its `tc` rules.
 9. **Collect** results and catalogs, and write the statistics. A
-   `defer_pull` result is renamed in place instead (see
+   `defer_pull` catalog is renamed in place instead (see
    [`[results]` and `[catalogs]`](#results-and-catalogs)).
 10. **Restore the daemons.** Each daemon is configured with its own config
     again: the remotes through the orchestrator, then the orchestrator. That
