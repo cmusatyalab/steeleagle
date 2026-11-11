@@ -13,6 +13,11 @@ Profiles (Kbps):
     intermittent     0 -  100
     denied           0 -    0
     malicious        intermittent, plus --failpoints
+    delay            bandwidth unshaped; one-way latency of 0 - 300 ms
+
+The delay profile leaves the bandwidth alone and instead, every --interval
+seconds, draws a delay uniformly from [--min-delay-ms, --max-delay-ms] and
+applies it to the port's traffic with a netem qdisc.
 
 --direction ingress (default) shapes incoming traffic via an IFB redirect.
 --direction egress shapes outgoing traffic directly on the interface, using
@@ -44,6 +49,14 @@ class Profile:
     max_kbps: int
     shape: float
     scale: float
+    # A latency profile leaves the bandwidth unshaped, and every interval
+    # draws a delay uniformly from [min_delay_ms, max_delay_ms] instead
+    min_delay_ms: float | None = None
+    max_delay_ms: float | None = None
+
+    @property
+    def is_delay(self) -> bool:
+        return self.max_delay_ms is not None
 
 
 PROFILES: dict[str, Profile] = {
@@ -54,6 +67,12 @@ PROFILES: dict[str, Profile] = {
     "denied": Profile(0, 0, shape=1.0, scale=1.0),
 }
 PROFILES["malicious"] = PROFILES["intermittent"]
+PROFILES["delay"] = Profile(0, 0, shape=1.0, scale=1.0, min_delay_ms=0, max_delay_ms=300)
+
+NETEM_HANDLE = "10:"
+# netem's default queue of 1000 packets overflows at high rates with
+# hundreds of ms of delay
+NETEM_LIMIT = 100000
 
 REDIRECT_PREFS = {"ip": 10, "ipv6": 11}
 DROP_PREF = 1
@@ -212,8 +231,16 @@ class Tc:
                 for side in ("sport", "dport"):
                     self._iptables_purge(l4, side)
 
-    def setup(self, initial_kbps: int) -> None:
+    def setup(self, initial_kbps: int | None, delay_ms: float | None = None) -> None:
+        """Installs the shaper. With initial_kbps None, the port's class is
+        left at the link rate; with delay_ms, a netem qdisc under it delays
+        the port's traffic."""
         self.installed = True
+        rate = (
+            self._rate_args(initial_kbps)
+            if initial_kbps is not None
+            else ["rate", self.link_rate, "ceil", self.link_rate]
+        )
         if self.direction == "ingress":
             self.run(IP, "link", "add", self.ifb, "type", "ifb")
             self.run(IP, "link", "set", self.ifb, "up")
@@ -241,7 +268,7 @@ class Tc:
                 "classid",
                 "1:1",
                 "htb",
-                *self._rate_args(initial_kbps),
+                *rate,
             )
             self.run(TC, "qdisc", "add", "dev", self.iface, "clsact")
             self._port_filters(
@@ -272,7 +299,7 @@ class Tc:
                 "classid",
                 "1:1",
                 "htb",
-                *self._rate_args(initial_kbps),
+                *rate,
             )
             self.run(
                 TC,
@@ -291,6 +318,33 @@ class Tc:
                 self.link_rate,
             )
             self._port_filters_direct(REDIRECT_PREFS, "1:1")
+        if delay_ms is not None:
+            self._netem("add", delay_ms)
+
+    @property
+    def shaped_dev(self) -> str:
+        return self.ifb if self.direction == "ingress" else self.iface
+
+    def _netem(self, verb: str, delay_ms: float) -> None:
+        self.run(
+            TC,
+            "qdisc",
+            verb,
+            "dev",
+            self.shaped_dev,
+            "parent",
+            "1:1",
+            "handle",
+            NETEM_HANDLE,
+            "netem",
+            "delay",
+            f"{delay_ms:g}ms",
+            "limit",
+            str(NETEM_LIMIT),
+        )
+
+    def set_delay(self, delay_ms: float) -> None:
+        self._netem("change", delay_ms)
 
     @staticmethod
     def _rate_args(kbps: int) -> list[str]:
@@ -592,10 +646,28 @@ def simulate(args: argparse.Namespace, tc: Tc) -> None:
     rng = random.Random(args.seed)
     duration = args.duration if args.duration is not None else math.inf
 
+    if base.is_delay:
+        profile = Profile(
+            0,
+            0,
+            1.0,
+            1.0,
+            args.min_delay_ms if args.min_delay_ms is not None else base.min_delay_ms,
+            args.max_delay_ms if args.max_delay_ms is not None else base.max_delay_ms,
+        )
+        if not 0 <= profile.min_delay_ms <= profile.max_delay_ms:
+            die(
+                f"need 0 <= min ({profile.min_delay_ms:g}) <= max ({profile.max_delay_ms:g}) ms"
+            )
+
     log_file = open(args.log, "w", newline="") if args.log else None
     log = csv.writer(log_file) if log_file else None
     if log:
-        log.writerow(["t_sec", "drawn_kbps", "applied_kbps", "state"])
+        log.writerow(["t_sec", "drawn_kbps", "applied_kbps", "state", "delay_ms"])
+
+    if base.is_delay:
+        simulate_delay(args, tc, profile, rng, duration, log, log_file)
+        return
 
     print(
         f"profile={args.profile} direction={args.direction} bounds=[{profile.min_kbps:g}, {profile.max_kbps:g}] Kbps "
@@ -651,7 +723,7 @@ def simulate(args: argparse.Namespace, tc: Tc) -> None:
                     flush=True,
                 )
             if log:
-                log.writerow([f"{t:.3f}", drawn, target, state])
+                log.writerow([f"{t:.3f}", drawn, target, state, ""])
                 log_file.flush()
 
             wake = min(next_draw, duration)
@@ -663,6 +735,64 @@ def simulate(args: argparse.Namespace, tc: Tc) -> None:
                     wake = min(wake, e)
                     break
             time.sleep(max(0.0, wake - (time.monotonic() - t0)))
+    finally:
+        t_end = time.monotonic() - t0
+        if log_file:
+            log_file.close()
+        print_summary(tc, args.port, min(t_end, duration), args.l2_header_bytes)
+
+
+def simulate_delay(
+    args: argparse.Namespace,
+    tc: Tc,
+    profile: Profile,
+    rng: random.Random,
+    duration: float,
+    log,
+    log_file,
+) -> None:
+    """Leaves the bandwidth unshaped and, every interval, applies a delay
+    drawn uniformly from the profile's range. The timeline's kbps columns are
+    left empty."""
+    print(
+        f"profile={args.profile} direction={args.direction} "
+        f"delay=[{profile.min_delay_ms:g}, {profile.max_delay_ms:g}] ms (uniform) "
+        f"interval={args.interval}s seed={args.seed}"
+    )
+
+    def draw() -> int:
+        return round(rng.uniform(profile.min_delay_ms, profile.max_delay_ms))
+
+    tc.check_clean()
+    delay = draw()
+    tc.setup(None, delay)
+    print(
+        f"delaying {args.direction} on {args.interface} port {args.port}"
+        + (f" via {tc.ifb}" if args.direction == "ingress" else "")
+        + ". Ctrl-C to stop."
+    )
+
+    t0 = time.monotonic()
+    next_draw = 0.0
+    applied = delay
+    try:
+        while True:
+            t = time.monotonic() - t0
+            if t >= duration:
+                break
+            if next_draw <= t:
+                if next_draw > 0:  # the first delay was set up with the qdisc
+                    delay = draw()
+                while next_draw <= t:
+                    next_draw += args.interval
+            if delay != applied:
+                tc.set_delay(delay)
+                applied = delay
+            print(f"[{t:8.2f}s] delay     {delay:5d} ms", flush=True)
+            if log:
+                log.writerow([f"{t:.3f}", "", "", "delay", delay])
+                log_file.flush()
+            time.sleep(max(0.0, min(next_draw, duration) - (time.monotonic() - t0)))
     finally:
         t_end = time.monotonic() - t0
         if log_file:
@@ -695,6 +825,12 @@ def main() -> None:
     ap.add_argument("--interval", type=float, default=1.0)
     ap.add_argument("--duration", type=float, default=None)
     ap.add_argument("--seed", type=int, default=None)
+    ap.add_argument(
+        "--min-delay-ms", type=float, default=None, help="delay only (default 0)"
+    )
+    ap.add_argument(
+        "--max-delay-ms", type=float, default=None, help="delay only (default 300)"
+    )
     ap.add_argument("--shape", type=float, default=None)
     ap.add_argument("--scale", type=float, default=None)
     ap.add_argument("--l2-header-bytes", type=int, default=None)
@@ -714,6 +850,10 @@ def main() -> None:
         die("--shape and --scale must be > 0")
     if args.failpoints and args.profile != "malicious":
         die("--failpoints only applies to --profile malicious")
+    if (
+        args.min_delay_ms is not None or args.max_delay_ms is not None
+    ) and not PROFILES[args.profile].is_delay:
+        die("--min-delay-ms and --max-delay-ms only apply to --profile delay")
     if args.profile == "malicious" and not args.failpoints:
         print(
             "warning: malicious profile with no --failpoints behaves like intermittent",

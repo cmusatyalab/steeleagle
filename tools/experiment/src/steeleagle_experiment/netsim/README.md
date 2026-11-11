@@ -26,6 +26,7 @@ kilo*bytes* per second, so the script avoids it.)
 | `intermittent` |        0 |      100 | Drops to 0 (port off) on roughly 9% of draws      |
 | `denied`       |        0 |        0 | Port is always off                                |
 | `malicious`    |        0 |      100 | Intermittent, plus forced outages at `--failpoints` |
+| `delay`        |        – |        – | Bandwidth unshaped; 0 – 300 ms of variable latency (see below) |
 
 `--min-kbps` and `--max-kbps` override a profile's bounds:
 
@@ -44,6 +45,21 @@ rounded to a whole number of Kbps. A result of 0 shuts the port off.
 | intermittent, malicious          |   0.6 |  0.25 | Piles up near 0, so the port drops out |
 
 `--shape` and `--scale` override these.
+
+### Delay
+
+The `delay` profile doesn't limit the bandwidth (the port's class runs at
+`--link-rate`). Every `--interval` seconds it draws a one-way delay uniformly
+from `[--min-delay-ms, --max-delay-ms]` (default 0 – 300), rounded to a whole
+ms, and applies it with a netem qdisc under the port's class:
+
+```bash
+sudo python3 netsim -i eth0 -p 5201 --profile delay --max-delay-ms 150
+```
+
+Lowering the delay lets newly sent packets overtake ones still held under the
+old delay, so TCP sees some reordering. The trace's kbps columns are empty,
+and `delay_ms` holds the delay; its state is `delay`.
 
 ## Failpoints (malicious profile only)
 
@@ -86,12 +102,13 @@ Each of these kills the port from 30–40 s, 90–95 s and 150–170 s.
 | `--profile`             | `normal`           | One of the profiles above                                  |
 | `--failpoints`          | none               | Malicious only; see above                                  |
 | `--min-kbps`, `--max-kbps` | profile's bounds | Override the bandwidth range, in Kbps                      |
+| `--min-delay-ms`, `--max-delay-ms` | `0`, `300` | Delay only: the range of the delay, in ms              |
 | `--interval`            | `1.0`              | Seconds between draws                                      |
 | `--duration`            | until Ctrl-C       | Stop after this many seconds                               |
 | `--seed`                | random             | RNG seed for a reproducible trace                          |
 | `--shape`, `--scale`    | profile's values   | Override the Weibull parameters                            |
 | `--l2-header-bytes`     | auto               | Link header bytes to subtract per packet in the totals     |
-| `--log PATH`            | off                | Write a CSV trace (`t_sec, drawn_kbps, applied_kbps, state`) |
+| `--log PATH`            | off                | Write a CSV trace (`t_sec, drawn_kbps, applied_kbps, state, delay_ms`) |
 | `--ifb NAME`            | `ifbsim<port>`     | Name of the virtual IFB device                             |
 | `--dry-run`             | off                | Print the tc commands instead of running them (no root needed) |
 | `--cleanup`             | off                | Remove leftover tc state from a crashed run and exit       |
@@ -106,7 +123,8 @@ While running, each change of rate or state is printed:
 [    1.50s] on          118 Kbps (drawn 118)
 ```
 
-`state` is `on`, `off` (the distribution gave 0) or `failpoint`.
+`state` is `on`, `off` (the distribution gave 0) or `failpoint` (or `delay`,
+under the delay profile, which prints the delay instead).
 
 When the run ends (duration reached, Ctrl-C, SIGTERM or SIGHUP), the script
 prints how much data went through the port before cleaning up:
@@ -148,6 +166,10 @@ Override with `--l2-header-bytes`. The raw wire totals are on the last line.
 <ifb>    root htb 1:, class 1:1  rate = ceil = current Kbps
            pref 1  matchall -> drop            (only while the port is off)
 ```
+
+Under `delay`, the class runs at `--link-rate` and has a
+`netem delay <ms>` qdisc (handle `10:`) under it, changed with
+`tc qdisc change` each draw.
 
 tc can't shape incoming traffic directly, so packets for the port are
 redirected to a virtual IFB device and shaped there. Rate changes use

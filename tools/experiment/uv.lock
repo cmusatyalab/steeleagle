@@ -77,12 +77,12 @@ dependencies = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "steeleagle-protocol", git = "https://github.com/cmusatyalab/steeleagle?subdirectory=api%2Fpython&tag=api%2Fpython%2Fv0.3.6" }]
+requires-dist = [{ name = "steeleagle-protocol", git = "https://github.com/cmusatyalab/steeleagle?subdirectory=api%2Fpython&tag=api%2Fpython%2Fv0.3.7" }]
 
 [[package]]
 name = "steeleagle-protocol"
-version = "0.3.6"
-source = { git = "https://github.com/cmusatyalab/steeleagle?subdirectory=api%2Fpython&tag=api%2Fpython%2Fv0.3.6#a94a0f4f09145b5ee359ccd1a771e73826799a69" }
+version = "0.3.7"
+source = { git = "https://github.com/cmusatyalab/steeleagle?subdirectory=api%2Fpython&tag=api%2Fpython%2Fv0.3.7#ea3f78d3bb149f836c3621f95563bae7c9657e23" }
 dependencies = [
     { name = "grpcio" },
     { name = "protobuf" },

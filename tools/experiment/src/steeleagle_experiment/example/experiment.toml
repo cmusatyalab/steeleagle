@@ -1,31 +1,33 @@
-[experiment]
-name = "case_study_3"
+# A list of experiments, run in order. Each is either a mission or a single
+# video; for several videos, add an experiment for each. Run only some of them
+# with -e <name>, or list them with -l
+[[experiments]]
+name = "onboard_track" # Unique; names the runs and the daemon configs (below)
 vehicle = "" # Vehicle name to target
 # Files pushed to every daemon's files directory (STEELEAGLE_FILES,
 # ~/.local/share/steeleagle/files) at the start of each trial, with either a
 # mission or a video. Each is a file name, or a table to push it under another name
 files = [] # e.g. ["labels.json", { file = "model_v2.pt", push_as = "model.pt" }]
-
 # Can set one of mission or video
-[experiment.mission]
+[experiments.mission]
 # If set, will upload and send this mission to start experiment
 file = ""
+# If true, the mission is not pushed: it is assumed to already be in every
+# daemon's missions directory under its own name, and need not be in the
+# experiment directory
+no_upload = false
 # Whether or not to prompt ENTER to start (defaults to true)
 auto = false
 # If duration > 0, will run the mission for the given duration (in seconds)
 # before stopping; otherwise, will prompt the user to press ENTER once done
 duration = 0
-[experiment.video]
-# A video, or a list of videos, run one after the other: each runs every trial
-# of a profile and gets its own stats and timeline CSVs. The current video is
-# pushed to every daemon's files directory (STEELEAGLE_FILES,
-# ~/.local/share/steeleagle/files) at the start of each trial, so a driver like
-# fake_drone can replay it
-video = "" # or e.g. ["traintrack.mp4", "parking.mp4"]
-# Name every video is pushed as, so the driver's video arg can stay fixed
-# (set it to this name). If empty, each video keeps its own name.
+[experiments.video]
+# Video to run for this experiment
+video = ""
+# Name the video is pushed as, so the driver's video arg can stay fixed across
+# experiments (set it to this name). If empty, the video keeps its own name.
 push_as = "" # e.g. "video.mp4"
-# If true, the videos are not pushed: each is assumed to already be in every
+# If true, the video is not pushed: it is assumed to already be in every
 # daemon's files directory under its own name, and need not be in the
 # experiment directory (but then duration must be set, unless it is there to
 # find its length). push_as can't be used with it.
@@ -34,30 +36,51 @@ no_upload = false
 flow = ""
 # Whether or not to prompt ENTER to start
 auto = false
-# If unset, each video runs for its own length (found with ffprobe, or from
+# If unset, the video runs for its own length (found with ffprobe, or from
 # the header of an MP4/MOV file). If set, it overrides that: duration > 0 runs
-# the video's flow for that many seconds; 0 prompts ENTER to stop
+# the flow for that many seconds; 0 prompts ENTER to stop
 # duration = 60
-
-[netsim]
-profiles = ["*"] # A list of network profiles supported by netsim
+[experiments.netsim]
+# Network profiles, in order: normal, limited, degraded, intermittent, denied,
+# malicious, delay (unshaped bandwidth, 0-300 ms of variable latency), none
+# (no attenuation; netsim isn't run) and ambient (like none, but the link is
+# measured with iperf3 first, with the vehicle stopped). "*" runs all of them
+profiles = ["*"]
 interface = "tailscale0"
 port = 9001
 # Failpoints for the malicious profile, as [event_time, dead_time] pairs in
 # seconds from the start of the run: the port is killed from event_time for
 # dead_time seconds. Ignored by every other profile.
 failpoints = [] # e.g. [[30, 10], [90, 5]]
-# Or, for a video run, give each video its own failpoints instead (set only
-# one of failpoints or failpoint_map). Keys are video names, with or without
-# the extension; videos left out get no failpoints.
-# failpoint_map = { "traintrack.mp4" = [[30, 10]], parking = [[5, 5], [60, 20]] }
 trials = 3 # Number of times to run each profile
+# Ambient only: the port and duration (s) of the iperf3 measurement. iperf3
+# must be installed here and on the vehicle's host, which is reached over ssh
+# with its daemon's prefix
+# iperf_port = 5201
+# iperf_duration = 30
 # Extra netsim flags, passed through as is (optional)
 # args = ["--direction", "egress", "--seed", "1"]
 
-# Each daemon's config is found by its name. For each profile, <name>_<profile>.toml
-# (e.g. fermi_normal.toml) is used if it exists; otherwise the config used for the
-# previous profile carries over, or, if there is none yet, <name>.toml.
+# A second experiment: everything above can be set again for it
+# [[experiments]]
+# name = "parking"
+# vehicle = "drone"
+# [experiments.video]
+# video = "parking.mp4"
+# push_as = "video.mp4"
+# flow = "flow.toml"
+# [experiments.netsim]
+# profiles = ["normal", "malicious"]
+# interface = "tailscale0"
+# port = 9001
+# failpoints = [[5, 5], [60, 20]]
+
+# Each daemon's config is found by its name and experiment. For each profile,
+# <name>_<experiment>_<profile>.toml
+# (e.g. fermi_onboard_track_normal.toml) is used if it exists; otherwise the
+# config used for the previous profile carries over, or, if there is none yet,
+# <name>_<experiment>.toml. If no toml can be found for that experiment, then
+# look for a plain <name>.toml.
 [daemons]
 [daemons.lambda2]
 orchestrator = true
