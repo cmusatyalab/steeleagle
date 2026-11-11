@@ -26,6 +26,7 @@ kilo*bytes* per second, so the script avoids it.)
 | `intermittent` |        0 |      100 | Drops to 0 (port off) on roughly 9% of draws      |
 | `denied`       |        0 |        0 | Port is always off                                |
 | `malicious`    |        0 |      100 | Intermittent, plus forced outages at `--failpoints` |
+| `outage`       |     2000 |     3000 | Normal, plus forced outages at `--failpoints`       |
 | `delay`        |        – |        – | Bandwidth unshaped; 0 – 300 ms of variable latency (see below) |
 
 `--min-kbps` and `--max-kbps` override a profile's bounds:
@@ -41,7 +42,7 @@ rounded to a whole number of Kbps. A result of 0 shuts the port off.
 
 | Profiles                         | shape | scale | Effect                                |
 |----------------------------------|------:|------:|---------------------------------------|
-| normal, limited, degraded        |   2.0 |   0.5 | Clusters around the middle of the range |
+| normal, limited, degraded, outage |   2.0 |   0.5 | Clusters around the middle of the range |
 | intermittent, malicious          |   0.6 |  0.25 | Piles up near 0, so the port drops out |
 
 `--shape` and `--scale` override these.
@@ -61,12 +62,12 @@ Lowering the delay lets newly sent packets overtake ones still held under the
 old delay, so TCP sees some reordering. The trace's kbps columns are empty,
 and `delay_ms` holds the delay; its state is `delay`.
 
-## Failpoints (malicious profile only)
+## Failpoints (malicious and outage profiles only)
 
 A failpoint is an `event_time:dead_time` pair in seconds from the start of the
 simulation. When the clock reaches `event_time`, the port is killed for
 `dead_time` seconds no matter what the distribution says. Afterwards the
-intermittent simulation takes over again.
+profile's usual simulation takes over again.
 
 There are three equivalent ways to give several failpoints:
 
@@ -89,9 +90,11 @@ Each of these kills the port from 30–40 s, 90–95 s and 150–170 s.
 - **Decimals work**, e.g. `12.5:0.75`.
 - **The final windows are printed at startup**, e.g. `failpoint windows (s): [30, 40), [90, 95), [150, 170)`.
 - **Draws keep going during a failpoint.** With the same `--seed`, the
-  underlying trace matches a plain `intermittent` run exactly.
-- Using `--failpoints` with any other profile is an error. `malicious` without
-  failpoints behaves like `intermittent` (with a warning).
+  underlying trace matches a plain `intermittent` (or, for `outage`, `normal`)
+  run exactly.
+- Using `--failpoints` with any other profile is an error. Without failpoints,
+  `malicious` behaves like `intermittent` and `outage` like `normal` (with a
+  warning).
 
 ## Options
 

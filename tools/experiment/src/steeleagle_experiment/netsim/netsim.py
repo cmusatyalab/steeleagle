@@ -13,6 +13,7 @@ Profiles (Kbps):
     intermittent     0 -  100
     denied           0 -    0
     malicious        intermittent, plus --failpoints
+    outage           normal, plus --failpoints
     delay            bandwidth unshaped; one-way latency of 0 - 300 ms
 
 The delay profile leaves the bandwidth alone and instead, every --interval
@@ -23,7 +24,8 @@ applies it to the port's traffic with a netem qdisc.
 --direction egress shapes outgoing traffic directly on the interface, using
 a second unthrottled class (ceiling --link-rate) for everything else on it.
 
-Failpoints (malicious only) are (event_time, dead_time) pairs in seconds.
+Failpoints (malicious and outage only) are (event_time, dead_time) pairs in
+seconds.
 """
 
 from __future__ import annotations
@@ -67,7 +69,11 @@ PROFILES: dict[str, Profile] = {
     "denied": Profile(0, 0, shape=1.0, scale=1.0),
 }
 PROFILES["malicious"] = PROFILES["intermittent"]
+PROFILES["outage"] = PROFILES["normal"]
 PROFILES["delay"] = Profile(0, 0, shape=1.0, scale=1.0, min_delay_ms=0, max_delay_ms=300)
+
+# Profiles that take --failpoints
+FAILPOINT_PROFILES = {"malicious", "outage"}
 
 NETEM_HANDLE = "10:"
 # netem's default queue of 1000 packets overflows at high rates with
@@ -818,7 +824,7 @@ def main() -> None:
         type=parse_failpoints,
         action="extend",
         default=None,
-        help="malicious only: '30:10,90:5' or '[[30,10],[90,5]]'",
+        help="malicious and outage only: '30:10,90:5' or '[[30,10],[90,5]]'",
     )
     ap.add_argument("--min-kbps", type=float, default=None)
     ap.add_argument("--max-kbps", type=float, default=None)
@@ -848,15 +854,16 @@ def main() -> None:
         args.scale is not None and args.scale <= 0
     ):
         die("--shape and --scale must be > 0")
-    if args.failpoints and args.profile != "malicious":
-        die("--failpoints only applies to --profile malicious")
+    if args.failpoints and args.profile not in FAILPOINT_PROFILES:
+        die("--failpoints only applies to --profile malicious or outage")
     if (
         args.min_delay_ms is not None or args.max_delay_ms is not None
     ) and not PROFILES[args.profile].is_delay:
         die("--min-delay-ms and --max-delay-ms only apply to --profile delay")
-    if args.profile == "malicious" and not args.failpoints:
+    if args.profile in FAILPOINT_PROFILES and not args.failpoints:
+        like = "intermittent" if args.profile == "malicious" else "normal"
         print(
-            "warning: malicious profile with no --failpoints behaves like intermittent",
+            f"warning: {args.profile} profile with no --failpoints behaves like {like}",
             file=sys.stderr,
         )
 

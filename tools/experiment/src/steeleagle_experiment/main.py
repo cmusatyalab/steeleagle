@@ -86,7 +86,8 @@ NONE = "none"
 AMBIENT = "ambient"
 NO_NETSIM = {NONE, AMBIENT}
 NETSIM_PROFILES = [
-    "normal", "limited", "degraded", "intermittent", "denied", "malicious", "delay", NONE, AMBIENT,
+    "normal", "limited", "degraded", "intermittent", "denied", "malicious", "outage", "delay",
+    NONE, AMBIENT,
 ]
 IPERF_PORT = 5201
 IPERF_DURATION = 30.0
@@ -250,7 +251,7 @@ class Experiment:
     interface: str
     port: int
     netsim_args: list[str]
-    failpoints: str  # netsim --failpoints value, used only by the malicious profile
+    failpoints: str  # netsim --failpoints value, used only by the malicious and outage profiles
     trials: int  # runs of each profile
     iperf_port: int  # ambient: port iperf3 measures the link on
     iperf_duration: float  # ambient: seconds iperf3 measures the link for
@@ -1301,7 +1302,7 @@ class Netsim:
             "--profile", profile, "--log", str(self.timeline),
             *exp.netsim_args,
         ]
-        if profile == "malicious" and exp.failpoints:
+        if profile in ("malicious", "outage") and exp.failpoints:
             cmd += ["--failpoints", exp.failpoints]
         if os.geteuid() != 0 and "--dry-run" not in exp.netsim_args:
             cmd = ["sudo", "-n"] + cmd

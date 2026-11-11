@@ -267,10 +267,10 @@ Each experiment has its own netsim settings.
 
 | Key          | Meaning                                                                                       |
 |--------------|-----------------------------------------------------------------------------------------------|
-| `profiles`   | Profiles to run, in order. `["*"]` runs all nine (see below)                                  |
+| `profiles`   | Profiles to run, in order. `["*"]` runs all ten (see below)                                   |
 | `interface`  | Interface netsim shapes, e.g. `tailscale0`                                                    |
 | `port`       | Port netsim shapes                                                                            |
-| `failpoints` | Outages for the `malicious` profile, as `[event_time, dead_time]` pairs in seconds            |
+| `failpoints` | Outages for the `malicious` and `outage` profiles, as `[event_time, dead_time]` pairs in seconds|
 | `trials`     | (optional) Times to run each profile, default `1`. Every trial runs before the next profile   |
 | `args`       | (optional) Extra netsim flags, passed through as is, e.g. `["--direction", "egress", "--seed", "1"]` |
 | `iperf_port` | (optional) `ambient` only: port iperf3 measures the link on, default `5201`                    |
@@ -286,6 +286,7 @@ The profiles, in the order `["*"]` runs them:
 | `intermittent` | 0 – 100, often dropping to 0             |
 | `denied`       | always 0                                 |
 | `malicious`    | like intermittent, plus `failpoints`     |
+| `outage`       | like normal, plus `failpoints`           |
 | `delay`        | unshaped, plus 0 – 300 ms of variable latency |
 | `none`         | unshaped: netsim isn't run               |
 | `ambient`      | like `none`, but measured with iperf3 first |
@@ -322,9 +323,11 @@ measuring, restart the vehicle with `eagle restart-service <vehicle>`.
 
 Each failpoint `[30, 10]` cuts the port off from 30 s to 40 s after the run
 starts, whatever the bandwidth draw says. Failpoints may be given in any order,
-and overlapping ones are merged into one outage. Only the `malicious` profile
-uses them. With no failpoints, `malicious` behaves like `intermittent` (netsim
-prints a warning).
+and overlapping ones are merged into one outage. Only the `malicious` and
+`outage` profiles use them: `malicious` adds them to intermittent's 0 – 100
+Kbps, and `outage` adds them to normal's 2000 – 3000 Kbps, for measuring an
+outage on an otherwise healthy link. With no failpoints, `malicious` behaves
+like `intermittent` and `outage` like `normal` (netsim prints a warning).
 
 ```toml
 failpoints = [[30, 10], [90, 5], [150, 20]]
