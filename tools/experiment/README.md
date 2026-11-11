@@ -85,7 +85,16 @@ through.
 | `-r, --recursive` | Run every experiment directory inside `path`                                |
 | `-e, --experiment NAME` | Run only the experiment named `NAME` (repeat for several). Not with `-r` |
 | `-l, --list`      | List the experiments in `path` (with `-r`, in each directory) and exit      |
+| `--update-packages` | Reinstall every package the daemons' configs use, once per daemon per run, to get a branch's latest code (see below) |
 | `--socket PATH`   | eagled's control socket (default: `$XDG_RUNTIME_DIR/steeleagle/eagled.sock`) |
+
+Before configuring a daemon, the runner installs any package its config uses
+that the daemon doesn't have, through the orchestrator. A package that is
+already installed is left alone, even if its branch has moved on since; with
+`--update-packages`, each one is reinstalled the first time a daemon is
+configured in the run, so it picks up the branch's latest code. Updated
+plugins rebuild their environments when the daemon restarts, which makes the
+first trial slower.
 
 ## sudo: run it as yourself, not as root
 
@@ -218,6 +227,19 @@ its video. The length comes from `ffprobe` if it is installed, or else from the
 header of an MP4/MOV file; if neither works, the experiment is rejected before
 it starts and you need to set `duration`. Setting `duration` (including `0`)
 overrides the video's length.
+
+A flow can name its engines by their bare service names (`rescale`,
+`verifier`), as in the daemon configs. uriel only finds an engine by the name
+its daemon serves it under, `<daemon ip>.<name>` (e.g.
+`100.101.84.40.rescale`), so before each trial the runner qualifies each bare
+name, and the edges with it, from the orchestrator's `ListServices`:
+
+- a `local` engine is the one of that name on the vehicle's daemon;
+- a `remote` engine is the only one of that name on any other daemon.
+
+A bare name with no such engine, or (remote) more than one, stops the trial
+before it starts, naming the engines it found. Names that are already
+qualified are sent as they are. The runner logs what it mapped each name to.
 
 #### `files`
 
@@ -380,6 +402,22 @@ A directory's contents are collected into `result/<name>/` (or
 leaves the emptied source directories in place. A source that matches nothing
 gives a warning, not an error.
 
+A result can instead be left on its host, to be transferred later, with
+`defer_pull`:
+
+```toml
+[results]
+dets_onboard = { path = "heisenberg/root/.local/share/steeleagle/files/detection_log/*", defer_pull = true }
+```
+
+Each of its files the trial added is renamed where it is to
+`<experiment>_<profile>_<trial>_<filename>`, e.g.
+`case_study_2_cop_delay_2_10002.jpg`, rather than pulled. Before each trial
+(before the daemons restart) the runner lists what the path holds, so only
+files written during the trial are renamed, and files from other trials or
+experiments are left as they are. A file whose new name is already taken is
+left unrenamed, with a warning.
+
 ## What a run does
 
 For each experiment, in order, for each profile in its `profiles`, and for
@@ -390,7 +428,8 @@ each of its `trials`:
    directory. Then each remote daemon gets its config for the experiment and
    profile, sent through the orchestrator once the remote has registered, and
    then the orchestrator gets its own config. Applying a config restarts the
-   daemon.
+   daemon. Before its config is replaced, each daemon's own config is saved
+   (see step 10).
 2. **Wait until ready.** The runner polls `ListServices` until every remote has
    re-registered and the vehicle is listed and running (5-minute timeout).
 3. **Measure** (`ambient` only). Stop the vehicle, measure the link with
@@ -398,17 +437,33 @@ each of its `trials`:
 4. **Prepare.** For a mission: upload it (unless `no_upload` is set) and load
    it on the vehicle.
 5. **Wait for you.** If `auto = false`: press ENTER to start the trial.
-6. **Start.** `StartMission`, or `SetDataflow` with the video's flow, then start netsim
+6. **Start.** `StartMission`, or `SetDataflow` with the video's flow (its bare
+   engine names qualified; see [`[[experiments]]`](#experiments)), then start netsim
    as soon as the vehicle answers (except under `none` and `ambient`).
 7. **Run** for `duration` seconds (for a video with no `duration`, the video's
    length), or until you press ENTER if it is `0`.
 8. **Stop.** For a mission: `Hold`, then `StopMission`. These are sent even if
    the run is interrupted. netsim is stopped with SIGINT, so it prints its byte
    totals and removes its `tc` rules.
-9. **Collect** results and catalogs, and write the statistics.
+9. **Collect** results and catalogs, and write the statistics. A
+   `defer_pull` result is renamed in place instead (see
+   [`[results]` and `[catalogs]`](#results-and-catalogs)).
+10. **Restore the daemons.** Each daemon is configured with its own config
+    again: the remotes through the orchestrator, then the orchestrator. That
+    restarts them, which also ends the trial's flow, so no engine (e.g. a
+    detection log) keeps working for it afterwards. This happens however the
+    trial ends: its duration is up, you press ENTER, Ctrl-C, an error, or the
+    runner is killed (SIGTERM, or SIGHUP when its ssh session drops).
 
 Because the daemons restart for every trial, nothing (a running flow, a
 loaded mission) carries over from one trial, profile or experiment to the next.
+
+Each daemon's own config is saved in
+`~/.local/state/steeleagle-experiment/original-configs/<daemon>.toml` from
+just before it is configured until it is restored. If a run dies before it
+can restore one (e.g. `kill -9`), the file stays, and the next run restores
+that config, rather than the experiment config it finds on the daemon, so it
+can also be restored by running the runner again.
 
 ## Output
 

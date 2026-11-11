@@ -94,6 +94,11 @@ ROUTE_HEADER = "x-route-key"
 CHUNK_SIZE = 1 << 20  # same chunk size as `eagle transfer-file`
 RPC_TIMEOUT = 60.0
 READY_TIMEOUT = 300.0
+# Where each daemon's own config is saved before an experiment config replaces
+# it, until it is restored after the trial. A run that dies before restoring
+# leaves it here, and the next run restores that config rather than saving the
+# experiment config it finds on the daemon.
+ORIGINALS_DIR = Path.home() / ".local" / "state" / "steeleagle-experiment" / "original-configs"
 # A package install downloads the package, which can be slow
 INSTALL_TIMEOUT = 600.0
 # How long a daemon may report that it failed to start its services before
@@ -250,6 +255,9 @@ class Experiment:
     files: list[PushFile] = field(default_factory=list)
     results: dict[str, str] = field(default_factory=dict)
     catalogs: dict[str, str] = field(default_factory=dict)
+    # results renamed in place after each trial, to be transferred later,
+    # rather than pulled
+    defer_pull: set[str] = field(default_factory=set)
 
     @property
     def orchestrator(self) -> DaemonCfg:
@@ -329,7 +337,26 @@ def load_experiments(exp_dir: Path, names: list[str] | None = None) -> list[Expe
     if sum(d.orchestrator for d in daemons.values()) != 1:
         raise ValueError(f"{exp_dir}: exactly one daemon must have orchestrator = true")
 
-    results = dict(raw.get("results", {}))
+    results: dict[str, str] = {}
+    defer_pull: set[str] = set()
+    for key, value in raw.get("results", {}).items():
+        if isinstance(value, dict):
+            unknown = set(value) - {"path", "defer_pull"}
+            if unknown or not isinstance(value.get("path"), str):
+                raise ValueError(
+                    f"{exp_dir}: results.{key} must be a path, or a table "
+                    f"{{ path = \"<daemon>/<path>\", defer_pull = true }}"
+                    + (f" (unknown keys {', '.join(sorted(unknown))})" if unknown else "")
+                )
+            if not isinstance(value.get("defer_pull", False), bool):
+                raise ValueError(f"{exp_dir}: results.{key}.defer_pull must be true or false")
+            results[key] = value["path"]
+            if value.get("defer_pull", False):
+                defer_pull.add(key)
+        elif isinstance(value, str):
+            results[key] = value
+        else:
+            raise ValueError(f"{exp_dir}: results.{key} must be a path or a table")
     catalogs = dict(raw.get("catalogs", {}))
     for table in (results, catalogs):
         for key, src in table.items():
@@ -337,12 +364,12 @@ def load_experiments(exp_dir: Path, names: list[str] | None = None) -> list[Expe
             if host not in daemons:
                 raise ValueError(f"{exp_dir}: {key} = {src!r} names unknown daemon {host!r}")
 
-    return [parse_experiment(exp_dir, t, daemons, results, catalogs) for t in tables]
+    return [parse_experiment(exp_dir, t, daemons, results, catalogs, defer_pull) for t in tables]
 
 
 def parse_experiment(
     exp_dir: Path, exp: dict, daemons: dict[str, DaemonCfg],
-    results: dict[str, str], catalogs: dict[str, str],
+    results: dict[str, str], catalogs: dict[str, str], defer_pull: set[str],
 ) -> Experiment:
     """Parses one [[experiments]] table."""
     name = exp["name"]
@@ -468,7 +495,7 @@ def parse_experiment(
     return Experiment(
         exp_dir, name, vehicle, phase, list(profiles), ns["interface"], int(ns["port"]),
         netsim_args, failpoints, trials, iperf_port, float(iperf_duration),
-        daemons, configs, files, results, catalogs,
+        daemons, configs, files, results, catalogs, defer_pull,
     )
 
 
@@ -637,6 +664,12 @@ class Daemon:
 
     def list_services(self, timeout: float = 10.0) -> daemon_pb2.ListServicesResponse:
         return self.daemon.ListServices(daemon_pb2.ListServicesRequest(), timeout=timeout)
+
+    def get_configuration(self, route: str | None = None) -> str:
+        resp = self.daemon.GetConfiguration(
+            daemon_pb2.GetConfigurationRequest(), metadata=self.route(route), timeout=RPC_TIMEOUT,
+        )
+        return resp.config_toml.decode()
 
     def configure(self, toml_text: str, route: str | None = None) -> None:
         self.daemon.Configure(
@@ -811,19 +844,87 @@ def config_packages(config: Path) -> list[str]:
     return sorted({u for u in uris if u})
 
 
+# --update-packages: reinstall every package a daemon's configs use, once per
+# run, so one installed from a branch gets that branch's latest code
+UPDATE_PACKAGES = False
+# (daemon key, package uri) installed or updated in this run
+_installed: set[tuple[str, str]] = set()
+
+
 def install_packages(client: Daemon, key: str, config: Path, route: str | None = None) -> None:
-    """Installs the packages config uses that daemon key doesn't have yet.
+    """Installs the packages config uses that daemon key doesn't have yet,
+    or, with UPDATE_PACKAGES, every one it uses, the first time in this run.
     They take effect on the restart that configuring it causes."""
-    needed = config_packages(config)
+    needed = [u for u in config_packages(config) if (key, u) not in _installed]
     if not needed:
         return
-    missing = [u for u in needed if u not in client.list_packages(route)]
-    for uri in missing:
-        log(f"installing {uri} on {key}")
+    have = client.list_packages(route)
+    for uri in needed:
+        if uri in have and not UPDATE_PACKAGES:
+            continue
+        log(f"{'updating' if uri in have else 'installing'} {uri} on {key}")
         try:
             client.install_package(uri, route)
         except grpc.RpcError as e:
             raise RuntimeError(f"couldn't install {uri} on {key}: {e.details()}") from None
+        _installed.add((key, uri))
+
+
+def config_services(config: Path) -> set[str]:
+    """The names of the services a daemon config runs."""
+    with open(config, "rb") as f:
+        raw = tomllib.load(f)
+    return {s["name"] for s in raw.get("services", []) if s.get("name")}
+
+
+def start_stopped_services(client: Daemon, exp: Experiment, profile: str, timeout: float = READY_TIMEOUT) -> None:
+    """Restarts the services of the experiment's daemon configs that are
+    stopped by request (with StopService, e.g. `eagle stop-service`), which
+    they stay across restarts and reconfigures, and waits for them to run.
+    Other daemons registered with the orchestrator are left alone."""
+    resp = client.list_services()
+    remote_ips = {r.ip for r in resp.remotes if r.ip}
+    # The qualifier of each of the experiment's daemons' services
+    owners: dict[str, str] = {}
+    for d in exp.remotes:
+        listed = find_remote(resp, d, include_failed=True)
+        if listed is not None:
+            owners[listed.ip] = d.key
+    wanted: list[str] = []
+    for svc in resp.services:
+        if not svc.stopped:
+            continue
+        ip = next((i for i in remote_ips if svc.name.startswith(i + ".")), None)
+        if ip is None:
+            key, base = exp.orchestrator.key, svc.name.split(".")[-1]
+        elif ip in owners:
+            key, base = owners[ip], svc.name[len(ip) + 1:]
+        else:
+            continue  # a daemon this experiment doesn't use
+        if base in config_services(exp.configs[profile][key]):
+            wanted.append(svc.name)
+    if not wanted:
+        return
+    for name in wanted:
+        log(f"starting {name}, which was stopped by request")
+        client.restart_service(name)
+    deadline = time.monotonic() + timeout
+    next_progress = time.monotonic() + PROGRESS_INTERVAL
+    while True:
+        try:
+            listed = {s.name: s for s in client.list_services().services}
+        except grpc.RpcError:
+            listed = {}
+        waiting = [n for n in wanted if not (n in listed and listed[n].running)]
+        if not waiting:
+            return
+        if time.monotonic() > deadline:
+            errors = "; ".join(f"{n}: {listed[n].error or 'not running'}" if n in listed else f"{n}: not listed" for n in waiting)
+            raise TimeoutError(f"service(s) not running after {timeout:.0f}s: {errors}")
+        if time.monotonic() >= next_progress:
+            log(f"still waiting for {', '.join(waiting)} to run")
+            next_progress = time.monotonic() + PROGRESS_INTERVAL
+        time.sleep(1)
 
 
 def wait_registered(client: Daemon, d: DaemonCfg, timeout: float = READY_TIMEOUT):
@@ -853,19 +954,84 @@ def wait_registered(client: Daemon, d: DaemonCfg, timeout: float = READY_TIMEOUT
 def configure_daemons(client: Daemon, exp: Experiment, profile: str) -> None:
     """Restarts each remote, then the orchestrator, with its config for the
     profile, first installing any packages the config needs that the daemon
-    doesn't have. A remote is locked to the orchestrator, so it is configured
-    through it, once it has registered."""
+    doesn't have, and saving the daemon's own config for restore_configs. A
+    remote is locked to the orchestrator, so it is configured through it, once
+    it has registered."""
     configs = exp.configs[profile]
     for d in exp.remotes:
         config = configs[d.key]
         remote = wait_registered(client, d)
+        save_original(client, d.key, route=remote.ip)
         install_packages(client, d.key, config, route=remote.ip)
         log(f"configuring remote {d.key} ({remote.ip}) through the orchestrator with {config.name}")
         client.configure(config.read_text(), route=remote.ip)
     o = exp.orchestrator
+    save_original(client, o.key)
     install_packages(client, o.key, configs[o.key])
     log(f"configuring orchestrator {o.key} with {configs[o.key].name}")
     client.configure(configs[o.key].read_text())
+
+
+def original_path(key: str) -> Path:
+    return ORIGINALS_DIR / f"{key}.toml"
+
+
+def save_original(client: Daemon, key: str, route: str | None = None) -> None:
+    """Saves daemon key's config, before an experiment config replaces it,
+    unless a run that didn't restore it already saved it."""
+    path = original_path(key)
+    if path.exists():
+        log(f"{key}'s own config is still saved from a run that didn't restore it ({path}); keeping it")
+        return
+    text = client.get_configuration(route)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(text)
+    tmp.replace(path)
+    log(f"saved {key}'s own config to {path}")
+
+
+def restore_configs(client: Daemon, exp: Experiment) -> None:
+    """Configures each daemon whose own config was saved with it again, the
+    remotes first, through the orchestrator, then the orchestrator, and waits
+    for them to come back. That also ends the trial's flow or mission, so no
+    engine keeps working (or logging) for it. A config that can't be restored
+    stays saved, for the next run to restore."""
+    remotes = [d for d in exp.remotes if original_path(d.key).exists()]
+    o = exp.orchestrator
+    if not remotes and not original_path(o.key).exists():
+        return
+    restored: list[DaemonCfg] = []
+    for d in remotes:
+        path = original_path(d.key)
+        try:
+            remote = wait_registered(client, d, timeout=60)
+            log(f"restoring remote {d.key}'s own config through the orchestrator")
+            client.configure(path.read_text(), route=remote.ip)
+            path.unlink()
+            restored.append(d)
+        except (grpc.RpcError, TimeoutError, OSError) as e:
+            details = f"{e.code().name} {e.details()}" if isinstance(e, grpc.RpcError) else str(e)
+            log(f"warning: couldn't restore {d.key}'s own config ({details}); it is still saved in {path}")
+    path = original_path(o.key)
+    if path.exists():
+        try:
+            log(f"restoring orchestrator {o.key}'s own config")
+            client.configure(path.read_text())
+            path.unlink()
+            restored.append(o)
+        except (grpc.RpcError, OSError) as e:
+            details = f"{e.code().name} {e.details()}" if isinstance(e, grpc.RpcError) else str(e)
+            log(f"warning: couldn't restore {o.key}'s own config ({details}); it is still saved in {path}")
+    if not restored:
+        return
+    time.sleep(2)  # let a restarting daemon go down before polling it
+    try:
+        for d in exp.remotes:
+            wait_registered(client, d)
+        log("daemons are back on their own configs")
+    except TimeoutError as e:
+        log(f"warning: {e}")
 
 
 def push_files(client: Daemon, exp: Experiment) -> None:
@@ -913,6 +1079,71 @@ def push_files(client: Daemon, exp: Experiment) -> None:
 # --------------------------------------------------------------------------
 # File collection
 # --------------------------------------------------------------------------
+
+
+def result_files(exp: Experiment, src: str) -> tuple[DaemonCfg, list[str]]:
+    """The daemon whose host holds result src, and the paths of the files
+    (or directories) it names there: those its glob matches, or a
+    directory's entries, as they are collected."""
+    host, _, rest = src.partition("/")
+    d = exp.daemons[host]
+    path = "/" + rest
+    if not d.prefix:
+        if glob.has_magic(path):
+            return d, sorted(glob.glob(path))
+        if os.path.isdir(path):
+            return d, sorted(os.path.join(path, n) for n in os.listdir(path) if not n.startswith("."))
+        return d, [path] if os.path.exists(path) else []
+    if glob.has_magic(path):
+        expand = f"set -- {path}"  # the remote shell expands the glob
+    else:
+        q = shlex.quote(path)
+        expand = f"if [ -d {q} ]; then set -- {q}/*; else set -- {q}; fi"
+    script = f'{expand}; for f in "$@"; do [ -e "$f" ] && printf "%s\\0" "$f"; done; true'
+    r = subprocess.run(ssh(d.ssh_host, script), capture_output=True, check=True)
+    return d, sorted(p for p in r.stdout.decode().split("\0") if p)
+
+
+def deferred_files(exp: Experiment) -> dict[str, set[str]]:
+    """The files each defer_pull result names now, before a trial, so that only
+    the ones the trial adds are renamed after it."""
+    return {key: set(result_files(exp, exp.results[key])[1]) for key in sorted(exp.defer_pull)}
+
+
+def defer_pull(exp: Experiment, key: str, before: set[str], profile: str, trial: int) -> None:
+    """Renames the files result key gained during the trial, where they are,
+    to <experiment>_<profile>_<trial>_<name>, to be transferred later. A file
+    whose new name is taken is left as it is, with a warning."""
+    d, paths = result_files(exp, exp.results[key])
+    prefix = f"{exp.name}_{profile}_{trial}_"
+    renames = [(p, os.path.join(os.path.dirname(p), prefix + os.path.basename(p))) for p in paths if p not in before]
+    if not renames:
+        log(f"warning: {key} has no new files on {d.key} to rename")
+        return
+    if d.prefix:
+        script = "".join(
+            f"if [ -e {shlex.quote(new)} ]; then echo {shlex.quote(new)}; else mv -- {shlex.quote(old)} {shlex.quote(new)}; fi\n"
+            for old, new in renames
+        )
+        # Sent on stdin, since a long list of files can be over the command
+        # line's limit
+        r = subprocess.run(ssh(d.ssh_host, "sh -s"), input=script.encode(), capture_output=True)
+        if r.returncode != 0:
+            raise RuntimeError(f"renaming {key} on {d.key} failed: {r.stderr.decode().strip()}")
+        taken = [line for line in r.stdout.decode().splitlines() if line]
+    else:
+        taken = []
+        for old, new in renames:
+            if os.path.exists(new):
+                taken.append(new)
+            else:
+                os.rename(old, new)
+    log(
+        f"deferred {key}: renamed {len(renames) - len(taken)} file(s) on {d.key} "
+        f"to {os.path.dirname(renames[0][1])}/{prefix}*, to be transferred later"
+    )
+    if taken:
+        log(f"warning: {len(taken)} file(s) of {key} weren't renamed, since their new name is taken (e.g. {taken[0]})")
 
 
 def rsync(exp: Experiment, src: str, dest: Path, move: bool) -> None:
@@ -1162,6 +1393,74 @@ def wait_for(duration: float, what: str) -> float:
     return time.monotonic() - t0
 
 
+def toml_value(v) -> str:
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if isinstance(v, (int, float)):
+        return repr(v)
+    if isinstance(v, str):
+        return json.dumps(v)  # a JSON string is a valid TOML basic string
+    raise ValueError(f"can't write {v!r} into a flow")
+
+
+def flow_toml(flow: dict) -> bytes:
+    """A flow (its arrays of tables of scalars) as TOML."""
+    lines = []
+    for key, tables in flow.items():
+        if not isinstance(tables, list) or not all(isinstance(t, dict) for t in tables):
+            raise ValueError(f"flow key {key!r} isn't an array of tables")
+        for t in tables:
+            lines.append(f"[[{key}]]")
+            lines += [f"{k} = {toml_value(v)}" for k, v in t.items()]
+            lines.append("")
+    return "\n".join(lines).encode()
+
+
+def qualify_flow(client: Daemon, flow_bytes: bytes, vehicle: str) -> bytes:
+    """The flow with each bare engine name replaced by the qualified name of
+    the engine service that runs it, as uriel needs: for a local engine, the
+    one on the vehicle's daemon (<vehicle's ip>.<name>), and for a remote
+    engine, the only one of that name on another daemon. Edges are renamed to
+    match. A name that is already a service's is kept, as is any name with a
+    dot in it; a bare name that matches no engine, or more than one, is an
+    error."""
+    flow = tomllib.loads(flow_bytes.decode())
+    engines = [
+        s.name for s in client.list_services().services
+        if s.category == daemon_pb2.SERVICE_CATEGORY_ENGINE
+    ]
+    vehicle_ip = vehicle.rsplit(".", 1)[0]
+    names: dict[str, str] = {}
+    for e in flow.get("engines", []):
+        name, location = e.get("name", ""), e.get("location", "local")
+        if name in engines or "." in name:
+            continue
+        if location == "local":
+            matches = [n for n in engines if n == f"{vehicle_ip}.{name}"]
+            where = f"on the vehicle's daemon ({vehicle_ip})"
+        else:
+            matches = [n for n in engines if n.endswith("." + name) and not n.startswith(vehicle_ip + ".")]
+            where = "on a daemon other than the vehicle's"
+        if len(matches) != 1:
+            found = ", ".join(n for n in engines if n.endswith("." + name)) or "none"
+            raise RuntimeError(
+                f"{location} engine {name!r} of the flow: "
+                + ("no engine service of that name runs " if not matches else f"{len(matches)} engine services of that name run ")
+                + f"{where} (engines named {name!r}: {found})"
+            )
+        names[name] = matches[0]
+    if not names:
+        return flow_bytes
+    for e in flow.get("engines", []):
+        e["name"] = names.get(e["name"], e["name"])
+    for edge in flow.get("edges", []):
+        for end in ("from", "to"):
+            if end in edge:
+                edge[end] = names.get(edge[end], edge[end])
+    log("flow engines: " + ", ".join(f"{k} -> {v}" for k, v in names.items()))
+    return flow_toml(flow)
+
+
 def new_run_dir(exp: Experiment, profile: str) -> Path:
     run_dir = exp.dir / "runs" / exp.name / profile
     if run_dir.exists():
@@ -1170,15 +1469,24 @@ def new_run_dir(exp: Experiment, profile: str) -> Path:
     return run_dir
 
 
-def cleanup(exp: Experiment, run_dir: Path, trial_dir: Path, netsim: Netsim, label: str, trial: int, wall_sec: float) -> None:
+def cleanup(
+    exp: Experiment, run_dir: Path, trial_dir: Path, netsim: Netsim, label: str, profile: str, trial: int,
+    wall_sec: float, deferred_before: dict[str, set[str]], started: bool = True,
+) -> None:
     netsim.stop()
     for key, src in exp.results.items():
+        if key in exp.defer_pull:
+            defer_pull(exp, key, deferred_before.get(key, set()), profile, trial)
+            continue
         log(f"moving {key} from {src}")
         rsync(exp, src, trial_dir / "result" / key, move=True)
     for key, src in exp.catalogs.items():
         log(f"copying {key} from {src}")
         rsync(exp, src, trial_dir / "catalog" / key, move=False)
-    write_stats(run_dir, netsim, label, trial, wall_sec)
+    if started:
+        write_stats(run_dir, netsim, label, trial, wall_sec)
+    else:
+        log("the trial didn't start, so no stats are written for it")
     log(f"trial saved to {trial_dir}")
 
 
@@ -1311,9 +1619,13 @@ def run_iperf(exp: Experiment, host: DaemonCfg, ip: str, trial_dir: Path) -> dic
     return report
 
 
-def run_trial(client: Daemon, exp: Experiment, vehicle: str, profile: str, run_dir: Path, trial: int) -> None:
+def run_trial(
+    client: Daemon, exp: Experiment, vehicle: str, profile: str, run_dir: Path, trial: int,
+    deferred_before: dict[str, set[str]],
+) -> None:
     """Runs one trial into run_dir/trial_<n>, adding its stats to
-    run_dir/stats_<profile>_<experiment>.csv."""
+    run_dir/stats_<profile>_<experiment>.csv. deferred_before is what each
+    defer_pull result held before the trial (deferred_files)."""
     phase = exp.phase
     label = f"{profile}_{exp.name}"
     trial_dir = run_dir / f"trial_{trial}"
@@ -1334,16 +1646,18 @@ def run_trial(client: Daemon, exp: Experiment, vehicle: str, profile: str, run_d
             log(f"uploading and loading {phase.file.name} on {vehicle}")
             client.upload_mission(phase.file, vehicle)
         client.load_mission(phase.file.name, vehicle)
-    flow = phase.file.read_bytes() if phase.kind == "video" else b""
+    flow = qualify_flow(client, phase.file.read_bytes(), vehicle) if phase.kind == "video" else b""
     if not phase.auto:
         input(f"[{exp.name} {profile} {trial}/{exp.trials}] Press ENTER to start the {phase.kind}... ")
 
     wall = 0.0
+    started = False
     try:
         if phase.kind == "mission":
             client.start_mission(vehicle)
         else:
             client.set_dataflow(flow, vehicle)
+        started = True
         netsim.start()
         log(f"{phase.kind} started")
         wall = wait_for(phase.duration, f"{phase.kind} under {what}")
@@ -1355,7 +1669,7 @@ def run_trial(client: Daemon, exp: Experiment, vehicle: str, profile: str, run_d
                     log(f"{name} sent")
                 except grpc.RpcError as e:
                     log(f"warning: {name} failed: {e.code().name} {e.details()}")
-        cleanup(exp, run_dir, trial_dir, netsim, label, trial, wall)
+        cleanup(exp, run_dir, trial_dir, netsim, label, profile, trial, wall, deferred_before, started)
 
 
 def run_experiment(client: Daemon, exp: Experiment) -> None:
@@ -1377,12 +1691,21 @@ def run_experiment(client: Daemon, exp: Experiment) -> None:
             # Pushed before the daemons restart, so the vehicle's driver
             # finds the files and video when it starts, even if the previous
             # trial's result collection moved them away
-            push_files(client, exp)
-            configure_daemons(client, exp, profile)
-            time.sleep(2)  # let the orchestrator go down before polling it
-            vehicle = client.wait_ready(exp.vehicle, exp.remotes)
-            log(f"daemons ready; targeting {vehicle}")
-            run_trial(client, exp, vehicle, profile, run_dir, trial)
+            # However the trial ends (its duration is up, ENTER, Ctrl-C or
+            # an error), each daemon gets its own config back
+            try:
+                # Taken before the daemons restart, since an engine may
+                # write its files as soon as it starts
+                deferred_before = deferred_files(exp)
+                push_files(client, exp)
+                configure_daemons(client, exp, profile)
+                time.sleep(2)  # let the orchestrator go down before polling it
+                vehicle = client.wait_ready(exp.vehicle, exp.remotes)
+                start_stopped_services(client, exp, profile)
+                log(f"daemons ready; targeting {vehicle}")
+                run_trial(client, exp, vehicle, profile, run_dir, trial, deferred_before)
+            finally:
+                restore_configs(client, exp)
         log(f"profile {profile} saved to {run_dir}")
     log(f"experiment {exp.name} saved to {exp.dir / 'runs' / exp.name}")
 
@@ -1428,8 +1751,15 @@ def main():
         "-l", "--list", action="store_true",
         help="list the experiments in path's experiment.toml (with -r, in each directory) and exit",
     )
+    ap.add_argument(
+        "--update-packages", action="store_true",
+        help="reinstall every package the daemons' configs use, once per daemon per run, "
+        "to get a branch's latest code (missing packages are always installed)",
+    )
     ap.add_argument("--socket", default=default_socket(), help="daemon control socket (default: %(default)s)")
     args = ap.parse_args()
+    global UPDATE_PACKAGES
+    UPDATE_PACKAGES = args.update_packages
     if args.recursive and args.experiments:
         ap.error("-e picks experiments in one directory's experiment.toml; it can't be used with -r")
 
@@ -1463,6 +1793,10 @@ def main():
     # Ask for each remote's ssh password now too, once
     open_ssh(sorted({d.ssh_host for e in exps for d in e.remotes if d.ssh_host}))
 
+    # A kill or a dropped ssh session exits through the finally blocks too, so
+    # netsim is stopped and the daemons get their own configs back
+    for sig in (signal.SIGTERM, signal.SIGHUP):
+        signal.signal(sig, lambda signum, _: sys.exit(128 + signum))
     client = Daemon(args.socket)
     for e in exps:
         run_experiment(client, e)
