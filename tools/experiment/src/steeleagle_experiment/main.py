@@ -94,6 +94,13 @@ ROUTE_HEADER = "x-route-key"
 CHUNK_SIZE = 1 << 20  # same chunk size as `eagle transfer-file`
 RPC_TIMEOUT = 60.0
 READY_TIMEOUT = 300.0
+# A package install downloads the package, which can be slow
+INSTALL_TIMEOUT = 600.0
+# How long a daemon may report that it failed to start its services before
+# the wait for it gives up, in case the report is from before its restart
+START_FAILURE_GRACE = 15.0
+# How often a wait says what it is still waiting for
+PROGRESS_INTERVAL = 15.0
 # Daemon files directory (STEELEAGLE_FILES) relative to the home directory,
 # for rsyncing a video to a remote that isn't registered
 REMOTE_FILES_DIR = ".local/share/steeleagle/files/"
@@ -639,28 +646,68 @@ class Daemon:
 
     def wait_ready(self, vehicle: str, remotes: list[DaemonCfg], timeout: float = READY_TIMEOUT) -> str:
         """Waits until ListServices answers, every remote is registered and the
-        vehicle is running. Returns the vehicle's qualified name."""
-        deadline = time.monotonic() + timeout
+        vehicle is running. Returns the vehicle's qualified name. Says what it
+        is waiting for every PROGRESS_INTERVAL seconds, and gives up early if
+        a daemon keeps reporting that it failed to start its services."""
+        start = time.monotonic()
+        deadline = start + timeout
+        next_progress = start + PROGRESS_INTERVAL
+        failing_since: float | None = None
         last = "daemon not reachable"
         while time.monotonic() < deadline:
+            failed = None
             try:
                 resp = self.list_services()
             except grpc.RpcError as e:
                 last = f"ListServices: {e.code().name} {e.details()}"
-                time.sleep(1)
-                continue
-            missing = [r.key for r in remotes if find_remote(resp, r) is None]
-            svc = find_vehicle(resp, vehicle)
-            if missing:
-                last = f"remote daemon(s) not registered: {', '.join(missing)}"
-            elif svc is None:
-                last = f"vehicle {vehicle!r} not listed"
-            elif not svc.running:
-                last = f"vehicle {svc.name!r} not running" + (f" ({svc.error})" if svc.error else "")
-            else:
-                return svc.name
+                if is_start_failure(e.details()):
+                    failed = f"orchestrator: {e.details()}"
+                resp = None
+            if resp is not None:
+                missing = []
+                for r in remotes:
+                    listed = find_remote(resp, r, include_failed=True)
+                    if listed is None:
+                        missing.append(r.key)
+                    elif listed.error:
+                        missing.append(f"{r.key} ({listed.error})")
+                        if is_start_failure(listed.error):
+                            failed = f"remote {r.key}: {listed.error}"
+                svc = find_vehicle(resp, vehicle)
+                if missing:
+                    last = f"remote daemon(s) not available: {', '.join(missing)}"
+                elif svc is None:
+                    last = f"vehicle {vehicle!r} not listed"
+                elif not svc.running:
+                    last = f"vehicle {svc.name!r} not running" + (f" ({svc.error})" if svc.error else "")
+                else:
+                    return svc.name
+            now = time.monotonic()
+            if failed is None:
+                failing_since = None
+            elif failing_since is None:
+                failing_since = now
+            elif now - failing_since >= START_FAILURE_GRACE:
+                raise RuntimeError(f"daemon failed to start: {failed}")
+            if now >= next_progress:
+                log(f"still waiting for the daemons ({now - start:.0f}s): {last}")
+                next_progress = now + PROGRESS_INTERVAL
             time.sleep(1)
         raise TimeoutError(f"daemon not ready after {timeout:.0f}s: {last}")
+
+    def list_packages(self, route: str | None = None) -> set[str]:
+        """The uris of the packages installed on the daemon, or, with a route,
+        that remote daemon, including those pending its next restart."""
+        resp = self.daemon.ListPackages(
+            daemon_pb2.ListPackagesRequest(), metadata=self.route(route), timeout=RPC_TIMEOUT,
+        )
+        return {p.uri for p in resp.packages}
+
+    def install_package(self, uri: str, route: str | None = None) -> None:
+        """Installs a package, which takes effect on the daemon's next restart."""
+        self.daemon.InstallPackage(
+            daemon_pb2.InstallPackageRequest(uri=uri), metadata=self.route(route), timeout=INSTALL_TIMEOUT,
+        )
 
     def _send_chunks(
         self, call, request_type, path: Path, route: str | None, what: str, timeout: float,
@@ -739,11 +786,44 @@ def find_vehicle(resp: daemon_pb2.ListServicesResponse, vehicle: str):
     return matches[0] if matches else None
 
 
-def find_remote(resp: daemon_pb2.ListServicesResponse, d: DaemonCfg):
+def find_remote(resp: daemon_pb2.ListServicesResponse, d: DaemonCfg, include_failed: bool = False):
+    """The registered remote d, matched by its hostname. A remote whose
+    services can't be listed (it failed to start them, say) is left out,
+    unless include_failed; it can still be configured."""
     for r in resp.remotes:
-        if not r.error and r.hostname in (d.key, d.hostname):
+        if (include_failed or not r.error) and r.hostname in (d.key, d.hostname):
             return r
     return None
+
+
+def is_start_failure(error: str) -> bool:
+    """Whether a daemon's error says it failed to start its services, which
+    lasts until it is reconfigured."""
+    return "failed to start services" in error
+
+
+def config_packages(config: Path) -> list[str]:
+    """The package uris a daemon config's services (and simulator) use."""
+    with open(config, "rb") as f:
+        raw = tomllib.load(f)
+    uris = [s.get("plugin", {}).get("package", "") for s in raw.get("services", [])]
+    uris.append(raw.get("simulator", {}).get("package", ""))
+    return sorted({u for u in uris if u})
+
+
+def install_packages(client: Daemon, key: str, config: Path, route: str | None = None) -> None:
+    """Installs the packages config uses that daemon key doesn't have yet.
+    They take effect on the restart that configuring it causes."""
+    needed = config_packages(config)
+    if not needed:
+        return
+    missing = [u for u in needed if u not in client.list_packages(route)]
+    for uri in missing:
+        log(f"installing {uri} on {key}")
+        try:
+            client.install_package(uri, route)
+        except grpc.RpcError as e:
+            raise RuntimeError(f"couldn't install {uri} on {key}: {e.details()}") from None
 
 
 def wait_registered(client: Daemon, d: DaemonCfg, timeout: float = READY_TIMEOUT):
@@ -754,7 +834,7 @@ def wait_registered(client: Daemon, d: DaemonCfg, timeout: float = READY_TIMEOUT
     last = "not listed"
     while True:
         try:
-            remote, last = find_remote(client.list_services(), d), "not listed"
+            remote, last = find_remote(client.list_services(), d, include_failed=True), "not listed"
         except grpc.RpcError as e:
             remote, last = None, f"ListServices: {e.code().name} {e.details()}"
         if remote is not None:
@@ -772,15 +852,18 @@ def wait_registered(client: Daemon, d: DaemonCfg, timeout: float = READY_TIMEOUT
 
 def configure_daemons(client: Daemon, exp: Experiment, profile: str) -> None:
     """Restarts each remote, then the orchestrator, with its config for the
-    profile. A remote is locked to the orchestrator, so it is configured
+    profile, first installing any packages the config needs that the daemon
+    doesn't have. A remote is locked to the orchestrator, so it is configured
     through it, once it has registered."""
     configs = exp.configs[profile]
     for d in exp.remotes:
         config = configs[d.key]
         remote = wait_registered(client, d)
+        install_packages(client, d.key, config, route=remote.ip)
         log(f"configuring remote {d.key} ({remote.ip}) through the orchestrator with {config.name}")
         client.configure(config.read_text(), route=remote.ip)
     o = exp.orchestrator
+    install_packages(client, o.key, configs[o.key])
     log(f"configuring orchestrator {o.key} with {configs[o.key].name}")
     client.configure(configs[o.key].read_text())
 
