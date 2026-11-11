@@ -126,6 +126,7 @@ other may be left out, or kept with its files set to `""`.
 | `file` (mission)     | Mission file in the experiment directory                                                 |
 | `video` (video)      | Video file, or list of video files, in the experiment directory                          |
 | `push_as` (video)    | Name each video is pushed as (optional; defaults to the video's own name)                |
+| `no_upload` (video)  | `true`: don't push the videos; they're assumed to already be on every daemon (see below) |
 | `flow` (video)       | Flow file in the experiment directory, sent with `SetDataflow` to start each trial       |
 | `auto`               | `false`: press ENTER to start each trial. `true`: start right away                       |
 | `duration`           | Seconds to run each trial. `0`: run until you press ENTER. For a mission, defaults to `0`; for a video, defaults to the video's length (see below) |
@@ -141,6 +142,13 @@ with rsync if a remote isn't registered. A driver such as `fake_drone` then
 finds it by name. With several videos, set `push_as` (e.g. `"video.mp4"`) so
 every video lands under that one name, and set the driver's `video` arg to it;
 otherwise each video keeps its own name and the driver's arg must match it.
+
+With `no_upload = true`, the videos are not pushed at all: each is assumed to
+already be in `STEELEAGLE_FILES` on the orchestrator and every remote, under
+its own name. The names in `video` then only label the runs, so the files need
+not be in the experiment directory; but if one isn't, its length can't be
+found, so `duration` must be set. `push_as` can't be combined with it. The
+experiment's `files` are still pushed.
 
 If a video experiment leaves `duration` out, each trial runs for the length of
 its video, so with several videos each one gets its own duration. The length
@@ -280,7 +288,7 @@ For each experiment, for each profile in `profiles`, for each video (for a
 video experiment), and for each of the `trials`:
 
 1. **Restart the daemons.** The experiment's `files`, and its video if it has
-   one, are first pushed to every daemon's files directory. Then each remote daemon gets its config
+   one (unless `no_upload` is set), are first pushed to every daemon's files directory. Then each remote daemon gets its config
    for the profile, sent through the orchestrator (or over ssh if it isn't
    registered), and then the orchestrator gets its own config. Applying a
    config restarts the daemon.

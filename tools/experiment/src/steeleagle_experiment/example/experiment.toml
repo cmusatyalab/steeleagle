@@ -25,6 +25,11 @@ video = "" # or e.g. ["traintrack.mp4", "parking.mp4"]
 # Name every video is pushed as, so the driver's video arg can stay fixed
 # (set it to this name). If empty, each video keeps its own name.
 push_as = "" # e.g. "video.mp4"
+# If true, the videos are not pushed: each is assumed to already be in every
+# daemon's files directory under its own name, and need not be in the
+# experiment directory (but then duration must be set, unless it is there to
+# find its length). push_as can't be used with it.
+no_upload = false
 # The flow to send to start the experiment; required with video
 flow = ""
 # Whether or not to prompt ENTER to start

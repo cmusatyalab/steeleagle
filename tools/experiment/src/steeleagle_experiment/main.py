@@ -114,6 +114,9 @@ class Phase:
     # every daemon under push_as, if set, or its own name
     videos: list[Path] = field(default_factory=list)
     push_as: str = ""
+    # no_upload: the videos are not pushed, and are assumed to already be in
+    # every daemon's files directory under their own names
+    no_upload: bool = False
     video_durations: dict[Path, float] = field(default_factory=dict)
 
     def duration_for(self, video: Path | None) -> float:
@@ -223,7 +226,16 @@ def load_experiment(exp_dir: Path) -> Experiment:
             names = [names]
         if not isinstance(names, list) or not all(isinstance(n, str) and n for n in names):
             raise ValueError(f"{exp_dir}: experiment.video.video must be a file name or a list of them")
-        videos = [exp_file("video", "video", n) for n in names]
+        no_upload = sect.get("no_upload", False)
+        if not isinstance(no_upload, bool):
+            raise ValueError(f"{exp_dir}: experiment.video.no_upload must be true or false, not {no_upload!r}")
+        if no_upload:
+            # Not pushed, so they need not exist here; only their names are used
+            if any("/" in n for n in names):
+                raise ValueError(f"{exp_dir}: with no_upload, experiment.video.video must be file names, not paths")
+            videos = [exp_dir / n for n in names]
+        else:
+            videos = [exp_file("video", "video", n) for n in names]
         stems = [v.stem for v in videos]
         dups = sorted({x for x in stems if stems.count(x) > 1})
         if dups:
@@ -234,14 +246,21 @@ def load_experiment(exp_dir: Path) -> Experiment:
         push_as = sect.get("push_as", "")
         if not isinstance(push_as, str) or "/" in push_as:
             raise ValueError(f"{exp_dir}: experiment.video.push_as must be a file name, not {push_as!r}")
+        if no_upload and push_as:
+            raise ValueError(f"{exp_dir}: experiment.video.push_as does nothing with no_upload; leave it out")
         phase = Phase(
             "video", exp_file("video", "flow", sect["flow"]),
             bool(sect.get("auto", False)), duration("video", sect),
-            videos=videos, push_as=push_as,
+            videos=videos, push_as=push_as, no_upload=no_upload,
         )
         if phase.duration is None:
             # No duration set: each video runs for its own length
             for v in videos:
+                if no_upload and not v.is_file():
+                    raise ValueError(
+                        f"{exp_dir}: with no_upload, video {v.name} is not in the experiment "
+                        f"directory to find its length; set experiment.video.duration"
+                    )
                 try:
                     phase.video_durations[v] = video_length(v)
                 except ValueError as e:
@@ -257,7 +276,7 @@ def load_experiment(exp_dir: Path) -> Experiment:
 
     files = parse_files(exp.get("files", []), exp_dir, exp_file)
     phase = phases[0]
-    if phase.kind == "video":
+    if phase.kind == "video" and not phase.no_upload:
         video_names = {phase.push_as} if phase.push_as else {v.name for v in phase.videos}
         clash = sorted(video_names & {f.name for f in files})
         if clash:
@@ -651,9 +670,10 @@ def push_files(client: Daemon, exp: Experiment, video: Path | None) -> None:
     files directory (STEELEAGLE_FILES): the orchestrator's and each remote's,
     through the orchestrator, or with rsync if the remote isn't registered.
     Each file is saved as its push_as, if set; the video as the phase's
-    push_as, so the driver's config can name one file for every video."""
+    push_as, so the driver's config can name one file for every video. With
+    no_upload, the video is not pushed: it is assumed to already be there."""
     pushes = list(exp.files)
-    if video:
+    if video and not exp.phase.no_upload:
         pushes.append(PushFile(video, exp.phase.push_as or video.name))
     if not pushes:
         return
@@ -966,7 +986,11 @@ def run_experiment(client: Daemon, exp_dir: Path) -> None:
     videos: list[Path | None] = list(exp.phase.videos) if exp.phase.kind == "video" else [None]
     log(
         f"### experiment {exp.name} ({exp_dir}): profiles {', '.join(exp.profiles)}, "
-        + (f"videos {', '.join(v.name for v in exp.phase.videos)}, " if exp.phase.kind == "video" else "")
+        + (
+            f"videos {', '.join(v.name for v in exp.phase.videos)}"
+            + (" (not uploaded), " if exp.phase.no_upload else ", ")
+            if exp.phase.kind == "video" else ""
+        )
         + (f"files {', '.join(f.path.name for f in exp.files)}, " if exp.files else "")
         + f"{exp.trials} trial(s) each"
     )
