@@ -4,6 +4,7 @@ An automatic experiment runner for SteelEagle. You give it an experiment
 directory, and for each network profile it:
 
 - restarts the daemons with that profile's configs,
+- pushes any extra files the experiment needs to the daemons,
 - starts a mission, or pushes a video to the daemons and starts a dataflow, on a vehicle,
 - limits the network with [netsim](src/steeleagle_experiment/netsim/README.md),
 - stops everything when the run ends,
@@ -97,6 +98,7 @@ Every file the experiment uses lives next to its `experiment.toml`:
 my_experiment/
 ├── experiment.toml
 ├── mission.zip              # or a video and flow.toml: whichever experiment.toml names
+├── labels.json              # (optional) any files listed in experiment.files
 ├── lambda2.toml             # config for daemon "lambda2"
 ├── fermi.toml               # config for daemon "fermi"
 ├── fermi_malicious.toml     # (optional) fermi's config for the malicious profile
@@ -114,6 +116,7 @@ for a commented template.
 |-----------|-------------------------------------------------------------------------------|
 | `name`    | Name shown in the log (defaults to the directory name)                       |
 | `vehicle` | Vehicle to target: its name (`drone`) or full name (`100.64.0.2.drone`)  |
+| `files`   | (optional) Files in the experiment directory to push to every daemon at the start of each trial (see below) |
 
 Then set **exactly one** of `[experiment.mission]` or `[experiment.video]`. The
 other may be left out, or kept with its files set to `""`.
@@ -125,7 +128,7 @@ other may be left out, or kept with its files set to `""`.
 | `push_as` (video)    | Name each video is pushed as (optional; defaults to the video's own name)                |
 | `flow` (video)       | Flow file in the experiment directory, sent with `SetDataflow` to start each trial       |
 | `auto`               | `false`: press ENTER to start each trial. `true`: start right away                       |
-| `duration`           | Seconds to run each trial. `0`: run until you press ENTER                                |
+| `duration`           | Seconds to run each trial. `0`: run until you press ENTER. For a mission, defaults to `0`; for a video, defaults to the video's length (see below) |
 
 With a list of videos, each profile runs every trial on the first video, then
 every trial on the next, and so on, and each video gets its own CSVs (see
@@ -138,6 +141,32 @@ with rsync if a remote isn't registered. A driver such as `fake_drone` then
 finds it by name. With several videos, set `push_as` (e.g. `"video.mp4"`) so
 every video lands under that one name, and set the driver's `video` arg to it;
 otherwise each video keeps its own name and the driver's arg must match it.
+
+If a video experiment leaves `duration` out, each trial runs for the length of
+its video, so with several videos each one gets its own duration. The length
+comes from `ffprobe` if it is installed, or else from the header of an MP4/MOV
+file; if neither works, the experiment is rejected before it starts and you
+need to set `duration`. Setting `duration` (including `0`) overrides the
+video's length for every video.
+
+#### `files`
+
+Any other files a trial needs (a model, a label map, a driver's input) can be
+listed in `files`. They are pushed exactly like a video: at the start of every
+trial, before the daemons restart, to `STEELEAGLE_FILES` on the orchestrator
+and every remote. This works with both missions and videos.
+
+```toml
+[experiment]
+vehicle = "drone"
+files = [
+    "labels.json",                                     # pushed as labels.json
+    { file = "model_v2.pt", push_as = "model.pt" },    # pushed as model.pt
+]
+```
+
+Each file must be in the experiment directory. Two files can't be pushed under
+the same name, nor under the name a video is pushed as.
 
 ### `[netsim]`
 
@@ -238,8 +267,8 @@ gives a warning, not an error.
 For each experiment, for each profile in `profiles`, for each video (for a
 video experiment), and for each of the `trials`:
 
-1. **Restart the daemons.** If the experiment has a video, it is first pushed
-   to every daemon's files directory. Then each remote daemon gets its config
+1. **Restart the daemons.** The experiment's `files`, and its video if it has
+   one, are first pushed to every daemon's files directory. Then each remote daemon gets its config
    for the profile, sent through the orchestrator (or over ssh if it isn't
    registered), and then the orchestrator gets its own config. Applying a
    config restarts the daemon.
@@ -249,7 +278,8 @@ video experiment), and for each of the `trials`:
 4. **Wait for you.** If `auto = false`: press ENTER to start the trial.
 5. **Start.** `StartMission`, or `SetDataflow` with the video's flow, then start netsim
    as soon as the vehicle answers.
-6. **Run** for `duration` seconds, or until you press ENTER if it is `0`.
+6. **Run** for `duration` seconds (for a video with no `duration`, the video's
+   length), or until you press ENTER if it is `0`.
 7. **Stop.** For a mission: `Hold`, then `StopMission`. These are sent even if
    the run is interrupted. netsim is stopped with SIGINT, so it prints its byte
    totals and removes its `tc` rules.

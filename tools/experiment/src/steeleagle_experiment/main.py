@@ -7,11 +7,13 @@ An experiment directory holds an experiment.toml (see example/) and every file
 it names: the mission, or the videos and their flow, and each daemon's config.
 For each netsim profile, for each video (if any), and for each trial, the runner:
 
-  1. pushes the video, if any, to every daemon's files directory
-     (STEELEAGLE_FILES), and restarts the daemons with the profile's configs,
+  1. pushes the experiment's files and the video, if any, to every daemon's
+     files directory (STEELEAGLE_FILES), and restarts the daemons with the
+     profile's configs,
   2. starts the mission (upload, load, start) or sets the video's flow on the
      target vehicle, and starts netsim as soon as the vehicle acknowledges it,
-  3. waits for the duration, or for ENTER when the duration is 0,
+  3. waits for the duration (for a video, the video's length unless a
+     duration is set), or for ENTER when the duration is 0,
   4. stops the mission (Hold, then StopMission) and netsim, and
   5. collects the trial into <experiment_dir>/runs/<profile>/:
         trial_<n>/result/<key>/   result files, moved off their hosts
@@ -37,11 +39,13 @@ from __future__ import annotations
 import argparse
 import csv
 import glob
+import json
 import os
 import queue
 import re
 import shlex
 import signal
+import struct
 import subprocess
 import sys
 import time
@@ -103,11 +107,25 @@ class Phase:
     kind: str  # "mission" or "video"
     file: Path  # the mission, or the video's flow
     auto: bool
-    duration: float
+    # seconds to run each trial; 0 waits for ENTER. None (video only, when no
+    # duration is set) runs each video for its own length, in video_durations
+    duration: float | None
     # the videos, for "video": each runs every trial in turn, and is pushed to
     # every daemon under push_as, if set, or its own name
     videos: list[Path] = field(default_factory=list)
     push_as: str = ""
+    video_durations: dict[Path, float] = field(default_factory=dict)
+
+    def duration_for(self, video: Path | None) -> float:
+        if self.duration is not None:
+            return self.duration
+        return self.video_durations[video] if video else 0.0
+
+
+@dataclass
+class PushFile:
+    path: Path  # in the experiment directory
+    name: str  # name it is saved as in each daemon's files directory
 
 
 @dataclass
@@ -139,6 +157,8 @@ class Experiment:
     trials: int  # runs of each profile
     daemons: dict[str, DaemonCfg]
     configs: dict[str, dict[str, Path]]  # profile -> daemon key -> config file
+    # pushed to every daemon's files directory at the start of each trial
+    files: list[PushFile] = field(default_factory=list)
     results: dict[str, str] = field(default_factory=dict)
     catalogs: dict[str, str] = field(default_factory=dict)
 
@@ -172,12 +192,20 @@ def load_experiment(exp_dir: Path) -> Experiment:
             raise ValueError(f"{exp_dir}: experiment.{kind}.{key} file {path} does not exist")
         return path
 
+    def duration(kind: str, sect: dict) -> float | None:
+        if "duration" not in sect:
+            return None
+        d = sect["duration"]
+        if not isinstance(d, (int, float)) or isinstance(d, bool) or d < 0:
+            raise ValueError(f"{exp_dir}: experiment.{kind}.duration must be a number >= 0, not {d!r}")
+        return float(d)
+
     phases = []
     sect = exp.get("mission", {})
     if sect.get("file"):
         phases.append(Phase(
             "mission", exp_file("mission", "file", sect["file"]),
-            bool(sect.get("auto", False)), float(sect.get("duration", 0)),
+            bool(sect.get("auto", False)), duration("mission", sect) or 0.0,
         ))
     sect = exp.get("video", {})
     if sect.get("video") or sect.get("flow"):
@@ -199,16 +227,37 @@ def load_experiment(exp_dir: Path) -> Experiment:
         push_as = sect.get("push_as", "")
         if not isinstance(push_as, str) or "/" in push_as:
             raise ValueError(f"{exp_dir}: experiment.video.push_as must be a file name, not {push_as!r}")
-        phases.append(Phase(
+        phase = Phase(
             "video", exp_file("video", "flow", sect["flow"]),
-            bool(sect.get("auto", False)), float(sect.get("duration", 0)),
+            bool(sect.get("auto", False)), duration("video", sect),
             videos=videos, push_as=push_as,
-        ))
+        )
+        if phase.duration is None:
+            # No duration set: each video runs for its own length
+            for v in videos:
+                try:
+                    phase.video_durations[v] = video_length(v)
+                except ValueError as e:
+                    raise ValueError(
+                        f"{exp_dir}: {e}; set experiment.video.duration instead"
+                    ) from None
+        phases.append(phase)
     if len(phases) != 1:
         raise ValueError(
             f"{exp_dir}: set exactly one of experiment.mission (file) or "
             f"experiment.video (video and flow)"
         )
+
+    files = parse_files(exp.get("files", []), exp_dir, exp_file)
+    phase = phases[0]
+    if phase.kind == "video":
+        video_names = {phase.push_as} if phase.push_as else {v.name for v in phase.videos}
+        clash = sorted(video_names & {f.name for f in files})
+        if clash:
+            raise ValueError(
+                f"{exp_dir}: experiment.files pushes {', '.join(clash)}, which a video "
+                f"is also pushed as"
+            )
 
     ns = raw.get("netsim", {})
     profiles = ns.get("profiles", ["*"])
@@ -246,8 +295,8 @@ def load_experiment(exp_dir: Path) -> Experiment:
     configs = resolve_configs(exp_dir, list(daemons), list(profiles))
 
     e = Experiment(
-        exp_dir, name, vehicle, phases[0], list(profiles), ns["interface"], int(ns["port"]),
-        netsim_args, failpoints, trials, daemons, configs,
+        exp_dir, name, vehicle, phase, list(profiles), ns["interface"], int(ns["port"]),
+        netsim_args, failpoints, trials, daemons, configs, files,
         dict(raw.get("results", {})), dict(raw.get("catalogs", {})),
     )
     for table in (e.results, e.catalogs):
@@ -256,6 +305,103 @@ def load_experiment(exp_dir: Path) -> Experiment:
             if host not in daemons:
                 raise ValueError(f"{exp_dir}: {key} = {src!r} names unknown daemon {host!r}")
     return e
+
+
+def parse_files(raw, exp_dir: Path, exp_file) -> list[PushFile]:
+    """Parses experiment.files: a list of file names in the experiment
+    directory, each optionally a table { file = "...", push_as = "..." } to
+    push it under another name."""
+    if not isinstance(raw, list):
+        raise ValueError(f"{exp_dir}: experiment.files must be a list of file names")
+    files = []
+    for entry in raw:
+        if isinstance(entry, str):
+            entry = {"file": entry}
+        if not isinstance(entry, dict) or not isinstance(entry.get("file"), str) or not entry["file"]:
+            raise ValueError(
+                f"{exp_dir}: invalid experiment.files entry {entry!r}; want a file name "
+                f'or {{ file = "...", push_as = "..." }}'
+            )
+        unknown = set(entry) - {"file", "push_as"}
+        if unknown:
+            raise ValueError(f"{exp_dir}: experiment.files entry {entry!r} has unknown keys {sorted(unknown)}")
+        path = exp_file("files", "file", entry["file"])
+        push_as = entry.get("push_as", "") or path.name
+        if not isinstance(push_as, str) or "/" in push_as:
+            raise ValueError(f"{exp_dir}: experiment.files push_as must be a file name, not {push_as!r}")
+        files.append(PushFile(path, push_as))
+    names = [f.name for f in files]
+    dups = sorted({n for n in names if names.count(n) > 1})
+    if dups:
+        raise ValueError(f"{exp_dir}: experiment.files pushes more than one file as {', '.join(dups)}")
+    return files
+
+
+def video_length(path: Path) -> float:
+    """A video's length in seconds, from ffprobe if it is installed, or else
+    from the header of an MP4/MOV file."""
+    try:
+        r = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "json", str(path)],
+            capture_output=True, text=True, timeout=60,
+        )
+        if r.returncode == 0:
+            d = float(json.loads(r.stdout)["format"]["duration"])
+            if d > 0:
+                return d
+    except (FileNotFoundError, subprocess.TimeoutExpired, KeyError, ValueError):
+        pass
+    d = mp4_length(path)
+    if d is None or d <= 0:
+        raise ValueError(
+            f"can't find the length of video {path.name} (install ffprobe, or use an MP4/MOV file)"
+        )
+    return d
+
+
+def mp4_length(path: Path) -> float | None:
+    """Reads the length from an MP4/MOV file's moov/mvhd box, or None."""
+
+    def boxes(f, end: int):
+        """Yields (type, payload offset, payload size) of the boxes up to end."""
+        pos = f.tell()
+        while pos + 8 <= end:
+            f.seek(pos)
+            size, kind = struct.unpack(">I4s", f.read(8))
+            header = 8
+            if size == 1:
+                size = struct.unpack(">Q", f.read(8))[0]
+                header = 16
+            elif size == 0:
+                size = end - pos
+            if size < header:
+                return
+            yield kind, pos + header, size - header
+            pos += size
+
+    try:
+        with open(path, "rb") as f:
+            end = f.seek(0, os.SEEK_END)
+            f.seek(0)
+            for kind, off, size in boxes(f, end):
+                if kind != b"moov":
+                    continue
+                f.seek(off)
+                for kind2, off2, size2 in boxes(f, off + size):
+                    if kind2 != b"mvhd" or size2 < 20:
+                        continue
+                    f.seek(off2)
+                    version = f.read(4)[0]
+                    if version == 1:
+                        f.seek(16, os.SEEK_CUR)
+                        timescale, duration = struct.unpack(">IQ", f.read(12))
+                    else:
+                        f.seek(8, os.SEEK_CUR)
+                        timescale, duration = struct.unpack(">II", f.read(8))
+                    return duration / timescale if timescale else None
+    except (OSError, struct.error, IndexError):
+        pass
+    return None
 
 
 def resolve_configs(exp_dir: Path, keys: list[str], profiles: list[str]) -> dict[str, dict[str, Path]]:
@@ -459,31 +605,37 @@ def configure_daemons(client: Daemon, exp: Experiment, profile: str) -> None:
     client.configure(configs[o.key].read_text())
 
 
-def push_video(client: Daemon, exp: Experiment, video: Path) -> None:
-    """Pushes a video to every daemon's files directory (STEELEAGLE_FILES):
-    the orchestrator's and each remote's, through the orchestrator, or with
-    rsync if the remote isn't registered. It is saved as the phase's push_as,
-    if set, so the driver's config can name one file for every video."""
-    name = exp.phase.push_as or video.name
-    as_name = f" as {name}" if name != video.name else ""
+def push_files(client: Daemon, exp: Experiment, video: Path | None) -> None:
+    """Pushes the experiment's files and the video, if any, to every daemon's
+    files directory (STEELEAGLE_FILES): the orchestrator's and each remote's,
+    through the orchestrator, or with rsync if the remote isn't registered.
+    Each file is saved as its push_as, if set; the video as the phase's
+    push_as, so the driver's config can name one file for every video."""
+    pushes = list(exp.files)
+    if video:
+        pushes.append(PushFile(video, exp.phase.push_as or video.name))
+    if not pushes:
+        return
     try:
         listing = client.list_services()
     except grpc.RpcError:
         listing = None
-    for d in exp.remotes:
-        remote = find_remote(listing, d) if listing else None
-        if remote is not None:
-            log(f"pushing {video.name}{as_name} to remote {d.key} ({remote.ip}) through the orchestrator")
-            client.transfer_file(video, route=remote.ip, name=name)
-        elif d.ssh_host:
-            log(f"remote {d.key} not registered; pushing {video.name}{as_name} to it with rsync")
-            dest = REMOTE_FILES_DIR.rstrip("/") + "/" + name
-            cmd = ["rsync", "-a", "--mkpath", str(video), f"{d.ssh_host}:{dest}"]
-            subprocess.run(cmd, check=True)
-        else:
-            raise RuntimeError(f"remote {d.key} is not registered with the orchestrator and has no prefix to rsync to")
-    log(f"pushing {video.name}{as_name} to orchestrator {exp.orchestrator.key}")
-    client.transfer_file(video, name=name)
+    for f in pushes:
+        what = f.path.name + (f" as {f.name}" if f.name != f.path.name else "")
+        for d in exp.remotes:
+            remote = find_remote(listing, d) if listing else None
+            if remote is not None:
+                log(f"pushing {what} to remote {d.key} ({remote.ip}) through the orchestrator")
+                client.transfer_file(f.path, route=remote.ip, name=f.name)
+            elif d.ssh_host:
+                log(f"remote {d.key} not registered; pushing {what} to it with rsync")
+                dest = REMOTE_FILES_DIR.rstrip("/") + "/" + f.name
+                cmd = ["rsync", "-a", "--mkpath", str(f.path), f"{d.ssh_host}:{dest}"]
+                subprocess.run(cmd, check=True)
+            else:
+                raise RuntimeError(f"remote {d.key} is not registered with the orchestrator and has no prefix to rsync to")
+        log(f"pushing {what} to orchestrator {exp.orchestrator.key}")
+        client.transfer_file(f.path, name=f.name)
 
 
 # --------------------------------------------------------------------------
@@ -689,12 +841,13 @@ def write_stats(run_dir: Path, netsim: Netsim, label: str, trial: int, wall_sec:
 # --------------------------------------------------------------------------
 
 
-def wait_for(phase: Phase, what: str) -> float:
-    """Waits for the phase's duration, or for ENTER. Returns seconds waited."""
+def wait_for(duration: float, what: str) -> float:
+    """Waits for duration seconds, or for ENTER if it is 0. Returns seconds
+    waited."""
     t0 = time.monotonic()
-    if phase.duration > 0:
-        log(f"running {what} for {phase.duration:g}s")
-        time.sleep(phase.duration)
+    if duration > 0:
+        log(f"running {what} for {duration:g}s")
+        time.sleep(duration)
     else:
         input(f"Running {what}. Press ENTER to stop... ")
     return time.monotonic() - t0
@@ -752,7 +905,7 @@ def run_trial(
             client.set_dataflow(flow, vehicle)
         netsim.start()
         log(f"{phase.kind} started")
-        wall = wait_for(phase, f"{phase.kind} under {what}")
+        wall = wait_for(phase.duration_for(video), f"{phase.kind} under {what}")
     finally:
         if phase.kind == "mission":
             for name, call in (("Hold", client.hold), ("StopMission", client.stop_mission)):
@@ -772,19 +925,21 @@ def run_experiment(client: Daemon, exp_dir: Path) -> None:
     log(
         f"### experiment {exp.name} ({exp_dir}): profiles {', '.join(exp.profiles)}, "
         + (f"videos {', '.join(v.name for v in exp.phase.videos)}, " if exp.phase.kind == "video" else "")
+        + (f"files {', '.join(f.path.name for f in exp.files)}, " if exp.files else "")
         + f"{exp.trials} trial(s) each"
     )
+    for v, d in exp.phase.video_durations.items():
+        log(f"video {v.name} is {d:g}s long; each of its trials runs that long")
     for profile in exp.profiles:
         run_dir = new_run_dir(exp, profile)
         for video in videos:
             for trial in range(1, exp.trials + 1):
                 # Each trial starts from freshly restarted daemons, so no state
                 # (like a running flow) carries over from the previous one
-                if video:
-                    # Pushed before the daemons restart, so the vehicle's driver
-                    # finds the video when it starts, even if the previous
-                    # trial's result collection moved it away
-                    push_video(client, exp, video)
+                # Pushed before the daemons restart, so the vehicle's driver
+                # finds the files and video when it starts, even if the
+                # previous trial's result collection moved them away
+                push_files(client, exp, video)
                 configure_daemons(client, exp, profile)
                 time.sleep(2)  # let the orchestrator go down before polling it
                 vehicle = client.wait_ready(exp.vehicle, exp.remotes)

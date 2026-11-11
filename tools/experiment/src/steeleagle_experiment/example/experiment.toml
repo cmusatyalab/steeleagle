@@ -1,6 +1,10 @@
 [experiment]
 name = "case_study_3"
 vehicle = "" # Vehicle name to target
+# Files pushed to every daemon's files directory (STEELEAGLE_FILES,
+# ~/.local/share/steeleagle/files) at the start of each trial, with either a
+# mission or a video. Each is a file name, or a table to push it under another name
+files = [] # e.g. ["labels.json", { file = "model_v2.pt", push_as = "model.pt" }]
 
 # Can set one of mission or video
 [experiment.mission]
@@ -25,9 +29,10 @@ push_as = "" # e.g. "video.mp4"
 flow = ""
 # Whether or not to prompt ENTER to start
 auto = false
-# If duration > 0, will run the video's flow for the given duration (in seconds)
-# before stopping; otherwise, will prompt the user to press ENTER once done
-duration = 0
+# If unset, each video runs for its own length (found with ffprobe, or from
+# the header of an MP4/MOV file). If set, it overrides that: duration > 0 runs
+# the video's flow for that many seconds; 0 prompts ENTER to stop
+# duration = 60
 
 [netsim]
 profiles = ["*"] # A list of network profiles supported by netsim
