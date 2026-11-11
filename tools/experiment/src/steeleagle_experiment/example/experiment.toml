@@ -42,6 +42,10 @@ port = 9001
 # seconds from the start of the run: the port is killed from event_time for
 # dead_time seconds. Ignored by every other profile.
 failpoints = [] # e.g. [[30, 10], [90, 5]]
+# Or, for a video run, give each video its own failpoints instead (set only
+# one of failpoints or failpoint_map). Keys are video names, with or without
+# the extension; videos left out get no failpoints.
+# failpoint_map = { "traintrack.mp4" = [[30, 10]], parking = [[5, 5], [60, 20]] }
 trials = 3 # Number of times to run each profile
 # Extra netsim flags, passed through as is (optional)
 # args = ["--direction", "egress", "--seed", "1"]

@@ -176,6 +176,7 @@ the same name, nor under the name a video is pushed as.
 | `interface`  | Interface netsim shapes, e.g. `tailscale0`                                                    |
 | `port`       | Port netsim shapes                                                                            |
 | `failpoints` | Outages for the `malicious` profile, as `[event_time, dead_time]` pairs in seconds            |
+| `failpoint_map` | (optional) Instead of `failpoints`, per-video outages: a table from video name to its failpoints |
 | `trials`     | (optional) Times to run each profile, default `1`. Every trial runs before the next profile   |
 | `args`       | (optional) Extra netsim flags, passed through as is, e.g. `["--direction", "egress", "--seed", "1"]` |
 
@@ -198,6 +199,17 @@ prints a warning).
 
 ```toml
 failpoints = [[30, 10], [90, 5], [150, 20]]
+```
+
+For a video run, `failpoint_map` gives each video its own failpoints instead
+(set only one of `failpoints` or `failpoint_map`). Each key names a video in
+`experiment.video.video`, with or without its extension; videos left out get
+no failpoints.
+
+```toml
+[netsim.failpoint_map]
+"traintrack.mp4" = [[30, 10]]
+parking = [[5, 5], [60, 20]]
 ```
 
 See the [netsim README](src/steeleagle_experiment/netsim/README.md) for how

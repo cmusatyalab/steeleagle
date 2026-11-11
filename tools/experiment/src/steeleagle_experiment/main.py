@@ -153,7 +153,9 @@ class Experiment:
     interface: str
     port: int
     netsim_args: list[str]
-    failpoints: str  # netsim --failpoints value, used only by the malicious profile
+    # netsim --failpoints value, used only by the malicious profile: one for
+    # every run, or, keyed by video, one per video (failpoint_map)
+    failpoints: str | dict[Path, str]
     trials: int  # runs of each profile
     daemons: dict[str, DaemonCfg]
     configs: dict[str, dict[str, Path]]  # profile -> daemon key -> config file
@@ -161,6 +163,11 @@ class Experiment:
     files: list[PushFile] = field(default_factory=list)
     results: dict[str, str] = field(default_factory=dict)
     catalogs: dict[str, str] = field(default_factory=dict)
+
+    def failpoints_for(self, video: Path | None) -> str:
+        if isinstance(self.failpoints, dict):
+            return self.failpoints.get(video, "") if video else ""
+        return self.failpoints
 
     @property
     def orchestrator(self) -> DaemonCfg:
@@ -270,7 +277,12 @@ def load_experiment(exp_dir: Path) -> Experiment:
         raise ValueError(f"{exp_dir}: netsim.interface and netsim.port must be set")
     # Optional extra netsim flags, e.g. args = ["--direction", "egress", "--seed", "1"]
     netsim_args = [str(a) for a in ns.get("args", [])]
-    failpoints = parse_failpoints(ns.get("failpoints", []), exp_dir)
+    if "failpoint_map" in ns:
+        if "failpoints" in ns:
+            raise ValueError(f"{exp_dir}: set only one of netsim.failpoints or netsim.failpoint_map")
+        failpoints = parse_failpoint_map(ns["failpoint_map"], phase, exp_dir)
+    else:
+        failpoints = parse_failpoints(ns.get("failpoints", []), exp_dir)
     trials = ns.get("trials", 1)
     if not isinstance(trials, int) or isinstance(trials, bool) or trials < 1:
         raise ValueError(f"{exp_dir}: netsim.trials must be an integer >= 1, not {trials!r}")
@@ -427,11 +439,40 @@ def resolve_configs(exp_dir: Path, keys: list[str], profiles: list[str]) -> dict
     return configs
 
 
-def parse_failpoints(raw, exp_dir: Path) -> str:
+def parse_failpoint_map(raw, phase: Phase, exp_dir: Path) -> dict[Path, str]:
+    """Parses netsim.failpoint_map, a table from video name (its file name, or
+    that without the extension) to that video's failpoints, as in
+    netsim.failpoints. Videos not in the map get no failpoints."""
+    if phase.kind != "video":
+        raise ValueError(f"{exp_dir}: netsim.failpoint_map needs experiment.video; use netsim.failpoints")
+    if not isinstance(raw, dict):
+        raise ValueError(
+            f"{exp_dir}: netsim.failpoint_map must be a table from video name to "
+            f"a list of [event_time, dead_time] pairs"
+        )
+    by_name: dict[str, Path] = {}
+    for v in phase.videos:
+        by_name[v.name] = v
+        by_name[v.stem] = v
+    out: dict[Path, str] = {}
+    for name, fps in raw.items():
+        video = by_name.get(name)
+        if video is None:
+            raise ValueError(
+                f"{exp_dir}: netsim.failpoint_map names {name!r}, which is not one of "
+                f"the videos ({', '.join(v.name for v in phase.videos)})"
+            )
+        if video in out:
+            raise ValueError(f"{exp_dir}: netsim.failpoint_map gives video {video.name} more than once")
+        out[video] = parse_failpoints(fps, exp_dir, f"netsim.failpoint_map.{name}")
+    return out
+
+
+def parse_failpoints(raw, exp_dir: Path, key: str = "netsim.failpoints") -> str:
     """Turns netsim.failpoints, a list of [event_time, dead_time] pairs in
     seconds, into netsim's "30:10,90:5" form."""
     if not isinstance(raw, list):
-        raise ValueError(f"{exp_dir}: netsim.failpoints must be a list of [event_time, dead_time] pairs")
+        raise ValueError(f"{exp_dir}: {key} must be a list of [event_time, dead_time] pairs")
     pairs = []
     for fp in raw:
         if (
@@ -440,7 +481,7 @@ def parse_failpoints(raw, exp_dir: Path) -> str:
             or fp[0] < 0 or fp[1] <= 0
         ):
             raise ValueError(
-                f"{exp_dir}: invalid failpoint {fp!r}; want [event_time >= 0, dead_time > 0] in seconds"
+                f"{exp_dir}: invalid failpoint {fp!r} in {key}; want [event_time >= 0, dead_time > 0] in seconds"
             )
         pairs.append(f"{fp[0]:g}:{fp[1]:g}")
     return ",".join(pairs)
@@ -684,7 +725,7 @@ def sudo_validate() -> None:
 
 
 class Netsim:
-    def __init__(self, exp: Experiment, profile: str, trial_dir: Path):
+    def __init__(self, exp: Experiment, profile: str, trial_dir: Path, video: Path | None = None):
         self.timeline = trial_dir / "timeline.csv"
         self.output = trial_dir / "netsim.log"
         cmd = [
@@ -693,8 +734,9 @@ class Netsim:
             "--profile", profile, "--log", str(self.timeline),
             *exp.netsim_args,
         ]
-        if profile == "malicious" and exp.failpoints:
-            cmd += ["--failpoints", exp.failpoints]
+        failpoints = exp.failpoints_for(video)
+        if profile == "malicious" and failpoints:
+            cmd += ["--failpoints", failpoints]
         if os.geteuid() != 0 and "--dry-run" not in exp.netsim_args:
             cmd = ["sudo", "-n"] + cmd
         self.needs_sudo = cmd[0] == "sudo"
@@ -884,7 +926,7 @@ def run_trial(
     label = f"{profile}_{video.stem}" if video else profile
     trial_dir = (run_dir / video.stem if video else run_dir) / f"trial_{trial}"
     trial_dir.mkdir(parents=True)
-    netsim = Netsim(exp, profile, trial_dir)
+    netsim = Netsim(exp, profile, trial_dir, video)
     what = f"profile {profile}, " + (f"video {video.name}, " if video else "") + f"trial {trial}/{exp.trials}"
     desc = f"video {video.name}, flow {phase.file.name}" if video else f"mission {phase.file.name}"
     log(f"=== {exp.name}: {what} ({desc}) ===")
