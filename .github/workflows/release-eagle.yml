@@ -9,11 +9,6 @@ on:
     tags:
       - "v*"
 
-env:
-  # The maximum glibc version to use in release binaries for maximum
-  # compatibility.
-  MAX_GLIBC: "2.28"
-
 jobs:
   build:
     strategy:
@@ -21,7 +16,8 @@ jobs:
         include:
           # eagled links liburiel through cgo, so each architecture is built
           # natively, in the manylinux image of its architecture, whose old
-          # glibc keeps what the binaries need low.
+          # glibc keeps what the binaries need low. manylinux2014 has glibc
+          # 2.17, so eagled runs on Ubuntu 18.04 (glibc 2.27) and newer.
           - arch: amd64
             runner: ubuntu-22.04
             manylinux: x86_64
@@ -29,54 +25,17 @@ jobs:
             runner: ubuntu-22.04-arm
             manylinux: aarch64
     runs-on: ${{ matrix.runner }}
-    container: quay.io/pypa/manylinux_2_28_${{ matrix.manylinux }}
-    env:
-      # liburiel is installed to /usr/local, which pkg-config doesn't search on
-      # this image
-      PKG_CONFIG_PATH: /usr/local/lib/pkgconfig
     steps:
       - uses: actions/checkout@v4
 
-      # The container user doesn't own the mounted workspace, so git refuses to
-      # read it and `go build` can't stamp VCS info.
-      - name: Trust the workspace
-        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Install pkg-config
-        run: dnf install -y pkgconf-pkg-config
-
-      # liburiel.a, linked statically into eagled
-      - name: Install liburiel
-        run: tools/uriel/install.sh
-
+      # GitHub's JavaScript actions need glibc 2.28, so they can't run in the
+      # manylinux2014 image; the build runs in it through docker instead, and
+      # sets up Go and liburiel itself.
       - name: Build
-        run: |
-          mkdir dist
-          CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o dist/eagle-linux-${{ matrix.arch }} ./cmd/eagle
-          CGO_ENABLED=1 go build -trimpath -ldflags='-s -w' -o dist/eagled-linux-${{ matrix.arch }} ./cmd/eagled
-
-      - name: Check that liburiel is linked statically
-        run: |
-          ldd dist/eagled-linux-${{ matrix.arch }}
-          if ldd dist/eagled-linux-${{ matrix.arch }} | grep -q uriel; then
-            echo "::error::eagled links liburiel dynamically"
-            exit 1
-          fi
-
-      - name: Check the glibc eagled needs
-        run: |
-          need=$(objdump -T dist/eagled-linux-${{ matrix.arch }} | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -n 1)
-          echo "eagled needs $need"
-          newest=$(printf '%s\n' "$need" "GLIBC_$MAX_GLIBC" | sort -V | tail -n 1)
-          if [ "$newest" != "GLIBC_$MAX_GLIBC" ]; then
-            echo "::error::eagled needs $need, newer than glibc $MAX_GLIBC"
-            exit 1
-          fi
+        run: >
+          docker run --rm -v "$GITHUB_WORKSPACE:/src" -w /src
+          quay.io/pypa/manylinux2014_${{ matrix.manylinux }}
+          tools/release/build-eagle.sh
 
       - uses: actions/upload-artifact@v4
         with:
