@@ -46,14 +46,12 @@ github.com/clipperhouse/displaywidth v0.11.0 h1:lBc6kY44VFw+TDx4I8opi/EtL9m20WSE
 github.com/clipperhouse/displaywidth v0.11.0/go.mod h1:bkrFNkf81G8HyVqmKGxsPufD3JhNl3dSqnGhOoSD/o0=
 github.com/clipperhouse/uax29/v2 v2.7.0 h1:+gs4oBZ2gPfVrKPthwbMzWZDaAFPGYK72F0NJv2v7Vk=
 github.com/clipperhouse/uax29/v2 v2.7.0/go.mod h1:EFJ2TJMRUaplDxHKj1qAEhCtQPW2tJSwu5BF98AuoVM=
-github.com/cmusatyalab/steeleagle/api/go v0.3.6 h1:5wVtt8BGu5eu/r7fju19sTk61oEc1eB72Z7ecSvzySU=
-github.com/cmusatyalab/steeleagle/api/go v0.3.6/go.mod h1:Ul2ATWzzXHpxT6/rK+aeUZpkIJsk+veD8BvxYPdnpMo=
 github.com/cmusatyalab/steeleagle/api/go v0.3.7 h1:0SIl+tu56yQ3x0+NOfuuGBMFQzxevSlu7OQjfnBO3Kg=
 github.com/cmusatyalab/steeleagle/api/go v0.3.7/go.mod h1:Ul2ATWzzXHpxT6/rK+aeUZpkIJsk+veD8BvxYPdnpMo=
 github.com/cmusatyalab/steeleagle/config v0.0.6 h1:8iD7qHhAlupO53vI54O47geg4nE7a3Jn1icX+ovyiAU=
 github.com/cmusatyalab/steeleagle/config v0.0.6/go.mod h1:ufbS1yFbr6eExvEp9JRqNMsXuqmh7QfR/CTqCyRwDLk=
-github.com/cmusatyalab/uriel/go v0.3.0 h1:7fNNKKZcot+WCefU41tjiTKSQYuNApkAt4nbJgcULiI=
-github.com/cmusatyalab/uriel/go v0.3.0/go.mod h1:Ck8FmU/kdWH7wX/XK6848bReGfpzHahsRASbP8yWetg=
+github.com/cmusatyalab/uriel/go v0.3.1 h1:RjLLLag5WY3b4cOHxqV1Iiy0wsvbHv5cKeCVqAX2WsQ=
+github.com/cmusatyalab/uriel/go v0.3.1/go.mod h1:Ck8FmU/kdWH7wX/XK6848bReGfpzHahsRASbP8yWetg=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
