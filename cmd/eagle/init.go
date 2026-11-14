@@ -65,6 +65,9 @@ const (
 	pluginsRepo = "https://github.com/cmusatyalab/steeleagle_plugins"
 	// pluginsRef is the branch of pluginsRepo plugins are installed from.
 	pluginsRef = "v4_backend_rework"
+	// gcsPlugin is the name of the GCS plugin, whose service init gives
+	// admin auth, since the GCS manages the daemon.
+	gcsPlugin = "gcs"
 	// gcsURL is where the GCS of a default installation serves its web UI.
 	gcsURL = "http://localhost:8002"
 	// readyTimeout is how long init waits for eagled to answer once started.
@@ -598,7 +601,7 @@ func reconfigure(ctx context.Context, conn grpc.ClientConnInterface, orchestrato
 // pluginServices returns a service for each plugin of packages, named after
 // its plugin, with a numbered suffix when another service of its type has
 // the name already. Simulator plugins are left out, since they aren't
-// services.
+// services. The GCS plugin's services get admin auth.
 func pluginServices(packages []*daemonpb.Package) ([]config.ServiceField, error) {
 	type plugin struct{ name, uri string }
 	var plugins []plugin
@@ -641,9 +644,14 @@ func pluginServices(packages []*daemonpb.Package) ([]config.ServiceField, error)
 			name = fmt.Sprintf("%s_%d", p.name, i)
 		}
 		taken[typ][name] = true
+		var auth config.Auth
+		if p.name == gcsPlugin {
+			auth = config.AuthAdmin
+		}
 		services = append(services, config.ServiceField{
 			Name:   name,
 			Type:   typ,
+			Auth:   auth,
 			Plugin: config.PluginField{Plugin: p.name, Package: p.uri},
 		})
 	}

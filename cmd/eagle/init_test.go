@@ -107,8 +107,8 @@ func TestPluginServices(t *testing.T) {
 	}
 	want := []config.ServiceField{
 		{Name: "anafi", Type: config.ServiceVehicle, Plugin: config.PluginField{Plugin: "anafi", Package: "https://example.com/plugins//drivers/anafi"}},
-		{Name: "gcs", Type: config.ServiceEngine, Plugin: config.PluginField{Plugin: "gcs", Package: "https://example.com/other//gcs"}},
-		{Name: "gcs_2", Type: config.ServiceEngine, Plugin: config.PluginField{Plugin: "gcs", Package: "https://example.com/plugins//defaults/gcs"}},
+		{Name: "gcs", Type: config.ServiceEngine, Auth: config.AuthAdmin, Plugin: config.PluginField{Plugin: "gcs", Package: "https://example.com/other//gcs"}},
+		{Name: "gcs_2", Type: config.ServiceEngine, Auth: config.AuthAdmin, Plugin: config.PluginField{Plugin: "gcs", Package: "https://example.com/plugins//defaults/gcs"}},
 		{Name: "monitor", Type: config.ServiceExtra, Plugin: config.PluginField{Plugin: "monitor", Package: "https://example.com/plugins//defaults/gcs"}},
 	}
 	if !reflect.DeepEqual(got, want) {
