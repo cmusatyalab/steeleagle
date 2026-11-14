@@ -23,6 +23,10 @@ func TestEngineCapParsesExample(t *testing.T) {
 		Inputs:   []string{"steeleagle_protocol/v1/messages/frame/RawFrame"},
 		Forwards: ForwardsAll,
 		Result:   "steeleagle_protocol/v1/messages/result/DetectionResult",
+		Producers: []EngineProducer{{
+			Name:   "frames",
+			Output: "steeleagle_protocol/v1/messages/frame/EncodedFrame",
+		}},
 	}
 	if !reflect.DeepEqual(*p.Engine, want) {
 		t.Errorf("Engine = %+v, want %+v", *p.Engine, want)
@@ -119,5 +123,39 @@ func TestEngineCapForwards(t *testing.T) {
 	}
 	if _, err := ParsePluginConfigFromBytes(cap("steeleagle_protocol/v1/messages/result/DetectionResult")); err == nil {
 		t.Error("forwards outside inputs: err = nil, want an error")
+	}
+}
+
+// TestEngineCapProducers checks producer lookup and that producers without a
+// name or output type, or with a duplicate name, are rejected.
+func TestEngineCapProducers(t *testing.T) {
+	p, err := ParsePluginConfigFromFilepath("examples/engine.plugin.toml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	producer, err := p.Engine.GetProducer("frames")
+	if err != nil {
+		t.Fatalf("GetProducer(%q) error = %v", "frames", err)
+	}
+	if producer.Output != "steeleagle_protocol/v1/messages/frame/EncodedFrame" {
+		t.Errorf("GetProducer(%q).Output = %q", "frames", producer.Output)
+	}
+	if _, err := p.Engine.GetProducer("missing"); err == nil {
+		t.Errorf("GetProducer(%q) error = nil, want one for a missing producer", "missing")
+	}
+
+	cap := func(producers string) []byte {
+		return []byte("[plugin]\nname = \"e\"\ntype = \"engine\"\n[engine]\ntype = \"detection\"\n" +
+			"inputs = [\"steeleagle_protocol/v1/messages/frame/RawFrame\"]\n" + producers)
+	}
+	bad := map[string]string{
+		"no name":   "[[engine.producers]]\noutput = \"o\"\n",
+		"no output": "[[engine.producers]]\nname = \"a\"\n",
+		"duplicate": "[[engine.producers]]\nname = \"a\"\noutput = \"o\"\n[[engine.producers]]\nname = \"a\"\noutput = \"o\"\n",
+	}
+	for name, producers := range bad {
+		if _, err := ParsePluginConfigFromBytes(cap(producers)); err == nil {
+			t.Errorf("%s: err = nil, want an error", name)
+		}
 	}
 }

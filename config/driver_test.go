@@ -64,7 +64,7 @@ func TestDriverCapParsesCameras(t *testing.T) {
 	}
 	want := []DriverCamera{{
 		Name:        "rgb",
-		Type:        "steeleagle_protocol/v1/messages/frame/RawFrame",
+		Output:      "steeleagle_protocol/v1/messages/frame/RawFrame",
 		Description: "Main RGB camera on gimbal",
 		HRes:        1080,
 		VRes:        720,

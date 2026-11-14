@@ -11,8 +11,8 @@ const servicesRoot = "steeleagle_protocol/v1/services/"
 type DriverCamera struct {
 	// Name of the camera
 	Name string `toml:"name"`
-	// Type of the camera ("rgb", e.g.)
-	Type string `toml:"type"`
+	// Output type of the frames the camera produces
+	Output string `toml:"output"`
 	// Description of where the camera is located on the device (optional)
 	Description string `toml:"description,omitempty"`
 	// Horizontal resolution of the camera
