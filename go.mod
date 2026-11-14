@@ -7,8 +7,8 @@ require (
 	charm.land/bubbletea/v2 v2.1.0
 	charm.land/lipgloss/v2 v2.0.6
 	github.com/adrg/xdg v0.5.3
-	github.com/cmusatyalab/steeleagle/api/go v0.3.7
-	github.com/cmusatyalab/steeleagle/config v0.0.6
+	github.com/cmusatyalab/steeleagle/api/go v0.3.8
+	github.com/cmusatyalab/steeleagle/config v0.0.7
 	github.com/cmusatyalab/uriel/go v0.4.0
 	github.com/google/uuid v1.6.0
 	github.com/open-policy-agent/opa v1.19.0
