@@ -16,12 +16,22 @@ import "google/protobuf/timestamp.proto";
  * or to load missions from disk.
  */
 service LoaderService {
-  /*
-   * Upload a mission.
+  /* Compiles a mission on device.
    * 
-   * Uploads a mission to the vehicle over the network, and saves it in the
-   * <vehicle name>/missions/ folder. This overwrites the previously active
-   * mission, but does not delete the old mission file on disk.
+   * Uploads and compiles a mission on the vehicle. Requires `eaglec` to be locally
+   * installed. Only recommended on devices that have adequate CPU and RAM available.
+   * the mission manifest and cap file are inferred from the available engines on the
+   * vehicle and its assigned cap.
+   */
+  rpc CompileMission (CompileMissionRequest)
+    returns (CompileMissionResponse)
+
+  /*
+   * Upload a mission binary.
+   * 
+   * Uploads a mission binary to the vehicle over the network, and saves it in
+   * the <vehicle name>/missions/ folder. This overwrites the previously active
+   * mission, but does not delete the old mission binary on disk.
    */
   rpc UploadMission (stream UploadMissionRequest)
     returns (stream UploadMissionResponse) {}
@@ -44,6 +54,14 @@ service LoaderService {
   rpc GetMissions (GetMissionsRequest)
     returns (GetMissionsResponse) {}
 }
+
+message CompileMissionRequest {
+  string name = 1;    // mission name
+  bytes flow = 2;     // flow toml
+  bytes geojson = 3;  // geojson
+}
+
+message CompileMissionResponse {}
 
 message UploadMissionRequest {
   string filename = 1; // file name
