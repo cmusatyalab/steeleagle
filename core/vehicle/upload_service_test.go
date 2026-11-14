@@ -5,10 +5,13 @@ import (
 	"encoding/hex"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
+	"github.com/cmusatyalab/steeleagle/config"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // upload uploads chunks as the mission name to v.
@@ -152,5 +155,133 @@ func TestLoadMission(t *testing.T) {
 	expectCode(t, loadMission(t, v, "../idle"), codes.InvalidArgument)
 	if _, active := getMissions(t, v); active.GetName() != "other" {
 		t.Errorf("active mission is %v after failed loads, want other", active)
+	}
+}
+
+// fakeEaglec puts a fake eaglec on the PATH, which saves its arguments and
+// copies of its input files in a log directory it returns, and then either
+// copies the test mission to its -o path or, if fail is set, prints a compile
+// error and exits with 1.
+func fakeEaglec(t *testing.T, fail bool) string {
+	t.Helper()
+	bin, logDir := t.TempDir(), t.TempDir()
+	script := `#!/bin/sh
+log="` + logDir + `"
+echo "$@" > "$log/args"
+out=
+while [ $# -gt 0 ]; do
+	case "$1" in
+	-o) out="$2"; shift ;;
+	-plugin|-manifest|-flow|-geojson) cp "$2" "$log/${1#-}"; shift ;;
+	-*) ;;
+	*) cp "$1" "$log/source" ;;
+	esac
+	shift
+done
+if [ -n "$FAKE_EAGLEC_FAIL" ]; then
+	echo "mission.dsl:3: undefined: foo" >&2
+	exit 1
+fi
+cp "` + missionBinary + `" "$out"
+`
+	if err := os.WriteFile(filepath.Join(bin, eaglecName), []byte(script), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	if fail {
+		t.Setenv("FAKE_EAGLEC_FAIL", "1")
+	}
+	return logDir
+}
+
+// compileMission compiles the mission source as name on v.
+func compileMission(t *testing.T, v *Vehicle, req *vehiclepb.CompileMissionRequest) error {
+	t.Helper()
+	_, err := vehiclepb.NewLoaderServiceClient(v.conn).CompileMission(callCtx(t), req)
+	return err
+}
+
+// TestCompileMission checks that a compiled mission is given the vehicle's
+// driver config, a manifest of its engines and the request's inputs, and is
+// saved under its name and loaded as the active mission.
+func TestCompileMission(t *testing.T) {
+	v, _ := newTestVehicle(t)
+	logDir := fakeEaglec(t, false)
+	err := compileMission(t, v, vehiclepb.CompileMissionRequest_builder{
+		Name:    "compiled",
+		Mission: []byte("mission source"),
+		Flow:    []byte("flow"),
+		Geojson: []byte("{}"),
+	}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for file, want := range map[string]string{"source": "mission source", "flow": "flow", "geojson": "{}"} {
+		if b, err := os.ReadFile(filepath.Join(logDir, file)); err != nil || string(b) != want {
+			t.Errorf("eaglec got %s %q (%v), want %q", file, b, err, want)
+		}
+	}
+	manifest, err := config.ParseMissionManifestFromFilepath(filepath.Join(logDir, "manifest"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if manifest.Info.Name != "compiled" || len(manifest.Engines) != 1 ||
+		manifest.Engines[0].Name != testEngine || manifest.Engines[0].Result != DetectionResultType {
+		t.Errorf("manifest is %+v, want mission compiled with engine %s", manifest, testEngine)
+	}
+	plugin, err := config.ParsePluginConfigFromFilepath(filepath.Join(logDir, "plugin"))
+	if err != nil || plugin.Driver == nil {
+		t.Errorf("plugin config is %+v (%v), want the driver config", plugin, err)
+	}
+	if b, err := os.ReadFile(filepath.Join(logDir, "args")); err != nil || strings.Contains(string(b), "-json") {
+		t.Errorf("eaglec args are %q (%v), want a DSL compile", b, err)
+	}
+	missions, active := getMissions(t, v)
+	if len(missions) != 1 || active.GetName() != "compiled" {
+		t.Errorf("missions are %v with %v active, want only compiled, active", missions, active)
+	}
+
+	// A JSON source is compiled with -json
+	if err := compileMission(t, v, vehiclepb.CompileMissionRequest_builder{
+		Name:    "json",
+		Mission: []byte("{}"),
+		Json:    true,
+	}.Build()); err != nil {
+		t.Fatal(err)
+	}
+	if b, err := os.ReadFile(filepath.Join(logDir, "args")); err != nil || !strings.Contains(string(b), "-json") {
+		t.Errorf("eaglec args are %q (%v), want a JSON compile", b, err)
+	}
+	if _, active := getMissions(t, v); active.GetName() != "json" {
+		t.Errorf("active mission is %v, want json", active)
+	}
+}
+
+// TestCompileMissionErrors checks that a mission isn't saved or loaded when
+// eaglec is missing, the request is invalid, or the mission doesn't compile.
+func TestCompileMissionErrors(t *testing.T) {
+	v, _ := newTestVehicle(t)
+	req := vehiclepb.CompileMissionRequest_builder{Name: "bad", Mission: []byte("source")}.Build()
+
+	t.Setenv("PATH", t.TempDir())
+	expectCode(t, compileMission(t, v, req), codes.FailedPrecondition)
+
+	fakeEaglec(t, true)
+	err := compileMission(t, v, req)
+	expectCode(t, err, codes.InvalidArgument)
+	if !strings.Contains(status.Convert(err).Message(), "undefined: foo") {
+		t.Errorf("error %v does not carry the compile error", err)
+	}
+	expectCode(t, compileMission(t, v, vehiclepb.CompileMissionRequest_builder{
+		Name: "../bad", Mission: []byte("source"),
+	}.Build()), codes.InvalidArgument)
+	expectCode(t, compileMission(t, v, vehiclepb.CompileMissionRequest_builder{Name: "bad"}.Build()),
+		codes.InvalidArgument)
+
+	if missions, active := getMissions(t, v); len(missions) != 0 || active != nil {
+		t.Errorf("missions are %v with %v active, want none", missions, active)
+	}
+	if entries, _ := os.ReadDir(v.MissionDir); len(entries) != 0 {
+		t.Errorf("mission directory holds %v, want nothing", entries)
 	}
 }

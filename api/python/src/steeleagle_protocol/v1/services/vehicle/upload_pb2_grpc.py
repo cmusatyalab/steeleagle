@@ -19,6 +19,11 @@ class LoaderServiceStub:
         Args:
             channel: A grpc.Channel.
         """
+        self.CompileMission = channel.unary_unary(
+                '/steeleagle_protocol.v1.services.vehicle.LoaderService/CompileMission',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_upload__pb2.CompileMissionRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_upload__pb2.CompileMissionResponse.FromString,
+                _registered_method=True)
         self.UploadMission = channel.stream_stream(
                 '/steeleagle_protocol.v1.services.vehicle.LoaderService/UploadMission',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_upload__pb2.UploadMissionRequest.SerializeToString,
@@ -44,13 +49,27 @@ class LoaderServiceServicer:
     or to load missions from disk.
     """
 
+    def CompileMission(self, request, context):
+        """Compiles a mission on device.
+
+        Uploads and compiles a mission on the vehicle, and saves the result in the
+        <vehicle name>/missions/ folder under `name`. Requires `eaglec` to be locally
+        installed. Only recommended on devices that have adequate CPU and RAM available.
+        the mission manifest and cap file are inferred from the available engines on the
+        vehicle and its assigned cap. This overwrites the previously active mission but
+        does not delete the old mission binary on disk.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def UploadMission(self, request_iterator, context):
         """
-        Upload a mission.
+        Upload a mission binary.
 
-        Uploads a mission to the vehicle over the network, and saves it in the
-        <vehicle name>/missions/ folder. This overwrites the previously active
-        mission, but does not delete the old mission file on disk.
+        Uploads a mission binary to the vehicle over the network, and saves it in
+        the <vehicle name>/missions/ folder. This overwrites the previously active
+        mission, but does not delete the old mission binary on disk.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -81,6 +100,11 @@ class LoaderServiceServicer:
 
 def add_LoaderServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'CompileMission': grpc.unary_unary_rpc_method_handler(
+                    servicer.CompileMission,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_upload__pb2.CompileMissionRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_upload__pb2.CompileMissionResponse.SerializeToString,
+            ),
             'UploadMission': grpc.stream_stream_rpc_method_handler(
                     servicer.UploadMission,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_upload__pb2.UploadMissionRequest.FromString,
@@ -111,6 +135,33 @@ class LoaderService:
     This service is used to upload missions to the vehicle over the network
     or to load missions from disk.
     """
+
+    @staticmethod
+    def CompileMission(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/steeleagle_protocol.v1.services.vehicle.LoaderService/CompileMission',
+            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_upload__pb2.CompileMissionRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_upload__pb2.CompileMissionResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def UploadMission(request_iterator,

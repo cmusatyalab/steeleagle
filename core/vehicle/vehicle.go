@@ -304,6 +304,9 @@ func (v *Vehicle) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, er
 		return nil, nil, err
 	}
 
+	// Watch the control and data planes for failsafes
+	v.monitorFailsafe(ctx)
+
 	// Serve listener
 	go func() {
 		if err := v.server.Serve(v.adminLn); err != nil {
@@ -346,7 +349,7 @@ func (v *Vehicle) Wait() error {
 }
 
 // openUriel creates then runs Uriel client, which takes the inputs of every
-// producer the driver can stream.
+// producer the driver can stream, and of every producer of its engines.
 func (v *Vehicle) openUriel() error {
 	var options []uriel.ClientOption
 	if v.compute.rcs != "" {
@@ -360,6 +363,16 @@ func (v *Vehicle) openUriel() error {
 	for _, producer := range append([]string{v.streamInfo.telemetry}, v.streamInfo.cameras...) {
 		if err := v.uriel.AddProducer(producer); err != nil {
 			return err
+		}
+	}
+	for name, engine := range v.engines {
+		if engine == nil || engine.Config == nil || engine.Config.Engine == nil {
+			continue
+		}
+		for _, producer := range engine.Config.Engine.Producers {
+			if err := v.uriel.AddProducer(name + "." + producer.Name); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

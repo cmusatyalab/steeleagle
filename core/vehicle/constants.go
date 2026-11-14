@@ -39,6 +39,14 @@ const (
 // ControlService call before it holds. A variable so tests can shorten it.
 var DmsTimeout = 3 * time.Second
 
+// How often the vehicle checks its control and data planes for a failsafe, and
+// how long it waits for the driver to carry out a failsafe behavior. Variables
+// so tests can shorten them.
+var (
+	FailsafePollInterval   = 100 * time.Millisecond
+	FailsafeCommandTimeout = 5 * time.Second
+)
+
 // Locations of engines in a dataflow: served by the local compute service, or
 // by the remote one.
 const (

@@ -57,7 +57,7 @@ enum FailsafeState {
 
 // Failsafe behaviors.
 enum FailsafeBehavior {
-  FAILSAFE_BEHAVIOR_UNSPECIFIED = 0; // default to hold
+  FAILSAFE_BEHAVIOR_UNSPECIFIED = 0; // default to none
   FAILSAFE_BEHAVIOR_HOLD = 1;        // hold
   FAILSAFE_BEHAVIOR_RTH = 2;         // return to home
   FAILSAFE_BEHAVIOR_MISSION = 3;     // start the last uploaded mission

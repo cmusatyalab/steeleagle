@@ -23,9 +23,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	LoaderService_UploadMission_FullMethodName = "/steeleagle_protocol.v1.services.vehicle.LoaderService/UploadMission"
-	LoaderService_LoadMission_FullMethodName   = "/steeleagle_protocol.v1.services.vehicle.LoaderService/LoadMission"
-	LoaderService_GetMissions_FullMethodName   = "/steeleagle_protocol.v1.services.vehicle.LoaderService/GetMissions"
+	LoaderService_CompileMission_FullMethodName = "/steeleagle_protocol.v1.services.vehicle.LoaderService/CompileMission"
+	LoaderService_UploadMission_FullMethodName  = "/steeleagle_protocol.v1.services.vehicle.LoaderService/UploadMission"
+	LoaderService_LoadMission_FullMethodName    = "/steeleagle_protocol.v1.services.vehicle.LoaderService/LoadMission"
+	LoaderService_GetMissions_FullMethodName    = "/steeleagle_protocol.v1.services.vehicle.LoaderService/GetMissions"
 )
 
 // LoaderServiceClient is the client API for LoaderService service.
@@ -37,11 +38,20 @@ const (
 // This service is used to upload missions to the vehicle over the network
 // or to load missions from disk.
 type LoaderServiceClient interface {
-	// Upload a mission.
+	// Compiles a mission on device.
 	//
-	// Uploads a mission to the vehicle over the network, and saves it in the
-	// <vehicle name>/missions/ folder. This overwrites the previously active
-	// mission, but does not delete the old mission file on disk.
+	// Uploads and compiles a mission on the vehicle, and saves the result in the
+	// <vehicle name>/missions/ folder under `name`. Requires `eaglec` to be locally
+	// installed. Only recommended on devices that have adequate CPU and RAM available.
+	// the mission manifest and cap file are inferred from the available engines on the
+	// vehicle and its assigned cap. This overwrites the previously active mission but
+	// does not delete the old mission binary on disk.
+	CompileMission(ctx context.Context, in *CompileMissionRequest, opts ...grpc.CallOption) (*CompileMissionResponse, error)
+	// Upload a mission binary.
+	//
+	// Uploads a mission binary to the vehicle over the network, and saves it in
+	// the <vehicle name>/missions/ folder. This overwrites the previously active
+	// mission, but does not delete the old mission binary on disk.
 	UploadMission(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[UploadMissionRequest, UploadMissionResponse], error)
 	// Loads a mission from disk.
 	//
@@ -61,6 +71,16 @@ type loaderServiceClient struct {
 
 func NewLoaderServiceClient(cc grpc.ClientConnInterface) LoaderServiceClient {
 	return &loaderServiceClient{cc}
+}
+
+func (c *loaderServiceClient) CompileMission(ctx context.Context, in *CompileMissionRequest, opts ...grpc.CallOption) (*CompileMissionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CompileMissionResponse)
+	err := c.cc.Invoke(ctx, LoaderService_CompileMission_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *loaderServiceClient) UploadMission(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[UploadMissionRequest, UploadMissionResponse], error) {
@@ -105,11 +125,20 @@ func (c *loaderServiceClient) GetMissions(ctx context.Context, in *GetMissionsRe
 // This service is used to upload missions to the vehicle over the network
 // or to load missions from disk.
 type LoaderServiceServer interface {
-	// Upload a mission.
+	// Compiles a mission on device.
 	//
-	// Uploads a mission to the vehicle over the network, and saves it in the
-	// <vehicle name>/missions/ folder. This overwrites the previously active
-	// mission, but does not delete the old mission file on disk.
+	// Uploads and compiles a mission on the vehicle, and saves the result in the
+	// <vehicle name>/missions/ folder under `name`. Requires `eaglec` to be locally
+	// installed. Only recommended on devices that have adequate CPU and RAM available.
+	// the mission manifest and cap file are inferred from the available engines on the
+	// vehicle and its assigned cap. This overwrites the previously active mission but
+	// does not delete the old mission binary on disk.
+	CompileMission(context.Context, *CompileMissionRequest) (*CompileMissionResponse, error)
+	// Upload a mission binary.
+	//
+	// Uploads a mission binary to the vehicle over the network, and saves it in
+	// the <vehicle name>/missions/ folder. This overwrites the previously active
+	// mission, but does not delete the old mission binary on disk.
 	UploadMission(grpc.BidiStreamingServer[UploadMissionRequest, UploadMissionResponse]) error
 	// Loads a mission from disk.
 	//
@@ -131,6 +160,9 @@ type LoaderServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedLoaderServiceServer struct{}
 
+func (UnimplementedLoaderServiceServer) CompileMission(context.Context, *CompileMissionRequest) (*CompileMissionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CompileMission not implemented")
+}
 func (UnimplementedLoaderServiceServer) UploadMission(grpc.BidiStreamingServer[UploadMissionRequest, UploadMissionResponse]) error {
 	return status.Error(codes.Unimplemented, "method UploadMission not implemented")
 }
@@ -159,6 +191,24 @@ func RegisterLoaderServiceServer(s grpc.ServiceRegistrar, srv LoaderServiceServe
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&LoaderService_ServiceDesc, srv)
+}
+
+func _LoaderService_CompileMission_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CompileMissionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LoaderServiceServer).CompileMission(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LoaderService_CompileMission_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LoaderServiceServer).CompileMission(ctx, req.(*CompileMissionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _LoaderService_UploadMission_Handler(srv interface{}, stream grpc.ServerStream) error {
@@ -211,6 +261,10 @@ var LoaderService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "steeleagle_protocol.v1.services.vehicle.LoaderService",
 	HandlerType: (*LoaderServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CompileMission",
+			Handler:    _LoaderService_CompileMission_Handler,
+		},
 		{
 			MethodName: "LoadMission",
 			Handler:    _LoaderService_LoadMission_Handler,

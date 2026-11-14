@@ -52,6 +52,8 @@ github.com/cmusatyalab/steeleagle/config v0.0.6 h1:8iD7qHhAlupO53vI54O47geg4nE7a
 github.com/cmusatyalab/steeleagle/config v0.0.6/go.mod h1:ufbS1yFbr6eExvEp9JRqNMsXuqmh7QfR/CTqCyRwDLk=
 github.com/cmusatyalab/uriel/go v0.3.1 h1:RjLLLag5WY3b4cOHxqV1Iiy0wsvbHv5cKeCVqAX2WsQ=
 github.com/cmusatyalab/uriel/go v0.3.1/go.mod h1:Ck8FmU/kdWH7wX/XK6848bReGfpzHahsRASbP8yWetg=
+github.com/cmusatyalab/uriel/go v0.4.0 h1:S2OsmSk/J54U/hYnAKko21NQJLExyIw2VOXqEtnemeg=
+github.com/cmusatyalab/uriel/go v0.4.0/go.mod h1:Ck8FmU/kdWH7wX/XK6848bReGfpzHahsRASbP8yWetg=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

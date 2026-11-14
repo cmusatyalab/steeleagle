@@ -25,6 +25,171 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type CompileMissionRequest struct {
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Name    string                 `protobuf:"bytes,1,opt,name=name,proto3"`
+	xxx_hidden_Flow    []byte                 `protobuf:"bytes,2,opt,name=flow,proto3"`
+	xxx_hidden_Geojson []byte                 `protobuf:"bytes,3,opt,name=geojson,proto3"`
+	xxx_hidden_Mission []byte                 `protobuf:"bytes,4,opt,name=mission,proto3"`
+	xxx_hidden_Json    bool                   `protobuf:"varint,5,opt,name=json,proto3"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *CompileMissionRequest) Reset() {
+	*x = CompileMissionRequest{}
+	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CompileMissionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CompileMissionRequest) ProtoMessage() {}
+
+func (x *CompileMissionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *CompileMissionRequest) GetName() string {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return ""
+}
+
+func (x *CompileMissionRequest) GetFlow() []byte {
+	if x != nil {
+		return x.xxx_hidden_Flow
+	}
+	return nil
+}
+
+func (x *CompileMissionRequest) GetGeojson() []byte {
+	if x != nil {
+		return x.xxx_hidden_Geojson
+	}
+	return nil
+}
+
+func (x *CompileMissionRequest) GetMission() []byte {
+	if x != nil {
+		return x.xxx_hidden_Mission
+	}
+	return nil
+}
+
+func (x *CompileMissionRequest) GetJson() bool {
+	if x != nil {
+		return x.xxx_hidden_Json
+	}
+	return false
+}
+
+func (x *CompileMissionRequest) SetName(v string) {
+	x.xxx_hidden_Name = v
+}
+
+func (x *CompileMissionRequest) SetFlow(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Flow = v
+}
+
+func (x *CompileMissionRequest) SetGeojson(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Geojson = v
+}
+
+func (x *CompileMissionRequest) SetMission(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Mission = v
+}
+
+func (x *CompileMissionRequest) SetJson(v bool) {
+	x.xxx_hidden_Json = v
+}
+
+type CompileMissionRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Name    string
+	Flow    []byte
+	Geojson []byte
+	Mission []byte
+	Json    bool
+}
+
+func (b0 CompileMissionRequest_builder) Build() *CompileMissionRequest {
+	m0 := &CompileMissionRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Name = b.Name
+	x.xxx_hidden_Flow = b.Flow
+	x.xxx_hidden_Geojson = b.Geojson
+	x.xxx_hidden_Mission = b.Mission
+	x.xxx_hidden_Json = b.Json
+	return m0
+}
+
+type CompileMissionResponse struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CompileMissionResponse) Reset() {
+	*x = CompileMissionResponse{}
+	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CompileMissionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CompileMissionResponse) ProtoMessage() {}
+
+func (x *CompileMissionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type CompileMissionResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 CompileMissionResponse_builder) Build() *CompileMissionResponse {
+	m0 := &CompileMissionResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
 type UploadMissionRequest struct {
 	state               protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filename string                 `protobuf:"bytes,1,opt,name=filename,proto3"`
@@ -37,7 +202,7 @@ type UploadMissionRequest struct {
 
 func (x *UploadMissionRequest) Reset() {
 	*x = UploadMissionRequest{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[0]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -49,7 +214,7 @@ func (x *UploadMissionRequest) String() string {
 func (*UploadMissionRequest) ProtoMessage() {}
 
 func (x *UploadMissionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[0]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -136,7 +301,7 @@ type UploadMissionResponse struct {
 
 func (x *UploadMissionResponse) Reset() {
 	*x = UploadMissionResponse{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[1]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -148,7 +313,7 @@ func (x *UploadMissionResponse) String() string {
 func (*UploadMissionResponse) ProtoMessage() {}
 
 func (x *UploadMissionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[1]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -193,7 +358,7 @@ type LoadMissionRequest struct {
 
 func (x *LoadMissionRequest) Reset() {
 	*x = LoadMissionRequest{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[2]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -205,7 +370,7 @@ func (x *LoadMissionRequest) String() string {
 func (*LoadMissionRequest) ProtoMessage() {}
 
 func (x *LoadMissionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[2]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -249,7 +414,7 @@ type LoadMissionResponse struct {
 
 func (x *LoadMissionResponse) Reset() {
 	*x = LoadMissionResponse{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[3]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -261,7 +426,7 @@ func (x *LoadMissionResponse) String() string {
 func (*LoadMissionResponse) ProtoMessage() {}
 
 func (x *LoadMissionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[3]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -296,7 +461,7 @@ type MissionInfo struct {
 
 func (x *MissionInfo) Reset() {
 	*x = MissionInfo{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[4]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -308,7 +473,7 @@ func (x *MissionInfo) String() string {
 func (*MissionInfo) ProtoMessage() {}
 
 func (x *MissionInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[4]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -392,7 +557,7 @@ type GetMissionsRequest struct {
 
 func (x *GetMissionsRequest) Reset() {
 	*x = GetMissionsRequest{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[5]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -404,7 +569,7 @@ func (x *GetMissionsRequest) String() string {
 func (*GetMissionsRequest) ProtoMessage() {}
 
 func (x *GetMissionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[5]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -437,7 +602,7 @@ type GetMissionsResponse struct {
 
 func (x *GetMissionsResponse) Reset() {
 	*x = GetMissionsResponse{}
-	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[6]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -449,7 +614,7 @@ func (x *GetMissionsResponse) String() string {
 func (*GetMissionsResponse) ProtoMessage() {}
 
 func (x *GetMissionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[6]
+	mi := &file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -515,7 +680,14 @@ var File_steeleagle_protocol_v1_services_vehicle_upload_proto protoreflect.FileD
 
 const file_steeleagle_protocol_v1_services_vehicle_upload_proto_rawDesc = "" +
 	"\n" +
-	"4steeleagle_protocol/v1/services/vehicle/upload.proto\x12'steeleagle_protocol.v1.services.vehicle\x1a\x1fgoogle/protobuf/timestamp.proto\"v\n" +
+	"4steeleagle_protocol/v1/services/vehicle/upload.proto\x12'steeleagle_protocol.v1.services.vehicle\x1a\x1fgoogle/protobuf/timestamp.proto\"\x87\x01\n" +
+	"\x15CompileMissionRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
+	"\x04flow\x18\x02 \x01(\fR\x04flow\x12\x18\n" +
+	"\ageojson\x18\x03 \x01(\fR\ageojson\x12\x18\n" +
+	"\amission\x18\x04 \x01(\fR\amission\x12\x12\n" +
+	"\x04json\x18\x05 \x01(\bR\x04json\"\x18\n" +
+	"\x16CompileMissionResponse\"v\n" +
 	"\x14UploadMissionRequest\x12\x1a\n" +
 	"\bfilename\x18\x01 \x01(\tR\bfilename\x12\x14\n" +
 	"\x05chunk\x18\x02 \x01(\fR\x05chunk\x12\x16\n" +
@@ -534,36 +706,41 @@ const file_steeleagle_protocol_v1_services_vehicle_upload_proto_rawDesc = "" +
 	"\x13GetMissionsResponse\x12`\n" +
 	"\x0eactive_mission\x18\x01 \x01(\v24.steeleagle_protocol.v1.services.vehicle.MissionInfoH\x00R\ractiveMission\x88\x01\x01\x12P\n" +
 	"\bmissions\x18\x02 \x03(\v24.steeleagle_protocol.v1.services.vehicle.MissionInfoR\bmissionsB\x11\n" +
-	"\x0f_active_mission2\xc0\x03\n" +
-	"\rLoaderService\x12\x94\x01\n" +
+	"\x0f_active_mission2\xd6\x04\n" +
+	"\rLoaderService\x12\x93\x01\n" +
+	"\x0eCompileMission\x12>.steeleagle_protocol.v1.services.vehicle.CompileMissionRequest\x1a?.steeleagle_protocol.v1.services.vehicle.CompileMissionResponse\"\x00\x12\x94\x01\n" +
 	"\rUploadMission\x12=.steeleagle_protocol.v1.services.vehicle.UploadMissionRequest\x1a>.steeleagle_protocol.v1.services.vehicle.UploadMissionResponse\"\x00(\x010\x01\x12\x8a\x01\n" +
 	"\vLoadMission\x12;.steeleagle_protocol.v1.services.vehicle.LoadMissionRequest\x1a<.steeleagle_protocol.v1.services.vehicle.LoadMissionResponse\"\x00\x12\x8a\x01\n" +
 	"\vGetMissions\x12;.steeleagle_protocol.v1.services.vehicle.GetMissionsRequest\x1a<.steeleagle_protocol.v1.services.vehicle.GetMissionsResponse\"\x00B\xc8\x02\n" +
 	"+com.steeleagle_protocol.v1.services.vehicleB\vUploadProtoP\x01ZPgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle\xa2\x02\x04SVSV\xaa\x02&SteeleagleProtocol.V1.Services.Vehicle\xca\x02&SteeleagleProtocol\\V1\\Services\\Vehicle\xe2\x022SteeleagleProtocol\\V1\\Services\\Vehicle\\GPBMetadata\xea\x02)SteeleagleProtocol::V1::Services::Vehicleb\x06proto3"
 
-var file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_steeleagle_protocol_v1_services_vehicle_upload_proto_goTypes = []any{
-	(*UploadMissionRequest)(nil),  // 0: steeleagle_protocol.v1.services.vehicle.UploadMissionRequest
-	(*UploadMissionResponse)(nil), // 1: steeleagle_protocol.v1.services.vehicle.UploadMissionResponse
-	(*LoadMissionRequest)(nil),    // 2: steeleagle_protocol.v1.services.vehicle.LoadMissionRequest
-	(*LoadMissionResponse)(nil),   // 3: steeleagle_protocol.v1.services.vehicle.LoadMissionResponse
-	(*MissionInfo)(nil),           // 4: steeleagle_protocol.v1.services.vehicle.MissionInfo
-	(*GetMissionsRequest)(nil),    // 5: steeleagle_protocol.v1.services.vehicle.GetMissionsRequest
-	(*GetMissionsResponse)(nil),   // 6: steeleagle_protocol.v1.services.vehicle.GetMissionsResponse
-	(*timestamppb.Timestamp)(nil), // 7: google.protobuf.Timestamp
+	(*CompileMissionRequest)(nil),  // 0: steeleagle_protocol.v1.services.vehicle.CompileMissionRequest
+	(*CompileMissionResponse)(nil), // 1: steeleagle_protocol.v1.services.vehicle.CompileMissionResponse
+	(*UploadMissionRequest)(nil),   // 2: steeleagle_protocol.v1.services.vehicle.UploadMissionRequest
+	(*UploadMissionResponse)(nil),  // 3: steeleagle_protocol.v1.services.vehicle.UploadMissionResponse
+	(*LoadMissionRequest)(nil),     // 4: steeleagle_protocol.v1.services.vehicle.LoadMissionRequest
+	(*LoadMissionResponse)(nil),    // 5: steeleagle_protocol.v1.services.vehicle.LoadMissionResponse
+	(*MissionInfo)(nil),            // 6: steeleagle_protocol.v1.services.vehicle.MissionInfo
+	(*GetMissionsRequest)(nil),     // 7: steeleagle_protocol.v1.services.vehicle.GetMissionsRequest
+	(*GetMissionsResponse)(nil),    // 8: steeleagle_protocol.v1.services.vehicle.GetMissionsResponse
+	(*timestamppb.Timestamp)(nil),  // 9: google.protobuf.Timestamp
 }
 var file_steeleagle_protocol_v1_services_vehicle_upload_proto_depIdxs = []int32{
-	7, // 0: steeleagle_protocol.v1.services.vehicle.MissionInfo.creation_time:type_name -> google.protobuf.Timestamp
-	4, // 1: steeleagle_protocol.v1.services.vehicle.GetMissionsResponse.active_mission:type_name -> steeleagle_protocol.v1.services.vehicle.MissionInfo
-	4, // 2: steeleagle_protocol.v1.services.vehicle.GetMissionsResponse.missions:type_name -> steeleagle_protocol.v1.services.vehicle.MissionInfo
-	0, // 3: steeleagle_protocol.v1.services.vehicle.LoaderService.UploadMission:input_type -> steeleagle_protocol.v1.services.vehicle.UploadMissionRequest
-	2, // 4: steeleagle_protocol.v1.services.vehicle.LoaderService.LoadMission:input_type -> steeleagle_protocol.v1.services.vehicle.LoadMissionRequest
-	5, // 5: steeleagle_protocol.v1.services.vehicle.LoaderService.GetMissions:input_type -> steeleagle_protocol.v1.services.vehicle.GetMissionsRequest
-	1, // 6: steeleagle_protocol.v1.services.vehicle.LoaderService.UploadMission:output_type -> steeleagle_protocol.v1.services.vehicle.UploadMissionResponse
-	3, // 7: steeleagle_protocol.v1.services.vehicle.LoaderService.LoadMission:output_type -> steeleagle_protocol.v1.services.vehicle.LoadMissionResponse
-	6, // 8: steeleagle_protocol.v1.services.vehicle.LoaderService.GetMissions:output_type -> steeleagle_protocol.v1.services.vehicle.GetMissionsResponse
-	6, // [6:9] is the sub-list for method output_type
-	3, // [3:6] is the sub-list for method input_type
+	9, // 0: steeleagle_protocol.v1.services.vehicle.MissionInfo.creation_time:type_name -> google.protobuf.Timestamp
+	6, // 1: steeleagle_protocol.v1.services.vehicle.GetMissionsResponse.active_mission:type_name -> steeleagle_protocol.v1.services.vehicle.MissionInfo
+	6, // 2: steeleagle_protocol.v1.services.vehicle.GetMissionsResponse.missions:type_name -> steeleagle_protocol.v1.services.vehicle.MissionInfo
+	0, // 3: steeleagle_protocol.v1.services.vehicle.LoaderService.CompileMission:input_type -> steeleagle_protocol.v1.services.vehicle.CompileMissionRequest
+	2, // 4: steeleagle_protocol.v1.services.vehicle.LoaderService.UploadMission:input_type -> steeleagle_protocol.v1.services.vehicle.UploadMissionRequest
+	4, // 5: steeleagle_protocol.v1.services.vehicle.LoaderService.LoadMission:input_type -> steeleagle_protocol.v1.services.vehicle.LoadMissionRequest
+	7, // 6: steeleagle_protocol.v1.services.vehicle.LoaderService.GetMissions:input_type -> steeleagle_protocol.v1.services.vehicle.GetMissionsRequest
+	1, // 7: steeleagle_protocol.v1.services.vehicle.LoaderService.CompileMission:output_type -> steeleagle_protocol.v1.services.vehicle.CompileMissionResponse
+	3, // 8: steeleagle_protocol.v1.services.vehicle.LoaderService.UploadMission:output_type -> steeleagle_protocol.v1.services.vehicle.UploadMissionResponse
+	5, // 9: steeleagle_protocol.v1.services.vehicle.LoaderService.LoadMission:output_type -> steeleagle_protocol.v1.services.vehicle.LoadMissionResponse
+	8, // 10: steeleagle_protocol.v1.services.vehicle.LoaderService.GetMissions:output_type -> steeleagle_protocol.v1.services.vehicle.GetMissionsResponse
+	7, // [7:11] is the sub-list for method output_type
+	3, // [3:7] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name
 	3, // [3:3] is the sub-list for extension extendee
 	0, // [0:3] is the sub-list for field type_name
@@ -574,14 +751,14 @@ func file_steeleagle_protocol_v1_services_vehicle_upload_proto_init() {
 	if File_steeleagle_protocol_v1_services_vehicle_upload_proto != nil {
 		return
 	}
-	file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[6].OneofWrappers = []any{}
+	file_steeleagle_protocol_v1_services_vehicle_upload_proto_msgTypes[8].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_services_vehicle_upload_proto_rawDesc), len(file_steeleagle_protocol_v1_services_vehicle_upload_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

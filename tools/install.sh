@@ -2,14 +2,14 @@
 # Install SteelEagle from its GitHub releases, without cloning the repo.
 #
 #   curl -fsSL https://raw.githubusercontent.com/cmusatyalab/steeleagle/main/tools/install.sh | sh
-#   curl -fsSL https://raw.githubusercontent.com/cmusatyalab/steeleagle/main/tools/install.sh | sh -s -- --sdk
+#   curl -fsSL https://raw.githubusercontent.com/cmusatyalab/steeleagle/main/tools/install.sh | sh -s -- --no-sdk
 #
 # It downloads eagle and eagled for this machine's architecture into
 # ~/.local/bin and installs Pixi, which eagled starts plugins with. It also
 # installs git with Pixi, unless git 2.27 or newer is installed, since plugins
-# are fetched with a filter that older git versions don't support. With
-# --sdk, it also downloads eaglec, and installs Go into ~/.local/go if there
-# is no go on the PATH. `eagle init` then installs the eagled service.
+# are fetched with a filter that older git versions don't support. It also
+# downloads eaglec, and installs Go into ~/.local/go if there is no go on the
+# PATH, unless --no-sdk is given. `eagle init` then installs the eagled service.
 #
 # The newest stable release is installed. If there is none yet, or with
 # --pre, the newest release is installed even if it is an alpha or beta.
@@ -22,17 +22,17 @@ PIXI_BIN=$HOME/.pixi/bin
 # The oldest git that fetches with a filter without being set up as a partial clone
 MIN_GIT_MAJOR=2
 MIN_GIT_MINOR=27
-SDK=
+SDK=1
 PRE=
 
 usage() {
     cat <<'EOF'
 usage: install.sh [options]
 
-Installs eagle, eagled and Pixi.
+Installs eagle, eagled, eaglec and Pixi, and Go if it isn't installed.
 
 options:
-  --sdk        also install eaglec, and Go if it isn't installed
+  --no-sdk     don't install eaglec or Go
   --pre        install the newest release even if it is an alpha or beta
   -h, --help   show this help
 EOF
@@ -50,6 +50,7 @@ die() {
 while [ $# -gt 0 ]; do
     case $1 in
     --sdk) SDK=1 ;;
+    --no-sdk) SDK= ;;
     --pre) PRE=1 ;;
     -h | --help)
         usage

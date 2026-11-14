@@ -9,6 +9,24 @@ from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
+class CompileMissionRequest(_message.Message):
+    __slots__ = ("name", "flow", "geojson", "mission", "json")
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    FLOW_FIELD_NUMBER: _ClassVar[int]
+    GEOJSON_FIELD_NUMBER: _ClassVar[int]
+    MISSION_FIELD_NUMBER: _ClassVar[int]
+    JSON_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    flow: bytes
+    geojson: bytes
+    mission: bytes
+    json: bool
+    def __init__(self, name: _Optional[str] = ..., flow: _Optional[bytes] = ..., geojson: _Optional[bytes] = ..., mission: _Optional[bytes] = ..., json: _Optional[bool] = ...) -> None: ...
+
+class CompileMissionResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
 class UploadMissionRequest(_message.Message):
     __slots__ = ("filename", "chunk", "number", "total")
     FILENAME_FIELD_NUMBER: _ClassVar[int]

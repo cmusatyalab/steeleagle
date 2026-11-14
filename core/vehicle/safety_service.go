@@ -28,7 +28,7 @@ func (v *Vehicle) SetControlFailsafeBehavior(
 	ctx context.Context,
 	req *vehiclepb.SetControlFailsafeBehaviorRequest,
 ) (*vehiclepb.SetControlFailsafeBehaviorResponse, error) {
-	behavior := behaviorOrHold(req.GetBehavior())
+	behavior := behaviorOrNone(req.GetBehavior())
 	v.safetyMu.Lock()
 	v.controlBehavior = behavior
 	v.safetyMu.Unlock()
@@ -42,7 +42,7 @@ func (v *Vehicle) SetDataFailsafeBehavior(
 	ctx context.Context,
 	req *vehiclepb.SetDataFailsafeBehaviorRequest,
 ) (*vehiclepb.SetDataFailsafeBehaviorResponse, error) {
-	behavior := behaviorOrHold(req.GetBehavior())
+	behavior := behaviorOrNone(req.GetBehavior())
 	v.safetyMu.Lock()
 	v.dataBehavior = behavior
 	v.safetyMu.Unlock()
@@ -50,10 +50,10 @@ func (v *Vehicle) SetDataFailsafeBehavior(
 	return &vehiclepb.SetDataFailsafeBehaviorResponse{}, nil
 }
 
-// behaviorOrHold returns behavior, or hold if it is unspecified.
-func behaviorOrHold(behavior vehiclepb.FailsafeBehavior) vehiclepb.FailsafeBehavior {
+// behaviorOrNone returns behavior, or none if it is unspecified.
+func behaviorOrNone(behavior vehiclepb.FailsafeBehavior) vehiclepb.FailsafeBehavior {
 	if behavior == vehiclepb.FailsafeBehavior_FAILSAFE_BEHAVIOR_UNSPECIFIED {
-		return vehiclepb.FailsafeBehavior_FAILSAFE_BEHAVIOR_HOLD
+		return vehiclepb.FailsafeBehavior_FAILSAFE_BEHAVIOR_NONE
 	}
 	return behavior
 }

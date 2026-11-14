@@ -2,7 +2,7 @@ name: Release eaglec
 
 # Tags are created by `git release` (tools/git/README.md). An sdk module tag,
 # such as sdk/v0.2.0 or sdk/v0.2.0-beta.1, publishes eaglec as an asset of a
-# GitHub release, which `tools/install.sh --sdk` downloads. Alpha and beta
+# GitHub release, which `tools/install.sh` downloads. Alpha and beta
 # tags make a prerelease.
 on:
   push:
