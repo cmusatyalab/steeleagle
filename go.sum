@@ -54,6 +54,8 @@ github.com/cmusatyalab/steeleagle/config v0.0.6 h1:8iD7qHhAlupO53vI54O47geg4nE7a
 github.com/cmusatyalab/steeleagle/config v0.0.6/go.mod h1:ufbS1yFbr6eExvEp9JRqNMsXuqmh7QfR/CTqCyRwDLk=
 github.com/cmusatyalab/steeleagle/config v0.0.7 h1:tvqBROS13QQPS0DULdQYb0Z9UI+zoNsIo/SCdyCYtaQ=
 github.com/cmusatyalab/steeleagle/config v0.0.7/go.mod h1:ufbS1yFbr6eExvEp9JRqNMsXuqmh7QfR/CTqCyRwDLk=
+github.com/cmusatyalab/steeleagle/config v0.0.8 h1:t1FrlLA0pwd62XroI1pQ3TS2cHH9veg+TKhlmwwQ8yY=
+github.com/cmusatyalab/steeleagle/config v0.0.8/go.mod h1:ufbS1yFbr6eExvEp9JRqNMsXuqmh7QfR/CTqCyRwDLk=
 github.com/cmusatyalab/uriel/go v0.3.1 h1:RjLLLag5WY3b4cOHxqV1Iiy0wsvbHv5cKeCVqAX2WsQ=
 github.com/cmusatyalab/uriel/go v0.3.1/go.mod h1:Ck8FmU/kdWH7wX/XK6848bReGfpzHahsRASbP8yWetg=
 github.com/cmusatyalab/uriel/go v0.4.0 h1:S2OsmSk/J54U/hYnAKko21NQJLExyIw2VOXqEtnemeg=

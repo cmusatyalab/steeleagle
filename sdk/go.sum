@@ -38,6 +38,8 @@ github.com/cmusatyalab/steeleagle/config v0.0.6 h1:8iD7qHhAlupO53vI54O47geg4nE7a
 github.com/cmusatyalab/steeleagle/config v0.0.6/go.mod h1:ufbS1yFbr6eExvEp9JRqNMsXuqmh7QfR/CTqCyRwDLk=
 github.com/cmusatyalab/steeleagle/config v0.0.7 h1:tvqBROS13QQPS0DULdQYb0Z9UI+zoNsIo/SCdyCYtaQ=
 github.com/cmusatyalab/steeleagle/config v0.0.7/go.mod h1:ufbS1yFbr6eExvEp9JRqNMsXuqmh7QfR/CTqCyRwDLk=
+github.com/cmusatyalab/steeleagle/config v0.0.8 h1:t1FrlLA0pwd62XroI1pQ3TS2cHH9veg+TKhlmwwQ8yY=
+github.com/cmusatyalab/steeleagle/config v0.0.8/go.mod h1:ufbS1yFbr6eExvEp9JRqNMsXuqmh7QfR/CTqCyRwDLk=
 github.com/golang/protobuf v1.5.4 h1:i7eJL8qZTpSEXOPTxNKhASYpMn+8e5Q6AdndVa1dWek=
 github.com/golang/protobuf v1.5.4/go.mod h1:lnTiLA8Wa4RWRcIUkrtSVa5nRhsEGBg48fD6rSs7xps=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
