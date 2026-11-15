@@ -80,7 +80,7 @@ func (x FailsafeState) Number() protoreflect.EnumNumber {
 type FailsafeBehavior int32
 
 const (
-	FailsafeBehavior_FAILSAFE_BEHAVIOR_UNSPECIFIED FailsafeBehavior = 0 // default to hold
+	FailsafeBehavior_FAILSAFE_BEHAVIOR_UNSPECIFIED FailsafeBehavior = 0 // default to none
 	FailsafeBehavior_FAILSAFE_BEHAVIOR_HOLD        FailsafeBehavior = 1 // hold
 	FailsafeBehavior_FAILSAFE_BEHAVIOR_RTH         FailsafeBehavior = 2 // return to home
 	FailsafeBehavior_FAILSAFE_BEHAVIOR_MISSION     FailsafeBehavior = 3 // start the last uploaded mission
