@@ -39,7 +39,8 @@ func (v *Vehicle) openDatastore() error {
 	v.dataWg.Add(1)
 	go v.storeTelemetry(v.ctx, v.streamInfo.telemetry, ready)
 	<-ready
-	for _, p := range append([]string{v.streamInfo.telemetry}, v.streamInfo.cameras...) {
+	producers := append([]string{v.streamInfo.telemetry}, v.streamInfo.cameras...)
+	for _, p := range append(producers, v.localEngineProducers()...) {
 		v.dataWg.Add(1)
 		go v.storeProducerResults(v.ctx, p, ready)
 		<-ready
@@ -152,6 +153,14 @@ func (v *Vehicle) storeProducerResults(ctx context.Context, producer string, rea
 		}
 		v.flowInfo.mu.Lock()
 		current := event.Flow == v.flowInfo.name
+		// Results are stored under the engine's name in the flow
+		// (local.<engine> or remote.<engine>), which missions know it by
+		bucket := event.Engine
+		if current && v.flowInfo.flow != nil {
+			if name, ok := v.flowInfo.flow.names[event.Engine]; ok {
+				bucket = name
+			}
+		}
 		v.flowInfo.mu.Unlock()
 		if event.Kind != uriel.EventResult || !current || event.Engine == "" || len(event.Result) == 0 {
 			continue
@@ -162,7 +171,7 @@ func (v *Vehicle) storeProducerResults(ctx context.Context, producer string, rea
 			v.log.Error().Err(err).Str("producer", producer).Msg("couldn't marshal result, skipping")
 			continue
 		}
-		if err := v.store(event.Engine, t, bytes); err != nil {
+		if err := v.store(bucket, t, bytes); err != nil {
 			v.log.Error().Err(err).Str("producer", producer).Msg("couldn't store result")
 		}
 	}

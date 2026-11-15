@@ -48,25 +48,32 @@ func WithMissionDir(dir string) VehicleOption {
 }
 
 // WithLocalCompute gives the vehicle the local compute service, named
-// hostname, and the engines its dataflows can use.
-func WithLocalCompute(hostname string, engines EngineMap) VehicleOption {
+// hostname, and the engines its dataflows can use, by their fully qualified
+// names. qualifier qualifies the names of the local engines, so a flow's
+// local.<engine> is <qualifier>.<engine>.
+func WithLocalCompute(hostname, qualifier string, engines EngineMap) VehicleOption {
 	return func(v *Vehicle) {
-		v.compute.lcs = hostname
+		v.compute.lcs, v.compute.localQual = hostname, qualifier
 		v.engines = engines
 	}
 }
 
 // WithLocalAndRemoteCompute gives the vehicle the local compute service, and
 // the remote one of the orchestrator at addr (host:port), which it trusts by
-// its DER cert.
+// its DER cert. qualifier and remoteQualifier qualify the names of the local
+// and the orchestrator's engines, so a flow's local.<engine> is
+// <qualifier>.<engine> and its remote.<engine> <remoteQualifier>.<engine>.
 func WithLocalAndRemoteCompute(
 	hostname string,
+	qualifier string,
 	addr string,
+	remoteQualifier string,
 	cert []byte,
 	engines EngineMap,
 ) VehicleOption {
 	return func(v *Vehicle) {
 		v.compute.lcs, v.compute.rcs, v.compute.cert = hostname, addr, cert
+		v.compute.localQual, v.compute.remoteQual = qualifier, remoteQualifier
 		v.engines = engines
 	}
 }

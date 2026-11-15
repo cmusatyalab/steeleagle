@@ -558,7 +558,9 @@ func (d *Daemon) runService(s *daemonService) error {
 					vehicleOptions,
 					vehicle.WithLocalAndRemoteCompute(
 						d.Hostname,
+						d.netAddr.String(),
 						net.JoinHostPort(orch.ip, strconv.Itoa(orch.lcsPort)),
+						orch.qualIp,
 						orch.cert,
 						getVehicleEngineMap(d.services, orch.services),
 					),
@@ -568,6 +570,7 @@ func (d *Daemon) runService(s *daemonService) error {
 					vehicleOptions,
 					vehicle.WithLocalCompute(
 						d.Hostname,
+						d.netAddr.String(),
 						getVehicleEngineMap(d.services, nil),
 					),
 				)

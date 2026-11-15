@@ -29,7 +29,7 @@ func TestGetFailsafeState(t *testing.T) {
 }
 
 // TestSetFailsafeBehavior checks that both failsafe behaviors are set, and
-// that an unspecified behavior is hold.
+// that an unspecified behavior is none.
 func TestSetFailsafeBehavior(t *testing.T) {
 	v, _ := newTestVehicle(t)
 	client := vehiclepb.NewSafetyServiceClient(v.conn)
@@ -38,7 +38,8 @@ func TestSetFailsafeBehavior(t *testing.T) {
 	}{
 		{vehiclepb.FailsafeBehavior_FAILSAFE_BEHAVIOR_RTH, vehiclepb.FailsafeBehavior_FAILSAFE_BEHAVIOR_RTH},
 		{vehiclepb.FailsafeBehavior_FAILSAFE_BEHAVIOR_MISSION, vehiclepb.FailsafeBehavior_FAILSAFE_BEHAVIOR_MISSION},
-		{vehiclepb.FailsafeBehavior_FAILSAFE_BEHAVIOR_UNSPECIFIED, vehiclepb.FailsafeBehavior_FAILSAFE_BEHAVIOR_HOLD},
+		{vehiclepb.FailsafeBehavior_FAILSAFE_BEHAVIOR_HOLD, vehiclepb.FailsafeBehavior_FAILSAFE_BEHAVIOR_HOLD},
+		{vehiclepb.FailsafeBehavior_FAILSAFE_BEHAVIOR_UNSPECIFIED, vehiclepb.FailsafeBehavior_FAILSAFE_BEHAVIOR_NONE},
 	} {
 		_, err := client.SetControlFailsafeBehavior(callCtx(t),
 			vehiclepb.SetControlFailsafeBehaviorRequest_builder{Behavior: tc.set}.Build())

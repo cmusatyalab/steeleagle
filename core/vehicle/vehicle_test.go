@@ -60,7 +60,7 @@ func TestRestart(t *testing.T) {
 		if missions, _ := getMissions(t, v); len(missions) != i {
 			t.Errorf("run %d: %d missions, want %d", i, len(missions), i)
 		}
-		if err := setDataflow(t, v, flowToml(t, "front")); err != nil {
+		if err := setDataflow(t, v, flowToml(t, VehiclePrefix+"front")); err != nil {
 			t.Fatalf("run %d: %v", i, err)
 		}
 		if err := upload(t, v, string(rune('a'+i)), "mission"); err != nil {

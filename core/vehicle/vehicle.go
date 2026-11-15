@@ -35,17 +35,19 @@ type pluginInfo struct {
 
 // computeInfo holds compute info for the vehicle.
 type computeInfo struct {
-	lcs  string // lcs name
-	rcs  string // rcs address (host:port), empty if none
-	cert []byte // rcs certificate
+	lcs        string // lcs name
+	rcs        string // rcs address (host:port), empty if none
+	cert       []byte // rcs certificate
+	localQual  string // qualifier of the vehicle's daemon's engines
+	remoteQual string // qualifier of the orchestrator's engines, empty if none
 }
 
 // flowInfo holds flow info for the vehicle's current dataflow.
 type flowInfo struct {
-	name string             // current flow name
-	spec []byte             // current flow spec in bytes
-	flow *config.FlowConfig // current flow config
-	mu   sync.Mutex         // mutex
+	name string        // current flow name
+	spec []byte        // current flow spec in bytes, as it was set
+	flow *resolvedFlow // current flow, as the vehicle runs it
+	mu   sync.Mutex    // mutex
 }
 
 // streamInfo holds info on the names for all producer streams.
@@ -349,7 +351,7 @@ func (v *Vehicle) Wait() error {
 }
 
 // openUriel creates then runs Uriel client, which takes the inputs of every
-// producer the driver can stream, and of every producer of its engines.
+// producer the driver can stream, and of every producer of its local engines.
 func (v *Vehicle) openUriel() error {
 	var options []uriel.ClientOption
 	if v.compute.rcs != "" {
@@ -365,14 +367,9 @@ func (v *Vehicle) openUriel() error {
 			return err
 		}
 	}
-	for name, engine := range v.engines {
-		if engine == nil || engine.Config == nil || engine.Config.Engine == nil {
-			continue
-		}
-		for _, producer := range engine.Config.Engine.Producers {
-			if err := v.uriel.AddProducer(name + "." + producer.Name); err != nil {
-				return err
-			}
+	for _, producer := range v.localEngineProducers() {
+		if err := v.uriel.AddProducer(producer); err != nil {
+			return err
 		}
 	}
 	return nil

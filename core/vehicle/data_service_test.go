@@ -51,7 +51,7 @@ func TestSetDataflow(t *testing.T) {
 	v, driver := newTestVehicle(t)
 	expectFlow(t, v, nil)
 
-	first := flowToml(t, "front", "down")
+	first := flowToml(t, VehiclePrefix+"front", VehiclePrefix+"down")
 	for range 2 {
 		if err := setDataflow(t, v, first); err != nil {
 			t.Fatal(err)
@@ -64,7 +64,7 @@ func TestSetDataflow(t *testing.T) {
 	}.Build()}
 	expectCameras(t, driver, want)
 
-	second := flowToml(t, TelemetryProducerName)
+	second := flowToml(t, VehiclePrefix+TelemetryProducerName)
 	if err := setDataflow(t, v, second); err != nil {
 		t.Fatal(err)
 	}
@@ -76,15 +76,15 @@ func TestSetDataflow(t *testing.T) {
 // anything is streamed, and keeps the current one.
 func TestSetDataflowInvalid(t *testing.T) {
 	v, driver := newTestVehicle(t)
-	current := flowToml(t, "down")
+	current := flowToml(t, VehiclePrefix+"down")
 	if err := setDataflow(t, v, current); err != nil {
 		t.Fatal(err)
 	}
 	for name, toml := range map[string][]byte{
 		"malformed":        []byte("[[producers]"),
 		"unknown key":      []byte("color = 'blue'"),
-		"unknown producer": flowToml(t, "side"),
-		"two primaries":    flowToml(t, "front", "rear"),
+		"unknown camera":   flowToml(t, VehiclePrefix+"side"),
+		"two primaries":    flowToml(t, VehiclePrefix+"front", VehiclePrefix+"rear"),
 	} {
 		expectCode(t, setDataflow(t, v, toml), codes.InvalidArgument)
 		if n := len(driver.cameraRequests()); n != 1 {
@@ -97,14 +97,20 @@ func TestSetDataflowInvalid(t *testing.T) {
 // TestSetDataflowAtomic checks that a dataflow Uriel refuses keeps the
 // current one: its cameras are streamed again, and its results still stored.
 func TestSetDataflowAtomic(t *testing.T) {
-	v, driver := newTestVehicle(t)
-	current := flowToml(t, "down")
+	// The vehicle knows the engine missing, but the compute service doesn't
+	// serve it
+	v, driver := testVehicle(t)
+	missing := unique("missing")
+	v.engines[testQualifier+"."+missing] = &EngineInfo{Local: true}
+	if _, _, err := v.Start(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	current := flowToml(t, VehiclePrefix+"down")
 	if err := setDataflow(t, v, current); err != nil {
 		t.Fatal(err)
 	}
-	// The compute service doesn't serve the engine
-	refused := flowOf("front")
-	refused.Engines[0].Name = unique("missing")
+	refused := flowOf(VehiclePrefix + "front")
+	refused.Engines[0].Name = LocalPrefix + missing
 	refused.Edges[0].To = refused.Engines[0].Name
 	toml, err := refused.ToBytes()
 	if err != nil {
@@ -118,7 +124,7 @@ func TestSetDataflowAtomic(t *testing.T) {
 	}.Build()
 	front := driverpb.StreamCamerasRequest_builder{Primary: cameraOf(v, "front")}.Build()
 	expectCameras(t, driver, []*driverpb.StreamCamerasRequest{down, front, down})
-	expectResultStored(t, v, "down")
+	expectResultStored(t, v, v.producerUri("down"))
 }
 
 // expectCameras fails the test unless the driver was asked for want.
@@ -199,7 +205,7 @@ func TestGetResult(t *testing.T) {
 	v, _ := newTestVehicle(t)
 	client := vehiclepb.NewDataServiceClient(v.conn)
 	for i := range int64(3) {
-		storeAt(t, v, testEngine, i+1, resultpb.ComputeResult_builder{Timestamp: at(i + 1)}.Build())
+		storeAt(t, v, testFlowEngine, i+1, resultpb.ComputeResult_builder{Timestamp: at(i + 1)}.Build())
 	}
 	query := func(engine string, start, end *timestamppb.Timestamp) ([]int64, error) {
 		resp, err := client.GetResult(callCtx(t),
@@ -210,10 +216,10 @@ func TestGetResult(t *testing.T) {
 		}
 		return got, err
 	}
-	if got, err := query(testEngine, nil, nil); err != nil || !equal(got, []int64{3}) {
+	if got, err := query(testFlowEngine, nil, nil); err != nil || !equal(got, []int64{3}) {
 		t.Errorf("latest result is %v (%v), want [3]", got, err)
 	}
-	if got, err := query(testEngine, at(1), at(2)); err != nil || !equal(got, []int64{1, 2}) {
+	if got, err := query(testFlowEngine, at(1), at(2)); err != nil || !equal(got, []int64{1, 2}) {
 		t.Errorf("results from 1 to 2 are %v (%v), want [1 2]", got, err)
 	}
 	if got, err := query("other", nil, nil); err != nil || len(got) != 0 {

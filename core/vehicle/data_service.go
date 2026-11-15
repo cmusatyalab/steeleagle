@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"slices"
 	"time"
 
 	resultpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/result"
@@ -35,28 +34,23 @@ func (v *Vehicle) SetDataflow(
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid dataflow: %v", err)
 	}
-	cameras, err := v.cameraRequest(flow)
+	resolved, err := v.resolveFlow(flow)
 	if err != nil {
 		return nil, err
 	}
-
-	spec, err := v.urielSpec(flow)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	if err := v.streamCameras(ctx, cameras); err != nil {
+	if err := v.streamCameras(ctx, resolved.cameras); err != nil {
 		v.log.Error().Err(err).Msg("could not stream dataflow cameras")
 		return nil, err
 	}
 	// Each flow gets a new name, so that results of the previous one are not
 	// stored as its own
 	name := util.ShortId()
-	if err := v.swapFlow(name, spec); err != nil {
+	if err := v.swapFlow(name, resolved.spec); err != nil {
 		v.log.Error().Err(err).Msg("could not set dataflow, keeping the current one")
 		// The driver goes back to streaming the cameras of the current flow
 		current := &driverpb.StreamCamerasRequest{}
 		if v.flowInfo.flow != nil {
-			current, _ = v.cameraRequest(v.flowInfo.flow) // it was valid when it was set
+			current = v.flowInfo.flow.cameras
 		}
 		if err := v.streamCameras(ctx, current); err != nil {
 			v.log.Error().Err(err).Msg("could not restore dataflow cameras")
@@ -66,7 +60,7 @@ func (v *Vehicle) SetDataflow(
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	v.flowInfo.name, v.flowInfo.spec, v.flowInfo.flow = name, req.GetToml(), flow
+	v.flowInfo.name, v.flowInfo.spec, v.flowInfo.flow = name, req.GetToml(), resolved
 	v.log.Info().Str("flow", name).Msg("dataflow set")
 	return &vehiclepb.SetDataflowResponse{}, nil
 }
@@ -119,10 +113,7 @@ func (v *Vehicle) swapFlow(name, spec string) error {
 	if v.flowInfo.flow == nil {
 		return v.uriel.AddFlow(name, spec)
 	}
-	current, err := v.urielSpec(v.flowInfo.flow)
-	if err != nil {
-		return err
-	}
+	current := v.flowInfo.flow.spec
 	if err := v.uriel.RemoveFlow(v.flowInfo.name); err != nil {
 		return err
 	}
@@ -133,22 +124,6 @@ func (v *Vehicle) swapFlow(name, spec string) error {
 		return err
 	}
 	return nil
-}
-
-// urielSpec returns the Uriel spec of flow, which knows producers by their
-// fully qualified names.
-func (v *Vehicle) urielSpec(flow *config.FlowConfig) (string, error) {
-	spec := config.FlowConfig{Producers: slices.Clone(flow.Producers), Engines: flow.Engines, Edges: slices.Clone(flow.Edges)}
-	for i, p := range spec.Producers {
-		spec.Producers[i].Name = v.producerUri(p.Name)
-		for j, e := range spec.Edges {
-			if e.From == p.Name {
-				spec.Edges[j].From = spec.Producers[i].Name
-			}
-		}
-	}
-	b, err := spec.ToBytes()
-	return string(b), err
 }
 
 // queryAll unmarshals every value in bucket stored between start and end,

@@ -43,25 +43,25 @@ func TestResultsStored(t *testing.T) {
 	for _, producer := range []string{"front", TelemetryProducerName} {
 		t.Run(producer, func(t *testing.T) {
 			v, _ := newTestVehicle(t)
-			if err := setDataflow(t, v, flowToml(t, producer)); err != nil {
+			if err := setDataflow(t, v, flowToml(t, VehiclePrefix+producer)); err != nil {
 				t.Fatal(err)
 			}
-			expectResultStored(t, v, producer)
+			expectResultStored(t, v, v.producerUri(producer))
 		})
 	}
 }
 
 // expectResultStored sends an input on the vehicle's producer, has testEngine
 // detect "cat" in it, and checks that the result is stored as a local
-// detection.
+// detection, under the engine's name in the flow.
 func expectResultStored(t *testing.T, v *Vehicle, producer string) {
 	t.Helper()
-	engine, err := uriel.NewEngine(testEngine, DetectionResultType, 256)
+	engine, err := uriel.NewEngine(testEngineUri, DetectionResultType, 256)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer engine.Close()
-	p, err := uriel.NewProducer(v.producerUri(producer), "", 256)
+	p, err := uriel.NewProducer(producer, "", 256)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,10 +82,10 @@ func expectResultStored(t *testing.T, v *Vehicle, producer string) {
 	if err := engine.Drop(data); err != nil {
 		t.Fatal(err)
 	}
-	waitStored(t, v, testEngine, 1)
+	waitStored(t, v, testFlowEngine, 1)
 
 	resp, err := vehiclepb.NewDataServiceClient(v.conn).GetResult(callCtx(t),
-		vehiclepb.GetResultRequest_builder{Engine: testEngine}.Build())
+		vehiclepb.GetResultRequest_builder{Engine: testFlowEngine}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}

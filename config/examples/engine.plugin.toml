@@ -21,15 +21,17 @@ default = 0.75
 type = "detection"
 # Input types, enforced at dataflow creation
 inputs = ["steeleagle_protocol/v1/messages/frame/RawFrame"]
-# Output type, enforced at dataflow creation
-# Input type forwarded by this engine (optional, one of its input types, or "*"
-# for all of them, defaults to "*")
+# Type sent on along the engine's output edges (optional, defaults to "*"):
+# "*" passes each input on as it is, one of its input types passes on only
+# that type, and any other type means the engine converts each input into it
+# (an encoder or a decoder)
 forwards = "*"
 # Result type, not type enforced (optional, if left blank this engine is a sink)
 result = "steeleagle_protocol/v1/messages/result/DetectionResult"
 
 [[engine.producers]]
-# Producer name (will be advertised as STEELEAGLE_ENGINE_ENDPOINT/<name>)
+# Producer name (advertised as STEELEAGLE_ENGINE_ENDPOINT.<name>; a flow
+# names it local.<engine>.<name>)
 name = "frames"
 # Producer output type
 output = "steeleagle_protocol/v1/messages/frame/EncodedFrame"

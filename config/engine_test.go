@@ -83,12 +83,14 @@ func TestEngineCapEmpty(t *testing.T) {
 	}
 }
 
-// TestEngineCapForwards checks that forwards defaults to "*", accepts one of
-// the engine's input types, and rejects any other type.
+// TestEngineCapForwards checks that forwards defaults to "*", and that an
+// engine forwards one of its input types, or converts its inputs to any
+// other type.
 func TestEngineCapForwards(t *testing.T) {
 	const (
 		raw     = "steeleagle_protocol/v1/messages/frame/RawFrame"
 		encoded = "steeleagle_protocol/v1/messages/frame/EncodedFrame"
+		other   = "steeleagle_protocol/v1/messages/frame/OtherFrame"
 	)
 	cap := func(forwards string) []byte {
 		s := "[plugin]\nname = \"e\"\ntype = \"engine\"\n[engine]\ntype = \"detection\"\n" +
@@ -101,10 +103,12 @@ func TestEngineCapForwards(t *testing.T) {
 	cases := []struct {
 		name, forwards, want string
 		forwarded            map[string]bool
+		converts             bool
 	}{
-		{"default", "", ForwardsAll, map[string]bool{raw: true, encoded: true, "": false}},
-		{"all", "*", ForwardsAll, map[string]bool{raw: true, encoded: true, "": false}},
-		{"specific", raw, raw, map[string]bool{raw: true, encoded: false, "": false}},
+		{"default", "", ForwardsAll, map[string]bool{raw: true, encoded: true, "": false}, false},
+		{"all", "*", ForwardsAll, map[string]bool{raw: true, encoded: true, "": false}, false},
+		{"specific", raw, raw, map[string]bool{raw: true, encoded: false, "": false}, false},
+		{"converts", other, other, map[string]bool{raw: false, encoded: false, other: false}, true},
 	}
 	for _, c := range cases {
 		p, err := ParsePluginConfigFromBytes(cap(c.forwards))
@@ -120,9 +124,9 @@ func TestEngineCapForwards(t *testing.T) {
 				t.Errorf("%s: MatchesForwardedType(%q) = %v, want %v", c.name, input, got, want)
 			}
 		}
-	}
-	if _, err := ParsePluginConfigFromBytes(cap("steeleagle_protocol/v1/messages/result/DetectionResult")); err == nil {
-		t.Error("forwards outside inputs: err = nil, want an error")
+		if got := p.Engine.Converts(); got != c.converts {
+			t.Errorf("%s: Converts = %v, want %v", c.name, got, c.converts)
+		}
 	}
 }
 

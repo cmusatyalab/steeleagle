@@ -226,8 +226,8 @@ func TestCompileMission(t *testing.T) {
 		t.Fatal(err)
 	}
 	if manifest.Info.Name != "compiled" || len(manifest.Engines) != 1 ||
-		manifest.Engines[0].Name != testEngine || manifest.Engines[0].Result != DetectionResultType {
-		t.Errorf("manifest is %+v, want mission compiled with engine %s", manifest, testEngine)
+		manifest.Engines[0].Name != testFlowEngine || manifest.Engines[0].Result != DetectionResultType {
+		t.Errorf("manifest is %+v, want mission compiled with engine %s", manifest, testFlowEngine)
 	}
 	plugin, err := config.ParsePluginConfigFromFilepath(filepath.Join(logDir, "plugin"))
 	if err != nil || plugin.Driver == nil {

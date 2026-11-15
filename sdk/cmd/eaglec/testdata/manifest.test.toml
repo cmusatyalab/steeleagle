@@ -5,13 +5,13 @@ roles = ["Patroller", "Tracker"]
 squawks = ["target_found", "done_with_mission"]
 
 [[engines]]
-name = "yolo"
+name = "local.yolo"
 result = "messages/result/DetectionResult"
 
 [[engines]]
-name = "yolo_q"
+name = "local.yolo_q"
 result = "messages/result/DetectionResult"
 
 [[engines]]
-name = "swiftmap"
+name = "local.swiftmap"
 result = "messages/result/GenericResult"

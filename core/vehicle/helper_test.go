@@ -31,8 +31,16 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// testEngine is the local engine the test compute service serves.
-var testEngine = unique("detector")
+// testQualifier qualifies the names of the test vehicle's local engines.
+const testQualifier = "10.0.0.1"
+
+// testEngine is the local engine the test compute service serves, by its
+// bare name; a flow names it testFlowEngine, and Uriel testEngineUri.
+var (
+	testEngine     = unique("detector")
+	testFlowEngine = LocalPrefix + testEngine
+	testEngineUri  = testQualifier + "." + testEngine
+)
 
 // missionBinary is the test mission, built by TestMain from testdata/mission.
 var missionBinary string
@@ -302,10 +310,10 @@ func testVehicle(t *testing.T, options ...VehicleOption) (*Vehicle, *fakeDriver)
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { server.Close() })
-	if err := server.AddEngine(testEngine); err != nil {
+	if err := server.AddEngine(testEngineUri); err != nil {
 		t.Fatal(err)
 	}
-	engines := EngineMap{testEngine: {
+	engines := EngineMap{testEngineUri: {
 		Config: &config.PluginConfig{Engine: &config.EngineCap{Result: DetectionResultType}},
 		Local:  true,
 	}}
@@ -316,7 +324,7 @@ func testVehicle(t *testing.T, options ...VehicleOption) (*Vehicle, *fakeDriver)
 		WithMissionDir(t.TempDir()),
 		WithLogger(testLogger()),
 		WithProcessOutputStream(testOutput()),
-		WithLocalCompute(lcs, engines),
+		WithLocalCompute(lcs, testQualifier, engines),
 	}, options...)
 	v, err := NewVehicle(driver, testDriverConfig(), options...)
 	if err != nil {
