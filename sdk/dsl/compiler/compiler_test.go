@@ -363,24 +363,38 @@ func TestLoadInvalidGeoJson(t *testing.T) {
 }
 
 // TestLoadMalformedEngineResult checks that an engine whose result has no type
-// name is reported before any packages are loaded.
+// name is reported before any packages are loaded. (An empty result is not
+// malformed: the engine has no result.)
 func TestLoadMalformedEngineResult(t *testing.T) {
 	path := writeMission(t, t.TempDir(), importsStanza(paramsPkgPath))
-	for _, result := range []string{"", "messages/result/"} {
-		manifest := "[[engines]]\nname = \"x\"\nresult = \"" + result + "\"\n"
-		_, errs := Load(FromFile(path), buildtools.WithManifest([]byte(manifest)))
-		requireErrorContaining(t, errs, "engine x has malformed result proto message id")
-	}
+	manifest := "[[engines]]\nname = \"x\"\nresult = \"messages/result/\"\n"
+	_, errs := Load(FromFile(path), buildtools.WithManifest([]byte(manifest)))
+	requireErrorContaining(t, errs, "engine x has malformed result proto message id")
 }
 
-// TestLoadUndeclaredEngineType checks that an engine whose output names a type
-// params doesn't declare is reported.
-func TestLoadUndeclaredEngineType(t *testing.T) {
+// TestLoadOtherResultIsGeneric checks that an engine whose result is not one
+// of the SDK's, whether a <X>Result message, a params type or neither, is a
+// GenericEngine, and that it leaves a GeoJSON feature's consts alone.
+func TestLoadOtherResultIsGeneric(t *testing.T) {
 	skipIfShort(t)
 	path := linkedMission(t, "", dslPkgPath, paramsPkgPath)
-	manifest := "[[engines]]\nname = \"x\"\nresult = \"messages/result/BogusResult\"\n"
-	_, errs := Load(FromFile(path), buildtools.WithManifest([]byte(manifest)), buildtools.WithFlow(flowOf("x")))
-	requireErrorContaining(t, errs, `type "BogusEngine" is not declared`)
+	manifest := "[[engines]]\nname = \"dec\"\nresult = \"h264/v1/DecodeResult\"\n" +
+		"[[engines]]\nname = \"zone\"\nresult = \"messages/result/Polygon\"\n" +
+		"[[engines]]\nname = \"bogus\"\nresult = \"messages/result/Bogus\"\n"
+	out, errs := Load(FromFile(path), buildtools.WithManifest([]byte(manifest)),
+		buildtools.WithFlow(flowOf("dec")), buildtools.WithGeoJson([]byte(testGeoJson)))
+	if len(errs) > 0 {
+		t.Fatalf("Load() errors = %v", errs)
+	}
+	got := enumConsts(t, out, "params.GenericEngine")
+	for _, name := range []string{"GenericEngine_dec", "GenericEngine_zone", "GenericEngine_bogus"} {
+		if !got[name] {
+			t.Errorf("params.GenericEngine consts = %v, want %s", got, name)
+		}
+	}
+	if got := enumConsts(t, out, "params.Polygon"); len(got) != 1 || !got["Polygon_area"] {
+		t.Errorf("params.Polygon consts = %v, want only Polygon_area", got)
+	}
 }
 
 // TestLoadGeneratesConsts checks that Load declares a const per manifest
@@ -431,23 +445,6 @@ func TestLoadGeneratesQualifiedConsts(t *testing.T) {
 	}
 	if got := enumConsts(t, out, "params.Camera"); !got["Camera_front_left"] {
 		t.Errorf("params.Camera consts = %v, want Camera_front_left", got)
-	}
-}
-
-// TestLoadMergesEngineAndFeatureConsts checks that an engine and a GeoJSON
-// feature generating consts of the same type are both kept.
-func TestLoadMergesEngineAndFeatureConsts(t *testing.T) {
-	skipIfShort(t)
-	path := linkedMission(t, "", dslPkgPath, paramsPkgPath)
-	manifest := "[[engines]]\nname = \"zone\"\nresult = \"messages/result/Polygon\"\n"
-	out, errs := Load(FromFile(path), buildtools.WithManifest([]byte(manifest)),
-		buildtools.WithFlow(flowOf("zone")), buildtools.WithGeoJson([]byte(testGeoJson)))
-	if len(errs) > 0 {
-		t.Fatalf("Load() errors = %v", errs)
-	}
-	got := enumConsts(t, out, "params.Polygon")
-	if !got["Polygon_zone"] || !got["Polygon_area"] {
-		t.Errorf("params.Polygon consts = %v, want Polygon_zone and Polygon_area", got)
 	}
 }
 

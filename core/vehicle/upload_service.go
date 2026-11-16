@@ -138,13 +138,13 @@ func (v *Vehicle) CompileMission(
 }
 
 // missionManifest returns the manifest a mission called name is compiled
-// with on the vehicle, which declares every engine available to the vehicle
-// that has a result type, by its name in a flow (local.<engine> or
-// remote.<engine>).
+// with on the vehicle, which declares every engine available to the vehicle,
+// with its result type if it has one, by its name in a flow (local.<engine>
+// or remote.<engine>).
 func (v *Vehicle) missionManifest(name string) *config.MissionManifest {
 	manifest := &config.MissionManifest{Info: config.InfoField{Name: name}}
 	for engine, info := range v.engines {
-		if info == nil || info.Config == nil || info.Config.Engine == nil || info.Config.Engine.Result == "" {
+		if info == nil || info.Config == nil || info.Config.Engine == nil {
 			continue
 		}
 		manifest.Engines = append(manifest.Engines, config.MissionEngineField{

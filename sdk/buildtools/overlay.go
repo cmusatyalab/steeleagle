@@ -36,12 +36,26 @@ func (c *Config) OverlayConfig() (preprocess.OverlayConfig, []*CompileError) {
 	return cfg, nil
 }
 
+// engineType returns the params type of an engine whose result message is
+// named resultName: e.g. a DetectionResult engine is a params.DetectionEngine.
+// Any other result (e.g. h264's DecodeResult, or patchcore's
+// FrameWithEmbedding) makes a GenericEngine, whose results a mission can only
+// read as bytes.
+func engineType(resultName string) string {
+	switch resultName {
+	case "DetectionResult", "ClassificationResult", "GuidanceResult", "PositionResult":
+		return strings.TrimSuffix(resultName, "Result") + "Engine"
+	}
+	return "GenericEngine"
+}
+
 // constTypes returns the constants to generate in the params package, by
 // type name, named by the cap file, manifest and GeoJSON: camera names from
-// the cap file, roles, squawks and engines (typed by their result message)
-// from the manifest, and GeoJSON feature names (typed by their geometry).
-// Every engine of the flow must be declared in the manifest. A name may only
-// be declared once per type.
+// the cap file, roles, squawks and engines (typed by their result message,
+// see engineType; an engine without a result gets none) from the manifest,
+// and GeoJSON feature names (typed by their geometry). Every engine of the
+// flow must be declared in the manifest. A name may only be declared once
+// per type.
 func (c *Config) constTypes() (map[string][]string, []*CompileError) {
 	types := map[string][]string{}
 	var errs []*CompileError
@@ -69,22 +83,25 @@ func (c *Config) constTypes() (map[string][]string, []*CompileError) {
 			add("Squawk", s, "squawk")
 		}
 		for _, e := range c.Manifest.Engines {
-			typeName := e.Result[strings.LastIndex(e.Result, "/")+1:]
-			if typeName == "" {
+			if _, ok := engines[e.Name]; ok {
+				errs = append(errs, &CompileError{Err: fmt.Errorf("engine %q is declared more than once", e.Name)})
+				continue
+			}
+			// An engine without a result (an encoder, a sink like the GCS)
+			// is declared, so a flow may use it, but gets no const, since a
+			// mission has nothing of it to consume
+			if e.Result == "" {
+				engines[e.Name] = ""
+				continue
+			}
+			resultName := e.Result[strings.LastIndex(e.Result, "/")+1:]
+			if resultName == "" {
 				errs = append(errs, &CompileError{
 					Err: fmt.Errorf("engine %s has malformed result proto message id %q", e.Name, e.Result),
 				})
 				continue
 			}
-			if _, ok := engines[e.Name]; ok {
-				errs = append(errs, &CompileError{Err: fmt.Errorf("engine %q is declared more than once", e.Name)})
-				continue
-			}
-			// Engines are typed by their result message, e.g. a
-			// DetectionResult engine is a params.DetectionEngine
-			if base, ok := strings.CutSuffix(typeName, "Result"); ok && base != "" {
-				typeName = base + "Engine"
-			}
+			typeName := engineType(resultName)
 			engines[e.Name] = typeName
 			add(typeName, e.Name, "engine")
 		}

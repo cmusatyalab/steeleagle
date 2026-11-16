@@ -294,6 +294,41 @@ func TestOverlayConfigManifestEngines(t *testing.T) {
 	}
 }
 
+// TestOverlayConfigEngineResults checks that an engine without a result is
+// declared, so a flow may use it, but gets no const, and that any result
+// other than the SDK's makes a GenericEngine.
+func TestOverlayConfigEngineResults(t *testing.T) {
+	manifest := "[[engines]]\nname = \"local.encoder\"\n" +
+		"[[engines]]\nname = \"remote.gcs\"\nresult = \"\"\n" +
+		"[[engines]]\nname = \"remote.decoder\"\nresult = \"h264/v1/DecodeResult\"\n" +
+		"[[engines]]\nname = \"remote.zone\"\nresult = \"messages/result/Polygon\"\n"
+	flow := "[[producers]]\nname = \"front\"\n" +
+		"[[engines]]\nname = \"local.encoder\"\nlocation = \"local\"\n" +
+		"[[engines]]\nname = \"remote.gcs\"\nlocation = \"remote\"\n" +
+		"[[engines]]\nname = \"remote.decoder\"\nlocation = \"remote\"\n" +
+		"[[edges]]\nfrom = \"front\"\nto = \"local.encoder\"\ntimeout = \"2s\"\n" +
+		"[[edges]]\nfrom = \"local.encoder\"\nto = \"remote.gcs\"\ntimeout = \"2s\"\n" +
+		"[[edges]]\nfrom = \"local.encoder\"\nto = \"remote.decoder\"\ntimeout = \"2s\"\n"
+	c, errs := NewConfig(WithManifest([]byte(manifest)), WithFlow([]byte(flow)))
+	if len(errs) > 0 {
+		t.Fatalf("NewConfig() errors = %v", errs)
+	}
+	cfg, errs := c.OverlayConfig()
+	if len(errs) > 0 {
+		t.Fatalf("OverlayConfig() errors = %v", errs)
+	}
+	types := cfg.Consts[paramsPkgPath]
+	want := map[string]string{"GenericEngine": "remote.decoder remote.zone"}
+	if len(types) != len(want) {
+		t.Errorf("consts = %v, want only %v", types, want)
+	}
+	for typeName, names := range want {
+		if got := strings.Join(types[typeName], " "); got != names {
+			t.Errorf("%s consts = %q, want %q", typeName, got, names)
+		}
+	}
+}
+
 // TestOverlayConfigUndeclaredFlowEngine checks that every engine of the
 // flow must be declared in the manifest.
 func TestOverlayConfigUndeclaredFlowEngine(t *testing.T) {
@@ -320,6 +355,8 @@ func TestOverlayConfigErrors(t *testing.T) {
 		`squawk "s" is declared more than once`: "[info]\nsquawks = [\"s\", \"s\"]\n",
 		`engine "yolo" is declared more than once`: "[[engines]]\nname = \"yolo\"\nresult = \"messages/result/DetectionResult\"\n" +
 			"[[engines]]\nname = \"yolo\"\nresult = \"messages/result/GenericResult\"\n",
+		`engine "enc" is declared more than once`: "[[engines]]\nname = \"enc\"\n" +
+			"[[engines]]\nname = \"enc\"\n",
 	}
 	for want, manifest := range tests {
 		c, errs := NewConfig(WithManifest([]byte(manifest)))

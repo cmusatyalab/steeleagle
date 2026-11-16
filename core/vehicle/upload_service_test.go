@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -283,5 +284,26 @@ func TestCompileMissionErrors(t *testing.T) {
 	}
 	if entries, _ := os.ReadDir(v.MissionDir); len(entries) != 0 {
 		t.Errorf("mission directory holds %v, want nothing", entries)
+	}
+}
+
+// TestMissionManifestEngines checks that the manifest declares every engine
+// of the vehicle by its flow name, including one without a result, which a
+// flow may use although a mission can't consume it.
+func TestMissionManifestEngines(t *testing.T) {
+	v := &Vehicle{engines: EngineMap{
+		testQualifier + ".detector": {Local: true, Config: &config.PluginConfig{
+			Engine: &config.EngineCap{Result: DetectionResultType},
+		}},
+		testQualifier + ".encoder": {Local: true, Config: &config.PluginConfig{Engine: &config.EngineCap{}}},
+		"10.0.0.2.gcs":             {Config: &config.PluginConfig{Engine: &config.EngineCap{}}},
+	}, compute: &computeInfo{localQual: testQualifier, remoteQual: "10.0.0.2"}}
+	want := []config.MissionEngineField{
+		{Name: LocalPrefix + "detector", Result: DetectionResultType},
+		{Name: LocalPrefix + "encoder"},
+		{Name: RemotePrefix + "gcs"},
+	}
+	if got := v.missionManifest("m").Engines; !slices.Equal(got, want) {
+		t.Errorf("manifest engines = %+v, want %+v", got, want)
 	}
 }
