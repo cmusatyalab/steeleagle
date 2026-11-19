@@ -21,6 +21,7 @@ func (v *Vehicle) monitorFailsafe(ctx context.Context) {
 	// The connections are taken now, while the run holds them
 	daemon := daemonpb.NewDaemonServiceClient(v.daemonConn)
 	driver := v.driverInfo.conn
+	admin := v.conn
 	client := v.uriel
 	hasRemote := v.compute.rcs != ""
 	// Each run starts out of failsafe, so a plane still lost from the last
@@ -71,7 +72,7 @@ func (v *Vehicle) monitorFailsafe(ctx context.Context) {
 
 			behavior, changed := v.updateFailsafe(controlLost, dataLost)
 			if changed {
-				v.runFailsafeBehavior(ctx, driver, behavior)
+				v.runFailsafeBehavior(ctx, driver, admin, behavior)
 			}
 		}
 	}()
@@ -120,10 +121,13 @@ func (v *Vehicle) updateFailsafe(controlLost, dataLost bool) (vehiclepb.Failsafe
 
 // runFailsafeBehavior carries out a failsafe behavior with the driver on
 // conn. Holding or returning home stops a running mission first, so that it
-// can't command the vehicle after the failsafe does.
+// can't command the vehicle after the failsafe does. The mission is started
+// through admin, the vehicle's own admin connection, which its policy
+// checks like any admin's: StartMission puts the vehicle in the state whose
+// laws let the mission command it (REMOTE -> LOCAL).
 func (v *Vehicle) runFailsafeBehavior(
 	ctx context.Context,
-	conn *grpc.ClientConn,
+	conn, admin *grpc.ClientConn,
 	behavior vehiclepb.FailsafeBehavior,
 ) {
 	v.log.Warn().Stringer("behavior", behavior).Msg("carrying out failsafe behavior")
@@ -137,7 +141,8 @@ func (v *Vehicle) runFailsafeBehavior(
 		}
 		ctx, cancel := context.WithTimeout(ctx, MissionStartTimeout)
 		defer cancel()
-		if _, err := v.StartMission(ctx, &missionpb.StartMissionRequest{}); err != nil {
+		missions := missionpb.NewMissionServiceClient(admin)
+		if _, err := missions.StartMission(ctx, &missionpb.StartMissionRequest{}, grpc.WaitForReady(true)); err != nil {
 			v.log.Error().Err(err).Msg("could not start mission for failsafe")
 		}
 		return

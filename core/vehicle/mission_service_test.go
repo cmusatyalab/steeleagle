@@ -8,6 +8,7 @@ import (
 	"time"
 
 	missionpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/mission"
+	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
 	"google.golang.org/grpc/codes"
 )
 
@@ -187,4 +188,30 @@ func TestMissionStopsWithVehicle(t *testing.T) {
 		}
 		return nil
 	})
+}
+
+// TestFailsafeMissionCommandsVehicle checks that a mission the data failsafe
+// starts can command the vehicle: the failsafe starts it through the
+// vehicle's admin connection, so the policy puts the vehicle under mission
+// control (LOCAL), as for any admin StartMission. Started around the policy,
+// the mission's calls would be denied in REMOTE, as a pilot's GCS leaves it.
+func TestFailsafeMissionCommandsVehicle(t *testing.T) {
+	v, _ := newTestVehicle(t)
+	installMission(t, v, "callback")
+	if err := loadMission(t, v, "callback"); err != nil {
+		t.Fatal(err)
+	}
+	v.runFailsafeBehavior(callCtx(t), nil, v.conn, vehiclepb.FailsafeBehavior_FAILSAFE_BEHAVIOR_MISSION)
+	// The mission makes its call when it is started, and exits successfully
+	// once it succeeds
+	done := make(chan error, 1)
+	go func() { done <- v.mission.Wait() }()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("the failsafe's mission failed: %v", err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("the failsafe's mission didn't exit")
+	}
 }
