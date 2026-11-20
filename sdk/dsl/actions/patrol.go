@@ -37,6 +37,8 @@ type Patrol struct {
 	Speed float32
 	// #optional[120.0]
 	AngularSpeed float32
+	// #optional[5.0]
+	Tolerance float32 // distance in meters from a waypoint at which it counts as reached
 }
 
 func (p *Patrol) Execute(v sdk.Vehicle, m dsl.MissionData) error {
@@ -65,7 +67,7 @@ func (p *Patrol) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 			n.Altitude,
 			n.Heading,
 			options...,
-		).Wait()
+		).Wait(sdk.WithPositionTolerance(p.Tolerance))
 		if err != nil {
 			return err
 		}

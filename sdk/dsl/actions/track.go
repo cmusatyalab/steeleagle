@@ -1,6 +1,6 @@
 package actions
 
-// #begin-exclude-ifndef steeleagle_protocol/v1/services/driver/ControlService/SetVelocityTarget,steeleagle_protocol/v1/services/driver/ControlService/SetGimbalVelocityTarget
+// #begin-exclude-ifndef steeleagle_protocol/v1/services/driver/ControlService/SetVelocityTarget,steeleagle_protocol/v1/services/driver/ControlService/SetGimbalVelocityTarget,steeleagle_protocol/v1/services/driver/StreamService/StreamTelemetry,steeleagle_protocol/v1/messages/telemetry/GimbalInfo/pose_neu/pitch
 import (
 	"fmt"
 	"math"
@@ -23,14 +23,16 @@ type Track struct {
 	Class  string                 // class to look for
 	// #optional[3.0]
 	LostDuration float32 // time in seconds before declaring target lost and exiting
-	// #optional[0.1]
-	TargetAreaRatio float32 // target bounding box ratio of the camera frame size
+	// #optional[-30.0]
+	TargetPitch float32 // gimbal pitch in degrees to hold while tracking
 	// #optional[180.0]
 	YawSpeed float32 // yaw speed in degrees per second
 	// #optional[20.0]
 	PitchSpeed float32 // pitch speed in degrees per second
+	// #optional[0.2]
+	MoveOffsetMultiplier float32 // move speed in meters per second per degree of pitch from TargetPitch
 	// #optional[3.0]
-	MoveSpeed float32 // move speed in meters per second
+	MoveSpeed float32 // maximum move speed in meters per second
 }
 
 func (t *Track) Execute(v sdk.Vehicle, m dsl.MissionData) error {
@@ -42,13 +44,10 @@ func (t *Track) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 	if camera.HFov == 0 || camera.VFov == 0 {
 		return fmt.Errorf("camera %q has no field of view to track with", camera.Name)
 	}
-	if t.TargetAreaRatio <= 0 {
-		return fmt.Errorf("target area ratio %v must be positive", t.TargetAreaRatio)
-	}
 	if !camera.Gimbal {
-		m.Log.Warn().Str("camera", camera.Name).Msg("camera is not on the gimbal, so the target is not tracked in pitch")
+		return fmt.Errorf("camera %q is not on the gimbal, so its pitch can't be used to track", camera.Name)
 	}
-	defer t.stop(v, m, camera)
+	defer t.stop(v, m)
 
 	lostAfter := time.Duration(float64(t.LostDuration) * float64(time.Second))
 	lost := time.NewTimer(lostAfter)
@@ -76,9 +75,10 @@ func (t *Track) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 				lost.Stop()
 				lostActive = false
 			}
-			yaw, pitch, x := t.velocities(camera, target)
+			yaw, pitch := t.velocities(camera, target)
+			x := t.moveVelocity(v, m)
 			m.Log.Debug().Float32("yaw_vel", yaw).Float32("pitch_vel", pitch).Float32("x_vel", x).Msg("tracking target")
-			if err := t.move(v, camera, x, yaw, pitch); err != nil {
+			if err := t.move(v, x, yaw, pitch); err != nil {
 				return err
 			}
 		} else {
@@ -86,7 +86,7 @@ func (t *Track) Execute(v sdk.Vehicle, m dsl.MissionData) error {
 			// rather than keep moving on old information; with no new results
 			// the current motion is kept until the target is lost
 			if len(results) > 0 {
-				if err := t.move(v, camera, 0, 0, 0); err != nil {
+				if err := t.move(v, 0, 0, 0); err != nil {
 					return err
 				}
 			}
@@ -124,9 +124,8 @@ func (t *Track) findTarget(result sdk.DetectionResult) sdk.BoundingBox {
 }
 
 // velocities returns the yaw and gimbal pitch speeds that turn camera
-// towards target, and the forward speed that brings target to
-// TargetAreaRatio of the frame.
-func (t *Track) velocities(camera config.DriverCamera, target sdk.BoundingBox) (yaw, pitch, x float32) {
+// towards target.
+func (t *Track) velocities(camera config.DriverCamera, target sdk.BoundingBox) (yaw, pitch float32) {
 	// The target's center is offset to the right of the frame's center for
 	// a positive yaw ratio, and below it for a negative pitch ratio, since
 	// image y increases downwards
@@ -134,15 +133,45 @@ func (t *Track) velocities(camera config.DriverCamera, target sdk.BoundingBox) (
 	pitchRatio := -angleRatio((target.GetYMin()+target.GetYMax())/2, camera.VFov)
 	yaw = float32(yawRatio) * t.YawSpeed
 	pitch = float32(pitchRatio) * t.PitchSpeed
+	return yaw, pitch
+}
 
-	// Bounding boxes are fractions of the frame, so their area is already
-	// their ratio of the frame's area. A target larger than wanted (e.g. 1.3x,
-	// a difference of 0.3) moves the vehicle away, and a smaller one (e.g.
-	// 0.7x, -0.3) towards it, at up to MoveSpeed
-	area := (target.GetXMax() - target.GetXMin()) * (target.GetYMax() - target.GetYMin())
-	difference := float32(area)/t.TargetAreaRatio - 1
-	x = max(-t.MoveSpeed, min(t.MoveSpeed, -difference*t.MoveSpeed))
-	return yaw, pitch, x
+// moveVelocity returns the forward speed that brings the gimbal's pitch,
+// which follows the target, back to TargetPitch, or 0 if the pitch is
+// unknown. A pitch below TargetPitch (looking further down, e.g. -40 for
+// -30) means the target is too close, so the vehicle moves backwards, and a
+// pitch above it forwards, at MoveOffsetMultiplier m/s per degree off, up to
+// MoveSpeed.
+func (t *Track) moveVelocity(v sdk.Vehicle, m dsl.MissionData) float32 {
+	current, err := gimbalPitch(v)
+	if err != nil {
+		m.Log.Debug().Err(err).Msg("no gimbal pitch, holding position")
+		return 0
+	}
+	x := t.MoveOffsetMultiplier * (current - t.TargetPitch)
+	return max(-t.MoveSpeed, min(t.MoveSpeed, x))
+}
+
+// gimbalPitch returns the gimbal's pitch in degrees from the vehicle's
+// latest telemetry.
+func gimbalPitch(v sdk.Vehicle) (float32, error) {
+	telemetry, err := v.GetTelemetry().Wait()
+	if err != nil {
+		return 0, err
+	}
+	if len(telemetry) == 0 {
+		return 0, fmt.Errorf("no telemetry received yet")
+	}
+	// Without a time range, only the most recent telemetry is returned
+	gimbal, err := telemetry[len(telemetry)-1].GetGimbalInfo()
+	if err != nil {
+		return 0, err
+	}
+	pose, err := gimbal.GetPoseNeu()
+	if err != nil {
+		return 0, err
+	}
+	return pose.GetPitch()
 }
 
 // angleRatio returns the angle from the center of a camera's frame to center,
@@ -157,24 +186,22 @@ func angleRatio(center float64, fov uint32) float64 {
 }
 
 // move sets the vehicle's forward and yaw velocities, and the gimbal's pitch
-// velocity if camera is on it, returning the first command that fails.
-func (t *Track) move(v sdk.Vehicle, camera config.DriverCamera, x, yaw, pitch float32) error {
+// velocity, returning the first command that fails.
+func (t *Track) move(v sdk.Vehicle, x, yaw, pitch float32) error {
 	// Without a reference frame, velocities are in the body frame, so x is
 	// forwards
 	if done, err := v.SetVelocityTarget(x, 0, 0, yaw).Check(); done && err != nil {
 		return err
 	}
-	if camera.Gimbal {
-		if done, err := v.SetGimbalVelocityTarget(pitch, 0, 0).Check(); done && err != nil {
-			return err
-		}
+	if done, err := v.SetGimbalVelocityTarget(pitch, 0, 0).Check(); done && err != nil {
+		return err
 	}
 	return nil
 }
 
 // stop stops the vehicle and the gimbal once tracking is over.
-func (t *Track) stop(v sdk.Vehicle, m dsl.MissionData, camera config.DriverCamera) {
-	if err := t.move(v, camera, 0, 0, 0); err != nil {
+func (t *Track) stop(v sdk.Vehicle, m dsl.MissionData) {
+	if err := t.move(v, 0, 0, 0); err != nil {
 		m.Log.Error().Err(err).Msg("couldn't stop after tracking")
 	}
 }
